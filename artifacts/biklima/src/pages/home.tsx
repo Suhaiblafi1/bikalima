@@ -50,6 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, BASE_PRICES } from "../programsData";
+import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
@@ -157,6 +158,7 @@ export default function Home() {
   const { format: formatPrice, currency } = useCurrency();
   const { lang, switchLang, dir } = useLang();
   const t = T[lang];
+  const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
   const articles = wisdomArticles[lang];
   const faqItems = t.faq.items;
   const localizedPrograms = programs.map((p) => getLocalizedProgram(p, lang));
@@ -268,6 +270,21 @@ export default function Home() {
               <button key={item.id} onClick={() => scrollTo(item.id)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
             ))}
             <Button onClick={() => scrollTo("enroll")} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 rounded-full">{t.nav.cta}</Button>
+            {!authLoading && (
+              isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full border border-border object-cover" />}
+                  <span className="text-sm font-medium text-foreground/80 max-w-[100px] truncate">{user?.firstName || user?.email || ""}</span>
+                  <button onClick={logout} className="text-xs text-muted-foreground hover:text-destructive transition-colors border border-border/50 px-2.5 py-1 rounded-full">
+                    {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={login} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
+                  {lang === "ar" ? "تسجيل الدخول" : lang === "fr" ? "Connexion" : "Log in"}
+                </button>
+              )
+            )}
             <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
               {langButtons.map(({ key, label }) => (
                 <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
@@ -288,6 +305,23 @@ export default function Home() {
               <button key={item.id} onClick={() => scrollTo(item.id)} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
             ))}
             <Button size="lg" onClick={() => scrollTo("enroll")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
+            {!authLoading && (
+              isAuthenticated ? (
+                <div className="flex items-center justify-between border border-border rounded-2xl px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-border object-cover" />}
+                    <span className="font-medium text-foreground/80">{user?.firstName || user?.email || ""}</span>
+                  </div>
+                  <button onClick={logout} className="text-sm text-muted-foreground hover:text-destructive transition-colors">
+                    {lang === "ar" ? "خروج" : lang === "fr" ? "Déco." : "Log out"}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={login} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
+                  {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : lang === "fr" ? "Connexion / Inscription" : "Log in / Sign up"}
+                </button>
+              )
+            )}
             <div className="flex items-center justify-center gap-2 mt-2">
               {langButtons.map(({ key, label }) => (
                 <button key={key} onClick={() => switchLang(key)} className={`px-4 py-2 text-sm font-bold rounded-full border transition-colors ${lang === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>{label}</button>
