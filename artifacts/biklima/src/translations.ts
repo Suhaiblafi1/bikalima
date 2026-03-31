@@ -4,7 +4,7 @@ export const T = {
   ar: {
     nav: {
       structure: "البرامج التدريبية",
-      wisdom: "مقتطفات",
+      wisdom: "ملاحظات",
       workbooks: "الكراسات",
       testimonials: "آراء",
       cta: "ابدأ رحلتك",
@@ -54,7 +54,7 @@ export const T = {
       prereqLabels: { tot: "متطلب: دورة المتحدث المؤثر", teachers: "يُستحسن: دورة المتحدث المؤثر", children: "عبر خريجي برنامج المعلمين" },
     },
     wisdom: {
-      badge: "مقتطفات من داخل الكراسات",
+      badge: "ملاحظات من داخل الكراسات",
       heading: "فلسفة بكلمة",
       sub: "ما تجده في كراساتنا ليس تمارين فحسب — بل رؤية تربوية تؤمن بأن الكلمة أداة بناء إنسان.",
     },
@@ -162,7 +162,9 @@ export const T = {
       about: "مؤسسة تعليمية وتدريبية متخصصة في بناء مهارات الخطابة والتواصل للشباب والمهنيين والمعلمين.",
       programsHeading: "البرامج",
       linksHeading: "روابط سريعة",
-      linkLabels: { structure: "البرامج التدريبية", wisdom: "مقتطفات", workbooks: "الكراسات", testimonials: "آراء العملاء" },
+      contactHeading: "تواصل معنا",
+      whatsappLabel: "تواصل عبر واتساب",
+      linkLabels: { structure: "البرامج التدريبية", wisdom: "ملاحظات", workbooks: "الكراسات", testimonials: "آراء العملاء" },
       terms: "الشروط والأحكام",
       privacy: "سياسة الخصوصية",
       copyright: `© ${new Date().getFullYear()} بكلمة. جميع الحقوق محفوظة.`,
@@ -185,7 +187,7 @@ export const T = {
   en: {
     nav: {
       structure: "Training Programs",
-      wisdom: "Excerpts",
+      wisdom: "Notes",
       workbooks: "Workbooks",
       testimonials: "Reviews",
       cta: "Start Now",
@@ -235,7 +237,7 @@ export const T = {
       prereqLabels: { tot: "Required: The Influential Speaker", teachers: "Recommended: The Influential Speaker", children: "Via Educators Program Graduates" },
     },
     wisdom: {
-      badge: "Excerpts from Our Publications",
+      badge: "Notes from Our Publications",
       heading: "Bakalima's Philosophy",
       sub: "What you find in our publications isn't just exercises — it's an educational vision that believes the word is a tool for building human beings.",
     },
@@ -343,7 +345,9 @@ export const T = {
       about: "An educational and training institution specializing in building public speaking and communication skills for youth, professionals, and educators.",
       programsHeading: "Programs",
       linksHeading: "Quick Links",
-      linkLabels: { structure: "Training Programs", wisdom: "Excerpts", workbooks: "Workbooks", testimonials: "Reviews" },
+      contactHeading: "Contact Us",
+      whatsappLabel: "Chat on WhatsApp",
+      linkLabels: { structure: "Training Programs", wisdom: "Notes", workbooks: "Workbooks", testimonials: "Reviews" },
       terms: "Terms & Conditions",
       privacy: "Privacy Policy",
       copyright: `© ${new Date().getFullYear()} Bakalima. All rights reserved.`,
@@ -366,7 +370,7 @@ export const T = {
   fr: {
     nav: {
       structure: "Programmes de Formation",
-      wisdom: "Extraits",
+      wisdom: "Notes",
       workbooks: "Cahiers",
       testimonials: "Avis",
       cta: "Commencer",
@@ -416,7 +420,7 @@ export const T = {
       prereqLabels: { tot: "Requis : L'Orateur Influent", teachers: "Recommandé : L'Orateur Influent", children: "Via les Diplômés du Programme Éducateurs" },
     },
     wisdom: {
-      badge: "Extraits de Nos Publications",
+      badge: "Notes de Nos Publications",
       heading: "La Philosophie de Bakalima",
       sub: "Ce que vous trouvez dans nos publications n'est pas seulement des exercices — c'est une vision éducative qui croit que la parole est un outil pour construire des êtres humains.",
     },
@@ -524,7 +528,9 @@ export const T = {
       about: "Un établissement éducatif et de formation spécialisé dans le développement des compétences oratoires et de communication pour les jeunes, les professionnels et les éducateurs.",
       programsHeading: "Programmes",
       linksHeading: "Liens Rapides",
-      linkLabels: { structure: "Programmes de Formation", wisdom: "Extraits", workbooks: "Cahiers", testimonials: "Avis" },
+      contactHeading: "Contactez-nous",
+      whatsappLabel: "Discuter sur WhatsApp",
+      linkLabels: { structure: "Programmes de Formation", wisdom: "Notes", workbooks: "Cahiers", testimonials: "Avis" },
       terms: "Conditions Générales",
       privacy: "Politique de Confidentialité",
       copyright: `© ${new Date().getFullYear()} Bakalima. Tous droits réservés.`,

@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import nodemailer from "nodemailer";
 import { GetCurrentAuthUserResponse } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -14,6 +15,51 @@ import {
 } from "../lib/auth";
 
 const router: IRouter = Router();
+
+function buildTransporter() {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
+  if (!host || !user || !pass) return null;
+  return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+}
+
+async function sendWelcomeEmail(email: string, firstName: string | null) {
+  const transporter = buildTransporter();
+  if (!transporter) return;
+
+  const name = firstName || email.split("@")[0];
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: "مرحباً بك في بكلمة — Welcome to Bakalima",
+      html: `
+        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #25786A; font-size: 36px; margin: 0;">بكلمة</h1>
+          </div>
+          <h2 style="color: #333; margin-bottom: 10px;">مرحباً ${name}! 👋</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.8;">
+            شكراً لتسجيلك في منصة <strong>بكلمة</strong>. حسابك جاهز الآن!
+          </p>
+          <p style="color: #555; font-size: 16px; line-height: 1.8;">
+            يمكنك الآن تصفح برامجنا التدريبية والتسجيل فيها، وطلب الكراسات التدريبية، ومتابعة جدولك الزمني من لوحة التحكم الخاصة بك.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <p style="color: #999; font-size: 14px;">للتواصل المباشر عبر واتساب: <a href="https://wa.me/97455377065" style="color: #25786A;">+974 5537 7065</a></p>
+          </div>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="color: #aaa; font-size: 12px; text-align: center;">© ${new Date().getFullYear()} بكلمة — Bakalima</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("Failed to send welcome email:", err);
+  }
+}
 
 function setSessionCookie(res: Response, sid: string) {
   res.cookie(SESSION_COOKIE, sid, {
@@ -81,6 +127,9 @@ router.post("/auth/register", async (req: Request, res: Response) => {
 
     const sid = await createSession(sessionData);
     setSessionCookie(res, sid);
+
+    sendWelcomeEmail(user.email, user.firstName);
+
     res.json({ user: sessionData.user });
   } catch (err) {
     req.log.error({ err }, "Registration error");

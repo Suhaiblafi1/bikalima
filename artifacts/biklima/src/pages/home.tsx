@@ -37,6 +37,7 @@ import {
   ShoppingCart,
   FileText,
   Printer,
+  Mail,
   Package,
   Minus,
   Plus,
@@ -937,7 +938,7 @@ export default function Home() {
       {/* ── FOOTER ── */}
       <footer className="bg-foreground text-background py-16">
         <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-12 mb-12 border-b border-background/10 pb-12">
+          <div className="grid md:grid-cols-5 gap-12 mb-12 border-b border-background/10 pb-12">
             <div className="col-span-2 md:col-span-1">
               <div className="logo-biklima text-5xl text-accent mb-6 leading-none">بكلمة</div>
               <p className="text-background/60 leading-relaxed max-w-sm">{t.footer.about}</p>
@@ -961,6 +962,35 @@ export default function Home() {
                 ].map((item) => (
                   <li key={item.id}><button onClick={() => scrollTo(item.id)} className="hover:text-accent transition text-start">{item.label}</button></li>
                 ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold text-lg mb-6">{t.footer.contactHeading}</h4>
+              <ul className="space-y-4 text-background/70">
+                <li>
+                  <a href="https://wa.me/97455377065" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-accent transition">
+                    <MessageCircle className="w-5 h-5" />
+                    {t.footer.whatsappLabel}
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:suhaib@ilgholding.com" className="flex items-center gap-2 hover:text-accent transition" dir="ltr">
+                    <Mail className="w-4 h-4" />
+                    suhaib@ilgholding.com
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-accent transition">
+                    <Linkedin className="w-5 h-5" />
+                    LinkedIn
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.instagram.com/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-accent transition">
+                    <Instagram className="w-5 h-5" />
+                    Instagram
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
