@@ -424,6 +424,7 @@ export default function Home() {
                       <Star className="w-4 h-4 text-accent" />{t.structure.coreBadge}
                     </div>
                     <h3 className="font-serif text-2xl md:text-3xl font-bold mb-1">{coreProgram.shortTitle}</h3>
+                    <p className="text-white/80 text-sm italic mb-2">{t.structure.coreSubtitle}</p>
                     <div className="flex items-center gap-4 text-white/80 text-sm">
                       <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{coreProgram.hours} {t.structure.hoursUnit}</span>
                       <span>·</span>
@@ -447,7 +448,7 @@ export default function Home() {
                         <div className="w-px h-8 bg-border" />
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <Card className={`w-full overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => setSelectedProgram(program)}>
+                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => setSelectedProgram(program)}>
                         <div className="aspect-[4/3] relative overflow-hidden">
                           <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
@@ -462,8 +463,8 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        <CardContent className="p-5">
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2">{program.hook}</p>
+                        <CardContent className="p-5 flex flex-col flex-1">
+                          <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
                           <Button variant="outline" size="sm" className="w-full rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white mb-2">{t.structure.viewDetails}</Button>
                           {program.prerequisiteLabel && (
                             <div className={`flex items-center justify-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full ${prereqBadgeClass(program.id)}`}>
@@ -562,7 +563,7 @@ export default function Home() {
                           {[...Array(8)].map((_, j) => (<div key={j} className="w-1 h-1 rounded-full bg-white/30" />))}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 p-5 ps-8">
-                          <div className="text-white/70 text-xs mb-2 font-bold uppercase tracking-wider">{t.workbooks.companion}</div>
+                          <div className="text-white/70 text-xs mb-2 font-medium">{program.audience}</div>
                           <h3 className="font-serif text-base font-bold text-white leading-tight mb-3">{program.workbook.title}</h3>
                           <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm font-bold">
                             {formatPrice(BASE_PRICES[program.id as keyof typeof BASE_PRICES])}
