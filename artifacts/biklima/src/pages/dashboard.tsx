@@ -261,6 +261,8 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
     setLoading(false);
     if (result.error) {
       setError(result.error);
+    } else {
+      navigate("/");
     }
   };
 
