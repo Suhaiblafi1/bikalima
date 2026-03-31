@@ -4,7 +4,7 @@ export const T = {
   ar: {
     nav: {
       structure: "البرامج التدريبية",
-      wisdom: "ملاحظات",
+      wisdom: "مقتطفات",
       workbooks: "الكراسات",
       testimonials: "آراء",
       cta: "ابدأ رحلتك",
@@ -60,7 +60,7 @@ export const T = {
       prereqLabels: { tot: "متطلب: دورة المتحدث المؤثر", teachers: "يُستحسن: دورة المتحدث المؤثر", children: "عبر خريجي برنامج المعلمين" },
     },
     wisdom: {
-      badge: "ملاحظات من داخل الكراسات",
+      badge: "مقتطفات من داخل الكراسات",
       heading: "فلسفة بكلمة",
       sub: "ما تجده في كراساتنا ليس تمارين فحسب — بل رؤية تربوية تؤمن بأن الكلمة أداة بناء إنسان.",
     },
@@ -170,7 +170,7 @@ export const T = {
       linksHeading: "روابط سريعة",
       contactHeading: "تواصل معنا",
       whatsappLabel: "تواصل عبر واتساب",
-      linkLabels: { structure: "البرامج التدريبية", wisdom: "ملاحظات", workbooks: "الكراسات", testimonials: "آراء العملاء" },
+      linkLabels: { structure: "البرامج التدريبية", wisdom: "مقتطفات", workbooks: "الكراسات", testimonials: "آراء العملاء" },
       terms: "الشروط والأحكام",
       privacy: "سياسة الخصوصية",
       copyright: `© ${new Date().getFullYear()} بكلمة. جميع الحقوق محفوظة.`,
