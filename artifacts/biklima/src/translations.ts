@@ -195,7 +195,7 @@ export const T = {
     },
     hero: {
       badge: "A Comprehensive Public Speaking & Influence Methodology",
-      h1a: "Bakalima,",
+      h1a: "Bikalima,",
       h1b: "We Create Impact.",
       sub: "A foundational public speaking course for youth and professionals, branching into tracks for certified trainers, educators, parents, and children.",
       ctaPrimary: "Get Started",
@@ -206,19 +206,19 @@ export const T = {
     trainerBio: {
       heading: "About the Author & Trainer",
       name: "Suhaib Al-Khawaldeh",
-      title: "Founder of Bakalima · TEDx Speaker · Public Speaking Trainer",
-      bio: "A specialist trainer in the art of public speaking and delivery, TEDx speaker, and author of the Bakalima training publication series. He has delivered dozens of programs and speeches across Jordan and the Arab world, training hundreds of participants of all ages and backgrounds. He believes that every person carries a message worth hearing, and that a confident word is the most powerful tool for change.",
+      title: "Founder of Bikalima · TEDx Speaker · Public Speaking Trainer",
+      bio: "A specialist trainer in the art of public speaking and delivery, TEDx speaker, and author of the Bikalima training publication series. He has delivered dozens of programs and speeches across Jordan and the Arab world, training hundreds of participants of all ages and backgrounds. He believes that every person carries a message worth hearing, and that a confident word is the most powerful tool for change.",
     },
     author: {
       sectionTitle: "A Message to Every Educator, Speaker, and Learner",
       cards: [
         { to: "To the Educator", text: "You don't just teach a subject — you shape voices. Every word you speak in front of your student leaves a mark on how they speak to the world. Our program was born from a deep belief that the greatest gift you can give a student is the conviction that their voice matters." },
-        { to: "To the Speaker", text: "Your words are not just performance — they are presence. And presence doesn't come from technique alone, but from being connected to what you truly believe. Bakalima doesn't just teach you how to speak; it brings you back to why you speak, and gives you the tools to convey your soul before your voice." },
+        { to: "To the Speaker", text: "Your words are not just performance — they are presence. And presence doesn't come from technique alone, but from being connected to what you truly believe. Bikalima doesn't just teach you how to speak; it brings you back to why you speak, and gives you the tools to convey your soul before your voice." },
         { to: "To the Beginner", text: "It doesn't matter where you start. What matters is that you start. 70% of people suffer from fear of public speaking — but real impact is made by the 30% who decided to learn. You're here — and that's the first and hardest decision." },
       ],
     },
     why: {
-      heading: "Why Bakalima?",
+      heading: "Why Bikalima?",
       sub: "In a world full of ideas, winners are those who can communicate clearly, with confidence, in a way that leaves a lasting impression.",
       items: [
         { title: "A Scientific, Gradual Methodology", desc: "We don't rely on temporary motivation. We build skills through structured curricula that guide learners step by step across four domains: verbal, mental, social, and speech architecture." },
@@ -238,7 +238,7 @@ export const T = {
     },
     wisdom: {
       badge: "Notes from Our Publications",
-      heading: "Bakalima's Philosophy",
+      heading: "Bikalima's Philosophy",
       sub: "What you find in our publications isn't just exercises — it's an educational vision that believes the word is a tool for building human beings.",
     },
     workbooks: {
@@ -277,7 +277,7 @@ export const T = {
         { q: "Which course should I start with?", a: "The core course \"The Influential Speaker\" is the natural entry point. If you want to become a certified trainer, you'll need to complete it first. If you're an educator or parent, you can join our specialized program directly." },
         { q: "What's the difference between group training and private training?", a: "Group training lets you participate within a group setting, either online or in-person. Private 1:1 training is a fully personalized, intensive experience (in-person or remote), with a faster pace and immediate in-depth feedback." },
         { q: "Is the core course required before the Educators & Parents program?", a: "No, it's not required. However, completing the core course maximizes the benefit and gives you the trainee experience before becoming a guide." },
-        { q: "How does the children's program reach schools?", a: "The 'Young Speaker' program is delivered to schools exclusively through certified graduates of Bakalima's Educators & Parents program." },
+        { q: "How does the children's program reach schools?", a: "The 'Young Speaker' program is delivered to schools exclusively through certified graduates of Bikalima's Educators & Parents program." },
         { q: "Can I purchase a publication without enrolling in a program?", a: "Yes! You can purchase any publication independently. The publications are designed to be useful on their own, but maximum benefit comes with the accompanying program." },
         { q: "Are the programs in-person or online?", a: "We offer multiple formats: group online training, group in-person training, and private 1:1 training (in-person or online)." },
         { q: "Do you offer customized training for educational institutions?", a: "Yes! We provide tailored programs for educational institutions to train their teachers and integrate public speaking into their extracurricular programs. Contact us through the institutions form on the registration page." },
@@ -350,7 +350,7 @@ export const T = {
       linkLabels: { structure: "Training Programs", wisdom: "Notes", workbooks: "Workbooks", testimonials: "Reviews" },
       terms: "Terms & Conditions",
       privacy: "Privacy Policy",
-      copyright: `© ${new Date().getFullYear()} Bakalima. All rights reserved.`,
+      copyright: `© ${new Date().getFullYear()} Bikalima. All rights reserved.`,
     },
     modal: {
       aboutHeading: "About the Program",
@@ -378,7 +378,7 @@ export const T = {
     },
     hero: {
       badge: "Une Méthodologie Complète en Art Oratoire et Influence",
-      h1a: "Bakalima,",
+      h1a: "Bikalima,",
       h1b: "Nous Créons l'Impact.",
       sub: "Un cours fondamental en art oratoire pour les jeunes et les professionnels, avec des parcours pour les formateurs certifiés, les enseignants, les parents et les enfants.",
       ctaPrimary: "Commencer",
@@ -389,19 +389,19 @@ export const T = {
     trainerBio: {
       heading: "À Propos de l'Auteur et Formateur",
       name: "Suhaib Al-Khawaldeh",
-      title: "Fondateur de Bakalima · Conférencier TEDx · Formateur en Art Oratoire",
-      bio: "Formateur spécialisé dans l'art oratoire et la prise de parole en public, conférencier TEDx et auteur de la série de publications de formation Bakalima. Il a dispensé des dizaines de programmes et de discours en Jordanie et dans le monde arabe, formant des centaines de participants de tous âges et horizons. Il croit que chaque personne porte un message qui mérite d'être entendu, et qu'une parole confiante est l'outil de changement le plus puissant.",
+      title: "Fondateur de Bikalima · Conférencier TEDx · Formateur en Art Oratoire",
+      bio: "Formateur spécialisé dans l'art oratoire et la prise de parole en public, conférencier TEDx et auteur de la série de publications de formation Bikalima. Il a dispensé des dizaines de programmes et de discours en Jordanie et dans le monde arabe, formant des centaines de participants de tous âges et horizons. Il croit que chaque personne porte un message qui mérite d'être entendu, et qu'une parole confiante est l'outil de changement le plus puissant.",
     },
     author: {
       sectionTitle: "Un Message à Chaque Éducateur, Orateur et Apprenant",
       cards: [
         { to: "À l'Éducateur", text: "Vous n'enseignez pas simplement une matière — vous façonnez des voix. Chaque mot que vous prononcez devant votre élève laisse une empreinte sur sa façon de parler au monde. Notre programme est né de la conviction profonde que le plus beau cadeau que vous puissiez offrir est de croire que la voix de votre élève a de l'importance." },
-        { to: "À l'Orateur", text: "Vos mots ne sont pas seulement une performance — c'est une présence. Et la présence ne vient pas de la technique seule, mais d'une connexion à ce en quoi vous croyez vraiment. Bakalima ne vous apprend pas seulement à parler ; il vous ramène à la raison pour laquelle vous parlez, et vous donne les outils pour transmettre votre âme avant votre voix." },
+        { to: "À l'Orateur", text: "Vos mots ne sont pas seulement une performance — c'est une présence. Et la présence ne vient pas de la technique seule, mais d'une connexion à ce en quoi vous croyez vraiment. Bikalima ne vous apprend pas seulement à parler ; il vous ramène à la raison pour laquelle vous parlez, et vous donne les outils pour transmettre votre âme avant votre voix." },
         { to: "Au Débutant", text: "Peu importe d'où vous commencez. Ce qui compte, c'est que vous commenciez. 70 % des gens souffrent de la peur de parler en public — mais l'impact réel est créé par les 30 % qui ont décidé d'apprendre. Vous êtes ici — et c'est la première et la plus difficile décision." },
       ],
     },
     why: {
-      heading: "Pourquoi Bakalima ?",
+      heading: "Pourquoi Bikalima ?",
       sub: "Dans un monde plein d'idées, les gagnants sont ceux qui peuvent communiquer clairement, avec confiance, d'une manière qui laisse une impression durable.",
       items: [
         { title: "Une Méthodologie Scientifique et Progressive", desc: "Nous ne nous appuyons pas sur la motivation temporaire. Nous construisons les compétences à travers des curricula structurés qui guident les apprenants pas à pas à travers quatre domaines : verbal, mental, social et architecture du discours." },
@@ -421,7 +421,7 @@ export const T = {
     },
     wisdom: {
       badge: "Notes de Nos Publications",
-      heading: "La Philosophie de Bakalima",
+      heading: "La Philosophie de Bikalima",
       sub: "Ce que vous trouvez dans nos publications n'est pas seulement des exercices — c'est une vision éducative qui croit que la parole est un outil pour construire des êtres humains.",
     },
     workbooks: {
@@ -460,7 +460,7 @@ export const T = {
         { q: "Quel cours devrais-je commencer ?", a: "Le cours de base \"L'Orateur Influent\" est le point d'entrée naturel. Si vous souhaitez devenir formateur certifié, vous devrez d'abord le suivre. Si vous êtes éducateur ou parent, vous pouvez rejoindre directement notre programme spécialisé." },
         { q: "Quelle est la différence entre la formation en groupe et la formation privée ?", a: "La formation en groupe vous permet de participer dans un cadre collectif, en ligne ou en présentiel. La formation privée 1:1 est une expérience entièrement personnalisée et intensive (en présentiel ou à distance), avec des retours immédiats et approfondis." },
         { q: "Le cours de base est-il requis avant le programme Éducateurs et Parents ?", a: "Non, ce n'est pas obligatoire. Cependant, suivre le cours de base maximise les bénéfices et vous donne l'expérience du stagiaire avant de devenir guide." },
-        { q: "Comment le programme enfants atteint-il les écoles ?", a: "Le programme 'Jeune Orateur' est dispensé aux écoles exclusivement par les diplômés certifiés de Bakalima." },
+        { q: "Comment le programme enfants atteint-il les écoles ?", a: "Le programme 'Jeune Orateur' est dispensé aux écoles exclusivement par les diplômés certifiés de Bikalima." },
         { q: "Puis-je acheter une publication sans m'inscrire à un programme ?", a: "Oui ! Vous pouvez acheter n'importe quelle publication de façon indépendante. Le bénéfice maximal vient avec le programme qui l'accompagne." },
         { q: "Les programmes sont-ils en présentiel ou en ligne ?", a: "Nous proposons plusieurs formats : formation en groupe en ligne, formation en groupe en présentiel, et formation privée 1:1 (en présentiel ou en ligne)." },
         { q: "Proposez-vous des formations personnalisées pour les institutions ?", a: "Oui ! Nous offrons des programmes sur mesure pour les établissements éducatifs afin de former leurs enseignants et intégrer l'art oratoire dans leurs activités parascolaires." },
@@ -533,7 +533,7 @@ export const T = {
       linkLabels: { structure: "Programmes de Formation", wisdom: "Notes", workbooks: "Cahiers", testimonials: "Avis" },
       terms: "Conditions Générales",
       privacy: "Politique de Confidentialité",
-      copyright: `© ${new Date().getFullYear()} Bakalima. Tous droits réservés.`,
+      copyright: `© ${new Date().getFullYear()} Bikalima. Tous droits réservés.`,
     },
     modal: {
       aboutHeading: "À Propos du Programme",

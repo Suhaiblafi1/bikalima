@@ -35,7 +35,7 @@ async function sendWelcomeEmail(email: string, firstName: string | null) {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
-      subject: "مرحباً بك في بكلمة — Welcome to Bakalima",
+      subject: "مرحباً بك في بكلمة — Welcome to Bikalima",
       html: `
         <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -52,7 +52,7 @@ async function sendWelcomeEmail(email: string, firstName: string | null) {
             <p style="color: #999; font-size: 14px;">للتواصل المباشر عبر واتساب: <a href="https://wa.me/97455377065" style="color: #25786A;">+974 5537 7065</a></p>
           </div>
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="color: #aaa; font-size: 12px; text-align: center;">© ${new Date().getFullYear()} بكلمة — Bakalima</p>
+          <p style="color: #aaa; font-size: 12px; text-align: center;">© ${new Date().getFullYear()} بكلمة — Bikalima</p>
         </div>
       `,
     });
