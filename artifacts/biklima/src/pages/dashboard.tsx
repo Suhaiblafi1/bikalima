@@ -3,18 +3,20 @@ import { useLocation } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   User,
   BookOpen,
   ShoppingCart,
   Calendar,
-  Video,
   LogOut,
   ChevronRight,
   Clock,
   Mail,
-  Globe,
   Home,
+  Eye,
+  EyeOff,
+  Lock,
 } from "lucide-react";
 
 type Lang = "ar" | "en" | "fr";
@@ -68,8 +70,19 @@ const dashT = {
     },
     backHome: "العودة للرئيسية",
     logout: "تسجيل الخروج",
-    loginRequired: "يرجى تسجيل الدخول للوصول إلى لوحة التحكم",
-    loginBtn: "تسجيل الدخول بحساب Google",
+    auth: {
+      loginTitle: "تسجيل الدخول",
+      registerTitle: "إنشاء حساب جديد",
+      email: "البريد الإلكتروني",
+      password: "كلمة المرور",
+      firstName: "الاسم الأول",
+      lastName: "اسم العائلة",
+      loginBtn: "تسجيل الدخول",
+      registerBtn: "إنشاء حساب",
+      switchToRegister: "ليس لديك حساب؟ أنشئ حساباً",
+      switchToLogin: "لديك حساب؟ سجّل الدخول",
+      passwordMin: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+    },
   },
   en: {
     title: "Dashboard",
@@ -119,8 +132,19 @@ const dashT = {
     },
     backHome: "Back to Home",
     logout: "Log Out",
-    loginRequired: "Please log in to access your dashboard",
-    loginBtn: "Sign in with Google",
+    auth: {
+      loginTitle: "Sign In",
+      registerTitle: "Create Account",
+      email: "Email",
+      password: "Password",
+      firstName: "First Name",
+      lastName: "Last Name",
+      loginBtn: "Sign In",
+      registerBtn: "Create Account",
+      switchToRegister: "Don't have an account? Sign up",
+      switchToLogin: "Already have an account? Sign in",
+      passwordMin: "Password must be at least 6 characters",
+    },
   },
   fr: {
     title: "Tableau de Bord",
@@ -170,8 +194,19 @@ const dashT = {
     },
     backHome: "Retour à l'Accueil",
     logout: "Déconnexion",
-    loginRequired: "Veuillez vous connecter pour accéder à votre tableau de bord",
-    loginBtn: "Se connecter avec Google",
+    auth: {
+      loginTitle: "Connexion",
+      registerTitle: "Créer un Compte",
+      email: "E-mail",
+      password: "Mot de passe",
+      firstName: "Prénom",
+      lastName: "Nom de famille",
+      loginBtn: "Se connecter",
+      registerBtn: "Créer un compte",
+      switchToRegister: "Pas de compte ? Inscrivez-vous",
+      switchToLogin: "Déjà un compte ? Connectez-vous",
+      passwordMin: "Le mot de passe doit contenir au moins 6 caractères",
+    },
   },
 };
 
@@ -184,8 +219,158 @@ const tabIcons = {
 
 type Tab = "account" | "courses" | "orders" | "schedule";
 
+function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
+  const { login, register } = useAuth();
+  const [, navigate] = useLocation();
+  const isRtl = lang === "ar";
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (password.length < 6) {
+      setError(t.auth.passwordMin);
+      return;
+    }
+
+    setLoading(true);
+    let result: { error?: string };
+
+    if (mode === "login") {
+      result = await login(email, password);
+    } else {
+      result = await register({ email, password, firstName: firstName || undefined, lastName: lastName || undefined });
+    }
+
+    setLoading(false);
+    if (result.error) {
+      setError(result.error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-6" dir={isRtl ? "rtl" : "ltr"}>
+      <Card className="max-w-md w-full">
+        <CardContent className="p-8 space-y-6">
+          <div className="text-center space-y-3">
+            <div className="logo-biklima text-5xl text-primary">بكلمة</div>
+            <h1 className="text-2xl font-bold">
+              {mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}
+            </h1>
+          </div>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-xl px-4 py-3 text-center">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "register" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t.auth.firstName}</label>
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="rounded-xl"
+                    dir={isRtl ? "rtl" : "ltr"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t.auth.lastName}</label>
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="rounded-xl"
+                    dir={isRtl ? "rtl" : "ltr"}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Mail className="w-4 h-4" />
+                {t.auth.email}
+              </label>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl"
+                dir="ltr"
+                placeholder="name@example.com"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Lock className="w-4 h-4" />
+                {t.auth.password}
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="rounded-xl pe-10"
+                  dir="ltr"
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-white rounded-full h-12 text-lg font-bold"
+            >
+              {loading ? (
+                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                mode === "login" ? t.auth.loginBtn : t.auth.registerBtn
+              )}
+            </Button>
+          </form>
+
+          <div className="text-center">
+            <button
+              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              {mode === "login" ? t.auth.switchToRegister : t.auth.switchToLogin}
+            </button>
+          </div>
+
+          <Button variant="ghost" onClick={() => navigate("/")} className="w-full">
+            <Home className="w-4 h-4 me-2" />{t.backHome}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const [, navigate] = useLocation();
   const [lang, setLang] = useState<Lang>("ar");
   const [activeTab, setActiveTab] = useState<Tab>("account");
@@ -207,26 +392,7 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6" dir={isRtl ? "rtl" : "ltr"}>
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-              <User className="w-10 h-10 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold">{t.title}</h1>
-            <p className="text-muted-foreground">{t.loginRequired}</p>
-            <Button onClick={login} className="w-full bg-primary text-white rounded-full h-12 text-lg font-bold">
-              <Globe className="w-5 h-5 me-2" />
-              {t.loginBtn}
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/")} className="w-full">
-              <Home className="w-4 h-4 me-2" />{t.backHome}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <AuthForm lang={lang} t={t} />;
   }
 
   const tabs: Tab[] = ["account", "courses", "orders", "schedule"];
@@ -241,9 +407,6 @@ export default function Dashboard() {
             <h1 className="font-bold text-lg hidden sm:inline">{t.title}</h1>
           </div>
           <div className="flex items-center gap-3">
-            {user?.profileImageUrl && (
-              <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-border object-cover" />
-            )}
             <span className="text-sm font-medium hidden sm:inline">{user?.firstName || user?.email}</span>
             <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-destructive">
               <LogOut className="w-4 h-4" />
@@ -296,11 +459,7 @@ export default function Dashboard() {
                   </h3>
                   <div className="flex flex-col sm:flex-row gap-6 items-start">
                     <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                      {user?.profileImageUrl ? (
-                        <img src={user.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <User className="w-12 h-12 text-primary" />
-                      )}
+                      <User className="w-12 h-12 text-primary" />
                     </div>
                     <div className="space-y-4 flex-1">
                       <div className="grid sm:grid-cols-2 gap-4">

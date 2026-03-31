@@ -1,37 +1,29 @@
-import * as client from "openid-client";
 import crypto from "crypto";
+import { promisify } from "util";
 import { type Request, type Response } from "express";
 import { db, sessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { AuthUser } from "@workspace/api-zod";
 
-export const ISSUER_URL = "https://accounts.google.com";
 export const SESSION_COOKIE = "sid";
 export const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 
+const scryptAsync = promisify(crypto.scrypt);
+
 export interface SessionData {
   user: AuthUser;
-  access_token: string;
-  refresh_token?: string;
-  expires_at?: number;
 }
 
-let oidcConfig: client.Configuration | null = null;
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const derived = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${salt}:${derived.toString("hex")}`;
+}
 
-export async function getOidcConfig(): Promise<client.Configuration> {
-  if (!oidcConfig) {
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
-      throw new Error("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set");
-    }
-    oidcConfig = await client.discovery(
-      new URL(ISSUER_URL),
-      clientId,
-      clientSecret,
-    );
-  }
-  return oidcConfig;
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const [salt, key] = hash.split(":");
+  const derived = (await scryptAsync(password, salt, 64)) as Buffer;
+  return crypto.timingSafeEqual(Buffer.from(key, "hex"), derived);
 }
 
 export async function createSession(data: SessionData): Promise<string> {
@@ -56,19 +48,6 @@ export async function getSession(sid: string): Promise<SessionData | null> {
   }
 
   return row.sess as unknown as SessionData;
-}
-
-export async function updateSession(
-  sid: string,
-  data: SessionData,
-): Promise<void> {
-  await db
-    .update(sessionsTable)
-    .set({
-      sess: data as unknown as Record<string, unknown>,
-      expire: new Date(Date.now() + SESSION_TTL),
-    })
-    .where(eq(sessionsTable.sid, sid));
 }
 
 export async function deleteSession(sid: string): Promise<void> {

@@ -67,8 +67,8 @@ Arabic RTL landing page for "بكلمة" (Biklima), a public speaking training p
   - Workbook store with localized prices (BASE_PRICES in JOD: core=35, tot=55, teachers=45, children=25)
   - Workbook modal: click on workbook card opens dedicated modal with PDF sample download button, purchase form (quantity, format PDF/printed, delivery address for printed), submits to `/api/workbook-order`
   - Workbook titles: "حقيبة المدرب المعتمد" and "حقيبة المعلمين وأولياء الأمور" for ToT/teachers tracks
-  - Google OAuth: login/logout via Google OIDC, session cookies, user avatar in navbar (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars)
-  - Student dashboard at `/dashboard` — account info, registered courses, order history, session schedule
+  - Email/password auth: register and login with email + password, scrypt password hashing, session cookies (no external OAuth required)
+  - Student dashboard at `/dashboard` — login/register form when unauthenticated, account info, registered courses, order history, session schedule when logged in
 - **Images**: `@assets` alias → `attached_assets/` in vite.config.ts
   - Hero: `speeches_1774983233277.jpeg`
   - TEDx: `42267697_...jpg`
@@ -81,7 +81,7 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
 - Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health`; `src/routes/enroll.ts` exposes `POST /enroll`; `src/routes/workbook-order.ts` exposes `POST /workbook-order`; `src/routes/auth.ts` exposes login/callback/logout/user auth routes
-- Auth: Google OIDC with PKCE, sessions stored in PostgreSQL (7-day TTL), cookie-based (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars)
+- Auth: Email/password registration and login, scrypt password hashing, sessions stored in PostgreSQL (7-day TTL), cookie-based (no external OAuth required)
 - Email: nodemailer sends enrollment & workbook order emails to `suhaib@ilgholding.com` (needs SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT env vars)
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server

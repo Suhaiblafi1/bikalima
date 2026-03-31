@@ -7,47 +7,73 @@ interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: () => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ error?: string }>;
+  register: (data: { email: string; password: string; firstName?: string; lastName?: string }) => Promise<{ error?: string }>;
+  logout: () => Promise<void>;
+  refreshUser: () => void;
 }
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
+  const fetchUser = useCallback(() => {
     fetch("/api/auth/user", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{ user: AuthUser | null }>;
       })
       .then((data) => {
-        if (!cancelled) {
-          setUser(data.user ?? null);
-          setIsLoading(false);
-        }
+        setUser(data.user ?? null);
+        setIsLoading(false);
       })
       .catch(() => {
-        if (!cancelled) {
-          setUser(null);
-          setIsLoading(false);
-        }
+        setUser(null);
+        setIsLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  const login = useCallback(() => {
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const login = useCallback(async (email: string, password: string): Promise<{ error?: string }> => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || "Login failed" };
+      setUser(data.user);
+      return {};
+    } catch {
+      return { error: "Network error" };
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    window.location.href = "/api/logout";
+  const register = useCallback(async (data: { email: string; password: string; firstName?: string; lastName?: string }): Promise<{ error?: string }> => {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok) return { error: result.error || "Registration failed" };
+      setUser(result.user);
+      return {};
+    } catch {
+      return { error: "Network error" };
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setUser(null);
   }, []);
 
   return {
@@ -55,6 +81,8 @@ export function useAuth(): AuthState {
     isLoading,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
+    refreshUser: fetchUser,
   };
 }

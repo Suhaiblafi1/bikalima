@@ -57,6 +57,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
+import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, BASE_PRICES } from "../programsData";
 import { useAuth } from "@workspace/replit-auth-web";
@@ -167,7 +168,8 @@ export default function Home() {
   const { format: formatPrice, currency } = useCurrency();
   const { lang, switchLang, dir } = useLang();
   const t = T[lang];
-  const { user, isLoading: authLoading, isAuthenticated, login, logout } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const [, navigate] = useLocation();
   const articles = wisdomArticles[lang];
   const faqItems = t.faq.items;
   const localizedPrograms = programs.map((p) => getLocalizedProgram(p, lang));
@@ -332,7 +334,7 @@ export default function Home() {
                   </button>
                 </div>
               ) : (
-                <button onClick={login} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
+                <button onClick={() => navigate(`${import.meta.env.BASE_URL}dashboard`)} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
                   {lang === "ar" ? "تسجيل الدخول" : lang === "fr" ? "Connexion" : "Log in"}
                 </button>
               )
@@ -372,7 +374,7 @@ export default function Home() {
                   </button>
                 </div>
               ) : (
-                <button onClick={login} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
+                <button onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}dashboard`); }} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
                   {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : lang === "fr" ? "Connexion / Inscription" : "Log in / Sign up"}
                 </button>
               )
