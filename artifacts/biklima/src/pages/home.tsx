@@ -380,10 +380,9 @@ export default function Home() {
             {!authLoading && (
               isAuthenticated ? (
                 <div className="flex items-center gap-2">
-                  <a href={`${import.meta.env.BASE_URL}dashboard`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full border border-border object-cover" />}
-                    <span className="text-sm font-medium text-foreground/80 max-w-[100px] truncate">{user?.firstName || user?.email || ""}</span>
-                  </a>
+                  <button onClick={() => navigate(`${import.meta.env.BASE_URL}dashboard`)} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
+                    {lang === "ar" ? "منصتي" : lang === "fr" ? "Ma plateforme" : "My Platform"}
+                  </button>
                   <button onClick={logout} className="text-xs text-muted-foreground hover:text-destructive transition-colors border border-border/50 px-2.5 py-1 rounded-full">
                     {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
                   </button>
@@ -417,13 +416,9 @@ export default function Home() {
             {!authLoading && (
               isAuthenticated ? (
                 <div className="space-y-3">
-                  <a href={`${import.meta.env.BASE_URL}dashboard`} className="flex items-center justify-between border border-primary/30 rounded-2xl px-4 py-3 bg-primary/5 hover:bg-primary/10 transition-colors">
-                    <div className="flex items-center gap-3">
-                      {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-border object-cover" />}
-                      <span className="font-medium text-foreground/80">{user?.firstName || user?.email || ""}</span>
-                    </div>
-                    <span className="text-sm text-primary font-bold">{lang === "ar" ? "لوحة التحكم" : lang === "fr" ? "Tableau de bord" : "Dashboard"}</span>
-                  </a>
+                  <button onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}dashboard`); }} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
+                    {lang === "ar" ? "منصتي" : lang === "fr" ? "Ma plateforme" : "My Platform"}
+                  </button>
                   <button onClick={logout} className="w-full text-center py-2.5 text-sm text-muted-foreground hover:text-destructive transition-colors border border-border rounded-2xl">
                     {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
                   </button>
