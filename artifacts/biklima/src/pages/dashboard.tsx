@@ -18,6 +18,7 @@ import {
   EyeOff,
   Lock,
   Play,
+  Shield,
   CheckCircle,
   Circle,
   ArrowRight,
@@ -450,6 +451,7 @@ export default function Dashboard() {
   const [viewingCourse, setViewingCourse] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const apiBase = getApiBase();
 
   useEffect(() => {
@@ -473,8 +475,14 @@ export default function Dashboard() {
   }, [apiBase]);
 
   useEffect(() => {
-    if (isAuthenticated) fetchData();
-  }, [isAuthenticated, fetchData]);
+    if (isAuthenticated) {
+      fetchData();
+      fetch(`${apiBase}/admin/check`, { credentials: "include" })
+        .then(r => r.json())
+        .then(d => setIsAdmin(!!d.isAdmin))
+        .catch(() => setIsAdmin(false));
+    }
+  }, [isAuthenticated, fetchData, apiBase]);
 
   const markComplete = async (lessonId: string) => {
     await fetch(`${apiBase}/my/lessons/${lessonId}/complete`, { method: "POST", credentials: "include" });
@@ -704,6 +712,12 @@ export default function Dashboard() {
                 );
               })}
               <hr className="border-border my-2" />
+              {isAdmin && (
+                <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium">
+                  <Shield className="w-5 h-5" />
+                  <span>{lang === "ar" ? "لوحة الإدارة" : lang === "fr" ? "Panneau admin" : "Admin Panel"}</span>
+                </button>
+              )}
               <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start">
                 <Home className="w-5 h-5" />
                 <span>{t.backHome}</span>
