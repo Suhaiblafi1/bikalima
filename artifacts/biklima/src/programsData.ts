@@ -4,7 +4,19 @@ import imgTeachers from "@assets/برنامج_اولياء_الامور_17749881
 import imgChildren from "@assets/برنامج_الطفل_١_1774988344874.jpg";
 import type { Lang } from "./translations";
 
-export const BASE_PRICES = { core: 35, tot: 55, teachers: 45, children: 25 };
+export const RECORDED_PRICES = { core: 70, tot: 110, teachers: 90, children: 50 };
+
+export type UpcomingEvent = {
+  id: string;
+  programId: string;
+  date: string;
+  location: string;
+  city: string;
+  spotsLeft?: number;
+  i18n: Record<"en" | "fr", { location: string; city: string }>;
+};
+
+export const upcomingEvents: UpcomingEvent[] = [];
 
 export type ProgramLocale = {
   role: string;
@@ -193,9 +205,9 @@ const programsBase: Program[] = [
     hours: 18,
     sessions: 9,
     image: imgChildren,
-    accentColor: "from-primary to-primary/80",
-    borderColor: "border-primary/30",
-    tagColor: "bg-primary/10 text-primary border border-primary/20",
+    accentColor: "from-sky-700 to-sky-600",
+    borderColor: "border-white shadow-lg ring-1 ring-sky-200",
+    tagColor: "bg-sky-50 text-sky-800 border border-sky-200",
     role: "برنامج المدارس",
     shortTitle: "المتحدث الصغير",
     audience: "الأطفال (٥–١٦ سنة) — عبر المدارس",

@@ -32,6 +32,8 @@ import {
   Youtube,
   Tag,
   MapPin,
+  Calendar,
+  Video,
   Linkedin,
   Instagram,
   ShoppingCart,
@@ -60,7 +62,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
-import { programs, testimonials as testimonialsData, getLocalizedProgram, BASE_PRICES } from "../programsData";
+import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, upcomingEvents } from "../programsData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -244,7 +246,7 @@ export default function Home() {
           buyerName: wbBuyerName,
           buyerPhone: wbBuyerPhone,
           buyerEmail: wbBuyerEmail,
-          unitPrice: BASE_PRICES[selectedWorkbook?.id as keyof typeof BASE_PRICES],
+          unitPrice: RECORDED_PRICES[selectedWorkbook?.id as keyof typeof RECORDED_PRICES],
           lang,
         }),
       });
@@ -552,7 +554,7 @@ export default function Home() {
                       <span>·</span>
                       <span>{coreProgram.sessions} {t.structure.sessionsUnit}</span>
                       <span>·</span>
-                      <span className="font-bold text-white">{formatPrice(BASE_PRICES.core)}</span>
+                      <span className="font-bold text-white">{formatPrice(RECORDED_PRICES.core)} <span className="font-normal text-white/60 text-xs">({t.structure.recordedLabel})</span></span>
                     </div>
                   </div>
                 </div>
@@ -581,7 +583,7 @@ export default function Home() {
                               <Clock className="w-3 h-3" />
                               <span>{program.hours} {t.structure.hoursUnit}</span>
                               <span>·</span>
-                              <span className="font-bold text-white">{formatPrice(BASE_PRICES[program.id as keyof typeof BASE_PRICES])}</span>
+                              <span className="font-bold text-white">{formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])} <span className="font-normal text-white/60 text-[10px]">({t.structure.recordedLabel})</span></span>
                             </div>
                           </div>
                         </div>
@@ -598,6 +600,71 @@ export default function Home() {
                       </Card>
                     </motion.div>
                   ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── UPCOMING EVENTS ── */}
+        <section className="py-16 bg-gradient-to-b from-primary/5 to-background border-b border-border">
+          <div className="container mx-auto px-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-10">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
+                <Calendar className="w-4 h-4" />{t.structure.upcomingEventsHeading}
+              </div>
+              <p className="text-muted-foreground">{t.structure.upcomingEventsSub}</p>
+            </motion.div>
+            {upcomingEvents.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                {upcomingEvents.map((ev) => {
+                  const evLoc = lang === "ar" ? { location: ev.location, city: ev.city } : ev.i18n[lang as "en" | "fr"];
+                  const prog = programs.find(p => p.id === ev.programId);
+                  const lp = prog ? getLocalizedProgram(prog, lang) : null;
+                  return (
+                    <Card key={ev.id} className="border-2 border-primary/20 hover:border-primary/40 transition-colors overflow-hidden">
+                      <CardContent className="p-6 flex flex-col gap-3">
+                        {lp && <span className="text-xs font-bold text-primary uppercase">{lp.shortTitle}</span>}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-4 h-4 text-primary" />
+                          <span className="font-semibold">{ev.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          <span>{evLoc.location} — {evLoc.city}</span>
+                        </div>
+                        {ev.spotsLeft && <span className="text-xs text-orange-600 font-medium">{ev.spotsLeft} {t.structure.spotsLeft}</span>}
+                        <Button size="sm" onClick={() => scrollTo("enroll")} className="mt-2 bg-primary hover:bg-primary/90 text-white rounded-full">{t.structure.registerNow}</Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-muted/50 text-muted-foreground">
+                  <Calendar className="w-5 h-5" />
+                  <span className="text-sm">{t.structure.noUpcomingEvents}</span>
+                </div>
+              </div>
+            )}
+            <div className="mt-10 max-w-2xl mx-auto grid sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 bg-background border rounded-xl p-4">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <User className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold">{t.structure.privateLabel}</p>
+                  <p className="text-xs text-muted-foreground">{t.structure.privateDesc}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-background border rounded-xl p-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Video className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold">{t.structure.recordedLabel}</p>
+                  <p className="text-xs text-muted-foreground">{t.structure.recordedDesc}</p>
                 </div>
               </div>
             </div>
@@ -688,7 +755,7 @@ export default function Home() {
                           <div className="text-white/70 text-xs mb-2 font-medium">{program.audience}</div>
                           <h3 className="font-serif text-base font-bold text-white leading-tight mb-3">{program.workbook.title}</h3>
                           <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm font-bold">
-                            {formatPrice(BASE_PRICES[program.id as keyof typeof BASE_PRICES])}
+                            {formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])}
                           </div>
                         </div>
                       </div>
@@ -1047,7 +1114,7 @@ export default function Home() {
                     <span>·</span>
                     <span>{selectedProgram.sessions} {t.structure.sessionsUnit}</span>
                     <span>·</span>
-                    <span className="font-bold text-white text-base">{formatPrice(BASE_PRICES[selectedProgram.id as keyof typeof BASE_PRICES])}</span>
+                    <span className="font-bold text-white text-base">{formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])} <span className="font-normal text-white/60 text-xs">({t.structure.recordedLabel})</span></span>
                   </div>
                   {selectedProgram.prerequisite && (
                     <div className={`mt-3 inline-flex items-center gap-2 text-[10px] font-medium px-3 py-1 rounded-full ${selectedProgram.id === "tot" ? "bg-red-100 text-red-700" : selectedProgram.id === "children" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
@@ -1122,7 +1189,7 @@ export default function Home() {
                     <h4 className="font-serif font-bold text-lg mb-2">{selectedProgram.workbook.title}</h4>
                     <p className="text-sm text-muted-foreground">{selectedProgram.workbook.description}</p>
                     <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                      <span className="font-bold text-lg">{formatPrice(BASE_PRICES[selectedProgram.id as keyof typeof BASE_PRICES])}</span>
+                      <span className="font-bold text-lg">{formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])}</span>
                       <Button variant="outline" size="sm" className="rounded-full">{t.modal.orderWorkbook}</Button>
                     </div>
                   </div>
@@ -1142,7 +1209,7 @@ export default function Home() {
 
         {selectedWorkbook && (() => {
           const wb = selectedWorkbook;
-          const unitPrice = BASE_PRICES[wb.id as keyof typeof BASE_PRICES];
+          const unitPrice = RECORDED_PRICES[wb.id as keyof typeof RECORDED_PRICES];
           const totalPrice = unitPrice * wbQuantity;
           const previewModules = wb.modules.slice(0, 6);
           return (
