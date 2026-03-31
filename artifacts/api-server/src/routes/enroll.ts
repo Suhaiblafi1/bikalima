@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { db, enrollmentRequestsTable } from "@workspace/db";
 
 const enrollRouter = Router();
 
@@ -103,33 +104,34 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
   const payload = req.body as Record<string, string>;
   const log = req.log ?? console;
 
-  if (payload.type === "individual") {
-    log.info(
-      {
-        applicantType: "individual",
-        name: payload.name,
-        program: payload.program,
-        mode: payload.mode,
-        category: payload.category,
-        lang: payload.lang,
-        hasYoutube: !!payload.youtube,
-        hasDiscount: !!payload.discount,
-      },
-      "Individual enrollment received",
-    );
-  } else if (payload.type === "institution") {
-    log.info(
-      {
-        applicantType: "institution",
-        orgName: payload.orgName,
-        program: payload.program,
-        studentCount: payload.studentCount,
-        teacherCount: payload.teacherCount,
-        lang: payload.lang,
-        hasDiscount: !!payload.discount,
-      },
-      "Institution enrollment received",
-    );
+  let dbStored = false;
+  try {
+    const userId = req.isAuthenticated() ? req.user?.id : null;
+    const isInstitution = payload.type === "institution";
+
+    await db.insert(enrollmentRequestsTable).values({
+      userId: userId || null,
+      applicantType: isInstitution ? "institution" : "individual",
+      fullName: isInstitution ? (payload.contactPerson || payload.orgName) : payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      programId: payload.program || "",
+      trainingType: payload.mode || null,
+      privateMode: payload.privateMode || null,
+      youtubeLink: payload.youtube || null,
+      discountCode: payload.discount || null,
+      institutionName: isInstitution ? payload.orgName : null,
+      studentCount: payload.studentCount ? parseInt(payload.studentCount) : null,
+      teacherCount: payload.teacherCount ? parseInt(payload.teacherCount) : null,
+      workbooksNeeded: payload.workbookCount ? parseInt(payload.workbookCount) : null,
+      message: payload.reason || payload.orgMessage || null,
+      formData: payload,
+    });
+
+    dbStored = true;
+    log.info({ applicantType: payload.type, program: payload.program }, "Enrollment stored in DB");
+  } catch (err) {
+    log.error({ err }, "Failed to store enrollment in DB");
   }
 
   const transporter = buildTransporter();
@@ -156,7 +158,30 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
     log.warn("SMTP not configured — enrollment email not sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS.");
   }
 
+  if (!dbStored) {
+    res.status(500).json({ success: false, message: "Failed to save enrollment. Please try again." });
+    return;
+  }
+
   res.status(200).json({ success: true, message: "Enrollment received" });
+});
+
+enrollRouter.get("/my/enrollment-requests", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { eq, desc } = await import("drizzle-orm");
+    const requests = await db
+      .select()
+      .from(enrollmentRequestsTable)
+      .where(eq(enrollmentRequestsTable.userId, req.user.id))
+      .orderBy(desc(enrollmentRequestsTable.createdAt));
+    res.json({ requests });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch requests" });
+  }
 });
 
 export default enrollRouter;

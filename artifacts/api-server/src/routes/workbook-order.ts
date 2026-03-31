@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { db, workbookOrdersTable } from "@workspace/db";
 
 const workbookOrderRouter = Router();
 
@@ -17,9 +18,24 @@ function buildTransporter() {
 workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) => {
   try {
     const { workbookId, workbookTitle, quantity, format, deliveryAddress, buyerName, buyerPhone, buyerEmail, unitPrice, lang } = req.body;
+    const total = (unitPrice ?? 0) * (quantity ?? 1);
+
+    const userId = req.isAuthenticated() ? req.user?.id : null;
+
+    await db.insert(workbookOrdersTable).values({
+      userId: userId || null,
+      workbookId: workbookId || "unknown",
+      quantity: quantity || 1,
+      format: format || "pdf",
+      buyerName: buyerName || "",
+      buyerEmail: buyerEmail || "",
+      buyerPhone: buyerPhone || "",
+      deliveryAddress: format === "print" ? deliveryAddress : null,
+      totalPrice: total,
+      currency: "JOD",
+    });
 
     const formatLabel = format === "pdf" ? "نسخة رقمية (PDF)" : "نسخة مطبوعة";
-    const total = (unitPrice ?? 0) * (quantity ?? 1);
 
     const html = `
       <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden">
@@ -57,6 +73,24 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
   } catch (err: any) {
     console.error("Workbook order error:", err);
     res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+workbookOrderRouter.get("/my/orders", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { eq, desc } = await import("drizzle-orm");
+    const orders = await db
+      .select()
+      .from(workbookOrdersTable)
+      .where(eq(workbookOrdersTable.userId, req.user.id))
+      .orderBy(desc(workbookOrdersTable.createdAt));
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders" });
   }
 });
 
