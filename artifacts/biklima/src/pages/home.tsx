@@ -62,7 +62,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
-import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, upcomingEvents } from "../programsData";
+import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -655,6 +655,18 @@ export default function Home() {
               </div>
               <p className="text-muted-foreground">{t.structure.upcomingEventsSub}</p>
             </motion.div>
+            <div className="flex flex-wrap justify-center gap-4 mb-8 max-w-2xl mx-auto">
+              {EVENT_COUNTRIES.map((c) => {
+                const hasEvent = upcomingEvents.some(ev => ev.country === c.key);
+                return (
+                  <div key={c.key} className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 transition-all ${hasEvent ? "border-primary bg-primary/10 shadow-md" : "border-border bg-muted/30 opacity-40"}`}>
+                    <span className="text-2xl">{c.flag}</span>
+                    <span className={`text-sm font-bold ${hasEvent ? "text-primary" : "text-muted-foreground"}`}>{t.structure.countries[c.key]}</span>
+                    {hasEvent && <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />}
+                  </div>
+                );
+              })}
+            </div>
             {upcomingEvents.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {upcomingEvents.map((ev) => {

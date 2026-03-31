@@ -6,15 +6,25 @@ import type { Lang } from "./translations";
 
 export const RECORDED_PRICES = { core: 70, tot: 110, teachers: 90, children: 50 };
 
+export type EventCountry = "uae" | "saudi" | "jordan" | "uk";
+
 export type UpcomingEvent = {
   id: string;
   programId: string;
   date: string;
   location: string;
   city: string;
+  country: EventCountry;
   spotsLeft?: number;
   i18n: Record<"en" | "fr", { location: string; city: string }>;
 };
+
+export const EVENT_COUNTRIES: { key: EventCountry; flag: string }[] = [
+  { key: "uae", flag: "🇦🇪" },
+  { key: "saudi", flag: "🇸🇦" },
+  { key: "jordan", flag: "🇯🇴" },
+  { key: "uk", flag: "🇬🇧" },
+];
 
 export const upcomingEvents: UpcomingEvent[] = [];
 
