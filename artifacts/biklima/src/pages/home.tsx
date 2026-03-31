@@ -496,8 +496,8 @@ export default function Home() {
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
               <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                <div className="aspect-[5/6] rounded-3xl overflow-hidden shadow-xl relative">
-                  <img src={imgTedx} alt={t.trainerBio.name} className="w-full h-full object-cover object-top" />
+                <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-xl relative">
+                  <img src={imgHeroCollage} alt={t.trainerBio.name} className="w-full h-full object-cover object-[8%_15%]" />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
                 </div>
               </motion.div>
