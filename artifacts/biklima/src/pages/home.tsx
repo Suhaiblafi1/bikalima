@@ -33,6 +33,12 @@ import {
   Tag,
   MapPin,
   Linkedin,
+  ShoppingCart,
+  FileText,
+  Printer,
+  Package,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -167,6 +173,14 @@ export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
+  const [selectedWorkbook, setSelectedWorkbook] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
+  const [wbQuantity, setWbQuantity] = useState(1);
+  const [wbFormat, setWbFormat] = useState<"pdf" | "print">("pdf");
+  const [wbDeliveryAddress, setWbDeliveryAddress] = useState("");
+  const [wbBuyerName, setWbBuyerName] = useState("");
+  const [wbBuyerPhone, setWbBuyerPhone] = useState("");
+  const [wbBuyerEmail, setWbBuyerEmail] = useState("");
+  const [wbSubmitting, setWbSubmitting] = useState(false);
   const [trainingMode, setTrainingMode] = useState<"group-online" | "group-inperson" | "private">("group-online");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [wisdomIndex, setWisdomIndex] = useState(0);
@@ -192,6 +206,37 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleWorkbookOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setWbSubmitting(true);
+    try {
+      const base = import.meta.env.BASE_URL || "/";
+      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
+      await fetch(`${apiBase}/workbook-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workbookId: selectedWorkbook?.id,
+          workbookTitle: selectedWorkbook?.workbook.title,
+          quantity: wbQuantity,
+          format: wbFormat,
+          deliveryAddress: wbFormat === "print" ? wbDeliveryAddress : "",
+          buyerName: wbBuyerName,
+          buyerPhone: wbBuyerPhone,
+          buyerEmail: wbBuyerEmail,
+          unitPrice: BASE_PRICES[selectedWorkbook?.id as keyof typeof BASE_PRICES],
+          lang,
+        }),
+      });
+      alert(t.workbooks.orderSuccess);
+      setSelectedWorkbook(null);
+    } catch {
+      alert("Error submitting order");
+    } finally {
+      setWbSubmitting(false);
+    }
+  };
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
@@ -587,7 +632,7 @@ export default function Home() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {localizedPrograms.map((program, i) => (
                 <motion.div key={`wb-${program.id}`} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                  <div className="group cursor-pointer" onClick={() => setSelectedProgram(program)}>
+                  <div className="group cursor-pointer" onClick={() => { setSelectedWorkbook(program); setWbQuantity(1); setWbFormat("pdf"); setWbDeliveryAddress(""); setWbBuyerName(""); setWbBuyerPhone(""); setWbBuyerEmail(""); }}>
                     <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border/50 group-hover:shadow-xl transition-shadow duration-300 mb-4">
                       <div className="relative" style={{ paddingBottom: "140%" }}>
                         <img src={program.image} alt={program.workbook.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -1000,6 +1045,118 @@ export default function Home() {
             </motion.div>
           </div>
         )}
+
+        {selectedWorkbook && (() => {
+          const wb = selectedWorkbook;
+          const unitPrice = BASE_PRICES[wb.id as keyof typeof BASE_PRICES];
+          const totalPrice = unitPrice * wbQuantity;
+          const previewModules = wb.modules.slice(0, 6);
+          return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedWorkbook(null)} />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-card w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-2xl relative z-10 border border-border">
+                <button aria-label="Close" onClick={() => setSelectedWorkbook(null)} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
+
+                <div className="relative aspect-[21/6] overflow-hidden rounded-t-[2rem]">
+                  <img src={wb.image} alt={wb.workbook.title} className="w-full h-full object-cover" />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${wb.accentColor} opacity-75 mix-blend-multiply`} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
+                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full mb-3"><FileText className="w-3.5 h-3.5" />{wb.role}</div>
+                    <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{wb.workbook.title}</h2>
+                    <p className="text-white/80 text-sm max-w-xl">{wb.workbook.description}</p>
+                  </div>
+                </div>
+
+                <div className="p-8 md:p-12">
+                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" />{t.workbooks.previewTitle}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-10">
+                    {previewModules.map((mod, idx) => (
+                      <div key={idx} className="relative bg-gradient-to-b from-secondary/30 to-background border border-border rounded-xl overflow-hidden shadow-sm aspect-[3/4] flex flex-col">
+                        <div className={`h-1.5 bg-gradient-to-r ${wb.accentColor}`} />
+                        <div className="flex-1 p-3 flex flex-col">
+                          <div className="text-[10px] text-muted-foreground font-bold mb-1">{t.workbooks.previewPage} {idx + 1}</div>
+                          <div className="flex-1 flex items-center">
+                            <p className="text-xs font-medium leading-snug line-clamp-4">{mod}</p>
+                          </div>
+                          <div className="mt-auto pt-2 border-t border-border/50">
+                            <div className="flex gap-1">
+                              {[...Array(3)].map((_, k) => (<div key={k} className="h-1 flex-1 rounded-full bg-border" />))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">
+                    <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" />{t.workbooks.orderTitle}</h3>
+                    <form onSubmit={handleWorkbookOrder} className="space-y-6">
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">{t.workbooks.nameLabel}</label>
+                          <Input value={wbBuyerName} onChange={(e) => setWbBuyerName(e.target.value)} placeholder={t.workbooks.namePlaceholder} required className="rounded-xl" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">{t.workbooks.phoneLabel}</label>
+                          <Input type="tel" value={wbBuyerPhone} onChange={(e) => setWbBuyerPhone(e.target.value)} placeholder="+962..." required className="rounded-xl" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">{t.workbooks.emailLabel}</label>
+                          <Input type="email" value={wbBuyerEmail} onChange={(e) => setWbBuyerEmail(e.target.value)} placeholder="email@example.com" required className="rounded-xl" />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-sm font-medium mb-3">{t.workbooks.formatLabel}</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button type="button" onClick={() => setWbFormat("pdf")} className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${wbFormat === "pdf" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/40"}`}>
+                              <FileText className="w-6 h-6" />
+                              <span className="text-sm font-medium">{t.workbooks.formatPdf}</span>
+                            </button>
+                            <button type="button" onClick={() => setWbFormat("print")} className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${wbFormat === "print" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/40"}`}>
+                              <Printer className="w-6 h-6" />
+                              <span className="text-sm font-medium">{t.workbooks.formatPrint}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-3">{t.workbooks.quantityLabel}</label>
+                          <div className="flex items-center gap-3">
+                            <button type="button" onClick={() => setWbQuantity(Math.max(1, wbQuantity - 1))} className="w-10 h-10 rounded-full border border-border bg-background hover:bg-secondary flex items-center justify-center transition-colors"><Minus className="w-4 h-4" /></button>
+                            <span className="text-2xl font-bold w-12 text-center">{wbQuantity}</span>
+                            <button type="button" onClick={() => setWbQuantity(wbQuantity + 1)} className="w-10 h-10 rounded-full border border-border bg-background hover:bg-secondary flex items-center justify-center transition-colors"><Plus className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {wbFormat === "print" && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                          <label className="block text-sm font-medium mb-2 flex items-center gap-2"><Package className="w-4 h-4" />{t.workbooks.deliveryLabel}</label>
+                          <Textarea value={wbDeliveryAddress} onChange={(e) => setWbDeliveryAddress(e.target.value)} placeholder={t.workbooks.deliveryPlaceholder} required className="rounded-xl" rows={2} />
+                          <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{t.workbooks.deliveryNote}</p>
+                        </motion.div>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
+                        <div className="text-center sm:text-start">
+                          <div className="text-sm text-muted-foreground">{t.workbooks.totalLabel}</div>
+                          <div className="text-3xl font-bold text-primary">{formatPrice(totalPrice)}</div>
+                          {wbFormat === "print" && <p className="text-xs text-muted-foreground mt-1">+ {t.workbooks.deliveryNote.split("—")[0]}</p>}
+                        </div>
+                        <Button type="submit" size="lg" disabled={wbSubmitting} className="rounded-full h-14 px-10 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90">
+                          {wbSubmitting ? t.workbooks.submittingOrder : t.workbooks.submitOrder}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
