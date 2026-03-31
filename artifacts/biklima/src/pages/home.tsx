@@ -824,11 +824,11 @@ export default function Home() {
                 <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-primary-foreground/10 p-5 rounded-2xl border border-primary-foreground/20">
                   <Quote className="w-6 h-6 text-accent mb-3" />
                   <p className="font-serif text-sm leading-relaxed mb-5">"{item.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-bold text-sm shrink-0">{item.name.charAt(0)}</div>
+                  <div className="flex items-center gap-2 pt-3 border-t border-primary-foreground/10">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/60 shrink-0" />
                     <div>
-                      <h4 className="font-bold text-sm">{item.name}</h4>
-                      <p className="text-primary-foreground/70 text-xs">{item.role}</p>
+                      <h4 className="font-medium text-sm">{item.name}</h4>
+                      <p className="text-primary-foreground/50 text-xs">{item.role}</p>
                     </div>
                   </div>
                 </motion.div>
