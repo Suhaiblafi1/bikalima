@@ -41,6 +41,7 @@ import {
   Minus,
   Plus,
   Download,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1005,16 +1006,38 @@ export default function Home() {
                   <section>
                     <div className="bg-secondary/30 p-5 rounded-2xl border border-border mb-6">
                       <Quote className="w-5 h-5 text-primary mb-2 opacity-50" />
-                      <p className="font-serif text-xl font-medium italic">{selectedProgram.hook}</p>
+                      <p className="font-serif text-sm font-medium italic">{selectedProgram.hook}</p>
                     </div>
                     <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4">{t.modal.aboutHeading}</h3>
                     <p className="text-lg text-muted-foreground leading-relaxed">{selectedProgram.description}</p>
                   </section>
                   <section>
+                    <h3 className="font-bold text-xl mb-4 border-b border-border pb-4 flex items-center gap-2">
+                      <PlayCircle className="w-5 h-5 text-primary" />{t.modal.introVideoHeading}
+                    </h3>
+                    {selectedProgram.introVideo ? (
+                      <div className="aspect-video rounded-2xl overflow-hidden border border-border bg-foreground/5">
+                        <iframe
+                          src={selectedProgram.introVideo}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-video rounded-2xl border-2 border-dashed border-border bg-secondary/20 flex flex-col items-center justify-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                          <PlayCircle className="w-8 h-8 text-primary/50" />
+                        </div>
+                        <p className="text-sm text-muted-foreground font-medium">{t.modal.introVideoSoon}</p>
+                      </div>
+                    )}
+                  </section>
+                  <section>
                     <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4">{t.modal.transformHeading}</h3>
                     <div className="bg-secondary/30 p-6 rounded-2xl border border-border flex items-center gap-4">
                       <Star className="w-8 h-8 text-accent shrink-0" />
-                      <p className="font-serif text-xl font-medium">{selectedProgram.transformation}</p>
+                      <p className="font-serif text-sm font-medium">{selectedProgram.transformation}</p>
                     </div>
                   </section>
                   <section>

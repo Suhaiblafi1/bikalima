@@ -169,6 +169,8 @@ export const T = {
     },
     modal: {
       aboutHeading: "عن البرنامج",
+      introVideoHeading: "فيديو تعريفي بالبرنامج",
+      introVideoSoon: "سيتم إضافة الفيديو التعريفي قريباً",
       transformHeading: "التحول المستهدف",
       sessionsHeading: "الجلسات التدريبية",
       outcomesHeading: "مخرجات البرنامج",
@@ -348,6 +350,8 @@ export const T = {
     },
     modal: {
       aboutHeading: "About the Program",
+      introVideoHeading: "Program Introduction Video",
+      introVideoSoon: "Introduction video coming soon",
       transformHeading: "Targeted Transformation",
       sessionsHeading: "Training Sessions",
       outcomesHeading: "Program Outcomes",
@@ -527,6 +531,8 @@ export const T = {
     },
     modal: {
       aboutHeading: "À Propos du Programme",
+      introVideoHeading: "Vidéo de Présentation du Programme",
+      introVideoSoon: "La vidéo de présentation sera bientôt disponible",
       transformHeading: "Transformation Visée",
       sessionsHeading: "Séances de Formation",
       outcomesHeading: "Résultats du Programme",
