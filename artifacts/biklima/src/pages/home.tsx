@@ -693,23 +693,25 @@ export default function Home() {
               </div>
             )}
             <div className="mt-10 max-w-2xl mx-auto grid sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 bg-background border rounded-xl p-4">
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <div onClick={() => scrollTo("enroll")} className="flex items-center gap-3 bg-background border rounded-xl p-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                   <User className="w-5 h-5 text-amber-700" />
                 </div>
                 <div>
                   <p className="text-sm font-bold">{t.structure.privateLabel}</p>
                   <p className="text-xs text-muted-foreground">{t.structure.privateDesc}</p>
                 </div>
+                <ArrowDown className="w-4 h-4 text-muted-foreground ms-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <div className="flex items-center gap-3 bg-background border rounded-xl p-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <div onClick={() => scrollTo("enroll")} className="flex items-center gap-3 bg-background border rounded-xl p-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                   <Video className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <p className="text-sm font-bold">{t.structure.recordedLabel}</p>
                   <p className="text-xs text-muted-foreground">{t.structure.recordedDesc}</p>
                 </div>
+                <ArrowDown className="w-4 h-4 text-muted-foreground ms-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
           </div>
