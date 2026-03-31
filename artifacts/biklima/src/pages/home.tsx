@@ -236,6 +236,7 @@ export default function Home() {
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [wisdomIndex, setWisdomIndex] = useState(0);
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
+  const [bioPageIdx, setBioPageIdx] = useState(0);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "group-online", reason: "", youtube: "", discount: "",
@@ -1282,9 +1283,15 @@ export default function Home() {
                     <p className="text-sm font-medium">{selectedProgram.audience}</p>
                     <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">{selectedProgram.delivery}</div>
                   </div>
-                  <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
-                    {t.modal.enrollBtn}
-                  </Button>
+                  <div className="space-y-3">
+                    <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle, mode: "recorded" })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
+                      <ShoppingCart className="w-5 h-5 me-2" />
+                      {t.modal.buyRecordedBtn} — {formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])}
+                    </Button>
+                    <Button size="lg" variant="outline" className="w-full rounded-full h-12 font-bold border-primary/30 text-primary hover:bg-primary/5" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
+                      {t.modal.registerInterestBtn}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>
