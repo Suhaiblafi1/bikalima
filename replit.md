@@ -50,13 +50,33 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ## Packages
 
+### `artifacts/biklima` (`@workspace/biklima`)
+
+Arabic RTL landing page for "بكلمة" (Biklima), a public speaking training program. React + Vite + Tailwind CSS.
+
+- **Pages**: `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, FAQ, enrollment form
+- **Data**: `src/translations.ts` (3-language: ar/en/fr), `src/programsData.ts` (programs, prices, testimonials)
+- **Design**: Teal primary (#25786A), warm ivory background, Tajawal + Noto Naskh Arabic fonts, Almarai Bold for logo
+- **Features**:
+  - 3-language support (Arabic/English/French) with RTL auto-switch
+  - Auto currency detection (JOD, SAR, AED, etc.)
+  - 4 programs in branching structure (core + 3 tracks)
+  - Enrollment form with Individual/Institution toggle, 3 training modes, YouTube link, discount code
+  - Form submits to `/api/enroll` endpoint
+  - Wisdom dot-navigation carousel (replaced marquee)
+  - Workbook store with localized prices (BASE_PRICES in JOD: core=35, tot=55, teachers=45, children=25)
+- **Images**: `@assets` alias → `attached_assets/` in vite.config.ts
+  - Hero: `speeches_1774983233277.jpeg`
+  - TEDx: `42267697_...jpg`
+  - Workbook covers: various attached images mapped per program
+
 ### `artifacts/api-server` (`@workspace/api-server`)
 
 Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
+- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`); `src/routes/enroll.ts` exposes `POST /enroll` (full path: `/api/enroll`) for enrollment form submissions
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)

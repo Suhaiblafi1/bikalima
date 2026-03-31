@@ -1,10 +1,10 @@
-import imgCore from "@assets/tot_1774971926437.jpg";
-import imgToT from "@assets/برنامج_tot_1774971926437.jpg";
-import imgTeachers from "@assets/برنامج_اولياء_الامور_1774971926437.jpg";
-import imgChildren from "@assets/برنامج_الطفل_٢_1774971926437.jpg";
+import imgCore from "@assets/برنامج_اليافعين__1774983039252.jpg";
+import imgToT from "@assets/peter-herrmann-fnWgOZM29NE-unsplash_1774983039252.jpg";
+import imgTeachers from "@assets/vitaly-gariev-SVZLEdFXI2E-unsplash_1774983039252.jpg";
+import imgChildren from "@assets/ian-dooley-DuBNA1QMpPA-unsplash_1774983039252.jpg";
 import type { Lang } from "./translations";
 
-export const BASE_PRICES = { core: 180, tot: 350, teachers: 250, children: 120 };
+export const BASE_PRICES = { core: 35, tot: 55, teachers: 45, children: 25 };
 
 export type ProgramLocale = {
   role: string;
@@ -41,7 +41,6 @@ const programsBase: Program[] = [
     accentColor: "from-primary to-primary/80",
     borderColor: "border-primary/30",
     tagColor: "bg-primary/10 text-primary border border-primary/20",
-    // Arabic canonical
     role: "الدورة الأساسية",
     shortTitle: "المتحدث المؤثر",
     audience: "اليافعون، الشباب، المهنيون",
@@ -253,21 +252,21 @@ export const programs = programsBase;
 
 export const testimonials: Record<Lang, { name: string; role: string; quote: string }[]> = {
   ar: [
-    { name: "سارة الأحمدي", role: "أم لثلاثة أطفال", quote: "بعد اشتراك ابنتي في برنامج الأطفال، أصبحت تتحدث أمام زملائها بثقة لا نعرفها من قبل. كانت خجولة جداً، الآن تقود التقديمات في مدرستها!" },
+    { name: "أم ريم الخوالدة", role: "أم لطفلين — عمّان، الأردن", quote: "ابنتي كانت ترتجف عند الإلقاء أمام صفها. بعد أسابيع قليلة في البرنامج، أصبحت تطلب أن تكون أول من يتحدث! شكراً بكلمة." },
     { name: "محمد العتيبي", role: "مدير تسويق", quote: "برنامج المتحدث المؤثر غيّر طريقة تعاملي مع العملاء. أصبحت أعرف كيف أوصل فكرتي في ثوانٍ وأترك أثراً حقيقياً في أي اجتماع." },
-    { name: "أ. نورة القحطاني", role: "معلمة لغة عربية", quote: "البرنامج المخصص للمعلمين فتح عيني على أسلوب تعاملي مع الطلاب. أدواته عملية وفعلاً تُحدث فرقاً في الفصل." },
+    { name: "أبو عمر نصار", role: "أب لثلاثة أبناء — فلسطين", quote: "لأول مرة أجد برنامجاً يعلّمني كيف أتحدث مع أولادي بطريقة تبني ثقتهم. أولادي أصبحوا يعبّرون عن أنفسهم بشكل لم أتوقعه." },
     { name: "د. فهد الزهراني", role: "مدرب معتمد بكلمة", quote: "حصلت على الاعتماد من بكلمة وأنا الآن أدرّب المئات. المنهجية علمية والأثر حقيقي — هذا ليس مجرد برنامج، هو رسالة." },
   ],
   en: [
-    { name: "Sara Al-Ahmadi", role: "Mother of three", quote: "After my daughter joined the children's program, she began speaking in front of her classmates with a confidence we'd never seen before. She was very shy; now she leads presentations at her school!" },
+    { name: "Umm Reem Al-Khawaldeh", role: "Mother of two — Amman, Jordan", quote: "My daughter used to tremble when presenting in class. After a few weeks in the program, she started asking to be the first to speak! Thank you, Biklima." },
     { name: "Mohammed Al-Otaibi", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
-    { name: "Nora Al-Qahtani", role: "Arabic Language Teacher", quote: "The educators' program opened my eyes to how I interact with students. Its tools are practical and truly make a difference in the classroom." },
+    { name: "Abu Omar Nassar", role: "Father of three — Palestine", quote: "For the first time, I found a program that teaches me how to talk to my children in a way that builds their confidence. My kids now express themselves in ways I never expected." },
     { name: "Dr. Fahad Al-Zahrani", role: "Certified Biklima Trainer", quote: "I got certified by Biklima and I'm now training hundreds. The methodology is scientific and the impact is real — this is not just a program, it's a mission." },
   ],
   fr: [
-    { name: "Sara Al-Ahmadi", role: "Mère de trois enfants", quote: "Après que ma fille a rejoint le programme enfants, elle a commencé à parler devant ses camarades avec une confiance que nous n'avions jamais vue auparavant. Elle était très timide ; maintenant elle dirige les présentations à son école !" },
+    { name: "Oum Reem Al-Khawaldeh", role: "Mère de deux enfants — Amman, Jordanie", quote: "Ma fille tremblait en présentant en classe. Après quelques semaines dans le programme, elle demande maintenant à être la première à parler ! Merci Biklima." },
     { name: "Mohammed Al-Otaibi", role: "Directeur Marketing", quote: "Le programme L'Orateur Influent a changé la façon dont je traite avec les clients. Je sais maintenant comment transmettre mon idée en quelques secondes et laisser une vraie impression dans n'importe quelle réunion." },
-    { name: "Nora Al-Qahtani", role: "Enseignante de Langue Arabe", quote: "Le programme pour éducateurs m'a ouvert les yeux sur ma façon d'interagir avec les élèves. Ses outils sont pratiques et font vraiment la différence dans la classe." },
+    { name: "Abou Omar Nassar", role: "Père de trois enfants — Palestine", quote: "Pour la première fois, j'ai trouvé un programme qui m'apprend à parler à mes enfants d'une manière qui construit leur confiance. Mes enfants s'expriment maintenant de manières que je n'aurais jamais imaginées." },
     { name: "Dr. Fahad Al-Zahrani", role: "Formateur Certifié Biklima", quote: "J'ai obtenu la certification Biklima et je forme maintenant des centaines de personnes. La méthodologie est scientifique et l'impact est réel — ce n'est pas seulement un programme, c'est une mission." },
   ],
 };

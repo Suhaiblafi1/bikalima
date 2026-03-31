@@ -193,22 +193,6 @@
   }
 }
 
-/* ── Marquee animation ───────────────────────────────── */
-@keyframes marquee-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: marquee-scroll 50s linear infinite;
-}
-
-.marquee-wrapper:hover .marquee-track {
-  animation-play-state: paused;
-}
-
 /* ── Logo font ────────────────────────────────────────── */
 .logo-biklima {
   font-family: 'Almarai', sans-serif;
