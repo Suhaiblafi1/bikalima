@@ -192,6 +192,7 @@ export default function Home() {
   const [trainingMode, setTrainingMode] = useState<"group-online" | "group-inperson" | "private">("group-online");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [wisdomIndex, setWisdomIndex] = useState(0);
+  const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "group-online", reason: "", youtube: "", discount: "",
@@ -214,6 +215,16 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const total = t.hero.imageQuotes.length;
+    if (!total) return;
+    setHeroQuoteIdx(0);
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+    const timer = setInterval(() => setHeroQuoteIdx((i) => (i + 1) % total), 5000);
+    return () => clearInterval(timer);
+  }, [t.hero.imageQuotes.length, lang]);
 
   const handleWorkbookOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,16 +422,29 @@ export default function Home() {
                     <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-lg h-14 px-8">{t.hero.ctaPrimary}</Button>
                     <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-lg h-14 px-8">{t.hero.ctaSecondary}</Button>
                   </div>
+                  <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
+                    <Quote className="text-primary w-4 h-4 mb-2 opacity-50" />
+                    <AnimatePresence mode="wait">
+                      <motion.div key={`m-${heroQuoteIdx}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+                        <p className="font-serif text-sm leading-relaxed text-foreground/80">"{t.hero.imageQuotes[heroQuoteIdx]?.text}"</p>
+                        <p className="text-primary font-bold mt-2 text-xs">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
                 </motion.div>
               </div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
                 <div className="aspect-[4/5] rounded-[2rem] overflow-hidden relative shadow-2xl max-w-md mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
                   <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-8 left-8 right-8 z-20 bg-background/90 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
-                    <Quote className="text-primary w-8 h-8 mb-4 opacity-50" />
-                    <p className="font-serif text-xl font-medium leading-relaxed">"{t.hero.imageQuote}"</p>
-                    <p className="text-primary font-bold mt-3 text-sm">— {t.hero.imageQuoteAuthor}</p>
+                  <div className="absolute bottom-6 left-6 right-6 z-20 bg-background/90 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-xl">
+                    <Quote className="text-primary w-5 h-5 mb-2 opacity-50" />
+                    <AnimatePresence mode="wait">
+                      <motion.div key={heroQuoteIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.5 }}>
+                        <p className="font-serif text-sm font-medium leading-relaxed">"{t.hero.imageQuotes[heroQuoteIdx]?.text}"</p>
+                        <p className="text-primary font-bold mt-2 text-xs">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
                 </div>
               </motion.div>
