@@ -879,7 +879,7 @@ export default function Home() {
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {programs.map((program, i) => (
+              {localizedPrograms.map((program, i) => (
                 <motion.div
                   key={`wb-${program.id}`}
                   initial={{ opacity: 0, y: 20 }}
@@ -1186,7 +1186,7 @@ export default function Home() {
             <div>
               <h4 className="font-bold text-lg mb-6">{t.footer.programsHeading}</h4>
               <ul className="space-y-4 text-background/70">
-                {programs.map((p) => (
+                {localizedPrograms.map((p) => (
                   <li key={p.id}>
                     <button onClick={() => setSelectedProgram(p)} className="hover:text-accent transition text-start">
                       {p.shortTitle}
