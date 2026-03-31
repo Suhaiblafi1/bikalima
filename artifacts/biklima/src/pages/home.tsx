@@ -319,9 +319,9 @@ export default function Home() {
               </motion.div>
             </div>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
-              <div className="aspect-[4/5] rounded-[2rem] overflow-hidden relative shadow-2xl">
+              <div className="aspect-square rounded-[2rem] overflow-hidden relative shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
-                <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-cover" />
+                <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-contain bg-foreground/5" />
                 <div className="absolute bottom-8 left-8 right-8 z-20 bg-background/90 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
                   <Quote className="text-primary w-8 h-8 mb-4 opacity-50" />
                   <p className="font-serif text-xl font-medium leading-relaxed">"{t.hero.imageQuote}"</p>
@@ -338,7 +338,7 @@ export default function Home() {
             <div className="max-w-5xl mx-auto grid md:grid-cols-5 gap-10 items-center">
               <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="md:col-span-2">
                 <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-xl relative">
-                  <img src={imgTedx} alt={t.trainerBio.name} className="w-full h-full object-cover" />
+                  <img src={imgTedx} alt={t.trainerBio.name} className="w-full h-full object-cover object-right" />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
                 </div>
               </motion.div>
