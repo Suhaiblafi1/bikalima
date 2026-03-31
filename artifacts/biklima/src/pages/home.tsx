@@ -32,6 +32,7 @@ import {
   Youtube,
   Tag,
   MapPin,
+  Linkedin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -301,35 +302,37 @@ export default function Home() {
         <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden flex items-center min-h-[90vh]">
           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-secondary/60 blur-[100px] opacity-70 -z-10" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[100px] opacity-70 -z-10" />
-          <div className="container mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="max-w-2xl">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-6">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  {t.hero.badge}
-                </div>
-                <h1 className="font-serif text-5xl md:text-7xl font-bold leading-[1.2] text-foreground mb-6">
-                  {t.hero.h1a} <br />
-                  <span className="text-primary">{t.hero.h1b}</span>
-                </h1>
-                <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-10 max-w-lg">{t.hero.sub}</p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-lg h-14 px-8">{t.hero.ctaPrimary}</Button>
-                  <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-lg h-14 px-8">{t.hero.ctaSecondary}</Button>
+          <div className="w-full px-3 md:px-6 flex">
+            <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="max-w-2xl">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-6">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    {t.hero.badge}
+                  </div>
+                  <h1 className="font-serif text-5xl md:text-7xl font-bold leading-[1.2] text-foreground mb-6">
+                    {t.hero.h1a} <br />
+                    <span className="text-primary">{t.hero.h1b}</span>
+                  </h1>
+                  <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-10 max-w-lg">{t.hero.sub}</p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-lg h-14 px-8">{t.hero.ctaPrimary}</Button>
+                    <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-lg h-14 px-8">{t.hero.ctaSecondary}</Button>
+                  </div>
+                </motion.div>
+              </div>
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
+                <div className="aspect-square rounded-[2rem] overflow-hidden relative shadow-2xl">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
+                  <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-contain bg-foreground/5" />
+                  <div className="absolute bottom-8 left-8 right-8 z-20 bg-background/90 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
+                    <Quote className="text-primary w-8 h-8 mb-4 opacity-50" />
+                    <p className="font-serif text-xl font-medium leading-relaxed">"{t.hero.imageQuote}"</p>
+                    <p className="text-primary font-bold mt-3 text-sm">— {t.hero.imageQuoteAuthor}</p>
+                  </div>
                 </div>
               </motion.div>
             </div>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
-              <div className="aspect-square rounded-[2rem] overflow-hidden relative shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
-                <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-contain bg-foreground/5" />
-                <div className="absolute bottom-8 left-8 right-8 z-20 bg-background/90 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
-                  <Quote className="text-primary w-8 h-8 mb-4 opacity-50" />
-                  <p className="font-serif text-xl font-medium leading-relaxed">"{t.hero.imageQuote}"</p>
-                  <p className="text-primary font-bold mt-3 text-sm">— {t.hero.imageQuoteAuthor}</p>
-                </div>
-              </div>
-            </motion.div>
           </div>
         </section>
 
@@ -348,6 +351,10 @@ export default function Home() {
                 <h3 className="font-serif text-2xl font-bold text-primary">{t.trainerBio.name}</h3>
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t.trainerBio.title}</p>
                 <p className="text-lg text-muted-foreground leading-relaxed">{t.trainerBio.bio}</p>
+                <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors mt-4">
+                  <Linkedin className="w-5 h-5" />
+                  LinkedIn
+                </a>
               </motion.div>
             </div>
           </div>

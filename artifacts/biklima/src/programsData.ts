@@ -1,6 +1,6 @@
 import imgCore from "@assets/برنامج_اليافعين__1774983039252.jpg";
-import imgToT from "@assets/peter-herrmann-fnWgOZM29NE-unsplash_1774983039252.jpg";
-import imgTeachers from "@assets/vitaly-gariev-SVZLEdFXI2E-unsplash_1774983039252.jpg";
+import imgToT from "@assets/برنامج_tot_1774988106487.jpg";
+import imgTeachers from "@assets/برنامج_اولياء_الامور_1774988106487.jpg";
 import imgChildren from "@assets/برنامج_الطفل_٢_1774971926437.jpg";
 import type { Lang } from "./translations";
 
