@@ -189,16 +189,16 @@ function MiniCalendar({ lang }: { lang: Lang }) {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-      <div className="text-center mb-4">
-        <h3 className="font-serif text-lg font-bold text-foreground">{monthName}</h3>
+    <div className="bg-card border border-border rounded-xl p-3 shadow-sm max-w-xs mx-auto">
+      <div className="text-center mb-2">
+        <h3 className="font-serif text-sm font-bold text-foreground">{monthName}</h3>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="grid grid-cols-7 gap-px text-center">
         {dayHeaders.map((d) => (
-          <div key={d} className="text-[10px] font-bold text-muted-foreground uppercase py-1">{d}</div>
+          <div key={d} className="text-[8px] font-bold text-muted-foreground uppercase py-0.5">{d}</div>
         ))}
         {cells.map((day, i) => (
-          <div key={i} className={`aspect-square flex items-center justify-center text-xs rounded-lg ${day ? "text-foreground/60" : ""}`}>
+          <div key={i} className={`w-6 h-6 flex items-center justify-center text-[10px] rounded ${day ? "text-foreground/50" : ""}`}>
             {day || ""}
           </div>
         ))}
@@ -648,7 +648,7 @@ export default function Home() {
         </section>
 
         {/* ── UPCOMING EVENTS ── */}
-        <section className="py-16 bg-gradient-to-b from-primary/5 to-background border-b border-border">
+        <section className="py-10 bg-gradient-to-b from-primary/5 to-background border-b border-border">
           <div className="container mx-auto px-6">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
