@@ -472,7 +472,7 @@ export default function Home() {
                 </motion.div>
               </div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
-                <div className="aspect-[4/5] rounded-[2rem] overflow-hidden relative shadow-2xl max-w-md mx-auto">
+                <div className="aspect-[5/4] rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
                   <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-cover" />
                   <div className="absolute bottom-6 left-6 right-6 z-20 bg-background/90 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-xl">
