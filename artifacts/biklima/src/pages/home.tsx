@@ -33,6 +33,7 @@ import {
   Tag,
   MapPin,
   Linkedin,
+  Instagram,
   ShoppingCart,
   FileText,
   Printer,
@@ -181,6 +182,8 @@ export default function Home() {
   const [wbBuyerPhone, setWbBuyerPhone] = useState("");
   const [wbBuyerEmail, setWbBuyerEmail] = useState("");
   const [wbSubmitting, setWbSubmitting] = useState(false);
+  const [wbExpandedPage, setWbExpandedPage] = useState<number | null>(null);
+  const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"group-online" | "group-inperson" | "private">("group-online");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [wisdomIndex, setWisdomIndex] = useState(0);
@@ -229,10 +232,10 @@ export default function Home() {
           lang,
         }),
       });
-      alert(t.workbooks.orderSuccess);
+      toast({ title: t.workbooks.orderSuccess, description: "" });
       setSelectedWorkbook(null);
     } catch {
-      alert("Error submitting order");
+      toast({ title: lang === "ar" ? "حدث خطأ" : lang === "fr" ? "Une erreur est survenue" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : lang === "fr" ? "Veuillez réessayer" : "Please try again later", variant: "destructive" });
     } finally {
       setWbSubmitting(false);
     }
@@ -430,10 +433,16 @@ export default function Home() {
                 <h3 className="font-serif text-2xl font-bold text-primary">{t.trainerBio.name}</h3>
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t.trainerBio.title}</p>
                 <p className="text-lg text-muted-foreground leading-relaxed">{t.trainerBio.bio}</p>
-                <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors mt-4">
-                  <Linkedin className="w-5 h-5" />
-                  LinkedIn
-                </a>
+                <div className="flex items-center gap-4 mt-4">
+                  <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
+                    <Linkedin className="w-5 h-5" />
+                    LinkedIn
+                  </a>
+                  <a href="https://www.instagram.com/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
+                    <Instagram className="w-5 h-5" />
+                    Instagram
+                  </a>
+                </div>
               </motion.div>
             </div>
           </div>
@@ -632,7 +641,7 @@ export default function Home() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {localizedPrograms.map((program, i) => (
                 <motion.div key={`wb-${program.id}`} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                  <div className="group cursor-pointer" onClick={() => { setSelectedWorkbook(program); setWbQuantity(1); setWbFormat("pdf"); setWbDeliveryAddress(""); setWbBuyerName(""); setWbBuyerPhone(""); setWbBuyerEmail(""); }}>
+                  <div className="group cursor-pointer" onClick={() => { setSelectedWorkbook(program); setWbQuantity(1); setWbFormat("pdf"); setWbDeliveryAddress(""); setWbBuyerName(""); setWbBuyerPhone(""); setWbBuyerEmail(""); setWbExpandedPage(null); }}>
                     <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border/50 group-hover:shadow-xl transition-shadow duration-300 mb-4">
                       <div className="relative" style={{ paddingBottom: "140%" }}>
                         <img src={program.image} alt={program.workbook.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -650,7 +659,7 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" className="w-full rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white transition-colors">{t.workbooks.orderBtn}</Button>
+                    <Button variant="outline" size="sm" className="w-full rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white transition-colors">{(program.id === "tot" || program.id === "teachers") ? t.workbooks.orderBtnKit : t.workbooks.orderBtn}</Button>
                   </div>
                 </motion.div>
               ))}
@@ -688,38 +697,49 @@ export default function Home() {
               <h2 className="font-serif text-4xl font-bold mb-4">{t.faq.heading}</h2>
               <p className="text-xl text-muted-foreground">{t.faq.sub}</p>
             </div>
-            <div className="space-y-4">
-              {faqItems.map((faq, i) => (
-                <motion.div key={i} className="bg-card border border-border rounded-2xl overflow-hidden">
-                  <button
-                    onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
-                    className="w-full flex items-center justify-between p-6 cursor-pointer font-serif text-lg font-medium hover:bg-secondary/30 transition-colors text-left"
-                  >
-                    {faq.q}
-                    <motion.span
-                      animate={{ rotate: expandedFaq === i ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="shrink-0 ms-4"
-                    >
-                      <ChevronDown className="text-muted-foreground w-5 h-5" />
-                    </motion.span>
-                  </button>
-                  <AnimatePresence>
-                    {expandedFaq === i && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-6 pt-0 text-muted-foreground leading-relaxed border-t border-border/50">{faq.a}</div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ))}
-            </div>
+            {(() => {
+              const perPage = 5;
+              const totalPages = Math.ceil(faqItems.length / perPage);
+              const paginated = faqItems.slice(faqPage * perPage, (faqPage + 1) * perPage);
+              return (
+                <>
+                  <div className="space-y-3">
+                    {paginated.map((faq, idx) => {
+                      const globalIdx = faqPage * perPage + idx;
+                      return (
+                        <motion.div key={globalIdx} className="bg-card border border-border rounded-2xl overflow-hidden">
+                          <button
+                            onClick={() => setExpandedFaq(expandedFaq === globalIdx ? null : globalIdx)}
+                            className="w-full flex items-center justify-between p-5 cursor-pointer font-serif text-base font-medium hover:bg-secondary/30 transition-colors text-left"
+                          >
+                            {faq.q}
+                            <motion.span animate={{ rotate: expandedFaq === globalIdx ? 180 : 0 }} transition={{ duration: 0.3 }} className="shrink-0 ms-4">
+                              <ChevronDown className="text-muted-foreground w-5 h-5" />
+                            </motion.span>
+                          </button>
+                          <AnimatePresence>
+                            {expandedFaq === globalIdx && (
+                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden">
+                                <div className="p-5 pt-0 text-sm text-muted-foreground leading-relaxed border-t border-border/50">{faq.a}</div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-8">
+                      {Array.from({ length: totalPages }, (_, p) => (
+                        <button key={p} onClick={() => { setFaqPage(p); setExpandedFaq(null); }} className={`w-9 h-9 rounded-full text-sm font-bold transition-all ${p === faqPage ? "bg-primary text-white shadow-md" : "bg-secondary text-muted-foreground hover:bg-secondary/80"}`}>
+                          {p + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </section>
 
@@ -1070,9 +1090,9 @@ export default function Home() {
 
                 <div className="p-8 md:p-12">
                   <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" />{t.workbooks.previewTitle}</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-10">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-4">
                     {previewModules.map((mod, idx) => (
-                      <div key={idx} className="relative bg-gradient-to-b from-secondary/30 to-background border border-border rounded-xl overflow-hidden shadow-sm aspect-[3/4] flex flex-col">
+                      <div key={idx} onClick={() => setWbExpandedPage(wbExpandedPage === idx ? null : idx)} className="relative bg-gradient-to-b from-secondary/30 to-background border border-border rounded-xl overflow-hidden shadow-sm aspect-[3/4] flex flex-col cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group">
                         <div className={`h-1.5 bg-gradient-to-r ${wb.accentColor}`} />
                         <div className="flex-1 p-3 flex flex-col">
                           <div className="text-[10px] text-muted-foreground font-bold mb-1">{t.workbooks.previewPage} {idx + 1}</div>
@@ -1085,9 +1105,28 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
+                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
                       </div>
                     ))}
                   </div>
+                  <AnimatePresence>
+                    {wbExpandedPage !== null && previewModules[wbExpandedPage] && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden mb-8">
+                        <div className="bg-card border-2 border-primary/20 rounded-2xl p-6 shadow-lg">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${wb.accentColor} text-white flex items-center justify-center text-sm font-bold`}>{wbExpandedPage + 1}</div>
+                              <h4 className="font-serif text-lg font-bold">{t.workbooks.previewPage} {wbExpandedPage + 1}</h4>
+                            </div>
+                            <button onClick={() => setWbExpandedPage(null)} className="w-8 h-8 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center"><X className="w-4 h-4" /></button>
+                          </div>
+                          <div className="bg-secondary/20 rounded-xl p-5 border border-border">
+                            <p className="text-base leading-relaxed font-medium">{previewModules[wbExpandedPage]}</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">
                     <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" />{t.workbooks.orderTitle}</h3>
