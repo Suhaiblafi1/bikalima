@@ -23,7 +23,7 @@ type Lang = "ar" | "en" | "fr";
 
 const dashT = {
   ar: {
-    title: "لوحة التحكم",
+    title: "منصتي — بكلمة",
     welcome: "مرحباً",
     tabs: {
       account: "حسابي",
@@ -85,7 +85,7 @@ const dashT = {
     },
   },
   en: {
-    title: "Dashboard",
+    title: "My Platform — Bikalima",
     welcome: "Welcome",
     tabs: {
       account: "My Account",
@@ -147,7 +147,7 @@ const dashT = {
     },
   },
   fr: {
-    title: "Tableau de Bord",
+    title: "Ma Plateforme — Bikalima",
     welcome: "Bienvenue",
     tabs: {
       account: "Mon Compte",

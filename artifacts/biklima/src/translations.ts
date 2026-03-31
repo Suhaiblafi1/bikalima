@@ -121,7 +121,7 @@ export const T = {
       ],
     },
     enroll: {
-      heading: "انضم إلينا الآن",
+      heading: "سجّل اهتمامك",
       sub: "احجز مقعدك أو اطلب استشارة لتحديد البرنامج الأنسب لك.",
       applicantTypeLabel: "نوع المتقدم",
       applicantIndividual: "فرد",
@@ -321,7 +321,7 @@ export const T = {
       ],
     },
     enroll: {
-      heading: "Join Us Now",
+      heading: "Register Your Interest",
       sub: "Reserve your seat or request a consultation to find the right program for you.",
       applicantTypeLabel: "Applicant Type",
       applicantIndividual: "Individual",
@@ -521,7 +521,7 @@ export const T = {
       ],
     },
     enroll: {
-      heading: "Rejoignez-Nous Maintenant",
+      heading: "Enregistrez Votre Intérêt",
       sub: "Réservez votre place ou demandez une consultation pour trouver le bon programme.",
       applicantTypeLabel: "Type de Candidat",
       applicantIndividual: "Individuel",
