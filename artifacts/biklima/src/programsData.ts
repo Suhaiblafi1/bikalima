@@ -5,6 +5,7 @@ import imgChildren from "@assets/برنامج_الطفل_١_1774988344874.jpg";
 import type { Lang } from "./translations";
 
 export const RECORDED_PRICES = { core: 70, tot: 110, teachers: 90, children: 50 };
+export const WORKBOOK_PRICES = { core: 23, tot: 37, teachers: 30, children: 17 };
 
 export type EventCountry = "uae" | "saudi" | "jordan" | "uk";
 
@@ -283,13 +284,13 @@ export const testimonials: Record<Lang, { name: string; role: string; quote: str
   ],
   en: [
     { name: "Umm Reem Al-Kaswani", role: "Mother of two — Amman, Jordan", quote: "My daughter used to tremble when presenting in class. After a few weeks in the program, she started asking to be the first to speak! Thank you, Bikalima." },
-    { name: "Mariam Waache", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
+    { name: "Meryem Ouache", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
     { name: "Abu Omar Nassar", role: "Father of three — Palestine", quote: "For the first time, I found a program that teaches me how to talk to my children in a way that builds their confidence. My kids now express themselves in ways I never expected." },
     { name: "Dr. Fahad Al-Zahrani", role: "Certified Bikalima Trainer", quote: "I got certified by Bikalima and I'm now training hundreds. The methodology is scientific and the impact is real — this is not just a program, it's a mission." },
   ],
   fr: [
     { name: "Oum Reem Al-Kaswani", role: "Mère de deux enfants — Amman, Jordanie", quote: "Ma fille tremblait en présentant en classe. Après quelques semaines dans le programme, elle demande maintenant à être la première à parler ! Merci Bikalima." },
-    { name: "Mariam Waache", role: "Directrice Marketing", quote: "Le programme L'Orateur Influent a changé la façon dont je traite avec les clients. Je sais maintenant comment transmettre mon idée en quelques secondes et laisser une vraie impression dans n'importe quelle réunion." },
+    { name: "Meryem Ouache", role: "Directrice Marketing", quote: "Le programme L'Orateur Influent a changé la façon dont je traite avec les clients. Je sais maintenant comment transmettre mon idée en quelques secondes et laisser une vraie impression dans n'importe quelle réunion." },
     { name: "Abou Omar Nassar", role: "Père de trois enfants — Palestine", quote: "Pour la première fois, j'ai trouvé un programme qui m'apprend à parler à mes enfants d'une manière qui construit leur confiance. Mes enfants s'expriment maintenant de manières que je n'aurais jamais imaginées." },
     { name: "Dr. Fahad Al-Zahrani", role: "Formateur Certifié Bikalima", quote: "J'ai obtenu la certification Bikalima et je forme maintenant des centaines de personnes. La méthodologie est scientifique et l'impact est réel — ce n'est pas seulement un programme, c'est une mission." },
   ],

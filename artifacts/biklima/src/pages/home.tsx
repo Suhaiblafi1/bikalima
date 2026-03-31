@@ -62,7 +62,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
-import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
+import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -287,7 +287,7 @@ export default function Home() {
           buyerName: wbBuyerName,
           buyerPhone: wbBuyerPhone,
           buyerEmail: wbBuyerEmail,
-          unitPrice: RECORDED_PRICES[selectedWorkbook?.id as keyof typeof RECORDED_PRICES],
+          unitPrice: WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES],
           lang,
         }),
       });
@@ -500,15 +500,36 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
                 </div>
               </motion.div>
-              <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="md:col-span-3 space-y-4">
+              <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-4">
                 <h2 className="font-serif text-3xl md:text-4xl font-bold">{t.trainerBio.heading}</h2>
                 <h3 className="font-serif text-2xl font-bold text-primary">{t.trainerBio.name}</h3>
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t.trainerBio.title}</p>
-                <div className="text-lg text-muted-foreground leading-relaxed space-y-3">
-                  {t.trainerBio.bio.split("\n\n").map((paragraph, i) => (
-                    <p key={i}>{paragraph}</p>
-                  ))}
-                </div>
+                {(() => {
+                  const bioPages = t.trainerBio.bio.split("\n\n");
+                  return (
+                    <div className="relative">
+                      <AnimatePresence mode="wait">
+                        <motion.div key={bioPageIdx} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35 }} className="min-h-[120px]">
+                          <p className="text-base text-muted-foreground leading-relaxed">{bioPages[bioPageIdx]}</p>
+                        </motion.div>
+                      </AnimatePresence>
+                      <div className="flex items-center gap-3 mt-5">
+                        <button onClick={() => setBioPageIdx((p) => Math.max(0, p - 1))} disabled={bioPageIdx === 0} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
+                          <ChevronRight className={`w-4 h-4 ${lang === "ar" ? "" : "rotate-180"}`} />
+                        </button>
+                        <div className="flex gap-2">
+                          {bioPages.map((_, i) => (
+                            <button key={i} onClick={() => setBioPageIdx(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === bioPageIdx ? "bg-primary scale-125" : "bg-border hover:bg-primary/40"}`} />
+                          ))}
+                        </div>
+                        <button onClick={() => setBioPageIdx((p) => Math.min(bioPages.length - 1, p + 1))} disabled={bioPageIdx === bioPages.length - 1} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
+                          <ChevronLeft className={`w-4 h-4 ${lang === "ar" ? "" : "rotate-180"}`} />
+                        </button>
+                        <span className="text-xs text-muted-foreground ms-auto">{bioPageIdx + 1}/{bioPages.length}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center gap-4 mt-4">
                   <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
                     <Linkedin className="w-5 h-5" />
@@ -812,7 +833,7 @@ export default function Home() {
                           <div className="text-white/70 text-xs mb-2 font-medium">{program.audience}</div>
                           <h3 className="font-serif text-base font-bold text-white leading-tight mb-3">{program.workbook.title}</h3>
                           <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm font-bold">
-                            {formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])}
+                            {formatPrice(WORKBOOK_PRICES[program.id as keyof typeof WORKBOOK_PRICES])}
                           </div>
                         </div>
                       </div>
@@ -1252,7 +1273,7 @@ export default function Home() {
                     <h4 className="font-serif font-bold text-lg mb-2">{selectedProgram.workbook.title}</h4>
                     <p className="text-sm text-muted-foreground">{selectedProgram.workbook.description}</p>
                     <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                      <span className="font-bold text-lg">{formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])}</span>
+                      <span className="font-bold text-lg">{formatPrice(WORKBOOK_PRICES[selectedProgram.id as keyof typeof WORKBOOK_PRICES])}</span>
                       <Button variant="outline" size="sm" className="rounded-full">{t.modal.orderWorkbook}</Button>
                     </div>
                   </div>
@@ -1272,7 +1293,7 @@ export default function Home() {
 
         {selectedWorkbook && (() => {
           const wb = selectedWorkbook;
-          const unitPrice = RECORDED_PRICES[wb.id as keyof typeof RECORDED_PRICES];
+          const unitPrice = WORKBOOK_PRICES[wb.id as keyof typeof WORKBOOK_PRICES];
           const totalPrice = unitPrice * wbQuantity;
           const previewModules = wb.modules.slice(0, 6);
           return (
