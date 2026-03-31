@@ -177,6 +177,7 @@ export default function Home() {
     program: "", message: "", discount: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   useEffect(() => {
     document.documentElement.dir = dir;
@@ -602,13 +603,34 @@ export default function Home() {
             </div>
             <div className="space-y-4">
               {faqItems.map((faq, i) => (
-                <details key={i} className="group bg-card border border-border rounded-2xl overflow-hidden">
-                  <summary className="flex items-center justify-between p-6 cursor-pointer font-serif text-lg font-medium list-none">
+                <motion.div key={i} className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <button
+                    onClick={() => setExpandedFaq(expandedFaq === i ? null : i)}
+                    className="w-full flex items-center justify-between p-6 cursor-pointer font-serif text-lg font-medium hover:bg-secondary/30 transition-colors text-left"
+                  >
                     {faq.q}
-                    <span className="transition group-open:rotate-180 shrink-0 ms-4"><ChevronDown className="text-muted-foreground" /></span>
-                  </summary>
-                  <div className="p-6 pt-0 text-muted-foreground leading-relaxed border-t border-border/50">{faq.a}</div>
-                </details>
+                    <motion.span
+                      animate={{ rotate: expandedFaq === i ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="shrink-0 ms-4"
+                    >
+                      <ChevronDown className="text-muted-foreground w-5 h-5" />
+                    </motion.span>
+                  </button>
+                  <AnimatePresence>
+                    {expandedFaq === i && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-6 pt-0 text-muted-foreground leading-relaxed border-t border-border/50">{faq.a}</div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               ))}
             </div>
           </div>
