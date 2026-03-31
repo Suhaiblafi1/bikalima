@@ -166,6 +166,47 @@ function useCurrency() {
   return { currency, format };
 }
 
+const AR_DAYS = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+const EN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const FR_DAYS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+
+function MiniCalendar({ lang }: { lang: Lang }) {
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const year = nextMonth.getFullYear();
+  const month = nextMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDay = nextMonth.getDay();
+
+  const monthName = nextMonth.toLocaleDateString(
+    lang === "ar" ? "ar-SA" : lang === "fr" ? "fr-FR" : "en-US",
+    { month: "long", year: "numeric" }
+  );
+  const dayHeaders = lang === "ar" ? AR_DAYS : lang === "fr" ? FR_DAYS : EN_DAYS;
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < startDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+      <div className="text-center mb-4">
+        <h3 className="font-serif text-lg font-bold text-foreground">{monthName}</h3>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {dayHeaders.map((d) => (
+          <div key={d} className="text-[10px] font-bold text-muted-foreground uppercase py-1">{d}</div>
+        ))}
+        {cells.map((day, i) => (
+          <div key={i} className={`aspect-square flex items-center justify-center text-xs rounded-lg ${day ? "text-foreground/60" : ""}`}>
+            {day || ""}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { toast } = useToast();
   const { format: formatPrice, currency } = useCurrency();
@@ -641,10 +682,13 @@ export default function Home() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-muted/50 text-muted-foreground">
-                  <Calendar className="w-5 h-5" />
-                  <span className="text-sm">{t.structure.noUpcomingEvents}</span>
+              <div className="max-w-lg mx-auto relative">
+                <MiniCalendar lang={lang} />
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
+                  <div className="text-center px-6">
+                    <Calendar className="w-8 h-8 text-primary/40 mx-auto mb-3" />
+                    <p className="text-sm font-semibold text-foreground/70">{t.structure.noUpcomingEvents}</p>
+                  </div>
                 </div>
               </div>
             )}
