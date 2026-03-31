@@ -52,6 +52,7 @@ const programs = [
     transformation: "من شخص عادي إلى متحدث يترك أثراً لا يُنسى",
     prerequisite: null,
     prerequisiteLabel: null,
+    delivery: "مفتوح للعموم — شباب ومهنيون",
     outcomes: [
       "بناء حضور الشخصية",
       "تقنيات الإقناع",
@@ -93,6 +94,7 @@ const programs = [
     transformation: "من متحدث محترف إلى مدرب معتمد يُحدث أثراً في مجتمعه",
     prerequisite: "يشترط إتمام دورة المتحدث المؤثر بنجاح",
     prerequisiteLabel: "متطلب سابق إلزامي",
+    delivery: "للمتخصصين الراغبين في الاعتماد — يشترط إتمام الأساسية",
     outcomes: [
       "منهجية التدريب المعتمدة",
       "أدوات التقييم والقياس",
@@ -134,6 +136,7 @@ const programs = [
     transformation: "من الضغط والتوقعات إلى الدعم الواعي والتوجيه الصحيح",
     prerequisite: "يُستحسن إتمام دورة المتحدث المؤثر مسبقاً",
     prerequisiteLabel: "يُستحسن (غير إلزامي)",
+    delivery: "مفتوح للمعلمين وأولياء الأمور — لا متطلب إلزامي",
     outcomes: [
       "فهم نفسية الطفل",
       "دعم الثقة بالنفس",
@@ -175,6 +178,7 @@ const programs = [
     transformation: "من طفل خجول إلى متحدث واثق أمام جمهوره",
     prerequisite: "يُقدَّم بواسطة خريجي برنامج المعلمين وأولياء الأمور",
     prerequisiteLabel: "مُقدَّم عبر خريجي برنامج المعلمين",
+    delivery: "يُقدَّم للمدارس حصراً عبر خريجي برنامج المعلمين وأولياء الأمور المعتمدين",
     outcomes: [
       "بناء الثقة بالنفس",
       "أساسيات الخطابة",
@@ -868,7 +872,7 @@ export default function Home() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div
-                        className={`absolute inset-0 ${program.id % 1 === 0 ? "" : ""} ${program.id === "tot" || program.id === "teachers" ? "bg-accent/70" : "bg-primary/70"} mix-blend-multiply`}
+                        className={`absolute inset-0 ${program.id === "tot" ? "bg-accent/70" : "bg-primary/70"} mix-blend-multiply`}
                       ></div>
                       <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-transparent to-transparent"></div>
                       {/* Book spine effect */}
