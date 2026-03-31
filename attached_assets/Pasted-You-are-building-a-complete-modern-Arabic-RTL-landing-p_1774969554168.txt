@@ -1,0 +1,221 @@
+You are building a complete, modern Arabic (RTL) landing page + mini platform for a premium educational program called "بكلمة".
+
+MISSION:
+Transform the attached PDF files into a structured, high-end digital product website.
+
+DO NOT treat this as a simple landing page.
+This is a conversion-driven, content-rich, premium education brand experience.
+
+---------------------------------------
+STEP 1 — UNDERSTAND SOURCE FILES
+---------------------------------------
+You MUST read and extract structured data from ALL attached PDFs:
+
+1. "كراسة المتحدث الصغير"
+2. "كراسة المتحدث المؤثر - كبار"
+3. "برنامج بكلمة للمعلمين واولياء الامر"
+4. "برنامج بكلمة - المدرب المعتمد"
+
+From each file extract:
+- program/course name
+- target audience (children, adults, trainers, parents, etc.)
+- program purpose
+- learning outcomes
+- skills covered (communication, public speaking, confidence, etc.)
+- structure or modules (if visible)
+- tone and positioning
+- workbook/booklet details
+- any statistics or insights mentioned
+- emotional drivers (confidence, expression, influence, etc.)
+
+Then transform this into a clean structured JSON-like data model inside the project.
+
+---------------------------------------
+STEP 2 — POSITIONING (CRITICAL)
+---------------------------------------
+Do NOT present them as random courses.
+
+Position "بكلمة" as a structured journey:
+
+LEVEL 1: الأطفال → المتحدث الصغير  
+LEVEL 2: الكبار → المتحدث المؤثر  
+LEVEL 3: البيئة → المعلمين وأولياء الأمور  
+LEVEL 4: الاحتراف → المدرب المعتمد  
+
+This is a growth ladder, not just products.
+
+---------------------------------------
+STEP 3 — TECH STACK
+---------------------------------------
+Use:
+- React (Next.js preferred if possible)
+- Tailwind CSS
+- Framer Motion
+- Clean component architecture
+- Arabic RTL full support
+
+---------------------------------------
+STEP 4 — DESIGN LANGUAGE
+---------------------------------------
+Style:
+- Premium
+- Editorial
+- Minimal but powerful
+- Emotional but not childish
+- Strong typography
+- Soft gradients + layered backgrounds
+
+Color direction:
+- Warm light background (off-white / ivory)
+- Deep dark text (charcoal)
+- One elegant accent color (teal / deep blue / muted gold)
+
+No logo exists:
+→ Use strong Arabic typographic branding for "بكلمة"
+→ Keep header ready for future logo
+
+---------------------------------------
+STEP 5 — WEBSITE STRUCTURE
+---------------------------------------
+
+1. HERO
+- Large Arabic headline:
+  "رحلة بناء الصوت، الثقة، والتأثير"
+- Subtext explaining program impact
+- CTAs:
+  - ابدأ رحلتك
+  - استكشف البرامج
+  - شراء الكراسات
+
+2. PROGRAM JOURNEY (IMPORTANT SECTION)
+- Visual timeline or step-based layout:
+  الطفل → الشاب → المؤثر → المدرب
+- Each step clickable
+
+3. COURSES SECTION (4 CORE PROGRAMS)
+Each course card must include:
+- title
+- who it is for
+- short emotional hook
+- key transformation
+- CTA buttons:
+  - عرض التفاصيل
+  - التسجيل
+  - شراء الكراسة
+
+4. COURSE DETAIL VIEW (modal or page)
+Include:
+- description
+- why this program exists
+- skills gained
+- modules (if not available, infer intelligently)
+- workbook connection
+- target persona
+- CTA (join + buy workbook)
+
+5. WORKBOOK STORE
+- Each workbook tied to its course
+- Premium card design
+- Include:
+  - title
+  - purpose
+  - visual placeholder
+  - CTA: شراء الآن
+- If no payment:
+  → create “طلب شراء” form flow
+
+6. ENROLLMENT SYSTEM
+Form fields:
+- الاسم الكامل
+- البريد الإلكتروني
+- رقم الهاتف
+- الفئة (طفل / شاب / ولي أمر / مدرب)
+- اختيار البرنامج
+- لماذا تريد الانضمام؟
+
+Simulate submission with success state.
+
+7. WHY "بكلمة"
+Use extracted insights:
+- communication gap in modern era
+- confidence challenges
+- need for structured expression
+Turn them into strong benefit blocks.
+
+8. TESTIMONIALS (SMART PLACEHOLDERS)
+Create realistic Arabic testimonials:
+- طفل
+- ولي أمر
+- شاب
+- مدرب
+
+9. FAQ
+Generate based on logic:
+- كيف أختار البرنامج؟
+- هل أحتاج خبرة؟
+- هل يمكن شراء الكراسة فقط؟
+- ماذا بعد التسجيل؟
+
+10. FINAL CTA
+- Strong emotional close
+- Push for action
+
+11. FOOTER
+- Simple
+- clean
+- future-ready
+
+---------------------------------------
+STEP 6 — UX DETAILS
+---------------------------------------
+- Smooth scroll
+- Sticky navbar
+- Section reveal animations
+- Hover states
+- Mobile-first design
+- Clean spacing
+- No clutter
+
+---------------------------------------
+STEP 7 — CONTENT RULES
+---------------------------------------
+- Arabic only UI
+- Clean, simple language
+- No heavy academic tone
+- Emotional but controlled
+- Clear value in every section
+
+If missing data:
+→ infer intelligently from context of PDFs
+→ keep consistency with communication/public speaking theme
+
+---------------------------------------
+STEP 8 — CODE STRUCTURE
+---------------------------------------
+Create:
+- components/
+- sections/
+- data/
+- pages/
+
+Keep course data centralized for easy editing.
+
+---------------------------------------
+STEP 9 — FINAL OUTPUT
+---------------------------------------
+Deliver:
+- Full working frontend
+- Clean UI
+- Realistic content
+- Ready for demo or launch
+
+DO NOT:
+- create generic course template
+- use outdated UI
+- ignore RTL
+- oversimplify content
+
+---------------------------------------
+CORE IDEA:
+This is not a course website.
+This is a transformation journey brand.
