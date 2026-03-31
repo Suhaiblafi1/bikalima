@@ -29,8 +29,8 @@ export const T = {
     trainerBio: {
       heading: "عن المؤلف والمدرب",
       name: "صهيب الخوالدة",
-      title: "مؤسس بكلمة · متحدث TEDx · مدرب خطابة",
-      bio: "مدرب متخصص في فن الخطابة والإلقاء، متحدث TEDx، ومؤلف سلسلة كراسات بكلمة التدريبية. قدّم عشرات البرامج والخطابات في الأردن والعالم العربي، ودرّب مئات المتدربين من مختلف الأعمار والخلفيات. يؤمن بأن كل إنسان يحمل رسالة تستحق أن تُسمع، وأن الكلمة الواثقة هي أقوى أدوات التغيير.",
+      title: "مستشار · باحث دكتوراه · متحدث TEDx · مؤسس بكلمة",
+      bio: "مستشار يعمل مع مجموعة من المؤسسات التنموية والخيرية والحكومية في المنطقة، من بينها Qatar Foundation، ووزارة الاقتصاد والسياحة في دولة الإمارات، بالإضافة إلى مؤسسة التمويل Breakthrough T1D وغيرهم، حيث يساهم في تصميم البرامج، وبناء الشراكات، ودعم مبادرات التنمية والابتكار.\n\nمحاضر في عدد من الجامعات، منها American University في الإمارات، وجامعة Aston في المملكة المتحدة في الاقتصاد الرقمي وريادة الأعمال. وهو باحث دكتوراه في Aston University (UK)، ويحمل درجة الماجستير في الإدارة من University of Birmingham (UK).\n\nمتحدث TEDx ومؤلف سلسلة كراسات بكلمة التدريبية. يقدّم برامج تدريبية في فن الخطابة والإلقاء، ومهارات القيادة المهنية، وتمويل المشاريع كامتداد لخبرته في العمل والتأثير المؤسسي. قدّم عشرات البرامج والخطابات في الأردن والعالم العربي، ودرّب مئات المتدربين من مختلف الأعمار والخلفيات.",
     },
     author: {
       sectionTitle: "رسالة إلى كل معلم وخطيب ومتدرب",
@@ -229,8 +229,8 @@ export const T = {
     trainerBio: {
       heading: "About the Author & Trainer",
       name: "Suhaib Al-Khawaldeh",
-      title: "Founder of Bikalima · TEDx Speaker · Public Speaking Trainer",
-      bio: "A specialist trainer in the art of public speaking and delivery, TEDx speaker, and author of the Bikalima training publication series. He has delivered dozens of programs and speeches across Jordan and the Arab world, training hundreds of participants of all ages and backgrounds. He believes that every person carries a message worth hearing, and that a confident word is the most powerful tool for change.",
+      title: "Consultant · PhD Researcher · TEDx Speaker · Founder of Bikalima",
+      bio: "A consultant working with a range of developmental, charitable, and governmental organizations in the region, including Qatar Foundation, the UAE Ministry of Economy and Tourism, and the funding organization Breakthrough T1D, among others — contributing to program design, partnership building, and supporting development and innovation initiatives.\n\nA lecturer at several universities, including the American University in the UAE and Aston University in the United Kingdom, in digital economics and entrepreneurship. He is a PhD researcher at Aston University (UK) and holds a Master's degree in Management from the University of Birmingham (UK).\n\nA TEDx speaker and author of the Bikalima training workbook series. He delivers training programs in the art of public speaking, professional leadership skills, and project funding — as an extension of his institutional work and impact experience. He has led dozens of programs and speeches across Jordan and the Arab world, training hundreds of participants of all ages and backgrounds.",
     },
     author: {
       sectionTitle: "A Message to Every Educator, Speaker, and Learner",
@@ -429,8 +429,8 @@ export const T = {
     trainerBio: {
       heading: "À Propos de l'Auteur et Formateur",
       name: "Suhaib Al-Khawaldeh",
-      title: "Fondateur de Bikalima · Conférencier TEDx · Formateur en Art Oratoire",
-      bio: "Formateur spécialisé dans l'art oratoire et la prise de parole en public, conférencier TEDx et auteur de la série de publications de formation Bikalima. Il a dispensé des dizaines de programmes et de discours en Jordanie et dans le monde arabe, formant des centaines de participants de tous âges et horizons. Il croit que chaque personne porte un message qui mérite d'être entendu, et qu'une parole confiante est l'outil de changement le plus puissant.",
+      title: "Consultant · Doctorant · Conférencier TEDx · Fondateur de Bikalima",
+      bio: "Consultant collaborant avec un ensemble d'organisations de développement, caritatives et gouvernementales dans la région, notamment la Qatar Foundation, le Ministère de l'Économie et du Tourisme des Émirats Arabes Unis, ainsi que l'organisation de financement Breakthrough T1D — contribuant à la conception de programmes, au développement de partenariats et au soutien d'initiatives de développement et d'innovation.\n\nEnseignant dans plusieurs universités, dont l'American University aux Émirats et l'Université Aston au Royaume-Uni, en économie numérique et entrepreneuriat. Doctorant à Aston University (UK), il est titulaire d'un Master en Management de l'University of Birmingham (UK).\n\nConférencier TEDx et auteur de la série de cahiers de formation Bikalima. Il anime des programmes de formation en art oratoire, compétences de leadership professionnel et financement de projets — dans le prolongement de son expérience institutionnelle. Il a mené des dizaines de programmes et de discours en Jordanie et dans le monde arabe, formant des centaines de participants de tous âges et horizons.",
     },
     author: {
       sectionTitle: "Un Message à Chaque Éducateur, Orateur et Apprenant",

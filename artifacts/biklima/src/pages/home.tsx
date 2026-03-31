@@ -504,7 +504,11 @@ export default function Home() {
                 <h2 className="font-serif text-3xl md:text-4xl font-bold">{t.trainerBio.heading}</h2>
                 <h3 className="font-serif text-2xl font-bold text-primary">{t.trainerBio.name}</h3>
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t.trainerBio.title}</p>
-                <p className="text-lg text-muted-foreground leading-relaxed">{t.trainerBio.bio}</p>
+                <div className="text-lg text-muted-foreground leading-relaxed space-y-3">
+                  {t.trainerBio.bio.split("\n\n").map((paragraph, i) => (
+                    <p key={i}>{paragraph}</p>
+                  ))}
+                </div>
                 <div className="flex items-center gap-4 mt-4">
                   <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
                     <Linkedin className="w-5 h-5" />
