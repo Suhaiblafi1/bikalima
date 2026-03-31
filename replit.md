@@ -54,19 +54,21 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 Arabic RTL landing page for "بكلمة" (Biklima), a public speaking training program. React + Vite + Tailwind CSS.
 
-- **Pages**: `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, FAQ, enrollment form
+- **Pages**: `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, FAQ, enrollment form; `src/pages/dashboard.tsx` — student dashboard with account info, courses, orders, schedule tabs
 - **Data**: `src/translations.ts` (3-language: ar/en/fr), `src/programsData.ts` (programs, prices, testimonials)
 - **Design**: Teal primary (#25786A), warm ivory background, Tajawal + Noto Naskh Arabic fonts, Almarai Bold for logo
 - **Features**:
   - 3-language support (Arabic/English/French) with RTL auto-switch
   - Auto currency detection (JOD, SAR, AED, etc.)
   - 4 programs in branching structure (core + 3 tracks)
-  - Enrollment form with Individual/Institution toggle, 3 training modes, YouTube link, discount code
+  - Enrollment form with Individual/Institution toggle, 3 training modes, YouTube link, discount code (interest/category field removed)
   - Form submits to `/api/enroll` endpoint
-  - Wisdom dot-navigation carousel (replaced marquee)
+  - Wisdom dot-navigation carousel (replaced marquee), nav label "مقتطفات" (Excerpts)
   - Workbook store with localized prices (BASE_PRICES in JOD: core=35, tot=55, teachers=45, children=25)
-  - Workbook modal: click on workbook card opens dedicated modal with 6-page preview, purchase form (quantity, format PDF/printed, delivery address for printed), submits to `/api/workbook-order`
-  - Replit Auth: login/logout via OIDC, session cookies, user avatar in navbar
+  - Workbook modal: click on workbook card opens dedicated modal with PDF sample download button, purchase form (quantity, format PDF/printed, delivery address for printed), submits to `/api/workbook-order`
+  - Workbook titles: "حقيبة المدرب المعتمد" and "حقيبة المعلمين وأولياء الأمور" for ToT/teachers tracks
+  - Google OAuth: login/logout via Google OIDC, session cookies, user avatar in navbar (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars)
+  - Student dashboard at `/dashboard` — account info, registered courses, order history, session schedule
 - **Images**: `@assets` alias → `attached_assets/` in vite.config.ts
   - Hero: `speeches_1774983233277.jpeg`
   - TEDx: `42267697_...jpg`
@@ -79,7 +81,7 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
 - Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health`; `src/routes/enroll.ts` exposes `POST /enroll`; `src/routes/workbook-order.ts` exposes `POST /workbook-order`; `src/routes/auth.ts` exposes login/callback/logout/user auth routes
-- Auth: Replit OIDC with PKCE, sessions stored in PostgreSQL (7-day TTL), cookie-based
+- Auth: Google OIDC with PKCE, sessions stored in PostgreSQL (7-day TTL), cookie-based (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars)
 - Email: nodemailer sends enrollment & workbook order emails to `suhaib@ilgholding.com` (needs SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT env vars)
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server

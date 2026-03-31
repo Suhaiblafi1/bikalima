@@ -29,6 +29,7 @@ export type Program = ProgramLocale & {
   accentColor: string;
   borderColor: string;
   tagColor: string;
+  samplePdf?: string;
   i18n: Record<"en" | "fr", ProgramLocale>;
 };
 
@@ -103,7 +104,7 @@ const programsBase: Program[] = [
     delivery: "للمتخصصين الراغبين في الاعتماد — يشترط إتمام الأساسية",
     outcomes: ["منهجية التدريب الاحترافي", "تصميم الجلسة التدريبية", "إدارة المجموعات والتفاعل", "الاعتماد الرسمي من بكلمة", "بناء المسار التدريبي", "التطبيق والانطلاق للسوق"],
     modules: ["من متحدث إلى مدرب", "فلسفة برنامج بكلمة وأثره", "شخصية المدرب وهويته المهنية", "تصميم الجلسة التدريبية", "إدارة المجموعات والتفاعل", "بناء الأنشطة والتطبيقات", "التقديم المؤثر أمام الجمهور", "الإقناع وصناعة الرسالة", "تقديم جلسات تجريبية", "التغذية الراجعة والتقييم المهني", "معايير المدرب المعتمد", "خطة الانطلاق في السوق"],
-    workbook: { title: "برنامج بكلمة – المدرب المعتمد", description: "الدليل الاحترافي الشامل للمدرب المعتمد، يحتوي على المناهج والأدوات والتقييمات الكاملة" },
+    workbook: { title: "حقيبة المدرب المعتمد", description: "الدليل الاحترافي الشامل للمدرب المعتمد، يحتوي على المناهج والأدوات والتقييمات الكاملة" },
     i18n: {
       en: {
         role: "Train the Trainer",
@@ -154,7 +155,7 @@ const programsBase: Program[] = [
     delivery: "مفتوح للمعلمين وأولياء الأمور",
     outcomes: ["منهجية تدريب الأطفال على الخطابة", "أدوات تربوية مناسبة للعمر", "دمج البرنامج في البيت والصف", "تعزيز المشاركة وتجاوز الخجل", "التقييم والمتابعة وتطوير الأداء", "بناء جيل واثق ومعبّر"],
     modules: ["لماذا نعلّم الأطفال الخطابة؟", "الكلمة كأداة بناء شخصية", "كيف يختلف التدريب حسب العمر؟", "الفروق الفردية في التعبير", "الحاجات النفسية في كل مرحلة", "كيف أقدّم الجلسة للأطفال؟", "إدارة التفاعل والأنشطة", "تعزيز المشاركة وتجاوز الخجل", "تطبيق البرنامج في الصف أو البيت", "نماذج تدريب عملية", "التقييم والمتابعة"],
-    workbook: { title: "برنامج بكلمة للمعلمين وأولياء الأمور", description: "حقيبة تدريبية متخصصة تحتوي على استراتيجيات وأنشطة عملية لبناء جيل واثق" },
+    workbook: { title: "حقيبة المعلمين وأولياء الأمور", description: "حقيبة تدريبية متخصصة تحتوي على استراتيجيات وأنشطة عملية لبناء جيل واثق" },
     i18n: {
       en: {
         role: "Educators & Parents",
@@ -253,19 +254,19 @@ export const programs = programsBase;
 export const testimonials: Record<Lang, { name: string; role: string; quote: string }[]> = {
   ar: [
     { name: "أم ريم الكسواني", role: "أم لطفلين — عمّان، الأردن", quote: "ابنتي كانت ترتجف عند الإلقاء أمام صفها. بعد أسابيع قليلة في البرنامج، أصبحت تطلب أن تكون أول من يتحدث! شكراً بكلمة." },
-    { name: "محمد العتيبي", role: "مدير تسويق", quote: "برنامج المتحدث المؤثر غيّر طريقة تعاملي مع العملاء. أصبحت أعرف كيف أوصل فكرتي في ثوانٍ وأترك أثراً حقيقياً في أي اجتماع." },
+    { name: "مريم قندوسة", role: "مدير تسويق", quote: "برنامج المتحدث المؤثر غيّر طريقة تعاملي مع العملاء. أصبحت أعرف كيف أوصل فكرتي في ثوانٍ وأترك أثراً حقيقياً في أي اجتماع." },
     { name: "أبو عمر نصار", role: "أب لثلاثة أبناء — فلسطين", quote: "لأول مرة أجد برنامجاً يعلّمني كيف أتحدث مع أولادي بطريقة تبني ثقتهم. أولادي أصبحوا يعبّرون عن أنفسهم بشكل لم أتوقعه." },
     { name: "د. فهد الزهراني", role: "مدرب معتمد بكلمة", quote: "حصلت على الاعتماد من بكلمة وأنا الآن أدرّب المئات. المنهجية علمية والأثر حقيقي — هذا ليس مجرد برنامج، هو رسالة." },
   ],
   en: [
     { name: "Umm Reem Al-Kaswani", role: "Mother of two — Amman, Jordan", quote: "My daughter used to tremble when presenting in class. After a few weeks in the program, she started asking to be the first to speak! Thank you, Bakalima." },
-    { name: "Mohammed Al-Otaibi", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
+    { name: "Mariam Kandousse", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
     { name: "Abu Omar Nassar", role: "Father of three — Palestine", quote: "For the first time, I found a program that teaches me how to talk to my children in a way that builds their confidence. My kids now express themselves in ways I never expected." },
     { name: "Dr. Fahad Al-Zahrani", role: "Certified Bakalima Trainer", quote: "I got certified by Bakalima and I'm now training hundreds. The methodology is scientific and the impact is real — this is not just a program, it's a mission." },
   ],
   fr: [
     { name: "Oum Reem Al-Kaswani", role: "Mère de deux enfants — Amman, Jordanie", quote: "Ma fille tremblait en présentant en classe. Après quelques semaines dans le programme, elle demande maintenant à être la première à parler ! Merci Bakalima." },
-    { name: "Mohammed Al-Otaibi", role: "Directeur Marketing", quote: "Le programme L'Orateur Influent a changé la façon dont je traite avec les clients. Je sais maintenant comment transmettre mon idée en quelques secondes et laisser une vraie impression dans n'importe quelle réunion." },
+    { name: "Mariam Kandousse", role: "Directrice Marketing", quote: "Le programme L'Orateur Influent a changé la façon dont je traite avec les clients. Je sais maintenant comment transmettre mon idée en quelques secondes et laisser une vraie impression dans n'importe quelle réunion." },
     { name: "Abou Omar Nassar", role: "Père de trois enfants — Palestine", quote: "Pour la première fois, j'ai trouvé un programme qui m'apprend à parler à mes enfants d'une manière qui construit leur confiance. Mes enfants s'expriment maintenant de manières que je n'aurais jamais imaginées." },
     { name: "Dr. Fahad Al-Zahrani", role: "Formateur Certifié Bakalima", quote: "J'ai obtenu la certification Bakalima et je forme maintenant des centaines de personnes. La méthodologie est scientifique et l'impact est réel — ce n'est pas seulement un programme, c'est une mission." },
   ],

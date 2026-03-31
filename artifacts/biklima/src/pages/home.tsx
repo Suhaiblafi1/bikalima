@@ -40,6 +40,7 @@ import {
   Package,
   Minus,
   Plus,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -321,8 +322,10 @@ export default function Home() {
             {!authLoading && (
               isAuthenticated ? (
                 <div className="flex items-center gap-2">
-                  {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full border border-border object-cover" />}
-                  <span className="text-sm font-medium text-foreground/80 max-w-[100px] truncate">{user?.firstName || user?.email || ""}</span>
+                  <a href={`${import.meta.env.BASE_URL}dashboard`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-7 h-7 rounded-full border border-border object-cover" />}
+                    <span className="text-sm font-medium text-foreground/80 max-w-[100px] truncate">{user?.firstName || user?.email || ""}</span>
+                  </a>
                   <button onClick={logout} className="text-xs text-muted-foreground hover:text-destructive transition-colors border border-border/50 px-2.5 py-1 rounded-full">
                     {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
                   </button>
@@ -355,13 +358,16 @@ export default function Home() {
             <Button size="lg" onClick={() => scrollTo("enroll")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
             {!authLoading && (
               isAuthenticated ? (
-                <div className="flex items-center justify-between border border-border rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-border object-cover" />}
-                    <span className="font-medium text-foreground/80">{user?.firstName || user?.email || ""}</span>
-                  </div>
-                  <button onClick={logout} className="text-sm text-muted-foreground hover:text-destructive transition-colors">
-                    {lang === "ar" ? "خروج" : lang === "fr" ? "Déco." : "Log out"}
+                <div className="space-y-3">
+                  <a href={`${import.meta.env.BASE_URL}dashboard`} className="flex items-center justify-between border border-primary/30 rounded-2xl px-4 py-3 bg-primary/5 hover:bg-primary/10 transition-colors">
+                    <div className="flex items-center gap-3">
+                      {user?.profileImageUrl && <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full border border-border object-cover" />}
+                      <span className="font-medium text-foreground/80">{user?.firstName || user?.email || ""}</span>
+                    </div>
+                    <span className="text-sm text-primary font-bold">{lang === "ar" ? "لوحة التحكم" : lang === "fr" ? "Tableau de bord" : "Dashboard"}</span>
+                  </a>
+                  <button onClick={logout} className="w-full text-center py-2.5 text-sm text-muted-foreground hover:text-destructive transition-colors border border-border rounded-2xl">
+                    {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
                   </button>
                 </div>
               ) : (
@@ -404,9 +410,9 @@ export default function Home() {
                 </motion.div>
               </div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
-                <div className="aspect-square rounded-[2rem] overflow-hidden relative shadow-2xl">
+                <div className="aspect-[4/5] rounded-[2rem] overflow-hidden relative shadow-2xl max-w-md mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
-                  <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-contain bg-foreground/5" />
+                  <img src={imgHeroCollage} alt={t.hero.h1a} className="w-full h-full object-cover" />
                   <div className="absolute bottom-8 left-8 right-8 z-20 bg-background/90 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
                     <Quote className="text-primary w-8 h-8 mb-4 opacity-50" />
                     <p className="font-serif text-xl font-medium leading-relaxed">"{t.hero.imageQuote}"</p>
@@ -807,15 +813,6 @@ export default function Home() {
                       </div>
                       <div className="grid md:grid-cols-2 gap-5">
                         <div className="space-y-2">
-                          <Label>{t.enroll.interestLabel}</Label>
-                          <Select value={formData.category} onValueChange={(val) => setFormData({ ...formData, category: val })}>
-                            <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.interestPlaceholder} /></SelectTrigger>
-                            <SelectContent>
-                              {t.enroll.interestOptions.map((opt) => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
                           <Label>{t.enroll.programLabel}</Label>
                           <Select value={formData.program} onValueChange={(val) => setFormData({ ...formData, program: val })}>
                             <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
@@ -824,20 +821,18 @@ export default function Home() {
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="discount" className="flex items-center gap-2"><Tag className="w-4 h-4 text-accent" />{t.enroll.discountLabel}</Label>
+                          <Input id="discount" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.discountPlaceholder} />
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="youtube" className="flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" />{t.enroll.youtubeLabel}</Label>
                         <Input id="youtube" dir="ltr" value={formData.youtube} onChange={(e) => setFormData({ ...formData, youtube: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.youtubePlaceholder} />
                       </div>
-                      <div className="grid md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label htmlFor="discount" className="flex items-center gap-2"><Tag className="w-4 h-4 text-accent" />{t.enroll.discountLabel}</Label>
-                          <Input id="discount" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.discountPlaceholder} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="reason">{t.enroll.reasonLabel}</Label>
-                          <Input id="reason" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.reasonPlaceholder} />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="reason">{t.enroll.reasonLabel}</Label>
+                        <Input id="reason" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.reasonPlaceholder} />
                       </div>
                       <Button type="submit" disabled={isSubmitting} className="w-full h-13 text-lg rounded-xl bg-primary hover:bg-primary/90 text-white font-bold">
                         {isSubmitting ? t.enroll.submitting : t.enroll.submitBtn}
@@ -1089,44 +1084,20 @@ export default function Home() {
                 </div>
 
                 <div className="p-8 md:p-12">
-                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" />{t.workbooks.previewTitle}</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-4">
-                    {previewModules.map((mod, idx) => (
-                      <div key={idx} onClick={() => setWbExpandedPage(wbExpandedPage === idx ? null : idx)} className="relative bg-gradient-to-b from-secondary/30 to-background border border-border rounded-xl overflow-hidden shadow-sm aspect-[3/4] flex flex-col cursor-pointer hover:shadow-md hover:border-primary/40 transition-all group">
-                        <div className={`h-1.5 bg-gradient-to-r ${wb.accentColor}`} />
-                        <div className="flex-1 p-3 flex flex-col">
-                          <div className="text-[10px] text-muted-foreground font-bold mb-1">{t.workbooks.previewPage} {idx + 1}</div>
-                          <div className="flex-1 flex items-center">
-                            <p className="text-xs font-medium leading-snug line-clamp-4">{mod}</p>
-                          </div>
-                          <div className="mt-auto pt-2 border-t border-border/50">
-                            <div className="flex gap-1">
-                              {[...Array(3)].map((_, k) => (<div key={k} className="h-1 flex-1 rounded-full bg-border" />))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-                      </div>
-                    ))}
+                  <div className="bg-gradient-to-br from-primary/5 to-secondary/20 rounded-2xl border border-border p-6 md:p-8 mb-8 flex flex-col sm:flex-row items-center gap-6">
+                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${wb.accentColor} text-white flex items-center justify-center shadow-lg shrink-0`}><Download className="w-7 h-7" /></div>
+                    <div className="flex-1 text-center sm:text-start">
+                      <h3 className="font-bold text-lg mb-1">{t.workbooks.samplePdfBtn}</h3>
+                      <p className="text-sm text-muted-foreground">{t.workbooks.samplePdfNote}</p>
+                    </div>
+                    <Button
+                      className={`rounded-full px-8 text-white shadow-md ${wb.samplePdf ? `bg-gradient-to-r ${wb.accentColor} hover:opacity-90` : "bg-muted-foreground/40 cursor-not-allowed"}`}
+                      disabled={!wb.samplePdf}
+                      onClick={() => { if (wb.samplePdf) window.open(wb.samplePdf, "_blank"); }}
+                    >
+                      <Download className="w-4 h-4 me-2" />{wb.samplePdf ? t.workbooks.samplePdfBtn : (lang === "ar" ? "قريباً" : lang === "fr" ? "Bientôt" : "Coming Soon")}
+                    </Button>
                   </div>
-                  <AnimatePresence>
-                    {wbExpandedPage !== null && previewModules[wbExpandedPage] && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="overflow-hidden mb-8">
-                        <div className="bg-card border-2 border-primary/20 rounded-2xl p-6 shadow-lg">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${wb.accentColor} text-white flex items-center justify-center text-sm font-bold`}>{wbExpandedPage + 1}</div>
-                              <h4 className="font-serif text-lg font-bold">{t.workbooks.previewPage} {wbExpandedPage + 1}</h4>
-                            </div>
-                            <button onClick={() => setWbExpandedPage(null)} className="w-8 h-8 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center"><X className="w-4 h-4" /></button>
-                          </div>
-                          <div className="bg-secondary/20 rounded-xl p-5 border border-border">
-                            <p className="text-base leading-relaxed font-medium">{previewModules[wbExpandedPage]}</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">
                     <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" />{t.workbooks.orderTitle}</h3>
