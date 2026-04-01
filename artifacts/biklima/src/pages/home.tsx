@@ -830,7 +830,7 @@ export default function Home() {
                   <div className="group cursor-pointer" onClick={() => { setSelectedWorkbook(program); setWbQuantity(1); setWbFormat("pdf"); setWbDeliveryAddress(""); setWbBuyerName(""); setWbBuyerPhone(""); setWbBuyerEmail(""); setWbExpandedPage(null); }}>
                     <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border/50 group-hover:shadow-xl transition-shadow duration-300 mb-4">
                       <div className="relative" style={{ paddingBottom: "140%" }}>
-                        <img src={program.image} alt={program.workbook.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={program.image} alt={program.workbook.title} className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${program.id === "teachers" ? "object-[25%_center]" : ""}`} />
                         <div className={`absolute inset-0 bg-gradient-to-br ${program.accentColor} opacity-70 mix-blend-multiply`} />
                         <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
                         <div className="absolute inset-y-0 start-0 w-6 bg-black/20 flex flex-col justify-center items-center gap-1">
