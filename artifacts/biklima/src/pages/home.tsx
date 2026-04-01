@@ -476,13 +476,20 @@ export default function Home() {
                 <div className="aspect-[5/4] rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
                   <img src={imgTedx} alt={t.hero.h1a} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-4 left-4 right-4 z-20 bg-white/30 backdrop-blur-sm px-3 py-2.5 rounded-xl border border-white/20">
-                    <AnimatePresence mode="wait">
-                      <motion.div key={heroQuoteIdx} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.4 }}>
-                        <p className="font-serif text-xs font-semibold leading-snug text-white drop-shadow-sm">"{t.hero.imageQuotes[heroQuoteIdx]?.text}"</p>
-                        <p className="text-white/90 font-bold mt-1 text-[10px] drop-shadow-sm">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
-                      </motion.div>
-                    </AnimatePresence>
+                  <div className="absolute bottom-6 left-6 right-6 z-20">
+                    <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/40">
+                      <AnimatePresence mode="wait">
+                        <motion.div key={heroQuoteIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.5 }}>
+                          <div className="flex gap-3">
+                            <div className="text-primary/20 text-4xl font-serif self-start">✦</div>
+                            <div className="flex-1">
+                              <p className="text-foreground/90 text-sm font-medium leading-relaxed italic">"{t.hero.imageQuotes[heroQuoteIdx]?.text}"</p>
+                              <p className="text-primary font-bold mt-3 text-xs tracking-wide">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </motion.div>
