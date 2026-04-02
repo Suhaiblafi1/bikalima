@@ -651,7 +651,7 @@ export default function Home() {
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => setSelectedProgram(program)}>
-                        <div className="aspect-[4/3] relative overflow-hidden">
+                        <div className="aspect-[4/3.5] relative overflow-hidden">
                           <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
                           <div className="absolute bottom-4 right-4 left-4">
