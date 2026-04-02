@@ -155,6 +155,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       await transporter.sendMail({
         from: `"بكلمة - نماذج التسجيل" <${process.env.SMTP_USER}>`,
         to: RECIPIENT,
+        replyTo: payload.email,
         subject,
         html,
       });

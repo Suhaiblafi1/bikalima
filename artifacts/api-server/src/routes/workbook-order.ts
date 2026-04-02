@@ -69,6 +69,7 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
       await transporter.sendMail({
         from: `"بكلمة" <${process.env.SMTP_USER}>`,
         to: RECIPIENT,
+        replyTo: buyerEmail,
         subject: `طلب كراسة: ${workbookTitle} — ${buyerName}`,
         html,
       });
