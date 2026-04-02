@@ -22,6 +22,14 @@ function buildTransporter() {
   });
 }
 
+function toWaPhone(raw: string): string {
+  let s = (raw ?? "").replace(/[\s\-().]/g, "");
+  if (s.startsWith("+")) s = s.slice(1);
+  else if (s.startsWith("00")) s = s.slice(2);
+  else if (s.startsWith("0")) s = "962" + s.slice(1);
+  return s.replace(/[^0-9]/g, "");
+}
+
 function modeLabel(mode: string) {
   const map: Record<string, string> = {
     "combined": "مسجّل وبث مباشر",
@@ -61,7 +69,7 @@ function buildIndividualHtml(p: Record<string, string>) {
         </tbody>
       </table>
       <div style="margin-top:20px;text-align:center;">
-        <a href="https://wa.me/${p.phone.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المتقدم</a>
+        <a href="https://wa.me/${toWaPhone(p.phone)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المتقدم</a>
       </div>
       <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
     </div>
@@ -99,7 +107,7 @@ function buildInstitutionHtml(p: Record<string, string>) {
         </tbody>
       </table>
       <div style="margin-top:20px;text-align:center;">
-        <a href="https://wa.me/${p.phone.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المؤسسة</a>
+        <a href="https://wa.me/${toWaPhone(p.phone)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المؤسسة</a>
       </div>
       <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
     </div>
