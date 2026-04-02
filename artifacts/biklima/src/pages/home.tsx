@@ -1338,7 +1338,7 @@ export default function Home() {
                   <div className="space-y-3">
                     <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle, mode: "combined" })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
                       <ShoppingCart className="w-5 h-5 me-2" />
-                      {t.modal.buyRecordedBtn} — {formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])}
+                      {t.modal.buyRecordedBtn} — {formatPrice(Math.round(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES] * 1.5))}
                     </Button>
                     <Button size="lg" variant="outline" className="w-full rounded-full h-12 font-bold border-primary/30 text-primary hover:bg-primary/5" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
                       {t.modal.registerInterestBtn}
