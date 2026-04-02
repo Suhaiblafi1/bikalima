@@ -233,14 +233,14 @@ export default function Home() {
   const [wbSubmitting, setWbSubmitting] = useState(false);
   const [wbExpandedPage, setWbExpandedPage] = useState<number | null>(null);
   const [faqPage, setFaqPage] = useState(0);
-  const [trainingMode, setTrainingMode] = useState<"recorded" | "group-online" | "group-inperson" | "private">("recorded");
+  const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [wisdomIndex, setWisdomIndex] = useState(0);
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
-    mode: "recorded", reason: "", youtube: "",
+    mode: "combined", reason: "", youtube: "",
   });
   const [orgFormData, setOrgFormData] = useState({
     orgName: "", contactPerson: "", phone: "", email: "",
@@ -327,7 +327,7 @@ export default function Home() {
       if (!res.ok) throw new Error("Server error");
       setIsSubmitting(false);
       if (applicantType === "individual") {
-        setFormData({ name: "", email: "", phone: "", category: "", program: "", mode: "recorded", reason: "", youtube: "" });
+        setFormData({ name: "", email: "", phone: "", category: "", program: "", mode: "combined", reason: "", youtube: "" });
       } else {
         setOrgFormData({ orgName: "", contactPerson: "", phone: "", email: "", studentCount: "", teacherCount: "", workbookCount: "", program: "", message: "" });
       }
@@ -354,8 +354,7 @@ export default function Home() {
   const getEnrollPrice = (programId: string, mode: string): string | null => {
     const base = RECORDED_PRICES[programId as keyof typeof RECORDED_PRICES];
     if (!base) return null;
-    if (mode === "recorded") return `${base}`;
-    if (mode === "group-online") return `${base * 2}`;
+    if (mode === "combined") return `${Math.round(base * 1.5)}`;
     if (mode === "group-inperson") return null;
     if (mode === "private") return `${base * 4}`;
     return null;
@@ -968,16 +967,11 @@ export default function Home() {
                     {/* Training mode toggle */}
                     <div className="mb-6">
                       <Label className="mb-3 block font-bold">{t.enroll.modeLabel}</Label>
-                      <div className="grid grid-cols-4 gap-2">
-                        <button type="button" onClick={() => { setTrainingMode("recorded"); setFormData(p => ({ ...p, mode: "recorded" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "recorded" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <span className="text-base">🎬</span>
-                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeRecorded}</span>
-                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeRecordedSub}</span>
-                        </button>
-                        <button type="button" onClick={() => { setTrainingMode("group-online"); setFormData(p => ({ ...p, mode: "group-online" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-online" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <img src={imgZoom} alt="Zoom" className="w-5 h-5 rounded-sm object-contain" />
-                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeGroupOnline}</span>
-                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeGroupOnlineSub}</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button type="button" onClick={() => { setTrainingMode("combined"); setFormData(p => ({ ...p, mode: "combined" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "combined" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                          <span className="flex items-center gap-0.5"><span className="text-sm">🎬</span><img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" /></span>
+                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeCombined}</span>
+                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeCombinedSub}</span>
                         </button>
                         <button type="button" onClick={() => { setTrainingMode("group-inperson"); setFormData(p => ({ ...p, mode: "group-inperson" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-inperson" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
                           <span className="text-base">📍</span>
@@ -1014,16 +1008,10 @@ export default function Home() {
                           );
                         }
                         if (price) {
-                          const colors = trainingMode === "recorded"
-                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                            : "bg-blue-50 border-blue-200 text-blue-700";
                           return (
                             <div className="mt-3 flex items-center gap-2 justify-center">
-                              <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-bold ${colors}`}>
-                                {trainingMode === "recorded"
-                                  ? <span>🎬</span>
-                                  : <img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" />
-                                }
+                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border bg-teal-50 border-teal-200 text-teal-700 text-sm font-bold">
+                                <span className="flex items-center gap-0.5"><span>🎬</span><img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" /></span>
                                 {formatPrice(Number(price))} JOD
                               </span>
                             </div>
@@ -1348,7 +1336,7 @@ export default function Home() {
                     <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">{selectedProgram.delivery}</div>
                   </div>
                   <div className="space-y-3">
-                    <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle, mode: "recorded" })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
+                    <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle, mode: "combined" })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
                       <ShoppingCart className="w-5 h-5 me-2" />
                       {t.modal.buyRecordedBtn} — {formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])}
                     </Button>

@@ -24,7 +24,7 @@ function buildTransporter() {
 
 function modeLabel(mode: string) {
   const map: Record<string, string> = {
-    "group-online": "جماعي عن بعد",
+    "combined": "مسجّل وبث مباشر",
     "group-inperson": "جماعي وجاهي",
     "private": "تدريب خاص ١:١",
   };
