@@ -656,7 +656,10 @@ export default function Home() {
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
                           <div className="absolute bottom-4 right-4 left-4">
                             <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-2 ${program.tagColor}`}>{program.role}</div>
-                            <h3 className="font-serif text-lg font-bold text-white leading-tight">{program.shortTitle}</h3>
+                            <h3 className="font-serif text-lg font-bold text-white leading-tight">
+                              {program.shortTitle}
+                              {program.id === "tot" && <span className="font-normal text-xs text-white/65 ms-1.5">(تدريب مدربين)</span>}
+                            </h3>
                             <div className="flex items-center gap-2 text-white/70 text-xs mt-1">
                               <Clock className="w-3 h-3" />
                               <span>{program.hours} {t.structure.hoursUnit}</span>
@@ -1245,7 +1248,10 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
                   <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full mb-3">{selectedProgram.role}</div>
-                  <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{selectedProgram.shortTitle}</h2>
+                  <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">
+                    {selectedProgram.shortTitle}
+                    {selectedProgram.id === "tot" && <span className="font-normal text-base text-white/65 ms-2">(تدريب مدربين)</span>}
+                  </h2>
                   <div className="flex flex-wrap gap-4 text-white/80 text-sm">
                     <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{selectedProgram.hours} {t.modal.hoursUnit}</span>
                     <span>·</span>

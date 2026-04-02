@@ -56,6 +56,9 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
           </table>
           ${format === "print" ? '<p style="color:#b45309;font-size:12px;margin-top:16px">⚠️ السعر لا يشمل رسوم التوصيل</p>' : ""}
           <p style="color:#999;font-size:11px;margin-top:24px">اللغة: ${lang} • ${new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman" })}</p>
+          <div style="margin-top:16px;text-align:center;">
+            <a href="https://wa.me/${buyerPhone.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المشتري</a>
+          </div>
         </div>
       </div>`;
 

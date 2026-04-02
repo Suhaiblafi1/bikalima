@@ -169,7 +169,7 @@ const programsBase: Program[] = [
     borderColor: "border-teal-600/30",
     tagColor: "bg-teal-50 text-teal-800 border border-teal-200",
     role: "المعلمون وأولياء الأمور",
-    shortTitle: "تأهيل لتدريب الأطفال",
+    shortTitle: "تأهيل المعلمين لتعليم الأطفال",
     audience: "المعلمون، أولياء الأمور، المربون",
     hook: "بيئة الطفل هي مستقبله",
     description: "برنامج تأهيلي مخصص للمعلمين وأولياء الأمور، يعرّفهم بمنهجية تدريب الأطفال على الخطابة والتواصل وقوة التأثير، ويمكنهم من تطبيق البرنامج داخل الصف أو المنزل بأسلوب عملي ومنظم.",
@@ -183,7 +183,7 @@ const programsBase: Program[] = [
     i18n: {
       en: {
         role: "Educators & Parents",
-        shortTitle: "Qualifying to Train Children",
+        shortTitle: "Qualifying Educators to Teach Children",
         audience: "Educators, Parents, Mentors",
         hook: "A child's environment is their future",
         description: "A qualification program for educators and parents, introducing them to the methodology of training children in public speaking, communication, and influence, enabling them to apply the program inside the classroom or home in a practical, organized manner.",
@@ -197,7 +197,7 @@ const programsBase: Program[] = [
       },
       fr: {
         role: "Éducateurs & Parents",
-        shortTitle: "Formation pour Entraîner les Enfants",
+        shortTitle: "Qualifier les Éducateurs pour les Enfants",
         audience: "Éducateurs, Parents, Mentors",
         hook: "L'environnement de l'enfant est son avenir",
         description: "Un programme de qualification pour les éducateurs et les parents, les initiant à la méthodologie de formation des enfants en art oratoire, communication et influence, leur permettant d'appliquer le programme en classe ou à la maison de manière pratique et organisée.",

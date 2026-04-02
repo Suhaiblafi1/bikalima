@@ -60,7 +60,10 @@ function buildIndividualHtml(p: Record<string, string>) {
           `).join("")}
         </tbody>
       </table>
-      <p style="margin-top:24px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
+      <div style="margin-top:20px;text-align:center;">
+        <a href="https://wa.me/${p.phone.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المتقدم</a>
+      </div>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
     </div>
   `;
 }
@@ -95,7 +98,10 @@ function buildInstitutionHtml(p: Record<string, string>) {
           `).join("")}
         </tbody>
       </table>
-      <p style="margin-top:24px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
+      <div style="margin-top:20px;text-align:center;">
+        <a href="https://wa.me/${p.phone.replace(/[^0-9]/g, '')}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المؤسسة</a>
+      </div>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
     </div>
   `;
 }
