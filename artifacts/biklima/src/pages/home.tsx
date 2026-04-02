@@ -626,7 +626,7 @@ export default function Home() {
                       <Star className="w-4 h-4 text-accent" />{t.structure.coreBadge}
                     </div>
                     <h3 className="font-serif text-2xl md:text-3xl font-bold mb-1">{coreProgram.shortTitle}</h3>
-                    <p className="text-white/80 text-sm italic mb-2">{t.structure.coreSubtitle}</p>
+                    <p className="text-white/80 text-sm italic mb-2">{coreProgram.subtitle ?? t.structure.coreSubtitle}</p>
                     <div className="flex items-center gap-4 text-white/80 text-sm">
                       <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{coreProgram.hours} {t.structure.hoursUnit}</span>
                       <span>·</span>
@@ -658,7 +658,7 @@ export default function Home() {
                             <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-2 ${program.tagColor}`}>{program.role}</div>
                             <h3 className="font-serif text-lg font-bold text-white leading-tight">
                               {program.shortTitle}
-                              {program.id === "tot" && <span className="font-normal text-xs text-white/65 ms-1.5">(تدريب مدربين)</span>}
+                              {program.badge && <span className="font-normal text-xs text-white/65 ms-1.5">{program.badge}</span>}
                             </h3>
                             <div className="flex items-center gap-2 text-white/70 text-xs mt-1">
                               <Clock className="w-3 h-3" />
@@ -1250,8 +1250,9 @@ export default function Home() {
                   <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full mb-3">{selectedProgram.role}</div>
                   <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">
                     {selectedProgram.shortTitle}
-                    {selectedProgram.id === "tot" && <span className="font-normal text-base text-white/65 ms-2">(تدريب مدربين)</span>}
+                    {selectedProgram.badge && <span className="font-normal text-base text-white/65 ms-2">{selectedProgram.badge}</span>}
                   </h2>
+                  {selectedProgram.subtitle && <p className="text-white/75 text-sm italic mt-1 mb-1">{selectedProgram.subtitle}</p>}
                   <div className="flex flex-wrap gap-4 text-white/80 text-sm">
                     <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{selectedProgram.hours} {t.modal.hoursUnit}</span>
                     <span>·</span>

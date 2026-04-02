@@ -32,6 +32,8 @@ export const upcomingEvents: UpcomingEvent[] = [];
 export type ProgramLocale = {
   role: string;
   shortTitle: string;
+  subtitle?: string;
+  badge?: string;
   audience: string;
   hook: string;
   description: string;
@@ -68,6 +70,7 @@ const programsBase: Program[] = [
     tagColor: "bg-primary/10 text-primary border border-primary/20",
     role: "الدورة الأساسية",
     shortTitle: "المتحدث المؤثر",
+    subtitle: "صناعة التأثير وفن الإلقاء والخطابة",
     audience: "اليافعون، الشباب، المهنيون",
     hook: "كلمتك قادرة على تغيير الغرفة",
     description: "برنامج تدريبي متكامل لليافعين والشباب والكبار، يهدف إلى بناء متحدث أكثر حضوراً ووضوحاً وتأثيراً في الدراسة والعمل والحياة العامة. يركز على تطوير الثقة، وتنظيم الرسائل، وتحسين الإلقاء، ورفع جودة العروض، وبناء قدرة حقيقية على الإقناع.",
@@ -82,6 +85,7 @@ const programsBase: Program[] = [
       en: {
         role: "Core Course",
         shortTitle: "The Influential Speaker",
+        subtitle: "Crafting Influence & the Art of Public Speaking",
         audience: "Youth, Young Adults, Professionals",
         hook: "Your word can change the room",
         description: "A comprehensive training program for youth and professionals, designed to build a more present, clear, and impactful speaker in academic, professional, and public contexts. It focuses on developing confidence, structuring messages, improving delivery, enhancing presentations, and building genuine persuasive ability.",
@@ -96,6 +100,7 @@ const programsBase: Program[] = [
       fr: {
         role: "Cours Fondateur",
         shortTitle: "L'Orateur Influent",
+        subtitle: "L'Art de l'Influence et l'Art Oratoire",
         audience: "Jeunes, Jeunes Adultes, Professionnels",
         hook: "Votre parole peut changer la salle",
         description: "Un programme de formation complet pour les jeunes et les professionnels, conçu pour développer un orateur plus présent, plus clair et plus influent dans les contextes académiques, professionnels et publics. Il se concentre sur le développement de la confiance, la structuration des messages, l'amélioration de l'expression et la capacité réelle de persuasion.",
@@ -119,6 +124,7 @@ const programsBase: Program[] = [
     tagColor: "bg-amber-50 text-amber-800 border border-amber-200",
     role: "تدريب المدربين",
     shortTitle: "المدرب المعتمد",
+    badge: "(تدريب مدربين)",
     audience: "المدربون، الميسّرون، المختصون",
     hook: "ضاعف الأثر بالتعليم",
     description: "برنامج تأهيلي متقدم لإعداد مدربين معتمدين قادرين على تقديم برنامج بكلمة للكبار باحتراف. يركز على بناء هوية المدرب، وفهم فلسفة البرنامج، وإتقان أدوات التدريب، وإدارة الجلسات والمجموعات.",
@@ -133,6 +139,7 @@ const programsBase: Program[] = [
       en: {
         role: "Train the Trainer",
         shortTitle: "The Certified Trainer",
+        badge: "(Train the Trainer)",
         audience: "Trainers, Facilitators, Specialists",
         hook: "Teach others what you've learned, and multiply the impact",
         description: "An advanced qualification program to prepare certified trainers capable of delivering the Bikalima program for adults professionally. It focuses on building the trainer's identity, understanding the program philosophy, mastering training tools, and managing sessions and groups.",
@@ -147,6 +154,7 @@ const programsBase: Program[] = [
       fr: {
         role: "Formation des Formateurs",
         shortTitle: "Le Formateur Certifié",
+        badge: "(Formation de Formateurs)",
         audience: "Formateurs, Facilitateurs, Spécialistes",
         hook: "Enseignez aux autres ce que vous avez appris, et multipliez l'impact",
         description: "Un programme de qualification avancé pour préparer des formateurs certifiés capables de délivrer le programme Bikalima pour adultes de manière professionnelle. Il se concentre sur la construction de l'identité du formateur, la compréhension de la philosophie du programme, la maîtrise des outils de formation et la gestion des séances et des groupes.",
