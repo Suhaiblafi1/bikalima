@@ -228,36 +228,31 @@ const tabIcons = {
 type Tab = "account" | "courses" | "orders" | "schedule";
 
 function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const [, navigate] = useLocation();
   const isRtl = lang === "ar";
-  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const credentialsNote =
+    lang === "ar"
+      ? "يتم تزويد الطلبة ببيانات الدخول تلقائياً بعد القبول في البرنامج."
+      : lang === "fr"
+      ? "Les identifiants de connexion sont fournis automatiquement après l'admission."
+      : "Login credentials are provided automatically upon program admission.";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
     if (password.length < 6) {
       setError(t.auth.passwordMin);
       return;
     }
-
     setLoading(true);
-    let result: { error?: string };
-
-    if (mode === "login") {
-      result = await login(email, password);
-    } else {
-      result = await register({ email, password, firstName: firstName || undefined, lastName: lastName || undefined });
-    }
-
+    const result = await login(email, password);
     setLoading(false);
     if (result.error) {
       setError(result.error);
@@ -272,9 +267,11 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-3">
             <div className="logo-biklima text-5xl text-primary">بكلمة</div>
-            <h1 className="text-2xl font-bold">
-              {mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}
-            </h1>
+            <h1 className="text-2xl font-bold">{t.auth.loginTitle}</h1>
+          </div>
+
+          <div className="bg-primary/8 border border-primary/20 rounded-xl px-4 py-3 text-center text-sm text-primary/80">
+            {credentialsNote}
           </div>
 
           {error && (
@@ -284,29 +281,6 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "register" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">{t.auth.firstName}</label>
-                  <Input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-xl"
-                    dir={isRtl ? "rtl" : "ltr"}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">{t.auth.lastName}</label>
-                  <Input
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-xl"
-                    dir={isRtl ? "rtl" : "ltr"}
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="space-y-1.5">
               <label className="text-sm font-medium flex items-center gap-1.5">
                 <Mail className="w-4 h-4" />
@@ -356,19 +330,10 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
               {loading ? (
                 <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
               ) : (
-                mode === "login" ? t.auth.loginBtn : t.auth.registerBtn
+                t.auth.loginBtn
               )}
             </Button>
           </form>
-
-          <div className="text-center">
-            <button
-              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
-              className="text-sm text-primary hover:underline font-medium"
-            >
-              {mode === "login" ? t.auth.switchToRegister : t.auth.switchToLogin}
-            </button>
-          </div>
 
           <Button variant="ghost" onClick={() => navigate("/")} className="w-full">
             <Home className="w-4 h-4 me-2" />{t.backHome}

@@ -100,7 +100,7 @@ type WisdomArticle = {
 const wisdomArticles: Record<Lang, WisdomArticle[]> = {
   ar: [
     { source: "كراسة المتدرب", category: "النطاق الذهني", icon: <Lightbulb className="w-5 h-5" />, quote: "الثقة لا تُعطى، تُبنى.", body: "وبناؤها يبدأ من أعمق نقطة في الداخل — من صورتك عن نفسك لحظة الكلام. كثيرون يبحثون عن تقنيات الإلقاء وينسون أن المشكلة الحقيقية ليست في اللسان بل في العقل. قبل أن تُصلح ما يسمعه الجمهور، أصلح ما تسمعه أنت من نفسك." },
-    { source: "كراسة المتدرب", category: "النطاق اللفظي", icon: <Mic2 className="w-5 h-5" />, quote: "رَبِّ اشْرَحْ لِي صَدْرِي، وَيَسِّرْ لِي أَمْرِي، وَاحْلُلْ عُقْدَةً مِن لِّسَانِي يَفْقَهُوا قَوْلِي.", body: "حتى أعظم الأنبياء طلب تيسير الإلقاء. الخطابة دعوة قبل أن تكون مهارة، وهبة تستحق أن تُطلب من السماء. اللسان الفصيح ليس مجرد أداة بلاغية — إنه جسر بين القلب والعالم." },
+    { source: "كراسة المتدرب", category: "النطاق اللفظي", icon: <Mic2 className="w-5 h-5" />, quote: "رَبِّ اشْرَحْ لِي صَدْرِي، وَيَسِّرْ لِي أَمْرِي، وَاحْلُلْ عُقْدَةً مِن لِّسَانِي يَفْقَهُوا قَوْلِي.", body: "حتى الأنبياء دعوا الله أن يُيسّر لهم البيان. اللسان الفصيح دعوة قبل أن يكون مهارة — طلبها موسى عليه السلام حين أُرسل. فإن كان أكلم البشر وأعظمهم رسالةً قد طلب من ربه أن يُحلّ عقدة لسانه، فلا عيب في أن تطلب أنت أيضاً أن يُيسّر الله لك الكلمة." },
     { source: "برنامج المعلمين وأولياء الأمور", category: "الفجوة بين الأجيال", icon: <Heart className="w-5 h-5" />, quote: "٧٠٪ من الناس يعانون من رهاب التحدث.", body: "والسبب الأول ليس الجمهور، بل البيئة التي نشأوا فيها. كل طفل خجول كان يوماً طفلاً لم يُتَح له أن يُسمع بشكل صحيح. الخوف من الكلام لا يُولد مع الإنسان — بل يُزرع." },
     { source: "برنامج المعلمين وأولياء الأمور", category: "دور المربّي", icon: <Users className="w-5 h-5" />, quote: "الكلمة التي تقولها لطفل في لحظة الحاجة قد تُشكّل صوته طوال حياته — أو تُصمته.", body: "لا يحتاج الطفل مدرباً فصيحاً فقط، بل بيئة تؤمن بأن صوته يستحق أن يُسمع. المربّي الواعي لا يصحح فقط، بل يفتح مساحة للتعبير دون خوف." },
     { source: "كراسة الخطيب الصغير", category: "فلسفة التعليم", icon: <Star className="w-5 h-5" />, quote: "الطفل الذي يتعلم الكلام بثقة اليوم هو القائد الذي يُغيّر غرفته غداً.", body: "الخطابة للأطفال ليست نشاطاً إضافياً، هي استثمار في شخصية كاملة. الطفل الذي يتعلم أن يُعبّر عن فكرة بوضوح يكتسب أكثر من مهارة — يكتسب شجاعة اجتماعية وثقة داخلية." },
@@ -232,19 +232,19 @@ export default function Home() {
   const [wbSubmitting, setWbSubmitting] = useState(false);
   const [wbExpandedPage, setWbExpandedPage] = useState<number | null>(null);
   const [faqPage, setFaqPage] = useState(0);
-  const [trainingMode, setTrainingMode] = useState<"group-online" | "group-inperson" | "private">("group-online");
+  const [trainingMode, setTrainingMode] = useState<"recorded" | "group-online" | "group-inperson" | "private">("recorded");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [wisdomIndex, setWisdomIndex] = useState(0);
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
-    mode: "group-online", reason: "", youtube: "", discount: "",
+    mode: "recorded", reason: "", youtube: "",
   });
   const [orgFormData, setOrgFormData] = useState({
     orgName: "", contactPerson: "", phone: "", email: "",
     studentCount: "", teacherCount: "", workbookCount: "",
-    program: "", message: "", discount: "",
+    program: "", message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -326,9 +326,9 @@ export default function Home() {
       if (!res.ok) throw new Error("Server error");
       setIsSubmitting(false);
       if (applicantType === "individual") {
-        setFormData({ name: "", email: "", phone: "", category: "", program: "", mode: "group-online", reason: "", youtube: "", discount: "" });
+        setFormData({ name: "", email: "", phone: "", category: "", program: "", mode: "recorded", reason: "", youtube: "" });
       } else {
-        setOrgFormData({ orgName: "", contactPerson: "", phone: "", email: "", studentCount: "", teacherCount: "", workbookCount: "", program: "", message: "", discount: "" });
+        setOrgFormData({ orgName: "", contactPerson: "", phone: "", email: "", studentCount: "", teacherCount: "", workbookCount: "", program: "", message: "" });
       }
       toast({ title: t.enroll.successTitle, description: t.enroll.successDesc });
     } catch {
@@ -348,6 +348,16 @@ export default function Home() {
   const prereqLabel = (id: string) => {
     const labels = t.structure.prereqLabels as Record<string, string>;
     return labels[id] ?? "";
+  };
+
+  const getEnrollPrice = (programId: string, mode: string): string | null => {
+    const base = RECORDED_PRICES[programId as keyof typeof RECORDED_PRICES];
+    if (!base) return null;
+    if (mode === "recorded") return `${base}`;
+    if (mode === "group-online") return `${base * 2}`;
+    if (mode === "group-inperson") return null;
+    if (mode === "private") return `${base * 4}`;
+    return null;
   };
 
   const navItems = [
@@ -957,23 +967,66 @@ export default function Home() {
                     {/* Training mode toggle */}
                     <div className="mb-6">
                       <Label className="mb-3 block font-bold">{t.enroll.modeLabel}</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        <button type="button" onClick={() => { setTrainingMode("group-online"); setFormData(p => ({ ...p, mode: "group-online" })); }} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-online" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <Wifi className="w-5 h-5" />
-                          <span className="font-bold text-xs">{t.enroll.modeGroupOnline}</span>
-                          <span className="text-[10px] opacity-70">{t.enroll.modeGroupOnlineSub}</span>
+                      <div className="grid grid-cols-4 gap-2">
+                        <button type="button" onClick={() => { setTrainingMode("recorded"); setFormData(p => ({ ...p, mode: "recorded" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "recorded" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                          <span className="text-base">🎬</span>
+                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeRecorded}</span>
+                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeRecordedSub}</span>
                         </button>
-                        <button type="button" onClick={() => { setTrainingMode("group-inperson"); setFormData(p => ({ ...p, mode: "group-inperson" })); }} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-inperson" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <MapPin className="w-5 h-5" />
-                          <span className="font-bold text-xs">{t.enroll.modeGroupInPerson}</span>
-                          <span className="text-[10px] opacity-70">{t.enroll.modeGroupInPersonSub}</span>
+                        <button type="button" onClick={() => { setTrainingMode("group-online"); setFormData(p => ({ ...p, mode: "group-online" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-online" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                          <span className="text-base">📡</span>
+                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeGroupOnline}</span>
+                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeGroupOnlineSub}</span>
                         </button>
-                        <button type="button" onClick={() => { setTrainingMode("private"); setFormData(p => ({ ...p, mode: "private" })); }} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all text-center ${trainingMode === "private" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <UserCheck className="w-5 h-5" />
-                          <span className="font-bold text-xs">{t.enroll.modePrivate}</span>
-                          <span className="text-[10px] opacity-70">{t.enroll.modePrivateSub}</span>
+                        <button type="button" onClick={() => { setTrainingMode("group-inperson"); setFormData(p => ({ ...p, mode: "group-inperson" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-inperson" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                          <span className="text-base">📍</span>
+                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeGroupInPerson}</span>
+                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeGroupInPersonSub}</span>
+                        </button>
+                        <button type="button" onClick={() => { setTrainingMode("private"); setFormData(p => ({ ...p, mode: "private" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "private" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
+                          <span className="text-base">👤</span>
+                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modePrivate}</span>
+                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modePrivateSub}</span>
                         </button>
                       </div>
+                      {/* Dynamic price badge */}
+                      {(() => {
+                        const progId = localizedPrograms.find(p => p.shortTitle === formData.program)?.id ?? "";
+                        const price = getEnrollPrice(progId, trainingMode);
+                        if (!progId) return null;
+                        if (trainingMode === "group-inperson") {
+                          return (
+                            <div className="mt-3 flex items-center gap-2 justify-center">
+                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold">
+                                📅 {lang === "ar" ? "السعر يُحدد بحسب جدول الفعاليات" : lang === "fr" ? "Tarif selon le calendrier des événements" : "Price set per event schedule"}
+                              </span>
+                            </div>
+                          );
+                        }
+                        if (trainingMode === "private") {
+                          return (
+                            <div className="mt-3 flex items-center gap-2 justify-center">
+                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-sm font-bold">
+                                👤 {formatPrice(Number(price))} JOD — {lang === "ar" ? "١:١ حصري" : lang === "fr" ? "1:1 exclusif" : "Exclusive 1:1"}
+                              </span>
+                            </div>
+                          );
+                        }
+                        if (price) {
+                          const colors = trainingMode === "recorded"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "bg-blue-50 border-blue-200 text-blue-700";
+                          const icon = trainingMode === "recorded" ? "🎬" : "📡";
+                          return (
+                            <div className="mt-3 flex items-center gap-2 justify-center">
+                              <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-bold ${colors}`}>
+                                {icon} {formatPrice(Number(price))} JOD
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     <form onSubmit={handleEnrollSubmit} className="space-y-5">
@@ -991,20 +1044,14 @@ export default function Home() {
                         <Label htmlFor="email">{t.enroll.emailLabel}</Label>
                         <Input id="email" type="email" required dir="ltr" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="email@example.com" />
                       </div>
-                      <div className="grid md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label>{t.enroll.programLabel}</Label>
-                          <Select value={formData.program} onValueChange={(val) => setFormData({ ...formData, program: val })}>
-                            <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
-                            <SelectContent>
-                              {localizedPrograms.map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="discount" className="flex items-center gap-2"><Tag className="w-4 h-4 text-accent" />{t.enroll.discountLabel}</Label>
-                          <Input id="discount" value={formData.discount} onChange={(e) => setFormData({ ...formData, discount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.discountPlaceholder} />
-                        </div>
+                      <div className="space-y-2">
+                        <Label>{t.enroll.programLabel}</Label>
+                        <Select value={formData.program} onValueChange={(val) => setFormData({ ...formData, program: val })}>
+                          <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
+                          <SelectContent>
+                            {localizedPrograms.map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="youtube" className="flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" />{t.enroll.youtubeLabel}</Label>
@@ -1063,12 +1110,6 @@ export default function Home() {
                           {localizedPrograms.map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2"><Tag className="w-4 h-4 text-accent" />{t.enroll.discountLabel}</Label>
-                        <Input value={orgFormData.discount} onChange={(e) => setOrgFormData({ ...orgFormData, discount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.discountPlaceholder} />
-                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>{t.enroll.orgMessageLabel}</Label>
