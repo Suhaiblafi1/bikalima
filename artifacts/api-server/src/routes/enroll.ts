@@ -108,6 +108,80 @@ function buildInstitutionHtml(p: Record<string, string>) {
   `;
 }
 
+function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution: boolean) {
+  const lang = p.lang || "ar";
+  const name = isInstitution ? (p.contactPerson || p.orgName) : p.name;
+  const program = p.program || "—";
+  const mode = isInstitution ? null : modeLabel(p.mode);
+  const waNumber = "97455377065";
+  const waText = encodeURIComponent(
+    lang === "ar"
+      ? `السلام عليكم، أنا ${name} وقدمت طلب تسجيل في برنامج ${program} عبر الموقع. أودّ الاستفسار عن التفاصيل.`
+      : lang === "fr"
+      ? `Bonjour, je suis ${name} et j'ai soumis une demande d'inscription au programme ${program}. Je souhaite avoir plus de détails.`
+      : `Hello, I'm ${name} and I submitted an enrollment request for the ${program} program. I'd like to know more details.`
+  );
+
+  const texts: Record<string, Record<string, string>> = {
+    ar: {
+      greeting: `أهلاً ${name}،`,
+      line1: "وصل طلبك بنجاح! 🎉",
+      line2: `لقد استلمنا طلب تسجيلك في برنامج <strong>${program}</strong>${mode ? ` (${mode})` : ""}.`,
+      line3: "سيتواصل معك فريقنا خلال ٢٤-٤٨ ساعة لتأكيد التفاصيل والخطوات القادمة.",
+      quote: `"الكلمة الواحدة قادرة على تغيير مسار حياتك."`,
+      waBtn: "تواصل معنا عبر واتساب",
+      footer: "بكلمة — صناعة الأثر وفن الإلقاء والخطابة",
+    },
+    en: {
+      greeting: `Hello ${name},`,
+      line1: "Your request has been received! 🎉",
+      line2: `We've received your enrollment request for the <strong>${program}</strong> program${mode ? ` (${mode})` : ""}.`,
+      line3: "Our team will contact you within 24–48 hours to confirm the details and next steps.",
+      quote: `"One word can change the course of your life."`,
+      waBtn: "Contact us on WhatsApp",
+      footer: "Bikalima — The Art of Impactful Speech",
+    },
+    fr: {
+      greeting: `Bonjour ${name},`,
+      line1: "Votre demande a bien été reçue ! 🎉",
+      line2: `Nous avons bien reçu votre demande d'inscription au programme <strong>${program}</strong>${mode ? ` (${mode})` : ""}.`,
+      line3: "Notre équipe vous contactera dans les 24–48 heures pour confirmer les détails et les prochaines étapes.",
+      quote: `"Un seul mot peut changer le cours de votre vie."`,
+      waBtn: "Nous contacter sur WhatsApp",
+      footer: "Bikalima — L'art de la parole impactante",
+    },
+  };
+  const t = texts[lang] || texts.ar;
+  const dir = lang === "ar" ? "rtl" : "ltr";
+
+  return `
+    <div dir="${dir}" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f9f9f9;border-radius:12px;">
+      <div style="background:linear-gradient(135deg,#1a5c52,#25786A);color:white;padding:28px 24px;border-radius:10px;margin-bottom:24px;text-align:center;">
+        <div style="font-size:38px;margin-bottom:8px;">🎙️</div>
+        <h1 style="margin:0;font-size:24px;font-weight:bold;">بكلمة — Bikalima</h1>
+        <p style="margin:6px 0 0;opacity:0.85;font-size:14px;">${t.footer}</p>
+      </div>
+
+      <div style="background:white;padding:24px;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-bottom:20px;">
+        <h2 style="margin:0 0 12px;font-size:20px;color:#1a5c52;">${t.greeting}</h2>
+        <p style="font-size:18px;font-weight:bold;color:#111;margin:0 0 12px;">${t.line1}</p>
+        <p style="color:#374151;line-height:1.7;margin:0 0 12px;" dir="${dir}">${t.line2}</p>
+        <p style="color:#374151;line-height:1.7;margin:0 0 20px;" dir="${dir}">${t.line3}</p>
+        <div style="border-${lang === "ar" ? "right" : "left"}:4px solid #25786A;padding:12px 16px;background:#f0faf8;border-radius:6px;margin-bottom:20px;">
+          <p style="margin:0;color:#1a5c52;font-style:italic;font-size:15px;">${t.quote}</p>
+        </div>
+        <div style="text-align:center;">
+          <a href="https://wa.me/${waNumber}?text=${waText}" target="_blank"
+             style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:12px 28px;border-radius:50px;text-decoration:none;font-size:15px;">
+            💬 ${t.waBtn}
+          </a>
+        </div>
+      </div>
+      <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">${t.footer} | suhaib@ilgholding.com</p>
+    </div>
+  `;
+}
+
 enrollRouter.post("/enroll", async (req: Request, res: Response) => {
   const payload = req.body as Record<string, string>;
   const log = req.log ?? console;
@@ -159,9 +233,32 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
         subject,
         html,
       });
-      log.info({ to: RECIPIENT }, "Enrollment email sent");
+      log.info({ to: RECIPIENT }, "Enrollment email sent to admin");
     } catch (err) {
-      log.error({ err }, "Failed to send enrollment email");
+      log.error({ err }, "Failed to send enrollment email to admin");
+    }
+
+    if (payload.email) {
+      const isInstitution = payload.type === "institution";
+      const lang = payload.lang || "ar";
+      const confirmSubject =
+        lang === "fr"
+          ? `Bikalima — Confirmation de votre demande`
+          : lang === "en"
+          ? `Bikalima — Your enrollment request received`
+          : `بكلمة — تم استلام طلبك بنجاح ✅`;
+      try {
+        await transporter.sendMail({
+          from: `"بكلمة" <${process.env.SMTP_USER}>`,
+          to: payload.email,
+          replyTo: RECIPIENT,
+          subject: confirmSubject,
+          html: buildApplicantConfirmationHtml(payload, isInstitution),
+        });
+        log.info({ to: payload.email }, "Confirmation email sent to applicant");
+      } catch (err) {
+        log.error({ err }, "Failed to send confirmation email to applicant");
+      }
     }
   } else {
     log.warn("SMTP not configured — enrollment email not sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS.");
