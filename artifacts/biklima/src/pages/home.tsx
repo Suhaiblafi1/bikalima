@@ -974,7 +974,7 @@ export default function Home() {
                           <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeRecordedSub}</span>
                         </button>
                         <button type="button" onClick={() => { setTrainingMode("group-online"); setFormData(p => ({ ...p, mode: "group-online" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-online" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <span className="text-base">📡</span>
+                          <span className="text-base">🎥</span>
                           <span className="font-bold text-[11px] leading-tight">{t.enroll.modeGroupOnline}</span>
                           <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeGroupOnlineSub}</span>
                         </button>
@@ -1016,7 +1016,7 @@ export default function Home() {
                           const colors = trainingMode === "recorded"
                             ? "bg-emerald-50 border-emerald-200 text-emerald-700"
                             : "bg-blue-50 border-blue-200 text-blue-700";
-                          const icon = trainingMode === "recorded" ? "🎬" : "📡";
+                          const icon = trainingMode === "recorded" ? "🎬" : "🎥";
                           return (
                             <div className="mt-3 flex items-center gap-2 justify-center">
                               <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-bold ${colors}`}>
