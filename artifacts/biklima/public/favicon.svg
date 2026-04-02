@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#25786A"/>
-  <text x="33" y="47" text-anchor="middle"
-        font-family="'Noto Naskh Arabic','Arabic Typesetting','Geeza Pro','Traditional Arabic',serif"
-        font-weight="700" font-size="46" fill="white">ب</text>
+  <text
+    x="32" y="46"
+    text-anchor="middle"
+    dominant-baseline="auto"
+    font-family="'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans Arabic', 'Arabic Typesetting', 'Geeza Pro', Arial, sans-serif"
+    font-weight="900"
+    font-size="40"
+    fill="white"
+  >ب</text>
 </svg>
