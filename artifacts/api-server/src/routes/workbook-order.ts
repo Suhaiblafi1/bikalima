@@ -1,21 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
 import { db, workbookOrdersTable } from "@workspace/db";
+import { toWaPhone } from "../lib/phone.js";
 
 const workbookOrderRouter = Router();
 
 const RECIPIENT = "suhaib@ilgholding.com";
 
-function toWaPhone(raw: string): string {
-  let s = (raw ?? "").replace(/[\s\-().]/g, "");
-  if (s.startsWith("+")) s = s.slice(1);          // +962… → 962…
-  else if (s.startsWith("00")) s = s.slice(2);    // 00962… → 962…
-  // After prefix removal: may still have leading 0
-  if (s.startsWith("0962")) s = s.slice(1);       // 0962… → 962… (no double-prefix)
-  else if (s.startsWith("0")) s = "962" + s.slice(1); // 07… → 96277… (Jordan local)
-  return s.replace(/[^0-9]/g, "");
-  // Handled cases: +962…, 00962…, 0962…, 07…, 962… (already international)
-}
 
 function buildTransporter() {
   const host = process.env.SMTP_HOST;
