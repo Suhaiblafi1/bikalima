@@ -652,7 +652,7 @@ export default function Home() {
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => setSelectedProgram(program)}>
-                        <div className="aspect-[4/3.5] relative overflow-hidden">
+                        <div className="aspect-[4/3.2] relative overflow-hidden">
                           <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
                           <div className="absolute bottom-4 right-4 left-4">
@@ -1053,7 +1053,20 @@ export default function Home() {
                         <Select value={formData.program} onValueChange={(val) => setFormData({ ...formData, program: val })}>
                           <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
                           <SelectContent>
-                            {localizedPrograms.map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
+                            {localizedPrograms.map((p) => {
+                              const price = getEnrollPrice(p.id, trainingMode);
+                              const priceTag = trainingMode === "group-inperson"
+                                ? (lang === "ar" ? "حسب الجدول" : lang === "fr" ? "selon calendrier" : "per schedule")
+                                : price ? `${formatPrice(Number(price))} JOD` : "";
+                              return (
+                                <SelectItem key={p.id} value={p.shortTitle}>
+                                  <span className="flex items-center gap-2">
+                                    <span>{p.shortTitle}</span>
+                                    {priceTag && <span className="text-[11px] font-bold text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-md">{priceTag}</span>}
+                                  </span>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>
