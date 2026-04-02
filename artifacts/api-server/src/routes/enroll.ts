@@ -63,7 +63,7 @@ function buildIndividualHtml(p: Record<string, string>) {
         </tbody>
       </table>
       <div style="margin-top:20px;text-align:center;">
-        <a href="https://wa.me/${toWaPhone(p.phone)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المتقدم</a>
+        <a href="https://wa.me/${toWaPhone(p.phone)}?text=${encodeURIComponent(`السلام عليكم ${p.name} 👋\n\nشكراً جزيلاً على تسجيلك في برنامج *بكلمة* 🎙️\n\n📋 *ملخص طلبك:*\n• البرنامج: ${p.program}\n• نوع التدريب: ${modeLabel(p.mode)}\n\nسنتواصل معك قريباً لتأكيد جميع التفاصيل والخطوات القادمة.\n\nفريق بكلمة ✨`)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المتقدم</a>
       </div>
       <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
     </div>
@@ -101,7 +101,7 @@ function buildInstitutionHtml(p: Record<string, string>) {
         </tbody>
       </table>
       <div style="margin-top:20px;text-align:center;">
-        <a href="https://wa.me/${toWaPhone(p.phone)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المؤسسة</a>
+        <a href="https://wa.me/${toWaPhone(p.phone)}?text=${encodeURIComponent(`السلام عليكم ${p.contactPerson} 👋\n\nشكراً لاهتمام مؤسستكم *${p.orgName}* ببرنامج *بكلمة* 🎙️\n\n📋 *ملخص طلبكم:*\n• البرنامج المطلوب: ${p.program || "—"}\n• عدد الطلاب المتوقع: ${p.studentCount || "—"}\n\nسنتواصل معكم قريباً لتأكيد التفاصيل والخطوات القادمة.\n\nفريق بكلمة ✨`)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المؤسسة</a>
       </div>
       <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
     </div>

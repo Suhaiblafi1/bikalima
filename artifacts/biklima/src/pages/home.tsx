@@ -248,6 +248,7 @@ export default function Home() {
     program: "", message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [enrollSuccess, setEnrollSuccess] = useState<{ name: string; program: string } | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   useEffect(() => {
@@ -326,12 +327,14 @@ export default function Home() {
       });
       if (!res.ok) throw new Error("Server error");
       setIsSubmitting(false);
+      const submittedName = applicantType === "individual" ? formData.name : orgFormData.contactPerson || orgFormData.orgName;
+      const submittedProgram = applicantType === "individual" ? formData.program : orgFormData.program;
       if (applicantType === "individual") {
         setFormData({ name: "", email: "", phone: "", category: "", program: "", mode: "combined", reason: "", youtube: "" });
       } else {
         setOrgFormData({ orgName: "", contactPerson: "", phone: "", email: "", studentCount: "", teacherCount: "", workbookCount: "", program: "", message: "" });
       }
-      toast({ title: t.enroll.successTitle, description: t.enroll.successDesc });
+      setEnrollSuccess({ name: submittedName, program: submittedProgram });
     } catch {
       setIsSubmitting(false);
       toast({ title: lang === "ar" ? "حدث خطأ" : lang === "fr" ? "Une erreur est survenue" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : lang === "fr" ? "Veuillez réessayer" : "Please try again later", variant: "destructive" });
@@ -947,6 +950,86 @@ export default function Home() {
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto bg-card rounded-[2.5rem] shadow-xl overflow-hidden border border-border/50 grid lg:grid-cols-5">
               <div className="lg:col-span-3 p-8 md:p-12">
+                <AnimatePresence mode="wait">
+                  {enrollSuccess ? (
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      className="flex flex-col items-center justify-center text-center py-10 gap-6"
+                    >
+                      {/* Animated ring + check */}
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.15 }}
+                        className="relative"
+                      >
+                        <div className="w-28 h-28 rounded-full bg-primary/10 flex items-center justify-center">
+                          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
+                            <CheckCircle2 className="w-12 h-12 text-primary" strokeWidth={1.5} />
+                          </div>
+                        </div>
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 12 }}
+                          className="absolute -top-1 -end-1 bg-accent rounded-full p-1.5"
+                        >
+                          <Sparkles className="w-4 h-4 text-white" />
+                        </motion.div>
+                      </motion.div>
+
+                      {/* Personalized heading */}
+                      <div className="space-y-2">
+                        <h3 className="font-serif text-3xl font-bold text-foreground">
+                          {lang === "ar"
+                            ? `أهلاً ${enrollSuccess.name}!`
+                            : lang === "fr"
+                            ? `Bienvenue, ${enrollSuccess.name} !`
+                            : `Welcome, ${enrollSuccess.name}!`}
+                        </h3>
+                        <p className="text-xl text-primary font-semibold">
+                          {lang === "ar"
+                            ? "رحلتك بدأت للتو 🎙️"
+                            : lang === "fr"
+                            ? "Votre voyage commence maintenant 🎙️"
+                            : "Your journey starts now 🎙️"}
+                        </p>
+                      </div>
+
+                      {/* Summary box */}
+                      {enrollSuccess.program && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-2xl px-6 py-4 text-sm text-muted-foreground w-full max-w-sm">
+                          <p className="font-bold text-foreground mb-1">
+                            {lang === "ar" ? "البرنامج المختار" : lang === "fr" ? "Programme sélectionné" : "Selected Program"}
+                          </p>
+                          <p className="text-primary font-semibold text-base">{enrollSuccess.program}</p>
+                        </div>
+                      )}
+
+                      {/* Body message */}
+                      <p className="text-muted-foreground max-w-sm leading-relaxed">
+                        {lang === "ar"
+                          ? "استلمنا طلبك وسنتواصل معك قريباً. تحقق من بريدك الإلكتروني — الكلمة الواحدة قادرة على تغيير مسار حياتك."
+                          : lang === "fr"
+                          ? "Nous avons reçu votre demande et nous vous contacterons prochainement. Vérifiez votre e-mail."
+                          : "We've received your request and will be in touch shortly. Check your email — one word can change everything."}
+                      </p>
+
+                      {/* CTA */}
+                      <Button
+                        variant="outline"
+                        className="rounded-full px-8 border-primary/30 text-primary hover:bg-primary/5"
+                        onClick={() => setEnrollSuccess(null)}
+                      >
+                        {lang === "ar" ? "تقديم طلب آخر" : lang === "fr" ? "Soumettre une autre demande" : "Submit another request"}
+                      </Button>
+                    </motion.div>
+                  ) : (
+                <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-2">{t.enroll.heading}</h2>
                 <p className="text-muted-foreground mb-6">{t.enroll.sub}</p>
 
@@ -1128,6 +1211,9 @@ export default function Home() {
                     </Button>
                   </form>
                 )}
+                </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="lg:col-span-2 bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
