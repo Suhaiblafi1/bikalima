@@ -67,6 +67,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
+import imgZoom from "@assets/image_1775134223693.png";
 
 function useLang() {
   const [lang, setLang] = useState<Lang>(() => {
@@ -974,7 +975,7 @@ export default function Home() {
                           <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeRecordedSub}</span>
                         </button>
                         <button type="button" onClick={() => { setTrainingMode("group-online"); setFormData(p => ({ ...p, mode: "group-online" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-online" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <span className="text-base">🎥</span>
+                          <img src={imgZoom} alt="Zoom" className="w-5 h-5 rounded-sm object-contain" />
                           <span className="font-bold text-[11px] leading-tight">{t.enroll.modeGroupOnline}</span>
                           <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeGroupOnlineSub}</span>
                         </button>
@@ -1016,11 +1017,14 @@ export default function Home() {
                           const colors = trainingMode === "recorded"
                             ? "bg-emerald-50 border-emerald-200 text-emerald-700"
                             : "bg-blue-50 border-blue-200 text-blue-700";
-                          const icon = trainingMode === "recorded" ? "🎬" : "🎥";
                           return (
                             <div className="mt-3 flex items-center gap-2 justify-center">
                               <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-bold ${colors}`}>
-                                {icon} {formatPrice(Number(price))} JOD
+                                {trainingMode === "recorded"
+                                  ? <span>🎬</span>
+                                  : <img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" />
+                                }
+                                {formatPrice(Number(price))} JOD
                               </span>
                             </div>
                           );
