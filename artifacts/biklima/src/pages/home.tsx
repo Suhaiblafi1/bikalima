@@ -75,9 +75,22 @@ function useLang() {
       const stored = localStorage.getItem("biklima-lang") as Lang | null;
       if (stored && ["ar", "en", "fr"].includes(stored)) return stored;
     } catch {}
-    const nav = navigator.language.toLowerCase();
-    if (nav.startsWith("ar")) return "ar";
-    if (nav.startsWith("fr")) return "fr";
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+    const arabicTZ = new Set([
+      "Asia/Amman","Asia/Riyadh","Asia/Dubai","Asia/Kuwait","Asia/Qatar",
+      "Asia/Bahrain","Asia/Muscat","Africa/Cairo","Asia/Baghdad","Asia/Damascus",
+      "Asia/Beirut","Asia/Gaza","Asia/Hebron","Asia/Aden","Africa/Tripoli",
+      "Africa/Khartoum","Africa/Juba",
+    ]);
+    const frenchTZ = new Set([
+      "Africa/Casablanca","Africa/Tunis","Africa/Algiers",
+      "Europe/Paris","Europe/Brussels","America/Montreal",
+      "Africa/Abidjan","Africa/Dakar","Africa/Bamako","Africa/Douala",
+      "Africa/Libreville","Africa/Brazzaville","Africa/Kinshasa",
+      "America/Guadeloupe","America/Martinique","Indian/Reunion",
+    ]);
+    if (arabicTZ.has(tz)) return "ar";
+    if (frenchTZ.has(tz)) return "fr";
     return "en";
   });
 
