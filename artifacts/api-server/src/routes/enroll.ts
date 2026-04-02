@@ -227,7 +227,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       : buildIndividualHtml(payload);
     try {
       await transporter.sendMail({
-        from: `"بكلمة - نماذج التسجيل" <${process.env.SMTP_USER}>`,
+        from: `"بكلمة - نماذج التسجيل" <suhaib@ilgholding.com>`,
         to: RECIPIENT,
         replyTo: payload.email,
         subject,
@@ -249,7 +249,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
           : `بكلمة — تم استلام طلبك بنجاح ✅`;
       try {
         await transporter.sendMail({
-          from: `"بكلمة" <${process.env.SMTP_USER}>`,
+          from: `"بكلمة" <suhaib@ilgholding.com>`,
           to: payload.email,
           replyTo: RECIPIENT,
           subject: confirmSubject,
