@@ -135,13 +135,16 @@ type CurrencyConfig = { code: string; symbol: string; name: string; rate: number
 
 const CURRENCIES: Record<string, CurrencyConfig> = {
   JO: { code: "JOD", symbol: "د.أ", name: "دينار أردني", rate: 1 },
-  SA: { code: "SAR", symbol: "ر.س", name: "ريال سعودي", rate: 5.28 },
-  AE: { code: "AED", symbol: "د.إ", name: "درهم إماراتي", rate: 5.18 },
-  KW: { code: "KWD", symbol: "د.ك", name: "دينار كويتي", rate: 0.46 },
-  QA: { code: "QAR", symbol: "ر.ق", name: "ريال قطري", rate: 5.15 },
-  BH: { code: "BHD", symbol: "د.ب", name: "دينار بحريني", rate: 0.53 },
-  OM: { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", rate: 0.54 },
+  SA: { code: "SAR", symbol: "ر.س", name: "ريال سعودي", rate: 7.92 },
+  AE: { code: "AED", symbol: "د.إ", name: "درهم إماراتي", rate: 7.77 },
+  KW: { code: "KWD", symbol: "د.ك", name: "دينار كويتي", rate: 0.69 },
+  QA: { code: "QAR", symbol: "ر.ق", name: "ريال قطري", rate: 7.73 },
+  BH: { code: "BHD", symbol: "د.ب", name: "دينار بحريني", rate: 0.80 },
+  OM: { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", rate: 0.81 },
   EG: { code: "EGP", symbol: "ج.م", name: "جنيه مصري", rate: 47.0 },
+  MA: { code: "MAD", symbol: "د.م", name: "درهم مغربي", rate: 10.2 },
+  TN: { code: "TND", symbol: "د.ت", name: "دينار تونسي", rate: 4.5 },
+  DZ: { code: "DZD", symbol: "د.ج", name: "دينار جزائري", rate: 190 },
   DEFAULT: { code: "USD", symbol: "$", name: "US Dollar", rate: 1.41 },
 };
 
@@ -153,6 +156,7 @@ function useCurrency() {
       "Asia/Amman": "JO", "Asia/Riyadh": "SA", "Asia/Dubai": "AE",
       "Asia/Kuwait": "KW", "Asia/Qatar": "QA", "Asia/Bahrain": "BH",
       "Asia/Muscat": "OM", "Africa/Cairo": "EG",
+      "Africa/Casablanca": "MA", "Africa/Tunis": "TN", "Africa/Algiers": "DZ",
     };
     const country = tzMap[tz] || "DEFAULT";
     setCurrency(CURRENCIES[country] || CURRENCIES.DEFAULT);
