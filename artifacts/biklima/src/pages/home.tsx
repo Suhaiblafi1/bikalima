@@ -262,6 +262,7 @@ export default function Home() {
   const [wbBuyerEmail, setWbBuyerEmail] = useState("");
   const [wbSubmitting, setWbSubmitting] = useState(false);
   const [wbExpandedPage, setWbExpandedPage] = useState<number | null>(null);
+  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
@@ -442,18 +443,26 @@ export default function Home() {
                 <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
             </div>
-            <div className="relative group">
-              <button className="flex items-center gap-1 border border-border rounded-full px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors bg-transparent">
+            <div className="relative">
+              <button
+                onClick={() => setCurrencyMenuOpen((o) => !o)}
+                onBlur={(e) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) setCurrencyMenuOpen(false); }}
+                aria-haspopup="listbox"
+                aria-expanded={currencyMenuOpen}
+                className="flex items-center gap-1 border border-border rounded-full px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors bg-transparent"
+              >
                 <span>{currency.symbol}</span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
+                <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${currencyMenuOpen ? "rotate-180" : ""}`} />
               </button>
-              <div className="absolute end-0 top-full mt-1 w-36 bg-background border border-border rounded-xl shadow-lg z-50 py-1 hidden group-hover:block">
-                {CURRENCY_ORDER.map((key) => (
-                  <button key={key} onClick={() => setCurrencyKey(key)} className={`w-full text-start px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/50 ${currencyKey === key ? "text-primary font-bold" : "text-foreground/80"}`}>
-                    {CURRENCIES[key].code} {CURRENCIES[key].symbol}
-                  </button>
-                ))}
-              </div>
+              {currencyMenuOpen && (
+                <div className="absolute end-0 top-full mt-1 w-36 bg-background border border-border rounded-xl shadow-lg z-50 py-1">
+                  {CURRENCY_ORDER.map((key) => (
+                    <button key={key} onMouseDown={(e) => { e.preventDefault(); setCurrencyKey(key); setCurrencyMenuOpen(false); }} className={`w-full text-start px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/50 ${currencyKey === key ? "text-primary font-bold" : "text-foreground/80"}`}>
+                      {CURRENCIES[key].code} {CURRENCIES[key].symbol}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </nav>
           <button className="md:hidden text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
