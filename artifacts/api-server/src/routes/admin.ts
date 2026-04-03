@@ -13,7 +13,7 @@ import { eq, desc, sql, asc, inArray, and } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const ADMIN_EMAILS = ["suhaib@ilgholding.com"];
+const ADMIN_EMAILS = ["info@bikalima.com"];
 
 function isAdmin(req: Request): boolean {
   if (!req.isAuthenticated() || !req.user) return false;

@@ -69,7 +69,7 @@ Arabic RTL landing page for "بكلمة" (Biklima), a public speaking training p
   - Workbook titles: "حقيبة المدرب المعتمد" and "حقيبة المعلمين وأولياء الأمور" for ToT/teachers tracks
   - Email/password auth: register and login with email + password, scrypt password hashing, session cookies (no external OAuth required)
   - Student dashboard at `/dashboard` — login/register form when unauthenticated; when logged in: account info, enrolled courses with lesson viewer (YouTube/Vimeo embed, progress tracking, mark complete), order history from DB, enrollment requests status
-  - Admin panel at `/admin` — tabs: Users | Courses | Requests | Orders; stats cards (users, courses, requests, orders); course CRUD with lesson management (add/delete lessons with video URLs); enrollment management (enroll users into courses); enrollment request approval/rejection; workbook order status management; protected by admin email whitelist (suhaib@ilgholding.com)
+  - Admin panel at `/admin` — tabs: Users | Courses | Requests | Orders; stats cards (users, courses, requests, orders); course CRUD with lesson management (add/delete lessons with video URLs); enrollment management (enroll users into courses); enrollment request approval/rejection; workbook order status management; protected by admin email whitelist (info@bikalima.com)
 - **Images**: `@assets` alias → `attached_assets/` in vite.config.ts
   - Hero: `speeches_1774983233277.jpeg`
   - TEDx: `42267697_...jpg`
@@ -83,7 +83,7 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
 - Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health`; `src/routes/enroll.ts` exposes `POST /enroll` (stores in DB + emails), `GET /my/enrollment-requests`; `src/routes/workbook-order.ts` exposes `POST /workbook-order` (stores in DB + emails), `GET /my/orders`; `src/routes/auth.ts` exposes login/callback/logout/user auth routes; `src/routes/admin.ts` exposes admin CRUD (users, courses, lessons, enrollments, enrollment-requests, workbook-orders) + student endpoints (`GET /my/courses`, `POST /my/lessons/:id/complete`)
 - Auth: Email/password registration and login, scrypt password hashing, sessions stored in PostgreSQL (7-day TTL), cookie-based (no external OAuth required)
-- Email: nodemailer sends enrollment & workbook order emails to `suhaib@ilgholding.com` (needs SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT env vars)
+- Email: nodemailer sends enrollment & workbook order emails to `info@bikalima.com` (admin) and buyer; FROM address uses `SMTP_FROM` env var (set to `بكلمة <alkhawaldahsuhaib@gmail.com>`); needs SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT, SMTP_FROM env vars; [SMTP] prefixed logs surface any auth/delivery errors
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)

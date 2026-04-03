@@ -367,8 +367,9 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
             : Promise.resolve(),
         ]);
         console.info("[SMTP] Workbook order emails sent successfully.");
-      } catch (mailErr: any) {
-        console.error("[SMTP] Failed to send workbook order email:", mailErr?.message ?? mailErr);
+      } catch (mailErr: unknown) {
+        const msg = mailErr instanceof Error ? mailErr.message : String(mailErr);
+        console.error("[SMTP] Failed to send workbook order email:", msg);
       }
     } else {
       console.warn("[SMTP] Transporter is null — emails not sent for workbook order.");

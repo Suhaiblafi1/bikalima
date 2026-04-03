@@ -1302,7 +1302,7 @@ export default function Home() {
                       <div className="w-12 h-12 rounded-full bg-primary-foreground/10 flex items-center justify-center shrink-0"><MessageCircle className="w-6 h-6" /></div>
                       <div>
                         <p className="text-sm text-primary-foreground/60">{t.enroll.quickQ}</p>
-                        <p className="font-bold text-lg" dir="ltr">suhaib@ilgholding.com</p>
+                        <p className="font-bold text-lg" dir="ltr">info@bikalima.com</p>
                       </div>
                     </div>
                     <div className="space-y-3">
@@ -1361,9 +1361,9 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:suhaib@ilgholding.com" className="flex items-center gap-2 hover:text-accent transition" dir="ltr">
+                  <a href="mailto:info@bikalima.com" className="flex items-center gap-2 hover:text-accent transition" dir="ltr">
                     <Mail className="w-4 h-4" />
-                    suhaib@ilgholding.com
+                    info@bikalima.com
                   </a>
                 </li>
                 <li>
