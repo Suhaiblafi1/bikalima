@@ -144,36 +144,49 @@ const wisdomArticles: Record<Lang, WisdomArticle[]> = {
   ],
 };
 
-type CurrencyConfig = { code: string; symbol: string; name: string; rate: number };
+type CurrencyConfig = { code: string; symbol: string; name: string; nameEn: string; rate: number };
 
 const CURRENCIES: Record<string, CurrencyConfig> = {
-  JO: { code: "JOD", symbol: "د.أ", name: "دينار أردني", rate: 1 },
-  SA: { code: "SAR", symbol: "ر.س", name: "ريال سعودي", rate: 7.92 },
-  AE: { code: "AED", symbol: "د.إ", name: "درهم إماراتي", rate: 7.77 },
-  KW: { code: "KWD", symbol: "د.ك", name: "دينار كويتي", rate: 0.69 },
-  QA: { code: "QAR", symbol: "ر.ق", name: "ريال قطري", rate: 7.73 },
-  BH: { code: "BHD", symbol: "د.ب", name: "دينار بحريني", rate: 0.80 },
-  OM: { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", rate: 0.81 },
-  EG: { code: "EGP", symbol: "ج.م", name: "جنيه مصري", rate: 47.0 },
-  MA: { code: "MAD", symbol: "د.م", name: "درهم مغربي", rate: 10.2 },
-  TN: { code: "TND", symbol: "د.ت", name: "دينار تونسي", rate: 4.5 },
-  DZ: { code: "DZD", symbol: "د.ج", name: "دينار جزائري", rate: 190 },
-  DEFAULT: { code: "USD", symbol: "$", name: "US Dollar", rate: 1.41 },
+  DEFAULT: { code: "USD", symbol: "$",   name: "دولار أمريكي", nameEn: "USD $", rate: 1.41 },
+  JO:      { code: "JOD", symbol: "د.أ", name: "دينار أردني",  nameEn: "JOD د.أ", rate: 1 },
+  SA:      { code: "SAR", symbol: "ر.س", name: "ريال سعودي",  nameEn: "SAR ر.س", rate: 7.92 },
+  AE:      { code: "AED", symbol: "د.إ", name: "درهم إماراتي", nameEn: "AED د.إ", rate: 7.77 },
+  KW:      { code: "KWD", symbol: "د.ك", name: "دينار كويتي", nameEn: "KWD د.ك", rate: 0.69 },
+  QA:      { code: "QAR", symbol: "ر.ق", name: "ريال قطري",  nameEn: "QAR ر.ق", rate: 7.73 },
+  BH:      { code: "BHD", symbol: "د.ب", name: "دينار بحريني", nameEn: "BHD د.ب", rate: 0.80 },
+  OM:      { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", nameEn: "OMR ر.ع", rate: 0.81 },
+  EG:      { code: "EGP", symbol: "ج.م", name: "جنيه مصري",  nameEn: "EGP ج.م", rate: 47.0 },
+  MA:      { code: "MAD", symbol: "د.م", name: "درهم مغربي",  nameEn: "MAD د.م", rate: 10.2 },
+  TN:      { code: "TND", symbol: "د.ت", name: "دينار تونسي", nameEn: "TND د.ت", rate: 4.5 },
+  DZ:      { code: "DZD", symbol: "د.ج", name: "دينار جزائري", nameEn: "DZD د.ج", rate: 190 },
 };
 
+const CURRENCY_ORDER = ["DEFAULT","JO","SA","AE","KW","QA","BH","OM","EG","MA","TN","DZ"];
+
+function detectCurrencyKey(): string {
+  try {
+    const stored = localStorage.getItem("biklima-currency");
+    if (stored && CURRENCIES[stored]) return stored;
+  } catch {}
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  const tzMap: Record<string, string> = {
+    "Asia/Amman": "JO", "Asia/Riyadh": "SA", "Asia/Dubai": "AE",
+    "Asia/Kuwait": "KW", "Asia/Qatar": "QA", "Asia/Bahrain": "BH",
+    "Asia/Muscat": "OM", "Africa/Cairo": "EG",
+    "Africa/Casablanca": "MA", "Africa/Tunis": "TN", "Africa/Algiers": "DZ",
+  };
+  return tzMap[tz] || "DEFAULT";
+}
+
 function useCurrency() {
-  const [currency, setCurrency] = useState<CurrencyConfig>(CURRENCIES.JO);
-  useEffect(() => {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    const tzMap: Record<string, string> = {
-      "Asia/Amman": "JO", "Asia/Riyadh": "SA", "Asia/Dubai": "AE",
-      "Asia/Kuwait": "KW", "Asia/Qatar": "QA", "Asia/Bahrain": "BH",
-      "Asia/Muscat": "OM", "Africa/Cairo": "EG",
-      "Africa/Casablanca": "MA", "Africa/Tunis": "TN", "Africa/Algiers": "DZ",
-    };
-    const country = tzMap[tz] || "DEFAULT";
-    setCurrency(CURRENCIES[country] || CURRENCIES.DEFAULT);
+  const [currencyKey, setCurrencyKeyState] = useState<string>(detectCurrencyKey);
+  const currency = CURRENCIES[currencyKey] ?? CURRENCIES.DEFAULT;
+
+  const setCurrencyKey = useCallback((key: string) => {
+    setCurrencyKeyState(key);
+    try { localStorage.setItem("biklima-currency", key); } catch {}
   }, []);
+
   const format = useCallback(
     (jodPrice: number) => {
       const converted = Math.round(jodPrice * currency.rate);
@@ -181,7 +194,7 @@ function useCurrency() {
     },
     [currency],
   );
-  return { currency, format };
+  return { currency, currencyKey, setCurrencyKey, format };
 }
 
 const AR_DAYS = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
@@ -227,7 +240,7 @@ function MiniCalendar({ lang }: { lang: Lang }) {
 
 export default function Home() {
   const { toast } = useToast();
-  const { format: formatPrice, currency } = useCurrency();
+  const { format: formatPrice, currency, currencyKey, setCurrencyKey } = useCurrency();
   const { lang, switchLang, dir } = useLang();
   const t = T[lang];
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
@@ -429,6 +442,19 @@ export default function Home() {
                 <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
             </div>
+            <div className="relative group">
+              <button className="flex items-center gap-1 border border-border rounded-full px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors bg-transparent">
+                <span>{currency.symbol}</span>
+                <ChevronDown className="w-3 h-3 opacity-60" />
+              </button>
+              <div className="absolute end-0 top-full mt-1 w-36 bg-background border border-border rounded-xl shadow-lg z-50 py-1 hidden group-hover:block">
+                {CURRENCY_ORDER.map((key) => (
+                  <button key={key} onClick={() => setCurrencyKey(key)} className={`w-full text-start px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/50 ${currencyKey === key ? "text-primary font-bold" : "text-foreground/80"}`}>
+                    {CURRENCIES[key].code} {CURRENCIES[key].symbol}
+                  </button>
+                ))}
+              </div>
+            </div>
           </nav>
           <button className="md:hidden text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -464,6 +490,16 @@ export default function Home() {
               {langButtons.map(({ key, label }) => (
                 <button key={key} onClick={() => switchLang(key)} className={`px-4 py-2 text-sm font-bold rounded-full border transition-colors ${lang === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
+            </div>
+            <div className="mt-3">
+              <div className="text-xs text-muted-foreground text-center mb-2 font-medium">{lang === "ar" ? "العملة" : lang === "fr" ? "Devise" : "Currency"}</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {CURRENCY_ORDER.map((key) => (
+                  <button key={key} onClick={() => { setCurrencyKey(key); setMobileMenuOpen(false); }} className={`py-1.5 px-1 text-[11px] font-bold rounded-lg border transition-colors text-center ${currencyKey === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                    {CURRENCIES[key].code}
+                  </button>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
@@ -652,7 +688,7 @@ export default function Home() {
                       <span>·</span>
                       <span>{coreProgram.sessions} {t.structure.sessionsUnit}</span>
                       <span>·</span>
-                      <span className="font-bold text-white">{formatPrice(RECORDED_PRICES.core)} <span className="font-normal text-white/60 text-xs">({t.structure.recordedLabel})</span></span>
+                      <span className="font-bold text-white">{formatPrice(Math.round(RECORDED_PRICES.core * 1.5))} <span className="font-normal text-white/60 text-xs">({t.enroll.modeCombined})</span></span>
                     </div>
                   </div>
                 </div>
@@ -684,7 +720,7 @@ export default function Home() {
                               <Clock className="w-3 h-3" />
                               <span>{program.hours} {t.structure.hoursUnit}</span>
                               <span>·</span>
-                              <span className="font-bold text-white">{formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])} <span className="font-normal text-white/60 text-[10px]">({t.structure.recordedLabel})</span></span>
+                              <span className="font-bold text-white">{formatPrice(Math.round(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES] * 1.5))} <span className="font-normal text-white/60 text-[10px]">({t.enroll.modeCombined})</span></span>
                             </div>
                           </div>
                         </div>
@@ -851,11 +887,6 @@ export default function Home() {
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="font-serif text-4xl font-bold mb-6">{t.workbooks.heading}</h2>
               <p className="text-xl text-muted-foreground">{t.workbooks.sub}</p>
-              {currency.code !== "JOD" && (
-                <div className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground bg-secondary/50 px-4 py-2 rounded-full">
-                  <Globe className="w-4 h-4" />{t.workbooks.pricesIn} {currency.name}
-                </div>
-              )}
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {localizedPrograms.map((program, i) => (
@@ -1105,7 +1136,7 @@ export default function Home() {
                           return (
                             <div className="mt-3 flex items-center gap-2 justify-center">
                               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-sm font-bold">
-                                👤 {formatPrice(Number(price))} JOD — {lang === "ar" ? "١:١ حصري" : lang === "fr" ? "1:1 exclusif" : "Exclusive 1:1"}
+                                👤 {formatPrice(Number(price))} — {lang === "ar" ? "١:١ حصري" : lang === "fr" ? "1:1 exclusif" : "Exclusive 1:1"}
                               </span>
                             </div>
                           );
@@ -1115,7 +1146,7 @@ export default function Home() {
                             <div className="mt-3 flex items-center gap-2 justify-center">
                               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border bg-teal-50 border-teal-200 text-teal-700 text-sm font-bold">
                                 <span className="flex items-center gap-0.5"><span>🎬</span><img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" /></span>
-                                {formatPrice(Number(price))} JOD
+                                {formatPrice(Number(price))}
                               </span>
                             </div>
                           );
@@ -1148,7 +1179,7 @@ export default function Home() {
                               const price = getEnrollPrice(p.id, trainingMode);
                               const priceTag = trainingMode === "group-inperson"
                                 ? (lang === "ar" ? "حسب الجدول" : lang === "fr" ? "selon calendrier" : "per schedule")
-                                : price ? `${formatPrice(Number(price))} JOD` : "";
+                                : price ? `${formatPrice(Number(price))}` : "";
                               return (
                                 <SelectItem key={p.id} value={p.shortTitle}>
                                   <span className="flex items-center gap-2">
@@ -1361,7 +1392,7 @@ export default function Home() {
                     <span>·</span>
                     <span>{selectedProgram.sessions} {t.structure.sessionsUnit}</span>
                     <span>·</span>
-                    <span className="font-bold text-white text-base">{formatPrice(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES])} <span className="font-normal text-white/60 text-xs">({t.structure.recordedLabel})</span></span>
+                    <span className="font-bold text-white text-base">{formatPrice(Math.round(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES] * 1.5))} <span className="font-normal text-white/60 text-xs">({t.enroll.modeCombined})</span></span>
                   </div>
                   {selectedProgram.prerequisite && (
                     <div className={`mt-3 inline-flex items-center gap-2 text-[10px] font-medium px-3 py-1 rounded-full ${selectedProgram.id === "tot" ? "bg-red-100 text-red-700" : selectedProgram.id === "children" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
