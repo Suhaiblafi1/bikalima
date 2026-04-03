@@ -323,9 +323,15 @@ export default function Home() {
           buyerEmail: wbBuyerEmail,
           unitPrice: WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES],
           lang,
+          currencyCode: currency.code,
+          displayUnitPrice: formatPrice(WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES] ?? 0),
+          displayTotal: formatPrice((WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES] ?? 0) * wbQuantity),
         }),
       });
-      toast({ title: t.workbooks.orderSuccess, description: "" });
+      const emailNote = wbBuyerEmail
+        ? (lang === "ar" ? " — تم إرسال تأكيد لبريدك الإلكتروني" : lang === "fr" ? " — Une confirmation a été envoyée à votre e-mail" : " — A confirmation was sent to your email")
+        : "";
+      toast({ title: t.workbooks.orderSuccess + emailNote, description: "" });
       setSelectedWorkbook(null);
     } catch {
       toast({ title: lang === "ar" ? "حدث خطأ" : lang === "fr" ? "Une erreur est survenue" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : lang === "fr" ? "Veuillez réessayer" : "Please try again later", variant: "destructive" });
