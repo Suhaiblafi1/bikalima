@@ -5,7 +5,7 @@ import { toWaPhone } from "../lib/phone.js";
 
 const enrollRouter = Router();
 
-const RECIPIENT = "suhaib@ilgholding.com";
+const RECIPIENT = "info@bikalima.com";
 
 function buildTransporter() {
   const host = process.env.SMTP_HOST;
@@ -227,7 +227,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       : buildIndividualHtml(payload);
     try {
       await transporter.sendMail({
-        from: `"بكلمة - نماذج التسجيل" <suhaib@ilgholding.com>`,
+        from: `"بكلمة - نماذج التسجيل" <info@bikalima.com>`,
         to: RECIPIENT,
         replyTo: payload.email,
         subject,
@@ -249,7 +249,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
           : `بكلمة — تم استلام طلبك بنجاح ✅`;
       try {
         await transporter.sendMail({
-          from: `"بكلمة" <suhaib@ilgholding.com>`,
+          from: `"بكلمة" <info@bikalima.com>`,
           to: payload.email,
           replyTo: RECIPIENT,
           subject: confirmSubject,

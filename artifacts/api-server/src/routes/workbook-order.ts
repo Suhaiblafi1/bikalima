@@ -5,8 +5,8 @@ import { toWaPhone } from "../lib/phone.js";
 
 const workbookOrderRouter = Router();
 
-const ADMIN_EMAIL = "suhaib@ilgholding.com";
-const FROM_ADDRESS = `"بكلمة – Bikalima" <suhaib@ilgholding.com>`;
+const ADMIN_EMAIL = "info@bikalima.com";
+const FROM_ADDRESS = `"بكلمة – Bikalima" <info@bikalima.com>`;
 const WA_NUMBER = "97455377065";
 
 function buildTransporter() {

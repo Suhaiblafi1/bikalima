@@ -263,6 +263,7 @@ export default function Home() {
   const [wbSubmitting, setWbSubmitting] = useState(false);
   const [wbExpandedPage, setWbExpandedPage] = useState<number | null>(null);
   const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
+  const [wbOrderSuccess, setWbOrderSuccess] = useState<{ name: string; title: string; format: string; qty: number; total: string } | null>(null);
   const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
@@ -329,11 +330,15 @@ export default function Home() {
         }),
       });
       if (!res.ok) throw new Error("server_error");
-      const emailNote = wbBuyerEmail
-        ? (lang === "ar" ? " — تم إرسال تأكيد لبريدك الإلكتروني" : lang === "fr" ? " — Une confirmation a été envoyée à votre e-mail" : " — A confirmation was sent to your email")
-        : "";
-      toast({ title: t.workbooks.orderSuccess + emailNote, description: "" });
-      setSelectedWorkbook(null);
+      const wb = selectedWorkbook;
+      const up = WORKBOOK_PRICES[wb?.id as keyof typeof WORKBOOK_PRICES] ?? 0;
+      setWbOrderSuccess({
+        name: wbBuyerName,
+        title: wb?.workbook.title ?? "",
+        format: wbFormat,
+        qty: wbQuantity,
+        total: formatPrice(up * wbQuantity),
+      });
     } catch {
       toast({ title: lang === "ar" ? "حدث خطأ" : lang === "fr" ? "Une erreur est survenue" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : lang === "fr" ? "Veuillez réessayer" : "Please try again later", variant: "destructive" });
     } finally {
@@ -1022,75 +1027,76 @@ export default function Home() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
-                      className="flex flex-col items-center justify-center text-center py-10 gap-6"
+                      className="flex flex-col items-center justify-center text-center py-8 gap-6"
                     >
-                      {/* Animated ring + check */}
-                      <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.15 }}
-                        className="relative"
-                      >
-                        <div className="w-28 h-28 rounded-full bg-primary/10 flex items-center justify-center">
-                          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-                            <CheckCircle2 className="w-12 h-12 text-primary" strokeWidth={1.5} />
-                          </div>
-                        </div>
+                      {/* Animated glow orb */}
+                      <div className="relative">
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 12 }}
-                          className="absolute -top-1 -end-1 bg-accent rounded-full p-1.5"
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }}
+                          className="relative w-32 h-32 flex items-center justify-center"
                         >
-                          <Sparkles className="w-4 h-4 text-white" />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/40 to-accent/30 blur-2xl animate-pulse" />
+                          <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-2xl">
+                            <span className="text-5xl">🎙️</span>
+                          </div>
                         </motion.div>
-                      </motion.div>
-
-                      {/* Personalized heading */}
-                      <div className="space-y-2">
-                        <h3 className="font-serif text-3xl font-bold text-foreground">
-                          {lang === "ar"
-                            ? `أهلاً ${enrollSuccess.name}!`
-                            : lang === "fr"
-                            ? `Bienvenue, ${enrollSuccess.name} !`
-                            : `Welcome, ${enrollSuccess.name}!`}
-                        </h3>
-                        <p className="text-xl text-primary font-semibold">
-                          {lang === "ar"
-                            ? "رحلتك بدأت للتو 🎙️"
-                            : lang === "fr"
-                            ? "Votre voyage commence maintenant 🎙️"
-                            : "Your journey starts now 🎙️"}
-                        </p>
+                        {/* Orbiting sparkles */}
+                        {["-top-2 start-1", "-top-3 end-2", "top-2 -end-3", "bottom-1 -start-3", "-bottom-3 end-4"].map((pos, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: [0, 1.3, 1], opacity: 1 }}
+                            transition={{ delay: 0.35 + i * 0.08, type: "spring", stiffness: 260 }}
+                            className={`absolute ${pos} text-sm`}
+                          >{["✨", "⭐", "🌟", "💫", "✨"][i]}</motion.div>
+                        ))}
                       </div>
 
-                      {/* Summary box */}
+                      {/* Personalized heading */}
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
+                        <h3 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
+                          {lang === "ar" ? `أهلاً ${enrollSuccess.name}! 🎉` : lang === "fr" ? `Bienvenue, ${enrollSuccess.name} ! 🎉` : `Welcome, ${enrollSuccess.name}! 🎉`}
+                        </h3>
+                        <p className="text-xl text-primary font-bold">
+                          {lang === "ar" ? "رحلتك بدأت للتو 🚀" : lang === "fr" ? "Votre aventure commence ! 🚀" : "Your journey starts now 🚀"}
+                        </p>
+                      </motion.div>
+
+                      {/* Program summary box */}
                       {enrollSuccess.program && (
-                        <div className="bg-primary/5 border border-primary/20 rounded-2xl px-6 py-4 text-sm text-muted-foreground w-full max-w-sm">
-                          <p className="font-bold text-foreground mb-1">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="bg-primary/5 border border-primary/20 rounded-2xl px-7 py-5 w-full max-w-sm">
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
                             {lang === "ar" ? "البرنامج المختار" : lang === "fr" ? "Programme sélectionné" : "Selected Program"}
                           </p>
-                          <p className="text-primary font-semibold text-base">{enrollSuccess.program}</p>
-                        </div>
+                          <p className="text-primary font-bold text-lg">{enrollSuccess.program}</p>
+                        </motion.div>
                       )}
 
-                      {/* Body message */}
-                      <p className="text-muted-foreground max-w-sm leading-relaxed">
+                      {/* Inspiring body */}
+                      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-muted-foreground max-w-xs leading-relaxed text-sm italic">
                         {lang === "ar"
-                          ? "استلمنا طلبك وسنتواصل معك قريباً. تحقق من بريدك الإلكتروني — الكلمة الواحدة قادرة على تغيير مسار حياتك."
+                          ? "\"الكلمة الواحدة قادرة على تغيير مسار حياتك.\" — استلمنا طلبك وسيصلك إيميل التأكيد قريباً."
                           : lang === "fr"
-                          ? "Nous avons reçu votre demande et nous vous contacterons prochainement. Vérifiez votre e-mail."
-                          : "We've received your request and will be in touch shortly. Check your email — one word can change everything."}
-                      </p>
+                          ? "\"Un seul mot peut changer le cours d'une vie.\" — Vérifiez votre boîte mail."
+                          : "\"One word can change the course of your life.\" — Check your inbox for confirmation."}
+                      </motion.p>
 
-                      {/* CTA */}
-                      <Button
-                        variant="outline"
-                        className="rounded-full px-8 border-primary/30 text-primary hover:bg-primary/5"
-                        onClick={() => setEnrollSuccess(null)}
-                      >
-                        {lang === "ar" ? "تقديم طلب آخر" : lang === "fr" ? "Soumettre une autre demande" : "Submit another request"}
-                      </Button>
+                      {/* Action buttons */}
+                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex flex-col sm:flex-row gap-3">
+                        <a
+                          href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${enrollSuccess.name} وقدمت طلب تسجيل في برنامج ${enrollSuccess.program || "بكلمة"}. أودّ الاستفسار عن التفاصيل.` : lang === "fr" ? `Bonjour, je suis ${enrollSuccess.name} et j'ai soumis une demande pour ${enrollSuccess.program || "Bikalima"}. Je souhaite plus d'informations.` : `Hello, I'm ${enrollSuccess.name} and I submitted an enrollment request for ${enrollSuccess.program || "Bikalima"}. I'd like to know more.`)}`}
+                          target="_blank"
+                          className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white font-bold px-7 py-3 rounded-full text-sm transition-colors shadow-lg"
+                        >
+                          <span>💬</span>
+                          {lang === "ar" ? "تواصل عبر واتساب" : lang === "fr" ? "WhatsApp" : "Chat on WhatsApp"}
+                        </a>
+                        <Button variant="outline" className="rounded-full px-7 border-primary/30 text-primary hover:bg-primary/5" onClick={() => setEnrollSuccess(null)}>
+                          {lang === "ar" ? "تقديم طلب آخر" : lang === "fr" ? "Nouvelle demande" : "Submit another"}
+                        </Button>
+                      </motion.div>
                     </motion.div>
                   ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -1514,9 +1520,9 @@ export default function Home() {
           const previewModules = wb.modules.slice(0, 6);
           return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedWorkbook(null)} />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }} />
               <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-card w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-2xl relative z-10 border border-border">
-                <button aria-label="Close" onClick={() => setSelectedWorkbook(null)} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
+                <button aria-label="Close" onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
 
                 <div className="relative aspect-[21/6] overflow-hidden rounded-t-[2rem]">
                   <img src={wb.image} alt={wb.workbook.title} className="w-full h-full object-cover" />
@@ -1530,6 +1536,119 @@ export default function Home() {
                 </div>
 
                 <div className="p-8 md:p-12">
+                  <AnimatePresence mode="wait">
+                  {wbOrderSuccess ? (
+                    <motion.div
+                      key="wb-success"
+                      initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.45, ease: "easeOut" }}
+                      className="flex flex-col items-center justify-center text-center py-6 gap-7 min-h-[420px]"
+                    >
+                      {/* Animated glow orb + icon */}
+                      <div className="relative">
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }}
+                          className="relative w-32 h-32 flex items-center justify-center"
+                        >
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 blur-xl animate-pulse" />
+                          <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-2xl">
+                            <span className="text-5xl">📚</span>
+                          </div>
+                        </motion.div>
+                        {/* Floating sparkle dots */}
+                        {["-top-3 -start-3", "-top-2 end-0", "bottom-0 -start-4", "-bottom-2 end-2"].map((pos, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.3 + i * 0.1, type: "spring", stiffness: 260 }}
+                            className={`absolute ${pos} w-5 h-5 rounded-full bg-accent/70 flex items-center justify-center text-[10px]`}
+                          >✨</motion.div>
+                        ))}
+                      </div>
+
+                      {/* Headline */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="space-y-2"
+                      >
+                        <h3 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
+                          {lang === "ar" ? `أهلاً ${wbOrderSuccess.name}! 🎉` : lang === "fr" ? `Merci ${wbOrderSuccess.name} ! 🎉` : `Thank you, ${wbOrderSuccess.name}! 🎉`}
+                        </h3>
+                        <p className="text-xl font-semibold text-primary">
+                          {lang === "ar" ? "طلبك في طريقه إليك ✨" : lang === "fr" ? "Votre commande est en route ✨" : "Your order is on its way ✨"}
+                        </p>
+                      </motion.div>
+
+                      {/* Order summary card */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="bg-primary/5 border border-primary/20 rounded-2xl px-7 py-5 text-sm w-full max-w-md"
+                      >
+                        <p className="font-bold text-foreground mb-3 text-base flex items-center gap-2 justify-center">
+                          <span>🧾</span>
+                          {lang === "ar" ? "ملخص الطلب" : lang === "fr" ? "Récapitulatif" : "Order Summary"}
+                        </p>
+                        <div className="space-y-2 text-muted-foreground text-start">
+                          <div className="flex justify-between"><span>{lang === "ar" ? "الكراسة" : lang === "fr" ? "Cahier" : "Workbook"}</span><span className="font-semibold text-foreground truncate max-w-[55%] text-end">{wbOrderSuccess.title}</span></div>
+                          <div className="flex justify-between"><span>{lang === "ar" ? "الصيغة" : lang === "fr" ? "Format" : "Format"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.format === "pdf" ? (lang === "ar" ? "PDF رقمي" : "Digital PDF") : (lang === "ar" ? "مطبوعة" : lang === "fr" ? "Imprimé" : "Printed")}</span></div>
+                          <div className="flex justify-between"><span>{lang === "ar" ? "الكمية" : lang === "fr" ? "Qté" : "Qty"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.qty}</span></div>
+                          <div className="flex justify-between border-t border-primary/20 pt-2 mt-2">
+                            <span className="font-bold text-primary">{lang === "ar" ? "المجموع" : lang === "fr" ? "Total" : "Total"}</span>
+                            <span className="font-bold text-primary text-lg">{wbOrderSuccess.total}</span>
+                          </div>
+                        </div>
+                      </motion.div>
+
+                      {/* Inspiring quote */}
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.55 }}
+                        className="max-w-sm"
+                      >
+                        <p className="text-muted-foreground leading-relaxed text-sm italic">
+                          {lang === "ar"
+                            ? "\"الكلمة الصادقة تصل أبعد من ألف خطاب مزخرف.\" — سنتواصل معك قريباً على بريدك الإلكتروني."
+                            : lang === "fr"
+                            ? "\"Un seul mot sincère va plus loin que mille discours ornés.\" — Nous vous contacterons bientôt."
+                            : "\"An honest word travels farther than a thousand polished speeches.\" — We'll be in touch soon."}
+                        </p>
+                      </motion.div>
+
+                      {/* CTA buttons */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.65 }}
+                        className="flex flex-col sm:flex-row gap-3"
+                      >
+                        <a
+                          href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${wbOrderSuccess.name} وأودّ الاستفسار عن طلب كراسة بكلمة.` : lang === "fr" ? `Bonjour, je suis ${wbOrderSuccess.name} et je souhaite me renseigner sur ma commande Bikalima.` : `Hello, I'm ${wbOrderSuccess.name} and I'd like to ask about my Bikalima workbook order.`)}`}
+                          target="_blank"
+                          className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white font-bold px-7 py-3 rounded-full text-sm transition-colors shadow-lg"
+                        >
+                          <span>💬</span>
+                          {lang === "ar" ? "تواصل عبر واتساب" : lang === "fr" ? "WhatsApp" : "Chat on WhatsApp"}
+                        </a>
+                        <button
+                          onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }}
+                          className="inline-flex items-center justify-center gap-2 border border-border rounded-full px-7 py-3 text-sm font-medium hover:bg-secondary/40 transition-colors"
+                        >
+                          {lang === "ar" ? "إغلاق" : lang === "fr" ? "Fermer" : "Close"}
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  ) : (
+                  <motion.div key="wb-form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
                   <div className="bg-gradient-to-br from-primary/5 to-secondary/20 rounded-2xl border border-border p-6 md:p-8 mb-8 flex flex-col sm:flex-row items-center gap-6">
                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${wb.accentColor} text-white flex items-center justify-center shadow-lg shrink-0`}><Download className="w-7 h-7" /></div>
                     <div className="flex-1 text-center sm:text-start">
@@ -1544,7 +1663,6 @@ export default function Home() {
                       <Download className="w-4 h-4 me-2" />{wb.samplePdf ? t.workbooks.samplePdfBtn : (lang === "ar" ? "قريباً" : lang === "fr" ? "Bientôt" : "Coming Soon")}
                     </Button>
                   </div>
-
                   <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">
                     <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" />{t.workbooks.orderTitle}</h3>
                     <form onSubmit={handleWorkbookOrder} className="space-y-6">
@@ -1608,6 +1726,8 @@ export default function Home() {
                       </div>
                     </form>
                   </div>
+                  </motion.div>)}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </div>
