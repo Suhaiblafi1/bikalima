@@ -6,7 +6,7 @@ import { toWaPhone } from "../lib/phone.js";
 const workbookOrderRouter = Router();
 
 const ADMIN_EMAIL = "info@bikalima.com";
-const FROM_ADDRESS = `"بكلمة – Bikalima" <info@bikalima.com>`;
+const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 const WA_NUMBER = "97455377065";
 
 function buildTransporter() {
@@ -14,7 +14,10 @@ function buildTransporter() {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
-  if (!host || !user || !pass) return null;
+  if (!host || !user || !pass) {
+    console.warn("[SMTP] Missing config — SMTP_HOST, SMTP_USER, or SMTP_PASS not set. Emails will not be sent.");
+    return null;
+  }
   return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
 
@@ -310,6 +313,7 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
 
     const transporter = buildTransporter();
     if (transporter) {
+      console.info(`[SMTP] Sending workbook order emails — from: ${FROM_ADDRESS}, admin: ${ADMIN_EMAIL}, buyer: ${buyerEmail}`);
       const adminHtml = buildWorkbookAdminHtml({
         workbookTitle: workbookTitle ?? workbookId,
         workbookId: workbookId || "unknown",
@@ -338,28 +342,36 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
         lang: lang || "ar",
       });
 
-      await Promise.all([
-        transporter.sendMail({
-          from: FROM_ADDRESS,
-          to: ADMIN_EMAIL,
-          replyTo: buyerEmail,
-          subject: `📚 طلب كراسة: ${workbookTitle ?? workbookId} — ${buyerName}`,
-          html: adminHtml,
-        }),
-        buyerEmail
-          ? transporter.sendMail({
-              from: FROM_ADDRESS,
-              to: buyerEmail,
-              subject:
-                lang === "fr"
-                  ? `Bikalima — Commande confirmée : ${workbookTitle ?? workbookId}`
-                  : lang === "en"
-                  ? `Bikalima — Order Confirmed: ${workbookTitle ?? workbookId}`
-                  : `بكلمة — تأكيد طلب: ${workbookTitle ?? workbookId}`,
-              html: applicantHtml,
-            })
-          : Promise.resolve(),
-      ]);
+      try {
+        await Promise.all([
+          transporter.sendMail({
+            from: FROM_ADDRESS,
+            to: ADMIN_EMAIL,
+            replyTo: buyerEmail,
+            subject: `📚 طلب كراسة: ${workbookTitle ?? workbookId} — ${buyerName}`,
+            html: adminHtml,
+          }),
+          buyerEmail
+            ? transporter.sendMail({
+                from: FROM_ADDRESS,
+                to: buyerEmail,
+                replyTo: ADMIN_EMAIL,
+                subject:
+                  lang === "fr"
+                    ? `Bikalima — Commande confirmée : ${workbookTitle ?? workbookId}`
+                    : lang === "en"
+                    ? `Bikalima — Order Confirmed: ${workbookTitle ?? workbookId}`
+                    : `بكلمة — تأكيد طلب: ${workbookTitle ?? workbookId}`,
+                html: applicantHtml,
+              })
+            : Promise.resolve(),
+        ]);
+        console.info("[SMTP] Workbook order emails sent successfully.");
+      } catch (mailErr: any) {
+        console.error("[SMTP] Failed to send workbook order email:", mailErr?.message ?? mailErr);
+      }
+    } else {
+      console.warn("[SMTP] Transporter is null — emails not sent for workbook order.");
     }
 
     res.json({ ok: true });

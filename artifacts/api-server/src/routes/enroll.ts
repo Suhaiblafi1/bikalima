@@ -6,6 +6,7 @@ import { toWaPhone } from "../lib/phone.js";
 const enrollRouter = Router();
 
 const RECIPIENT = "info@bikalima.com";
+const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 
 function buildTransporter() {
   const host = process.env.SMTP_HOST;
@@ -13,7 +14,10 @@ function buildTransporter() {
   const pass = process.env.SMTP_PASS;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
 
-  if (!host || !user || !pass) return null;
+  if (!host || !user || !pass) {
+    console.warn("[SMTP] Missing config — SMTP_HOST, SMTP_USER, or SMTP_PASS not set. Emails will not be sent.");
+    return null;
+  }
 
   return nodemailer.createTransport({
     host,
@@ -65,7 +69,7 @@ function buildIndividualHtml(p: Record<string, string>) {
       <div style="margin-top:20px;text-align:center;">
         <a href="https://wa.me/${toWaPhone(p.phone)}?text=${encodeURIComponent(`السلام عليكم ${p.name} 👋\n\nشكراً جزيلاً على تسجيلك في برنامج *بكلمة* 🎙️\n\n📋 *ملخص طلبك:*\n• البرنامج: ${p.program}\n• نوع التدريب: ${modeLabel(p.mode)}\n\nسنتواصل معك قريباً لتأكيد جميع التفاصيل والخطوات القادمة.\n\nفريق بكلمة ✨`)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المتقدم</a>
       </div>
-      <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | info@bikalima.com</p>
     </div>
   `;
 }
@@ -103,7 +107,7 @@ function buildInstitutionHtml(p: Record<string, string>) {
       <div style="margin-top:20px;text-align:center;">
         <a href="https://wa.me/${toWaPhone(p.phone)}?text=${encodeURIComponent(`السلام عليكم ${p.contactPerson} 👋\n\nشكراً لاهتمام مؤسستكم *${p.orgName}* ببرنامج *بكلمة* 🎙️\n\n📋 *ملخص طلبكم:*\n• البرنامج المطلوب: ${p.program || "—"}\n• عدد الطلاب المتوقع: ${p.studentCount || "—"}\n\nسنتواصل معكم قريباً لتأكيد التفاصيل والخطوات القادمة.\n\nفريق بكلمة ✨`)}" target="_blank" style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;">💬 تواصل عبر واتساب مع المؤسسة</a>
       </div>
-      <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | suhaib@ilgholding.com</p>
+      <p style="margin-top:16px;color:#6b7280;font-size:12px;text-align:center;">بكلمة — برنامج الخطابة التحويلي | info@bikalima.com</p>
     </div>
   `;
 }
@@ -177,7 +181,7 @@ function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution
           </a>
         </div>
       </div>
-      <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">${t.footer} | suhaib@ilgholding.com</p>
+      <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">${t.footer} | info@bikalima.com</p>
     </div>
   `;
 }
@@ -225,9 +229,10 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
     const html = isInstitution
       ? buildInstitutionHtml(payload)
       : buildIndividualHtml(payload);
+    log.info({ from: FROM_ADDRESS, admin: RECIPIENT, applicant: payload.email }, "[SMTP] Sending enrollment emails");
     try {
       await transporter.sendMail({
-        from: `"بكلمة - نماذج التسجيل" <info@bikalima.com>`,
+        from: FROM_ADDRESS,
         to: RECIPIENT,
         replyTo: payload.email,
         subject,
@@ -235,7 +240,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       });
       log.info({ to: RECIPIENT }, "Enrollment email sent to admin");
     } catch (err) {
-      log.error({ err }, "Failed to send enrollment email to admin");
+      log.error({ err }, "[SMTP] Failed to send enrollment email to admin");
     }
 
     if (payload.email) {
@@ -249,7 +254,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
           : `بكلمة — تم استلام طلبك بنجاح ✅`;
       try {
         await transporter.sendMail({
-          from: `"بكلمة" <info@bikalima.com>`,
+          from: FROM_ADDRESS,
           to: payload.email,
           replyTo: RECIPIENT,
           subject: confirmSubject,
@@ -257,11 +262,11 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
         });
         log.info({ to: payload.email }, "Confirmation email sent to applicant");
       } catch (err) {
-        log.error({ err }, "Failed to send confirmation email to applicant");
+        log.error({ err }, "[SMTP] Failed to send confirmation email to applicant");
       }
     }
   } else {
-    log.warn("SMTP not configured — enrollment email not sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS.");
+    log.warn("[SMTP] Not configured — enrollment email not sent. Set SMTP_HOST, SMTP_USER, SMTP_PASS.");
   }
 
   if (!dbStored) {
