@@ -309,7 +309,7 @@ export default function Home() {
     try {
       const base = import.meta.env.BASE_URL || "/";
       const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
-      await fetch(`${apiBase}/workbook-order`, {
+      const res = await fetch(`${apiBase}/workbook-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -328,6 +328,7 @@ export default function Home() {
           displayTotal: formatPrice((WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES] ?? 0) * wbQuantity),
         }),
       });
+      if (!res.ok) throw new Error("server_error");
       const emailNote = wbBuyerEmail
         ? (lang === "ar" ? " — تم إرسال تأكيد لبريدك الإلكتروني" : lang === "fr" ? " — Une confirmation a été envoyée à votre e-mail" : " — A confirmation was sent to your email")
         : "";
