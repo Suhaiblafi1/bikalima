@@ -40,82 +40,83 @@ function buildWorkbookAdminHtml(p: {
     : "نسخة مطبوعة / Printed Copy";
 
   const waText = encodeURIComponent(
-    `السلام عليكم ${p.buyerName} 👋\n\nشكراً على طلبك لكراسة *بكلمة* 📚\n\n📋 *ملخص طلبك:*\n• الكراسة: ${p.workbookTitle}\n• العدد: ${p.quantity} نسخة\n• الصيغة: ${formatLabel}\n• المجموع: ${p.displayTotal}\n\nسنتواصل معك قريباً لتأكيد تفاصيل الاستلام.\n\nفريق بكلمة ✨`
+    `أهلاً ${p.buyerName} ✦\n\nشكراً على طلبك لكراسة *${p.workbookTitle}* من *بكلمة* 📚\n\n` +
+    `*ملخص الطلب:*\n• الكراسة: ${p.workbookTitle}\n• العدد: ${p.quantity} نسخة\n• الصيغة: ${formatLabel}\n• المجموع: ${p.displayTotal}\n\n` +
+    `سأتواصل معك قريباً لتأكيد تفاصيل الاستلام والشحن.\n\nفريق بكلمة ✦`
   );
 
   return `
-    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;background:#f4f7f6;padding:24px;border-radius:16px;">
-      <div style="background:linear-gradient(135deg,#1a5c52,#25786A);padding:28px 32px;border-radius:12px;text-align:center;margin-bottom:20px;">
-        <div style="font-size:36px;margin-bottom:8px;">📚</div>
-        <h1 style="margin:0;color:#fff;font-size:22px;font-weight:bold;">طلب كراسة جديد</h1>
-        <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">بكلمة — Bikalima</p>
+    <div dir="rtl" style="font-family:Georgia,'Times New Roman',Arial,sans-serif;max-width:620px;margin:0 auto;background:#f4f6f5;padding:0;">
+      <div style="background:linear-gradient(135deg,#1a5c52 0%,#0f3d35 100%);padding:32px 36px;text-align:center;">
+        <p style="margin:0 0 6px;color:rgba(255,255,255,0.5);font-size:11px;letter-spacing:3px;text-transform:uppercase;">بكلمة ✦ Bikalima</p>
+        <h1 style="margin:0;color:#fff;font-size:22px;font-weight:normal;letter-spacing:1px;">طلب كراسة جديد</h1>
+        <div style="margin:14px auto 0;width:40px;height:2px;background:rgba(255,255,255,0.25);"></div>
       </div>
 
-      <div style="background:#fff;border-radius:12px;padding:28px 32px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
-        <h2 style="margin:0 0 20px;font-size:18px;color:#1a5c52;border-bottom:2px solid #e5f2f0;padding-bottom:12px;">تفاصيل الطلب</h2>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;">
-          <tr style="background:#f0faf8;">
-            <td style="padding:10px 12px;color:#666;width:150px;border-radius:6px 0 0 6px;">📚 الكراسة</td>
-            <td style="padding:10px 12px;font-weight:bold;color:#111;border-radius:0 6px 6px 0;">${p.workbookTitle || p.workbookId}</td>
+      <div style="background:#fff;padding:28px 36px 0;">
+        <h2 style="margin:0 0 16px;font-size:14px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;font-weight:normal;font-family:Arial,sans-serif;">تفاصيل الطلب</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;font-family:Arial,sans-serif;">
+          <tr style="background:#f9fafb;">
+            <td style="padding:11px 16px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;font-size:13px;">الكراسة</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${p.workbookTitle || p.workbookId}</td>
           </tr>
           <tr>
-            <td style="padding:10px 12px;color:#666;">🗂️ الصيغة</td>
-            <td style="padding:10px 12px;font-weight:bold;">${formatLabel}</td>
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">الصيغة</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${formatLabel}</td>
           </tr>
-          <tr style="background:#f9f9f9;">
-            <td style="padding:10px 12px;color:#666;">🔢 العدد</td>
-            <td style="padding:10px 12px;font-weight:bold;">${p.quantity} نسخة</td>
+          <tr style="background:#f9fafb;">
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">عدد النسخ</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${p.quantity} نسخة</td>
           </tr>
           <tr>
-            <td style="padding:10px 12px;color:#666;">💰 سعر النسخة</td>
-            <td style="padding:10px 12px;font-weight:bold;">${p.displayUnitPrice} (${p.currencyCode})</td>
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">سعر النسخة</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${p.displayUnitPrice} (${p.currencyCode})</td>
           </tr>
-          <tr style="background:#e8f9f5;">
-            <td style="padding:12px;color:#1a5c52;font-weight:bold;font-size:16px;">💵 المجموع</td>
-            <td style="padding:12px;font-weight:bold;color:#1a5c52;font-size:18px;">${p.displayTotal}</td>
+          <tr style="background:#e8f5f2;">
+            <td style="padding:13px 16px;color:#1a5c52;font-weight:bold;font-size:14px;border-bottom:1px solid #d1ede9;">المجموع الكلي</td>
+            <td style="padding:13px 16px;font-weight:bold;color:#1a5c52;font-size:17px;border-bottom:1px solid #d1ede9;">${p.displayTotal}</td>
           </tr>
           ${p.format === "print" && p.deliveryAddress ? `
           <tr>
-            <td style="padding:10px 12px;color:#666;">📦 عنوان التوصيل</td>
-            <td style="padding:10px 12px;font-weight:bold;">${p.deliveryAddress}</td>
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">عنوان التوصيل</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${p.deliveryAddress}</td>
           </tr>` : ""}
         </table>
-        ${p.format === "print" ? '<p style="color:#b45309;font-size:12px;margin-top:12px;padding:8px 12px;background:#fffbeb;border-radius:6px;border:1px solid #fde68a;">⚠️ السعر لا يشمل رسوم التوصيل</p>' : ""}
+        ${p.format === "print" ? '<p style="margin:12px 0 0;padding:10px 14px;background:#fffbeb;border-radius:6px;border-right:3px solid #f59e0b;font-size:12px;color:#92400e;font-family:Arial,sans-serif;">السعر لا يشمل رسوم التوصيل — سيتم التواصل لتنسيق الشحن.</p>' : ""}
       </div>
 
-      <div style="background:#fff;border-radius:12px;padding:28px 32px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
-        <h2 style="margin:0 0 20px;font-size:18px;color:#1a5c52;border-bottom:2px solid #e5f2f0;padding-bottom:12px;">بيانات المشتري</h2>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;">
-          <tr style="background:#f0faf8;">
-            <td style="padding:10px 12px;color:#666;width:150px;">👤 الاسم</td>
-            <td style="padding:10px 12px;font-weight:bold;">${p.buyerName}</td>
+      <div style="background:#fff;padding:24px 36px 0;margin-top:20px;border-top:1px solid #f0f0f0;">
+        <h2 style="margin:0 0 16px;font-size:14px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;font-weight:normal;font-family:Arial,sans-serif;">بيانات المشتري</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;font-family:Arial,sans-serif;">
+          <tr style="background:#f9fafb;">
+            <td style="padding:11px 16px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;font-size:13px;">الاسم</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${p.buyerName}</td>
           </tr>
           <tr>
-            <td style="padding:10px 12px;color:#666;">📞 الهاتف</td>
-            <td style="padding:10px 12px;font-weight:bold;" dir="ltr">${p.buyerPhone}</td>
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">رقم الهاتف</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;" dir="ltr">${p.buyerPhone}</td>
           </tr>
-          <tr style="background:#f9f9f9;">
-            <td style="padding:10px 12px;color:#666;">📧 البريد</td>
-            <td style="padding:10px 12px;font-weight:bold;" dir="ltr">${p.buyerEmail}</td>
+          <tr style="background:#f9fafb;">
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">البريد الإلكتروني</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;" dir="ltr">${p.buyerEmail}</td>
           </tr>
           <tr>
-            <td style="padding:10px 12px;color:#666;">🌐 اللغة</td>
-            <td style="padding:10px 12px;font-weight:bold;">${p.lang}</td>
+            <td style="padding:11px 16px;color:#6b7280;border-bottom:1px solid #f0f0f0;font-size:13px;">لغة المشتري</td>
+            <td style="padding:11px 16px;color:#111827;font-weight:600;border-bottom:1px solid #f0f0f0;">${p.lang === "en" ? "English" : p.lang === "fr" ? "Français" : "العربية"}</td>
           </tr>
         </table>
       </div>
 
-      <div style="text-align:center;margin-top:20px;">
+      <div style="padding:24px 36px 32px;background:#fff;text-align:center;border-top:1px solid #f0f0f0;margin-top:20px;">
         <a href="https://wa.me/${toWaPhone(p.buyerPhone)}?text=${waText}"
            target="_blank"
-           style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:14px 32px;border-radius:50px;text-decoration:none;font-size:15px;box-shadow:0 4px 12px rgba(37,211,102,0.3);">
-          💬 تواصل مع المشتري عبر واتساب
+           style="display:inline-block;background:#25D366;color:#fff;font-family:Arial,sans-serif;font-weight:bold;padding:13px 30px;border-radius:50px;text-decoration:none;font-size:14px;letter-spacing:0.5px;">
+          💬 فتح محادثة واتساب مع ${p.buyerName}
         </a>
+        <p style="margin:20px 0 0;color:#9ca3af;font-size:11px;font-family:Arial,sans-serif;">
+          ${new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman" })} ✦ بكلمة Admin
+        </p>
       </div>
-
-      <p style="color:#9ca3af;font-size:11px;text-align:center;margin-top:24px;">
-        ${new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman" })} • بكلمة Admin
-      </p>
     </div>`;
 }
 
@@ -143,137 +144,146 @@ function buildWorkbookApplicantConfirmationHtml(p: {
 
   const waText = encodeURIComponent(
     lang === "ar"
-      ? `السلام عليكم، أنا ${p.buyerName} وطلبت كراسة "${p.workbookTitle}". أودّ الاستفسار عن الطلب.`
+      ? `أهلاً، أنا ${p.buyerName} وطلبت كراسة "${p.workbookTitle}" من بكلمة. أودّ الاستفسار عن الخطوات القادمة لاستلام الطلب.`
       : lang === "fr"
-      ? `Bonjour, je suis ${p.buyerName} et j'ai commandé le cahier "${p.workbookTitle}". Je souhaite me renseigner sur ma commande.`
-      : `Hello, I'm ${p.buyerName} and I ordered the workbook "${p.workbookTitle}". I'd like to ask about my order.`
+      ? `Bonjour, je suis ${p.buyerName} et j'ai commandé le cahier "${p.workbookTitle}" chez Bikalima. Je souhaite me renseigner sur les prochaines étapes.`
+      : `Hello, I'm ${p.buyerName} and I just ordered the "${p.workbookTitle}" workbook from Bikalima. I'd love to know what happens next.`
   );
 
   const texts: Record<"ar" | "en" | "fr", Record<string, string>> = {
     ar: {
-      greeting: `مرحباً ${p.buyerName}،`,
-      line1: "وصل طلبك بنجاح! 🎉",
-      line2: `لقد استلمنا طلب شراء كراسة <strong>${p.workbookTitle}</strong> بنجاح.`,
+      label: "بكلمة ✦ تم استلام طلبك",
+      greeting: `أهلاً ${p.buyerName}،`,
+      line1: "وصل طلبك — وكراستك في الطريق إليك! ✦",
+      line2: `تلقّينا طلب شراء كراسة <strong>${p.workbookTitle}</strong> بنجاح، ونحن سعداء بثقتك بنا.`,
       line3: p.format === "print"
-        ? "سيتواصل معك فريقنا قريباً لتأكيد تفاصيل الشحن والتوصيل."
-        : "سيصلك رابط التحميل بعد التأكيد ومعالجة الطلب.",
+        ? "سيتواصل معك أحد أعضاء فريقنا قريباً لتأكيد تفاصيل الشحن والتوصيل."
+        : "سيتم مراجعة طلبك وإرسال رابط التحميل إلى بريدك الإلكتروني.",
       deliveryLabel: "عنوان التوصيل",
       formatLabel: "الصيغة",
       quantityLabel: "العدد",
       unitLabel: "سعر النسخة",
       totalLabel: "المجموع",
-      quote: `"كل كلمة تكتبها اليوم قد تُغيّر مسار شخص ما غداً."`,
-      waBtn: "تواصل مع الفريق عبر واتساب",
-      footer: "بكلمة — صناعة الأثر وفن الإلقاء والخطابة",
+      summaryTitle: "ملخص الطلب",
       nextStepsLabel: "الخطوات القادمة",
       nextSteps: p.format === "print"
-        ? "سيتواصل معك أحد أعضاء الفريق لتأكيد تفاصيل التوصيل وتنسيق الشحن. السعر لا يشمل رسوم التوصيل."
-        : "سيتم مراجعة طلبك وإرسال رابط التحميل لنسخة الـ PDF إلى بريدك الإلكتروني.",
+        ? "سيتواصل معك أحد أعضاء الفريق لتنسيق الشحن والتوصيل. السعر لا يشمل رسوم التوصيل."
+        : "سيتم مراجعة طلبك وإرسال رابط تحميل الـ PDF إلى بريدك الإلكتروني.",
+      quote: "لا تُقاس الكلمات بعددها، بل بالأثر الذي تتركه في القلوب.",
+      waBtn: "تواصل مع الفريق عبر واتساب",
+      footer: "بكلمة ✦ صناعة الأثر وفن الإلقاء والخطابة",
     },
     en: {
+      label: "Bikalima ✦ Your Order Is Confirmed",
       greeting: `Hello ${p.buyerName},`,
-      line1: "Your order has been received! 🎉",
-      line2: `We've received your order for the <strong>${p.workbookTitle}</strong> workbook.`,
+      line1: "Your order is in — your workbook is on its way! ✦",
+      line2: `We've received your order for the <strong>${p.workbookTitle}</strong> workbook. Thank you for choosing Bikalima.`,
       line3: p.format === "print"
-        ? "Our team will contact you soon to confirm shipping details."
-        : "Your download link will be sent after order processing.",
+        ? "A member of our team will contact you soon to confirm shipping details."
+        : "Your download link will be sent to your email after order processing.",
       deliveryLabel: "Delivery Address",
       formatLabel: "Format",
       quantityLabel: "Quantity",
       unitLabel: "Unit Price",
       totalLabel: "Total",
-      quote: `"Every word you write today might change someone's path tomorrow."`,
-      waBtn: "Chat with Us on WhatsApp",
-      footer: "Bikalima — The Art of Impactful Speech",
+      summaryTitle: "Order Summary",
       nextStepsLabel: "Next Steps",
       nextSteps: p.format === "print"
-        ? "A team member will contact you to confirm delivery details and arrange shipping. Price does not include delivery fees."
+        ? "A team member will reach out to arrange shipping. Price does not include delivery fees."
         : "Your order will be reviewed and a PDF download link will be sent to your email.",
+      quote: "Words are not measured by their count, but by the impression they leave on hearts.",
+      waBtn: "Chat with our team on WhatsApp",
+      footer: "Bikalima ✦ The Art of Impactful Speech",
     },
     fr: {
+      label: "Bikalima ✦ Votre commande est confirmée",
       greeting: `Bonjour ${p.buyerName},`,
-      line1: "Votre commande a bien été reçue ! 🎉",
-      line2: `Nous avons bien reçu votre commande pour le cahier <strong>${p.workbookTitle}</strong>.`,
+      line1: "Votre commande est reçue — votre cahier arrive ! ✦",
+      line2: `Nous avons bien reçu votre commande pour le cahier <strong>${p.workbookTitle}</strong>. Merci de nous faire confiance.`,
       line3: p.format === "print"
-        ? "Notre équipe vous contactera bientôt pour confirmer les détails de livraison."
+        ? "Un membre de notre équipe vous contactera bientôt pour confirmer les détails de livraison."
         : "Votre lien de téléchargement sera envoyé après traitement de la commande.",
       deliveryLabel: "Adresse de livraison",
       formatLabel: "Format",
       quantityLabel: "Quantité",
       unitLabel: "Prix unitaire",
       totalLabel: "Total",
-      quote: `"Chaque mot que vous écrivez aujourd'hui peut changer le parcours de quelqu'un demain."`,
-      waBtn: "Contacter l'équipe sur WhatsApp",
-      footer: "Bikalima — L'art de la parole impactante",
+      summaryTitle: "Résumé de la commande",
       nextStepsLabel: "Prochaines étapes",
       nextSteps: p.format === "print"
-        ? "Un membre de l'équipe vous contactera pour confirmer les détails de livraison. Le prix n'inclut pas les frais de livraison."
+        ? "Un membre de l'équipe vous contactera pour organiser la livraison. Le prix n'inclut pas les frais de livraison."
         : "Votre commande sera traitée et un lien de téléchargement PDF vous sera envoyé par e-mail.",
+      quote: "Les mots ne se mesurent pas à leur nombre, mais à l'empreinte qu'ils laissent dans les cœurs.",
+      waBtn: "Contacter l'équipe sur WhatsApp",
+      footer: "Bikalima ✦ L'art de la parole impactante",
     },
   };
 
   const t = texts[lang];
+  const borderSide = lang === "ar" ? "right" : "left";
 
   return `
-    <div dir="${dir}" style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;background:#f4f7f6;padding:24px;border-radius:16px;">
-      <div style="background:linear-gradient(135deg,#1a5c52,#25786A);padding:32px 24px;border-radius:12px;text-align:center;margin-bottom:20px;">
-        <div style="font-size:40px;margin-bottom:10px;">📚</div>
-        <h1 style="margin:0;color:#fff;font-size:24px;font-weight:bold;">بكلمة — Bikalima</h1>
-        <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">${t.footer}</p>
+    <div dir="${dir}" style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;background:#f4f6f5;padding:0;">
+      <div style="background:linear-gradient(135deg,#1a5c52 0%,#0f3d35 100%);padding:36px 32px;text-align:center;">
+        <p style="margin:0 0 8px;color:rgba(255,255,255,0.5);font-size:11px;letter-spacing:3px;text-transform:uppercase;">بكلمة ✦ Bikalima</p>
+        <h1 style="margin:0;color:#fff;font-size:20px;font-weight:normal;letter-spacing:0.5px;">${t.label}</h1>
+        <div style="margin:16px auto 0;width:40px;height:2px;background:rgba(255,255,255,0.25);"></div>
       </div>
 
-      <div style="background:#fff;border-radius:12px;padding:28px 32px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
-        <h2 style="margin:0 0 12px;font-size:20px;color:#1a5c52;">${t.greeting}</h2>
-        <p style="font-size:20px;font-weight:bold;color:#111;margin:0 0 12px;">${t.line1}</p>
+      <div style="background:#fff;padding:32px 36px;">
+        <h2 style="margin:0 0 6px;font-size:20px;color:#1a5c52;font-weight:bold;">${t.greeting}</h2>
+        <p style="font-size:18px;font-weight:bold;color:#111;margin:0 0 16px;">${t.line1}</p>
         <p style="color:#374151;line-height:1.75;margin:0 0 12px;" dir="${dir}">${t.line2}</p>
-        <p style="color:#374151;line-height:1.75;margin:0 0 24px;" dir="${dir}">${t.line3}</p>
+        <p style="color:#374151;line-height:1.75;margin:0 0 28px;" dir="${dir}">${t.line3}</p>
 
-        <div style="background:#f0faf8;border-radius:10px;padding:20px;margin-bottom:20px;border:1px solid #d1ede9;">
-          <h3 style="margin:0 0 14px;font-size:15px;color:#1a5c52;font-weight:bold;">🧾 ${lang === "ar" ? "ملخص الطلب" : lang === "fr" ? "Résumé de la commande" : "Order Summary"}</h3>
+        <div style="background:#f0faf8;border-radius:10px;padding:20px 24px;margin-bottom:20px;border:1px solid #d1ede9;">
+          <p style="margin:0 0 14px;font-size:12px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">${t.summaryTitle}</p>
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <tr>
-              <td style="padding:7px 0;color:#555;width:45%;">${t.formatLabel}</td>
-              <td style="padding:7px 0;font-weight:bold;">${formatLabel}</td>
+              <td style="padding:8px 0;color:#555;width:45%;border-bottom:1px solid #e5efed;">${t.formatLabel}</td>
+              <td style="padding:8px 0;font-weight:600;border-bottom:1px solid #e5efed;">${formatLabel}</td>
             </tr>
             <tr>
-              <td style="padding:7px 0;color:#555;">${t.quantityLabel}</td>
-              <td style="padding:7px 0;font-weight:bold;">${p.quantity}</td>
+              <td style="padding:8px 0;color:#555;border-bottom:1px solid #e5efed;">${t.quantityLabel}</td>
+              <td style="padding:8px 0;font-weight:600;border-bottom:1px solid #e5efed;">${p.quantity}</td>
             </tr>
             <tr>
-              <td style="padding:7px 0;color:#555;">${t.unitLabel}</td>
-              <td style="padding:7px 0;font-weight:bold;">${p.displayUnitPrice}</td>
+              <td style="padding:8px 0;color:#555;border-bottom:1px solid #e5efed;">${t.unitLabel}</td>
+              <td style="padding:8px 0;font-weight:600;border-bottom:1px solid #e5efed;">${p.displayUnitPrice}</td>
             </tr>
-            <tr style="border-top:2px solid #d1ede9;margin-top:8px;">
-              <td style="padding:10px 0;color:#1a5c52;font-weight:bold;font-size:16px;">${t.totalLabel}</td>
-              <td style="padding:10px 0;font-weight:bold;color:#1a5c52;font-size:18px;">${p.displayTotal}</td>
+            <tr>
+              <td style="padding:10px 0;color:#1a5c52;font-weight:bold;font-size:15px;">${t.totalLabel}</td>
+              <td style="padding:10px 0;font-weight:bold;color:#1a5c52;font-size:17px;">${p.displayTotal}</td>
             </tr>
             ${p.format === "print" && p.deliveryAddress ? `
             <tr>
-              <td style="padding:7px 0;color:#555;">${t.deliveryLabel}</td>
-              <td style="padding:7px 0;font-weight:bold;">${p.deliveryAddress}</td>
+              <td style="padding:8px 0;color:#555;border-top:1px solid #e5efed;">${t.deliveryLabel}</td>
+              <td style="padding:8px 0;font-weight:600;border-top:1px solid #e5efed;">${p.deliveryAddress}</td>
             </tr>` : ""}
           </table>
         </div>
 
-        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
-          <p style="margin:0;font-size:14px;color:#92400e;font-weight:bold;">📌 ${t.nextStepsLabel}</p>
-          <p style="margin:6px 0 0;font-size:13px;color:#78350f;line-height:1.6;">${t.nextSteps}</p>
+        <div style="background:#fffbeb;border-${borderSide}:3px solid #f59e0b;padding:13px 18px;border-radius:4px;margin-bottom:24px;">
+          <p style="margin:0;font-size:13px;font-weight:bold;color:#92400e;">${t.nextStepsLabel}</p>
+          <p style="margin:5px 0 0;font-size:13px;color:#78350f;line-height:1.6;">${t.nextSteps}</p>
         </div>
 
-        <div style="border-${lang === "ar" ? "right" : "left"}:4px solid #25786A;padding:12px 16px;background:#f0faf8;border-radius:6px;margin-bottom:24px;">
-          <p style="margin:0;color:#1a5c52;font-style:italic;font-size:15px;">${t.quote}</p>
+        <div style="border-${borderSide}:3px solid #1a5c52;padding:14px 20px;background:#f0faf8;border-radius:4px;margin-bottom:28px;">
+          <p style="margin:0;color:#1a5c52;font-style:italic;font-size:14px;line-height:1.7;">${t.quote}</p>
         </div>
 
         <div style="text-align:center;">
           <a href="https://wa.me/${WA_NUMBER}?text=${waText}"
              target="_blank"
-             style="display:inline-block;background:#25D366;color:white;font-weight:bold;padding:13px 30px;border-radius:50px;text-decoration:none;font-size:15px;box-shadow:0 4px 12px rgba(37,211,102,0.3);">
+             style="display:inline-block;background:#25D366;color:#fff;font-weight:bold;font-family:Arial,sans-serif;padding:13px 32px;border-radius:50px;text-decoration:none;font-size:14px;letter-spacing:0.5px;">
             💬 ${t.waBtn}
           </a>
         </div>
       </div>
 
-      <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">${t.footer} | ${ADMIN_EMAIL}</p>
+      <div style="padding:20px 36px;text-align:center;background:#f4f6f5;">
+        <p style="margin:0;color:#9ca3af;font-size:11px;">${t.footer} | ${ADMIN_EMAIL}</p>
+      </div>
     </div>`;
 }
 
@@ -348,7 +358,7 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
             from: FROM_ADDRESS,
             to: ADMIN_EMAIL,
             replyTo: buyerEmail,
-            subject: `📚 طلب كراسة: ${workbookTitle ?? workbookId} — ${buyerName}`,
+            subject: `بكلمة ✦ طلب كراسة — ${workbookTitle ?? workbookId} / ${buyerName}`,
             html: adminHtml,
           }),
           buyerEmail
@@ -358,10 +368,10 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
                 replyTo: ADMIN_EMAIL,
                 subject:
                   lang === "fr"
-                    ? `Bikalima — Commande confirmée : ${workbookTitle ?? workbookId}`
+                    ? `Bikalima ✦ Votre commande est confirmée — ${workbookTitle ?? workbookId}`
                     : lang === "en"
-                    ? `Bikalima — Order Confirmed: ${workbookTitle ?? workbookId}`
-                    : `بكلمة — تأكيد طلب: ${workbookTitle ?? workbookId}`,
+                    ? `Bikalima ✦ Your order is confirmed — ${workbookTitle ?? workbookId}`
+                    : `بكلمة ✦ وصل طلبك — ${workbookTitle ?? workbookId}`,
                 html: applicantHtml,
               })
             : Promise.resolve(),
