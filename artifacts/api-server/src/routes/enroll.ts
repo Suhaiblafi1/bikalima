@@ -83,11 +83,11 @@ function buildIndividualHtml(p: Record<string, string>) {
           <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ إجراء مطلوب</span>
         </td></tr></table>
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل جديد — فردي</h1>
-        <p style="margin:0;color:rgba(255,255,255,0.88);font-size:12px;">${now}</p>
+        <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
       <td style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
         <div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.38);border-radius:12px;padding:14px 18px;min-width:140px;">
-          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.85);">المتقدم</p>
+          <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المتقدم</p>
           <p style="margin:0;font-size:15px;font-weight:700;color:#fff;">${p.name || "—"}</p>
           <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.90);" dir="ltr">${p.phone || "—"}</p>
         </div>
@@ -168,11 +168,11 @@ function buildInstitutionHtml(p: Record<string, string>) {
           <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ شراكة مؤسسية — إجراء مطلوب</span>
         </td></tr></table>
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل مؤسسي جديد</h1>
-        <p style="margin:0;color:rgba(255,255,255,0.88);font-size:12px;">${now}</p>
+        <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
       <td style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
         <div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.38);border-radius:12px;padding:14px 18px;min-width:140px;">
-          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.85);">المؤسسة</p>
+          <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المؤسسة</p>
           <p style="margin:0;font-size:14px;font-weight:700;color:#fff;">${p.orgName || "—"}</p>
           <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.90);">${p.contactPerson || "—"}</p>
         </div>
