@@ -90,10 +90,10 @@ function buildIndividualHtml(p: Record<string, string>) {
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل جديد — فردي</h1>
         <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
-      <td bgcolor="#0d3d36" style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
+      <td bgcolor="#0d3d36" style="padding:20px 16px 20px 16px;vertical-align:top;text-align:left;">
         <div style="background:#1a5045;border:1px solid #2d7a6a;border-radius:12px;padding:14px 18px;min-width:140px;">
           <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المتقدم</p>
-          <p style="margin:0;font-size:15px;font-weight:700;color:#ffffff;">${p.name || "—"}</p>
+          <p style="margin:0;font-size:15px;color:#ffffff;">${p.name || "—"}</p>
           <p style="margin:4px 0 0;font-size:12px;color:#d4eee9;" dir="ltr">${p.phone || "—"}</p>
         </div>
       </td>
@@ -104,33 +104,33 @@ function buildIndividualHtml(p: Record<string, string>) {
       <td style="padding:20px 32px 20px 16px;width:50%;vertical-align:top;">
         <div style="background:#f0faf8;border-radius:10px;padding:14px 16px;border:1px solid #c7e8e1;">
           <p style="margin:0 0 3px;font-size:10px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">البرنامج</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#1a5c52;">${p.program || "—"}</p>
+          <p style="margin:0;font-size:14px;color:#1a5c52;">${p.program || "—"}</p>
         </div>
       </td>
       <td style="padding:20px 16px 20px 32px;width:50%;vertical-align:top;">
         <div style="background:#f0faf8;border-radius:10px;padding:14px 16px;border:1px solid #c7e8e1;">
           <p style="margin:0 0 3px;font-size:10px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">نوع التدريب</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#1a5c52;">${modeLabel(p.mode) || "—"}</p>
+          <p style="margin:0;font-size:14px;color:#1a5c52;">${modeLabel(p.mode) || "—"}</p>
         </div>
       </td>
     </tr>
   </table>
   <div style="background:#fff;padding:8px 32px 24px;">
     <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
-      ${rows.map(([label, value], i) => `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#ffffff"};"><td style="padding:10px 14px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;">${label}</td><td style="padding:10px 14px;color:#111;font-weight:600;border-bottom:1px solid #f0f0f0;">${value ?? "—"}</td></tr>`).join("")}
+      ${rows.map(([label, value], i) => `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#ffffff"};"><td style="padding:10px 14px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;">${label}</td><td style="padding:10px 14px;color:#111;border-bottom:1px solid #f0f0f0;">${value ?? "—"}</td></tr>`).join("")}
     </table>
   </div>
   <div style="padding:0 32px 24px;">
     <div style="background:#fffbeb;border:1px solid #fde68a;border-right:4px solid #f59e0b;border-radius:10px;padding:20px 22px;">
-      <p style="margin:0 0 14px;font-size:13px;font-weight:800;color:#92400e;">📋 الخطوات المطلوبة منك الآن</p>
+      <p style="margin:0 0 14px;font-size:13px;color:#92400e;">📋 الخطوات المطلوبة منك الآن</p>
       <table cellpadding="0" cellspacing="0" style="width:100%;">
-        ${actions.map((step, i) => `<tr><td style="width:28px;padding:0 12px 10px 0;vertical-align:top;"><div style="width:22px;height:22px;border-radius:11px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;text-align:center;line-height:22px;">${i + 1}</div></td><td style="padding:2px 0 10px;font-size:13px;color:#78350f;line-height:1.55;vertical-align:top;">${step}</td></tr>`).join("")}
+        ${actions.map((step, i) => `<tr><td style="width:28px;padding:0 12px 10px 0;vertical-align:top;"><div style="width:22px;height:22px;border-radius:11px;background:#f59e0b;color:#fff;font-size:11px;text-align:center;line-height:22px;">${i + 1}</div></td><td style="padding:2px 0 10px;font-size:13px;color:#78350f;line-height:1.55;vertical-align:top;">${step}</td></tr>`).join("")}
       </table>
     </div>
   </div>
   <div style="padding:0 32px 36px;text-align:center;">
     <a href="https://wa.me/${toWaPhone(p.phone)}?text=${waMsg}" target="_blank"
-       style="display:inline-block;background:#25D366;color:#fff;font-weight:800;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
+       style="display:inline-block;background:#25D366;color:#fff;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
       💬 تواصل الآن مع ${p.name}
     </a>
     <p style="margin:12px 0 0;color:#b0b8b6;font-size:12px;" dir="ltr">${p.phone}</p>
@@ -181,10 +181,10 @@ function buildInstitutionHtml(p: Record<string, string>) {
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل مؤسسي جديد</h1>
         <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
-      <td bgcolor="#0d3d36" style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
+      <td bgcolor="#0d3d36" style="padding:20px 16px 20px 16px;vertical-align:top;text-align:left;">
         <div style="background:#1a5045;border:1px solid #2d7a6a;border-radius:12px;padding:14px 18px;min-width:140px;">
           <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المؤسسة</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">${p.orgName || "—"}</p>
+          <p style="margin:0;font-size:14px;color:#ffffff;">${p.orgName || "—"}</p>
           <p style="margin:4px 0 0;font-size:12px;color:#d4eee9;">${p.contactPerson || "—"}</p>
         </div>
       </td>
@@ -195,33 +195,33 @@ function buildInstitutionHtml(p: Record<string, string>) {
       <td style="padding:20px 32px 20px 16px;width:50%;vertical-align:top;">
         <div style="background:#f0faf8;border-radius:10px;padding:14px 16px;border:1px solid #c7e8e1;">
           <p style="margin:0 0 3px;font-size:10px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">البرنامج</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#1a5c52;">${p.program || "—"}</p>
+          <p style="margin:0;font-size:14px;color:#1a5c52;">${p.program || "—"}</p>
         </div>
       </td>
       <td style="padding:20px 16px 20px 32px;width:50%;vertical-align:top;">
         <div style="background:#f0faf8;border-radius:10px;padding:14px 16px;border:1px solid #c7e8e1;">
           <p style="margin:0 0 3px;font-size:10px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">حجم المجموعة</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#1a5c52;">${p.studentCount ? `${p.studentCount} طالب` : "—"}</p>
+          <p style="margin:0;font-size:14px;color:#1a5c52;">${p.studentCount ? `${p.studentCount} طالب` : "—"}</p>
         </div>
       </td>
     </tr>
   </table>
   <div style="background:#fff;padding:8px 32px 24px;">
     <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
-      ${rows.map(([label, value], i) => `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#ffffff"};"><td style="padding:10px 14px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;">${label}</td><td style="padding:10px 14px;color:#111;font-weight:600;border-bottom:1px solid #f0f0f0;">${value ?? "—"}</td></tr>`).join("")}
+      ${rows.map(([label, value], i) => `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#ffffff"};"><td style="padding:10px 14px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;">${label}</td><td style="padding:10px 14px;color:#111;border-bottom:1px solid #f0f0f0;">${value ?? "—"}</td></tr>`).join("")}
     </table>
   </div>
   <div style="padding:0 32px 24px;">
     <div style="background:#fffbeb;border:1px solid #fde68a;border-right:4px solid #f59e0b;border-radius:10px;padding:20px 22px;">
-      <p style="margin:0 0 14px;font-size:13px;font-weight:800;color:#92400e;">📋 الخطوات المطلوبة منك الآن</p>
+      <p style="margin:0 0 14px;font-size:13px;color:#92400e;">📋 الخطوات المطلوبة منك الآن</p>
       <table cellpadding="0" cellspacing="0" style="width:100%;">
-        ${actions.map((step, i) => `<tr><td style="width:28px;padding:0 12px 10px 0;vertical-align:top;"><div style="width:22px;height:22px;border-radius:11px;background:#f59e0b;color:#fff;font-size:11px;font-weight:800;text-align:center;line-height:22px;">${i + 1}</div></td><td style="padding:2px 0 10px;font-size:13px;color:#78350f;line-height:1.55;vertical-align:top;">${step}</td></tr>`).join("")}
+        ${actions.map((step, i) => `<tr><td style="width:28px;padding:0 12px 10px 0;vertical-align:top;"><div style="width:22px;height:22px;border-radius:11px;background:#f59e0b;color:#fff;font-size:11px;text-align:center;line-height:22px;">${i + 1}</div></td><td style="padding:2px 0 10px;font-size:13px;color:#78350f;line-height:1.55;vertical-align:top;">${step}</td></tr>`).join("")}
       </table>
     </div>
   </div>
   <div style="padding:0 32px 36px;text-align:center;">
     <a href="https://wa.me/${toWaPhone(p.phone)}?text=${waMsg}" target="_blank"
-       style="display:inline-block;background:#25D366;color:#fff;font-weight:800;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
+       style="display:inline-block;background:#25D366;color:#fff;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
       💬 تواصل مع ${p.contactPerson || p.orgName}
     </a>
     <p style="margin:12px 0 0;color:#b0b8b6;font-size:12px;" dir="ltr">${p.phone}</p>
