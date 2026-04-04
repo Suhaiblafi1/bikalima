@@ -75,7 +75,7 @@ function buildIndividualHtml(p: Record<string, string>) {
     "إرسال تفاصيل التسجيل أو رابط الدفع",
     "متابعة خلال ٤٨ ساعة للتأكد من اكتمال التسجيل",
   ];
-  return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
+  return `<div dir="rtl" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
   <table cellpadding="0" cellspacing="0" style="width:100%;background:linear-gradient(150deg,#07201c 0%,#1a5c52 100%);">
     <tr>
       <td style="padding:24px 32px 20px;">
@@ -83,13 +83,13 @@ function buildIndividualHtml(p: Record<string, string>) {
           <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ إجراء مطلوب</span>
         </td></tr></table>
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل جديد — فردي</h1>
-        <p style="margin:0;color:rgba(255,255,255,0.5);font-size:12px;">${now}</p>
+        <p style="margin:0;color:rgba(255,255,255,0.88);font-size:12px;">${now}</p>
       </td>
       <td style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
-        <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 18px;min-width:140px;">
-          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.45);">المتقدم</p>
+        <div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.38);border-radius:12px;padding:14px 18px;min-width:140px;">
+          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.85);">المتقدم</p>
           <p style="margin:0;font-size:15px;font-weight:700;color:#fff;">${p.name || "—"}</p>
-          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.55);" dir="ltr">${p.phone || "—"}</p>
+          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.90);" dir="ltr">${p.phone || "—"}</p>
         </div>
       </td>
     </tr>
@@ -131,7 +131,7 @@ function buildIndividualHtml(p: Record<string, string>) {
     <p style="margin:12px 0 0;color:#b0b8b6;font-size:12px;" dir="ltr">${p.phone}</p>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.85);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
   </div>
 </div>`
 ;}
@@ -160,7 +160,7 @@ function buildInstitutionHtml(p: Record<string, string>) {
     "إعداد عرض سعر مخصص بناءً على الأعداد",
     "إرسال مقترح الشراكة الرسمي وخطة التنفيذ",
   ];
-  return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
+  return `<div dir="rtl" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
   <table cellpadding="0" cellspacing="0" style="width:100%;background:linear-gradient(150deg,#07201c 0%,#1a5c52 100%);">
     <tr>
       <td style="padding:24px 32px 20px;">
@@ -168,13 +168,13 @@ function buildInstitutionHtml(p: Record<string, string>) {
           <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ شراكة مؤسسية — إجراء مطلوب</span>
         </td></tr></table>
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل مؤسسي جديد</h1>
-        <p style="margin:0;color:rgba(255,255,255,0.5);font-size:12px;">${now}</p>
+        <p style="margin:0;color:rgba(255,255,255,0.88);font-size:12px;">${now}</p>
       </td>
       <td style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
-        <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 18px;min-width:140px;">
-          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.45);">المؤسسة</p>
+        <div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.38);border-radius:12px;padding:14px 18px;min-width:140px;">
+          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.85);">المؤسسة</p>
           <p style="margin:0;font-size:14px;font-weight:700;color:#fff;">${p.orgName || "—"}</p>
-          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.55);">${p.contactPerson || "—"}</p>
+          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.90);">${p.contactPerson || "—"}</p>
         </div>
       </td>
     </tr>
@@ -216,7 +216,7 @@ function buildInstitutionHtml(p: Record<string, string>) {
     <p style="margin:12px 0 0;color:#b0b8b6;font-size:12px;" dir="ltr">${p.phone}</p>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.85);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
   </div>
 </div>`;
 }
@@ -310,10 +310,10 @@ function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution
     : lang === "fr" ? "* Tarif pour accès enregistré + direct — varie selon le type de formation"
     : "* Price is for recorded + live stream access — varies by training type";
 
-  return `<div dir="${dir}" style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f0ee;">
+  return `<div dir="${dir}" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f0ee;">
   <div style="background:linear-gradient(160deg,#07201c 0%,#1a5c52 50%,#25786a 100%);padding:52px 32px 44px;text-align:center;">
     <p style="margin:0 0 6px;font-size:32px;">🎙️</p>
-    <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.65);text-transform:uppercase;">${t.heroSub}</p>
+    <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.88);text-transform:uppercase;">${t.heroSub}</p>
     <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.35;">${t.hero}</h1>
   </div>
   <div style="background:#fff;padding:36px 32px 24px;">
@@ -357,7 +357,7 @@ function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution
     </a>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7);">${t.footer} | info@bikalima.com</p>
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.88);">${t.footer} | info@bikalima.com</p>
   </div>
 </div>`;
 }

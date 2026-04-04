@@ -50,7 +50,7 @@ function buildWorkbookAdminHtml(p: {
     "متابعة رضا العميل خلال ٤٨ ساعة بعد التسليم",
   ];
 
-  return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
+  return `<div dir="rtl" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
   <table cellpadding="0" cellspacing="0" style="width:100%;background:linear-gradient(150deg,#07201c 0%,#1a5c52 100%);">
     <tr>
       <td style="padding:24px 32px 20px;">
@@ -58,13 +58,13 @@ function buildWorkbookAdminHtml(p: {
           <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ طلب كراسة — إجراء مطلوب</span>
         </td></tr></table>
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب شراء كراسة جديد</h1>
-        <p style="margin:0;color:rgba(255,255,255,0.6);font-size:12px;">${now}</p>
+        <p style="margin:0;color:rgba(255,255,255,0.88);font-size:12px;">${now}</p>
       </td>
       <td style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
-        <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:14px 18px;min-width:140px;">
-          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.55);">المشتري</p>
+        <div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.38);border-radius:12px;padding:14px 18px;min-width:140px;">
+          <p style="margin:0 0 2px;font-size:12px;color:rgba(255,255,255,0.85);">المشتري</p>
           <p style="margin:0;font-size:14px;font-weight:700;color:#fff;">${p.buyerName}</p>
-          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.65);" dir="ltr">${p.buyerPhone}</p>
+          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.90);" dir="ltr">${p.buyerPhone}</p>
         </div>
       </td>
     </tr>
@@ -114,7 +114,7 @@ function buildWorkbookAdminHtml(p: {
     <p style="margin:12px 0 0;color:#6b7280;font-size:12px;" dir="ltr">${p.buyerPhone} · ${p.buyerEmail}</p>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.6);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.82);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
   </div>
 </div>`;
 }
@@ -236,10 +236,10 @@ function buildWorkbookApplicantConfirmationHtml(p: {
     { icon: "3", title: t.s3t, desc: t.s3d, bg: "#94a3b8", textColor: "#334155", descColor: "#475569", borderColor: "#cbd5e1", rowBg: "#f1f5f9" },
   ];
 
-  return `<div dir="${dir}" style="font-family:Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f0ee;">
+  return `<div dir="${dir}" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f0ee;">
   <div style="background:linear-gradient(160deg,#07201c 0%,#1a5c52 50%,#25786a 100%);padding:52px 32px 44px;text-align:center;">
     <p style="margin:0 0 6px;font-size:32px;">📚</p>
-    <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.65);text-transform:uppercase;">${lang === "ar" ? "بكلمة ✦ مكتبة المعرفة" : lang === "fr" ? "Bikalima ✦ Bibliothèque" : "Bikalima ✦ Knowledge Library"}</p>
+    <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.90);text-transform:uppercase;">${lang === "ar" ? "بكلمة ✦ مكتبة المعرفة" : lang === "fr" ? "Bikalima ✦ Bibliothèque" : "Bikalima ✦ Knowledge Library"}</p>
     <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.35;">${t.hero}</h1>
   </div>
   <div style="background:#fff;padding:36px 32px 24px;">
@@ -287,7 +287,7 @@ function buildWorkbookApplicantConfirmationHtml(p: {
     </a>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.7);">${t.footer} | ${ADMIN_EMAIL}</p>
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.88);">${t.footer} | ${ADMIN_EMAIL}</p>
   </div>
 </div>`;
 }
