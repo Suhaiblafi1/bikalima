@@ -1249,7 +1249,7 @@ export default function Home() {
                         <Input type="email" required dir="ltr" value={orgFormData.email} onChange={(e) => setOrgFormData({ ...orgFormData, email: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="info@school.edu" />
                       </div>
                     </div>
-                    <div className="grid md:grid-cols-3 gap-5">
+                    <div className="grid md:grid-cols-2 gap-5">
                       <div className="space-y-2">
                         <Label>{t.enroll.studentCountLabel}</Label>
                         <Input type="number" required value={orgFormData.studentCount} onChange={(e) => setOrgFormData({ ...orgFormData, studentCount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="50" />
@@ -1258,17 +1258,13 @@ export default function Home() {
                         <Label>{t.enroll.teacherCountLabel}</Label>
                         <Input type="number" required value={orgFormData.teacherCount} onChange={(e) => setOrgFormData({ ...orgFormData, teacherCount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="5" />
                       </div>
-                      <div className="space-y-2">
-                        <Label>{t.enroll.workbookCountLabel}</Label>
-                        <Input type="number" value={orgFormData.workbookCount} onChange={(e) => setOrgFormData({ ...orgFormData, workbookCount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="50" />
-                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>{t.enroll.programLabel}</Label>
                       <Select value={orgFormData.program} onValueChange={(val) => setOrgFormData({ ...orgFormData, program: val })}>
                         <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
                         <SelectContent>
-                          {localizedPrograms.map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
+                          {localizedPrograms.filter((p) => p.id === "teachers" || p.id === "children").map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
                         </SelectContent>
                       </Select>
                     </div>
