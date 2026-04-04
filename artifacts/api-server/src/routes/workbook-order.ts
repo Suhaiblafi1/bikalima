@@ -71,7 +71,7 @@ function buildWorkbookAdminHtml(p: {
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب شراء كراسة جديد</h1>
         <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
-      <td bgcolor="#0d3d36" style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
+      <td bgcolor="#0d3d36" style="padding:20px 20px 20px 16px;vertical-align:top;text-align:left;">
         <div style="background:#1a5045;border:1px solid #2d7a6a;border-radius:12px;padding:14px 18px;min-width:140px;">
           <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المشتري</p>
           <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">${p.buyerName}</p>
@@ -99,14 +99,14 @@ function buildWorkbookAdminHtml(p: {
   </table>
   <div style="background:#fff;padding:8px 32px 24px;">
     <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;width:42%;border-bottom:1px solid #f0f0f0;font-weight:500;">الكراسة</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;">${p.workbookTitle || p.workbookId}</td></tr>
-      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;font-weight:500;">الصيغة</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;">${formatLabel}</td></tr>
-      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;font-weight:500;">عدد النسخ</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;">${p.quantity} نسخة</td></tr>
-      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;font-weight:500;">سعر النسخة</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;">${p.displayUnitPrice} (${p.currencyCode})</td></tr>
-      ${p.format === "print" && p.deliveryAddress ? `<tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;font-weight:500;">عنوان التوصيل</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;">${p.deliveryAddress}</td></tr>` : ""}
-      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;font-weight:500;">الاسم</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;">${p.buyerName}</td></tr>
-      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;font-weight:500;">البريد</td><td style="padding:10px 14px;color:#111;font-weight:700;border-bottom:1px solid #f0f0f0;" dir="ltr">${p.buyerEmail}</td></tr>
-      <tr><td style="padding:12px 14px;color:#0d3b32;font-weight:800;font-size:15px;">المجموع الكلي</td><td style="padding:12px 14px;color:#1a5c52;font-weight:800;font-size:17px;">${p.displayTotal}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;width:42%;border-bottom:1px solid #f0f0f0;">الكراسة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.workbookTitle || p.workbookId}</td></tr>
+      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">الصيغة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${formatLabel}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">عدد النسخ</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.quantity} نسخة</td></tr>
+      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">سعر النسخة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.displayUnitPrice} (${p.currencyCode})</td></tr>
+      ${p.format === "print" && p.deliveryAddress ? `<tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">عنوان التوصيل</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.deliveryAddress}</td></tr>` : ""}
+      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">الاسم</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.buyerName}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">البريد</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;" dir="ltr">${p.buyerEmail}</td></tr>
+      <tr><td style="padding:12px 14px;color:#0d3b32;font-weight:600;font-size:14px;">المجموع الكلي</td><td style="padding:12px 14px;color:#1a5c52;font-weight:600;font-size:15px;">${p.displayTotal}</td></tr>
     </table>
   </div>
   <div style="padding:0 32px 24px;">
