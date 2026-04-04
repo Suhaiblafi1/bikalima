@@ -54,10 +54,13 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 Arabic RTL landing page for "بكلمة" (Biklima), a public speaking training program. React + Vite + Tailwind CSS.
 
-- **Pages**: `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, FAQ, enrollment form; `src/pages/dashboard.tsx` — student dashboard with account info, courses, orders, schedule tabs
-- **Data**: `src/translations.ts` (3-language: ar/en/fr), `src/programsData.ts` (programs, prices, testimonials)
+- **Pages**: `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, **photo gallery (masonry + lightbox)**, **video library (YouTube embed modal)**, FAQ, enrollment form; `src/pages/dashboard.tsx` — student dashboard with account info, courses, orders, schedule tabs
+- **Data**: `src/translations.ts` (3-language: ar/en/fr), `src/programsData.ts` (programs, prices, testimonials), `src/galleryData.ts` (gallery photos with country metadata, educational video library)
 - **Design**: Teal primary (#25786A), warm ivory background, Tajawal + Noto Naskh Arabic fonts, Almarai Bold for logo
 - **Features**:
+  - Photo gallery (masonry grid, 16 photos, country badge per photo, lightbox with prev/next + keyboard nav, 7 countries: QA/AE/SD/JO/RU/GB/SA)
+  - Video library (6 curated YouTube speeches with "ما ستتعلمه" learning descriptions, modal embed with autoplay, speaker badge for Suhaib vs. world speech)
+  - Gallery and video nav links ("الأفواج"/"Cohorts"/"Promotions" and "فيديوهات"/"Videos"/"Vidéos") in all 3 languages
   - 3-language support (Arabic/English/French) with RTL auto-switch
   - Auto currency detection (JOD, SAR, AED, etc.)
   - 4 programs in branching structure (core + 3 tracks)

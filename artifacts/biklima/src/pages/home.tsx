@@ -45,6 +45,7 @@ import {
   Plus,
   Download,
   PlayCircle,
+  ZoomIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +64,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
+import { galleryPhotos, videoLibrary, COUNTRIES } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -282,6 +284,9 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [enrollSuccess, setEnrollSuccess] = useState<{ name: string; program: string } | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [videoModalId, setVideoModalId] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.dir = dir;
@@ -303,6 +308,21 @@ export default function Home() {
     const timer = setInterval(() => setHeroQuoteIdx((i) => (i + 1) % total), 5000);
     return () => clearInterval(timer);
   }, [t.hero.imageQuotes.length, lang]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLightboxOpen(false);
+        setVideoModalId(null);
+      }
+      if (lightboxOpen) {
+        if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % galleryPhotos.length);
+        if (e.key === "ArrowRight") setLightboxIndex((i) => (i - 1 + galleryPhotos.length) % galleryPhotos.length);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [lightboxOpen]);
 
   const handleWorkbookOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,6 +431,8 @@ export default function Home() {
     { label: t.nav.wisdom, id: "wisdom" },
     { label: t.nav.workbooks, id: "workbooks" },
     { label: t.nav.testimonials, id: "testimonials" },
+    { label: t.nav.gallery, id: "gallery" },
+    { label: t.nav.videos, id: "videos" },
   ];
 
   const langButtons: { key: Lang; label: string }[] = [
@@ -961,6 +983,122 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── GALLERY ── */}
+        <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-14">
+              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  {lang === "ar" ? "٧ دول · أفواج تدريبية متعددة" : lang === "fr" ? "7 pays · Plusieurs promotions" : "7 countries · Multiple cohorts"}
+                </div>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
+              </motion.div>
+            </div>
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+              {galleryPhotos.map((photo, i) => {
+                const country = COUNTRIES[photo.countryKey];
+                const countryName = country[lang as keyof typeof country] as string;
+                return (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (i % 4) * 0.08, duration: 0.5 }}
+                    className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                    onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+                  >
+                    <img
+                      src={photo.src}
+                      alt={`${countryName} cohort`}
+                      className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <ZoomIn className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-3 start-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium border border-white/10">
+                        {country.flag} {countryName}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ── VIDEOS ── */}
+        <section id="videos" className="py-24 bg-background">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-14">
+              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
+                  <PlayCircle className="w-4 h-4" />
+                  {lang === "ar" ? "للتعلم والإلهام" : lang === "fr" ? "Pour apprendre et s'inspirer" : "For learning and inspiration"}
+                </div>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
+              </motion.div>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {videoLibrary.map((video, i) => {
+                const title = video.title[lang as keyof typeof video.title];
+                const speaker = video.speaker[lang as keyof typeof video.speaker];
+                const learn = video.learn[lang as keyof typeof video.learn];
+                const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                return (
+                  <motion.div
+                    key={video.youtubeId}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (i % 3) * 0.1, duration: 0.5 }}
+                    className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer group"
+                    onClick={() => setVideoModalId(video.youtubeId)}
+                  >
+                    <div className="relative aspect-video overflow-hidden">
+                      <img
+                        src={thumbUrl}
+                        alt={title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <PlayCircle className="w-8 h-8 text-primary fill-primary" />
+                        </div>
+                      </div>
+                      <div className="absolute top-3 start-3">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${video.type === "suhaib" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"}`}>
+                          {video.type === "suhaib" ? t.videos.suhaibBadge : t.videos.worldBadge}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
+                      <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
+                      <div className="flex items-start gap-2 bg-secondary/40 rounded-xl p-3 border border-border/60">
+                        <Lightbulb className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-bold text-accent mb-1">{t.videos.learnLabel}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* ── FAQ ── */}
         <section className="py-24 bg-background">
           <div className="container mx-auto px-6 max-w-4xl">
@@ -1405,6 +1543,108 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ── PHOTO LIGHTBOX ── */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              aria-label={t.gallery.lightboxClose}
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-5 end-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+            <button
+              aria-label={t.gallery.lightboxPrev}
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + galleryPhotos.length) % galleryPhotos.length); }}
+              className="absolute start-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <ChevronRight className="w-6 h-6 text-white" />
+            </button>
+            <button
+              aria-label={t.gallery.lightboxNext}
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % galleryPhotos.length); }}
+              className="absolute end-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6 text-white" />
+            </button>
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={lightboxIndex}
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.2 }}
+                src={galleryPhotos[lightboxIndex]?.src}
+                alt=""
+                className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </AnimatePresence>
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
+              {(() => {
+                const photo = galleryPhotos[lightboxIndex];
+                if (!photo) return null;
+                const country = COUNTRIES[photo.countryKey];
+                const countryName = country[lang as keyof typeof country] as string;
+                return (
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm backdrop-blur-sm border border-white/10">
+                    {country.flag} {countryName}
+                    <span className="text-white/50">·</span>
+                    <span className="text-white/60">{lightboxIndex + 1} / {galleryPhotos.length}</span>
+                  </span>
+                );
+              })()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── VIDEO MODAL ── */}
+      <AnimatePresence>
+        {videoModalId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setVideoModalId(null)}
+          >
+            <button
+              aria-label={t.gallery.lightboxClose}
+              onClick={() => setVideoModalId(null)}
+              className="absolute top-5 end-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              className="w-full max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <iframe
+                key={videoModalId}
+                src={`https://www.youtube.com/embed/${videoModalId}?autoplay=1`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── PROGRAM DETAIL MODAL ── */}
       <AnimatePresence>
