@@ -40,7 +40,18 @@ function buildWorkbookAdminHtml(p: {
     : "نسخة مطبوعة / Printed Copy";
 
   const waText = encodeURIComponent(
-    `أهلاً ${p.buyerName} 👋\n\nأتواصل معك من فريق *بكلمة* 📚 بخصوص طلبك لكراسة *${p.workbookTitle}*.\n\nوصل طلبك بنجاح!\n• الكراسة: ${p.workbookTitle}\n• الصيغة: ${formatLabel}\n• العدد: ${p.quantity} نسخة\n• المجموع: ${p.displayTotal}\n\nهل أنت متاح الآن لنتفق على تفاصيل التسليم؟\n\nفريق بكلمة ✦`
+    `أهلاً *${p.buyerName}* 📚\n\nأتواصل معك من فريق *بكلمة* للمتابعة بخصوص طلبك.\n\n` +
+    `📦 *تفاصيل الطلب:*\n` +
+    `• الكراسة: *${p.workbookTitle}*\n` +
+    `• الصيغة: ${formatLabel}\n` +
+    `• العدد: ${p.quantity} نسخة\n` +
+    `• المجموع: *${p.displayTotal} دينار*\n` +
+    (p.format === "print" && p.deliveryAddress ? `• عنوان التوصيل: ${p.deliveryAddress}\n` : "") +
+    `\n` +
+    (p.format === "pdf"
+      ? `سنرسل رابط التحميل إلى بريدك الإلكتروني قريباً ✉️`
+      : `نحتاج لتأكيد عنوان التوصيل وإتمام عملية الدفع لبدء الشحن 🚚`) +
+    `\n\nهل لديك أي استفسار؟ 😊\n\n— فريق بكلمة ✦`
   );
   const now = new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "long", timeStyle: "short" });
   const actions = [
@@ -143,10 +154,16 @@ function buildWorkbookApplicantConfirmationHtml(p: {
 
   const waText = encodeURIComponent(
     lang === "ar"
-      ? `أهلاً، أنا ${p.buyerName} وطلبت كراسة "${p.workbookTitle}" من بكلمة. أودّ الاستفسار عن الخطوات القادمة لاستلام الطلب.`
+      ? `أهلاً فريق بكلمة 📚\n\nاسمي *${p.buyerName}* وطلبت للتو عبر الموقع.\n\n` +
+        `📦 *تفاصيل طلبي:*\n• الكراسة: *${p.workbookTitle}*\n• الصيغة: ${formatLabels.ar[p.format as "pdf"|"print"]}\n• العدد: ${p.quantity} نسخة\n• المجموع: ${p.displayTotal} دينار\n\n` +
+        `أودّ الاستفسار عن الخطوات القادمة لاستلام الطلب.\n\nشكراً 🙏`
       : lang === "fr"
-      ? `Bonjour, je suis ${p.buyerName} et j'ai commandé le cahier "${p.workbookTitle}" chez Bikalima. Je souhaite me renseigner sur les prochaines étapes.`
-      : `Hello, I'm ${p.buyerName} and I just ordered the "${p.workbookTitle}" workbook from Bikalima. I'd love to know what happens next.`
+      ? `Bonjour l'équipe Bikalima 📚\n\nJe m'appelle *${p.buyerName}* et je viens de passer une commande.\n\n` +
+        `📦 *Détails de ma commande :*\n• Cahier : *${p.workbookTitle}*\n• Format : ${formatLabels.fr[p.format as "pdf"|"print"]}\n• Quantité : ${p.quantity} exemplaire(s)\n• Total : ${p.displayTotal} JOD\n\n` +
+        `J'aimerais connaître les prochaines étapes pour recevoir ma commande.\n\nMerci 🙏`
+      : `Hello Bikalima team 📚\n\nMy name is *${p.buyerName}* and I just placed an order.\n\n` +
+        `📦 *My order details:*\n• Workbook: *${p.workbookTitle}*\n• Format: ${formatLabels.en[p.format as "pdf"|"print"]}\n• Quantity: ${p.quantity} copy/copies\n• Total: ${p.displayTotal} JOD\n\n` +
+        `I'd like to know the next steps to receive my order.\n\nThank you 🙏`
   );
 
   const texts: Record<"ar" | "en" | "fr", Record<string, string>> = {

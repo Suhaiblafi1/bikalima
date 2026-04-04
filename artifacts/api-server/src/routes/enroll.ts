@@ -66,7 +66,12 @@ function buildIndividualHtml(p: Record<string, string>) {
     ["لغة المتقدم", p.lang === "en" ? "English" : p.lang === "fr" ? "Français" : "العربية"],
   ];
   const waMsg = encodeURIComponent(
-    `أهلاً ${p.name} 👋\n\nأتواصل معك من فريق *بكلمة* 🎙️ بخصوص طلب تسجيلك في برنامج *${p.program}*.\n\nوصل طلبك بنجاح، ويسعدنا الترحيب بك.\n\nهل أنت متاح الآن لنتفق على تفاصيل الانطلاق؟\n\nفريق بكلمة ✦`
+    `أهلاً *${p.name}* 🎙️\n\nأتواصل معك من فريق *بكلمة* بخصوص طلب تسجيلك الذي وصلنا للتو.\n\n` +
+    `📋 *ملخص طلبك:*\n` +
+    `• البرنامج: *${p.program}*\n` +
+    `• نوع التدريب: ${modeLabel(p.mode) || "—"}\n` +
+    (p.category ? `• الفئة المستهدفة: ${p.category}\n` : "") +
+    `\nنحن سعداء باهتمامك ويسعدنا تأكيد مكانك وإرسال تفاصيل الانضمام.\n\nهل أنت متاح الآن؟ 🤝\n\n— فريق بكلمة ✦`
   );
   const now = new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "long", timeStyle: "short" });
   const actions = [
@@ -151,7 +156,13 @@ function buildInstitutionHtml(p: Record<string, string>) {
     ["لغة التواصل", p.lang === "en" ? "English" : p.lang === "fr" ? "Français" : "العربية"],
   ];
   const waMsg = encodeURIComponent(
-    `أهلاً ${p.contactPerson} 👋\n\nأتواصل معك من فريق *بكلمة* 🎙️ بخصوص طلب الشراكة المؤسسية لـ *${p.orgName}*.\n\nوصل طلبكم بنجاح، ويسعدنا التواصل لجدولة اجتماع لمناقشة تفاصيل البرنامج المخصص لمؤسستكم.\n\nمتى يناسبكم الحديث؟\n\nفريق بكلمة ✦`
+    `أهلاً *${p.contactPerson || p.orgName}* 🎙️\n\n` +
+    `أتواصل معك من فريق *بكلمة* بخصوص طلب الشراكة التدريبية المقدَّم من *${p.orgName}*.\n\n` +
+    `📋 *تفاصيل الطلب:*\n` +
+    `• البرنامج المطلوب: *${p.program}*\n` +
+    `• نوع التدريب: ${modeLabel(p.mode) || "—"}\n` +
+    (p.groupSize ? `• عدد المستفيدين: ${p.groupSize} شخص\n` : "") +
+    `\nوصل طلبكم بنجاح ونودّ تحديد موعد لاجتماع أولي لمناقشة متطلبات مؤسستكم وإعداد العرض المناسب.\n\nمتى يناسبكم الحديث؟ 📅\n\n— فريق بكلمة ✦`
   );
   const now = new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "long", timeStyle: "short" });
   const actions = [
@@ -229,10 +240,13 @@ function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution
   const waNumber = "97455377065";
   const waText = encodeURIComponent(
     lang === "ar"
-      ? `أهلاً فريق بكلمة 🎙️\nأنا ${name}، سجّلت في برنامج "${program}" للتو عبر الموقع.\nأودّ الاستفسار عن خطوات الانطلاق 🙏`
+      ? `أهلاً فريق بكلمة 🎙️\n\nاسمي *${name}* وقد سجّلت للتو عبر الموقع.\n\n📋 *بيانات تسجيلي:*\n• البرنامج: *${program}*\n${mode ? `• نوع التدريب: ${mode}\n` : ""}` +
+        `\nأودّ الاستفسار عن الخطوات القادمة وموعد انطلاق البرنامج.\n\nشكراً جزيلاً 🙏`
       : lang === "fr"
-      ? `Bonjour équipe Bikalima 🎙️\nJe suis ${name}, je viens de m'inscrire au programme "${program}" sur le site.\nJ'aimerais en savoir plus sur les prochaines étapes 🙏`
-      : `Hello Bikalima team 🎙️\nI'm ${name}, I just enrolled in the "${program}" program on your website.\nI'd love to know more about the next steps 🙏`
+      ? `Bonjour l'équipe Bikalima 🎙️\n\nJe m'appelle *${name}* et je viens de m'inscrire via le site.\n\n📋 *Détails de mon inscription :*\n• Programme : *${program}*\n${mode ? `• Mode de formation : ${mode}\n` : ""}` +
+        `\nJ'aimerais en savoir plus sur les prochaines étapes et la date de début.\n\nMerci beaucoup 🙏`
+      : `Hello Bikalima team 🎙️\n\nMy name is *${name}* and I just enrolled via the website.\n\n📋 *My enrollment details:*\n• Program: *${program}*\n${mode ? `• Training mode: ${mode}\n` : ""}` +
+        `\nI'd love to know more about the next steps and when the program starts.\n\nThank you 🙏`
   );
 
   type Lang = "ar" | "en" | "fr";
