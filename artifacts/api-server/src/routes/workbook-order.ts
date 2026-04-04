@@ -51,20 +51,20 @@ function buildWorkbookAdminHtml(p: {
   ];
 
   return `<div dir="rtl" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
-  <table cellpadding="0" cellspacing="0" style="width:100%;background:linear-gradient(150deg,#07201c 0%,#1a5c52 100%);">
+  <table cellpadding="0" cellspacing="0" bgcolor="#0d3d36" style="width:100%;background-color:#0d3d36;background:linear-gradient(150deg,#07201c 0%,#1a5c52 100%);">
     <tr>
-      <td style="padding:24px 32px 20px;">
+      <td bgcolor="#0d3d36" style="padding:24px 32px 20px;">
         <table cellpadding="0" cellspacing="0"><tr><td>
           <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ طلب كراسة — إجراء مطلوب</span>
         </td></tr></table>
         <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب شراء كراسة جديد</h1>
         <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
-      <td style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
-        <div style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.38);border-radius:12px;padding:14px 18px;min-width:140px;">
+      <td bgcolor="#0d3d36" style="padding:20px 32px 20px 0;vertical-align:top;text-align:left;">
+        <div style="background:#1a5045;border:1px solid #2d7a6a;border-radius:12px;padding:14px 18px;min-width:140px;">
           <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المشتري</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#fff;">${p.buyerName}</p>
-          <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.90);" dir="ltr">${p.buyerPhone}</p>
+          <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff;">${p.buyerName}</p>
+          <p style="margin:4px 0 0;font-size:12px;color:#d4eee9;" dir="ltr">${p.buyerPhone}</p>
         </div>
       </td>
     </tr>
@@ -237,11 +237,13 @@ function buildWorkbookApplicantConfirmationHtml(p: {
   ];
 
   return `<div dir="${dir}" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f0ee;">
-  <div style="background:linear-gradient(160deg,#07201c 0%,#1a5c52 50%,#25786a 100%);padding:52px 32px 44px;text-align:center;">
-    <p style="margin:0 0 6px;font-size:32px;">📚</p>
-    <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.90);text-transform:uppercase;">${lang === "ar" ? "بكلمة ✦ مكتبة المعرفة" : lang === "fr" ? "Bikalima ✦ Bibliothèque" : "Bikalima ✦ Knowledge Library"}</p>
-    <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.35;">${t.hero}</h1>
-  </div>
+  <table cellpadding="0" cellspacing="0" bgcolor="#0f4a40" style="width:100%;background-color:#0f4a40;background:linear-gradient(160deg,#07201c 0%,#1a5c52 50%,#25786a 100%);">
+    <tr><td bgcolor="#0f4a40" style="padding:52px 32px 44px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:32px;">📚</p>
+      <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:#b0d8d2;text-transform:uppercase;">${lang === "ar" ? "بكلمة ✦ مكتبة المعرفة" : lang === "fr" ? "Bikalima ✦ Bibliothèque" : "Bikalima ✦ Knowledge Library"}</p>
+      <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.35;">${t.hero}</h1>
+    </td></tr>
+  </table>
   <div style="background:#fff;padding:36px 32px 24px;">
     <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#1a5c52;">${t.greeting}</p>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.8;color:#1f2937;">${t.body}</p>
