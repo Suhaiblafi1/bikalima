@@ -85,9 +85,9 @@ function buildIndividualHtml(p: Record<string, string>) {
     <tr>
       <td bgcolor="#0d3d36" style="padding:24px 32px 20px;">
         <table cellpadding="0" cellspacing="0"><tr><td>
-          <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ إجراء مطلوب</span>
+          <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ إجراء مطلوب</span>
         </td></tr></table>
-        <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل جديد — فردي</h1>
+        <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;">طلب تسجيل جديد — فردي</h1>
         <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
       <td bgcolor="#0d3d36" style="padding:20px 16px 20px 16px;vertical-align:top;text-align:left;">
@@ -120,7 +120,7 @@ function buildIndividualHtml(p: Record<string, string>) {
       ${rows.map(([label, value], i) => `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#ffffff"};"><td style="padding:10px 14px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;">${label}</td><td style="padding:10px 14px;color:#111;border-bottom:1px solid #f0f0f0;">${value ?? "—"}</td></tr>`).join("")}
     </table>
   </div>
-  <div style="padding:0 32px 24px;">
+  <div style="padding:16px 32px 24px;">
     <div style="background:#fffbeb;border:1px solid #fde68a;border-right:4px solid #f59e0b;border-radius:10px;padding:20px 22px;">
       <p style="margin:0 0 14px;font-size:13px;color:#92400e;">📋 الخطوات المطلوبة منك الآن</p>
       <table cellpadding="0" cellspacing="0" style="width:100%;">
@@ -176,9 +176,9 @@ function buildInstitutionHtml(p: Record<string, string>) {
     <tr>
       <td bgcolor="#0d3d36" style="padding:24px 32px 20px;">
         <table cellpadding="0" cellspacing="0"><tr><td>
-          <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ شراكة مؤسسية — إجراء مطلوب</span>
+          <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;">⚡ شراكة مؤسسية — إجراء مطلوب</span>
         </td></tr></table>
-        <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:800;">طلب تسجيل مؤسسي جديد</h1>
+        <h1 style="margin:12px 0 4px;color:#ffffff;font-size:22px;">طلب تسجيل مؤسسي جديد</h1>
         <p style="margin:0;color:#b0d8d2;font-size:12px;">${now}</p>
       </td>
       <td bgcolor="#0d3d36" style="padding:20px 16px 20px 16px;vertical-align:top;text-align:left;">
@@ -211,7 +211,7 @@ function buildInstitutionHtml(p: Record<string, string>) {
       ${rows.map(([label, value], i) => `<tr style="background:${i % 2 === 0 ? "#f9fafb" : "#ffffff"};"><td style="padding:10px 14px;color:#6b7280;width:42%;border-bottom:1px solid #f0f0f0;">${label}</td><td style="padding:10px 14px;color:#111;border-bottom:1px solid #f0f0f0;">${value ?? "—"}</td></tr>`).join("")}
     </table>
   </div>
-  <div style="padding:0 32px 24px;">
+  <div style="padding:16px 32px 24px;">
     <div style="background:#fffbeb;border:1px solid #fde68a;border-right:4px solid #f59e0b;border-radius:10px;padding:20px 22px;">
       <p style="margin:0 0 14px;font-size:13px;color:#92400e;">📋 الخطوات المطلوبة منك الآن</p>
       <table cellpadding="0" cellspacing="0" style="width:100%;">
@@ -329,46 +329,46 @@ function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution
     <tr><td bgcolor="#0f4a40" style="padding:52px 32px 44px;text-align:center;">
       <p style="margin:0 0 6px;font-size:32px;">🎙️</p>
       <p style="margin:0 0 10px;font-size:11px;letter-spacing:3px;color:#b0d8d2;text-transform:uppercase;">${t.heroSub}</p>
-      <h1 style="margin:0;font-size:24px;font-weight:800;color:#ffffff;line-height:1.35;">${t.hero}</h1>
+      <h1 style="margin:0;font-size:24px;color:#ffffff;line-height:1.35;">${t.hero}</h1>
     </td></tr>
   </table>
   <div style="background:#fff;padding:36px 32px 24px;">
-    <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#1a5c52;">${t.greeting}</p>
+    <p style="margin:0 0 4px;font-size:18px;color:#1a5c52;">${t.greeting}</p>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.8;color:#1f2937;">${t.body}</p>
     <div style="background:#f0faf8;border-${bSide}:4px solid #1a5c52;border-radius:4px;padding:13px 18px;margin-bottom:24px;">
-      <p style="margin:0;font-size:13px;color:#0d3b32;font-weight:600;line-height:1.7;">${t.note}</p>
+      <p style="margin:0;font-size:13px;color:#0d3b32;line-height:1.7;">${t.note}</p>
     </div>
     ${meta ? `<div style="background:#f8faff;border:1px solid #c7d2fe;border-radius:10px;padding:20px 22px;margin-bottom:0;">
       <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
-        <tr><td style="padding:8px 12px;color:#374151;width:42%;border-bottom:1px solid #e0e7ff;font-weight:500;">${modeLabel2}</td><td style="padding:8px 12px;color:#1e3a5f;font-weight:700;border-bottom:1px solid #e0e7ff;">${mode || "—"}</td></tr>
-        <tr style="background:#f0f4ff;"><td style="padding:8px 12px;color:#374151;width:42%;border-bottom:1px solid #e0e7ff;font-weight:500;">${hoursLabel}</td><td style="padding:8px 12px;color:#1e3a5f;font-weight:700;border-bottom:1px solid #e0e7ff;">${meta.hours} ${hoursUnit} / ${meta.sessions} ${sessionsUnit}</td></tr>
-        <tr><td style="padding:10px 12px;color:#1e3a5f;font-weight:800;font-size:14px;">${priceLabel}</td><td style="padding:10px 12px;font-size:18px;font-weight:800;color:#1a5c52;">${meta.price} JOD</td></tr>
+        <tr><td style="padding:8px 12px;color:#374151;width:42%;border-bottom:1px solid #e0e7ff;">${modeLabel2}</td><td style="padding:8px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${mode || "—"}</td></tr>
+        <tr style="background:#f0f4ff;"><td style="padding:8px 12px;color:#374151;width:42%;border-bottom:1px solid #e0e7ff;">${hoursLabel}</td><td style="padding:8px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${meta.hours} ${hoursUnit} / ${meta.sessions} ${sessionsUnit}</td></tr>
+        <tr><td style="padding:10px 12px;color:#1e3a5f;font-size:14px;">${priceLabel}</td><td style="padding:10px 12px;font-size:18px;color:#1a5c52;">${meta.price} JOD</td></tr>
       </table>
       <p style="margin:10px 0 0;font-size:11px;color:#6b7280;">${priceNote}</p>
     </div>` : ""}
   </div>
   <div style="background:#fff;padding:8px 32px 32px;">
-    <p style="margin:0 0 16px;font-size:10px;letter-spacing:3px;color:#6b7280;font-weight:700;text-transform:uppercase;">${t.stepsTitle}</p>
+    <p style="margin:0 0 16px;font-size:10px;letter-spacing:3px;color:#6b7280;text-transform:uppercase;">${t.stepsTitle}</p>
     ${steps.map((s, i) => `<div style="border-${bSide}:4px solid ${s.borderColor};background:${s.rowBg};border-radius:4px;padding:13px 18px;margin-bottom:${i < 3 ? "8px" : "0"};">
       <table cellpadding="0" cellspacing="0" style="width:100%;"><tr>
         <td style="width:32px;vertical-align:top;padding:0 12px 0 0;">
-          <div style="width:28px;height:28px;border-radius:14px;background:${s.bg};color:#fff;font-size:12px;font-weight:800;text-align:center;line-height:28px;">${s.icon}</div>
+          <div style="width:28px;height:28px;border-radius:14px;background:${s.bg};color:#fff;font-size:12px;text-align:center;line-height:28px;">${s.icon}</div>
         </td>
         <td style="vertical-align:top;">
-          <p style="margin:0 0 2px;font-size:13px;font-weight:700;color:${s.textColor};">${s.title}</p>
-          <p style="margin:0;font-size:12px;color:${s.descColor};font-weight:500;">${s.desc}</p>
+          <p style="margin:0 0 2px;font-size:13px;color:${s.textColor};">${s.title}</p>
+          <p style="margin:0;font-size:12px;color:${s.descColor};">${s.desc}</p>
         </td>
       </tr></table>
     </div>`).join("")}
   </div>
   <div style="background:#f0faf8;padding:28px 32px;text-align:center;border-top:2px solid #d1ede9;border-bottom:2px solid #d1ede9;">
     <p style="margin:0 0 4px;font-size:36px;color:#7ec8bc;line-height:1;font-family:Georgia,serif;">&#8220;</p>
-    <p style="margin:0;font-size:15px;font-style:italic;color:#1f2937;line-height:1.75;max-width:420px;margin:0 auto;font-weight:500;">${t.quote}</p>
+    <p style="margin:0;font-size:15px;font-style:italic;color:#1f2937;line-height:1.75;max-width:420px;margin:0 auto;">${t.quote}</p>
     <p style="margin:4px 0 0;font-size:36px;color:#7ec8bc;line-height:1;font-family:Georgia,serif;">&#8221;</p>
   </div>
   <div style="background:#fff;padding:32px 32px;text-align:center;">
     <a href="https://wa.me/${waNumber}?text=${waText}" target="_blank"
-       style="display:inline-block;background:linear-gradient(135deg,#25D366,#1aa34a);color:#fff;font-weight:800;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
+       style="display:inline-block;background:linear-gradient(135deg,#25D366,#1aa34a);color:#fff;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
       💬 ${t.waBtn}
     </a>
   </div>
