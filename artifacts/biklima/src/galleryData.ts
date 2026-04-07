@@ -33,6 +33,11 @@ import sp17 from "@assets/خطاب_صهيب_١٠_1775602066240.jpg";
 import sp18 from "@assets/خطاب_لصهيب_٥_1775602066240.jpg";
 import sp19 from "@assets/خطاب_لصهيب_٤_1775602066240.jpg";
 import sp20 from "@assets/خطاب_لصهيب_٣_1775602066240.jpg";
+import sp21 from "@assets/خطاب_لصهي_٦_1775602465895.jpg";
+import sp22 from "@assets/كازان__1775602465895.jpg";
+import sp23 from "@assets/تكريم_٢_1775602465895.jpg";
+import sp24 from "@assets/موسكو_ه_1775602465895.jpg";
+import sp25 from "@assets/قطر_1775602465895.jpg";
 
 export type GalleryPhoto = {
   src: string;
@@ -76,6 +81,11 @@ export const speechPhotos: GalleryPhoto[] = [
   { src: sp18 },
   { src: sp19 },
   { src: sp20 },
+  { src: sp21 },
+  { src: sp22 },
+  { src: sp23 },
+  { src: sp24 },
+  { src: sp25 },
 ];
 
 export type VideoType = "suhaib" | "world";
