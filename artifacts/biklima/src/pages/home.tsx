@@ -1007,7 +1007,7 @@ export default function Home() {
 
             {/* ── COHORTS TAB ── */}
             {galleryTab === "cohorts" && (
-              <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+              <div className="columns-2 md:columns-3 gap-3 md:gap-4">
                 {galleryPhotos.map((photo, i) => (
                   <motion.div
                     key={i}
@@ -1041,7 +1041,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35 }}
-                className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4"
+                className="columns-2 md:columns-3 gap-3 md:gap-4"
               >
                 {speechPhotos.map((photo, i) => (
                   <motion.div
