@@ -64,7 +64,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
-import { galleryPhotos, speechPhotos, videoLibrary } from "../galleryData";
+import { galleryPhotos, speechPhotos, videoLibrary, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -270,6 +270,7 @@ export default function Home() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [videoModalId, setVideoModalId] = useState<string | null>(null);
+  const [videoTab, setVideoTab] = useState<VideoCategory | "all">("all");
 
   useEffect(() => {
     document.documentElement.dir = dir;
@@ -1074,64 +1075,108 @@ export default function Home() {
         {/* ── VIDEOS ── */}
         <section id="videos" className="py-24 bg-background">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-14">
+            <div className="text-center mb-10">
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
                   <PlayCircle className="w-4 h-4" />
-                  {lang === "ar" ? "للتعلم والإلهام" : "For learning and inspiration"}
+                  {lang === "ar" ? "مكتبة تعليمية شاملة" : "Comprehensive Learning Library"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
               </motion.div>
             </div>
+
+            {/* Tab strip */}
+            <div className="relative mb-10">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
+                {(
+                  [
+                    ["all", t.videos.tabs.all],
+                    ["delivery", t.videos.tabs.delivery],
+                    ["english", t.videos.tabs.english],
+                    ["arabic", t.videos.tabs.arabic],
+                    ["podcast", t.videos.tabs.podcast],
+                    ["debate", t.videos.tabs.debate],
+                    ["comedy", t.videos.tabs.comedy],
+                    ["education", t.videos.tabs.education],
+                    ["body-language", t.videos.tabs.bodyLanguage],
+                    ["movies", t.videos.tabs.movies],
+                    ["classical", t.videos.tabs.classical],
+                  ] as [string, string][]
+                ).map(([key, label]) => {
+                  const count = key === "all" ? videoLibrary.length : videoLibrary.filter(v => v.category === key).length;
+                  const active = videoTab === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setVideoTab(key as VideoCategory | "all")}
+                      className={`snap-start shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap
+                        ${active
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                          : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/60"}`}
+                    >
+                      {label}
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-muted"}`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Video grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {videoLibrary.map((video, i) => {
-                const title = video.title[lang as keyof typeof video.title];
-                const speaker = video.speaker[lang as keyof typeof video.speaker];
-                const learn = video.learn[lang as keyof typeof video.learn];
-                const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-                return (
-                  <motion.div
-                    key={video.youtubeId}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (i % 3) * 0.1, duration: 0.5 }}
-                    className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer group"
-                    onClick={() => setVideoModalId(video.youtubeId)}
-                  >
-                    <div className="relative aspect-video overflow-hidden">
-                      <img
-                        src={thumbUrl}
-                        alt={title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                          <PlayCircle className="w-8 h-8 text-primary fill-primary" />
+              {videoLibrary
+                .filter(v => videoTab === "all" || v.category === videoTab)
+                .map((video, i) => {
+                  const title = video.title[lang as keyof typeof video.title];
+                  const speaker = video.speaker[lang as keyof typeof video.speaker];
+                  const learn = video.learn[lang as keyof typeof video.learn];
+                  const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                  const catLabel = (t.videos.tabs as Record<string, string>)[
+                    video.category === "body-language" ? "bodyLanguage" : video.category
+                  ] ?? video.category;
+                  return (
+                    <motion.div
+                      key={video.youtubeId}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: (i % 3) * 0.08, duration: 0.45 }}
+                      className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer group"
+                      onClick={() => setVideoModalId(video.youtubeId)}
+                    >
+                      <div className="relative aspect-video overflow-hidden">
+                        <img
+                          src={thumbUrl}
+                          alt={title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent flex items-center justify-center">
+                          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <PlayCircle className="w-8 h-8 text-primary fill-primary" />
+                          </div>
+                        </div>
+                        <div className="absolute top-3 start-3">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary/90 text-primary-foreground backdrop-blur-sm">
+                            {catLabel}
+                          </span>
                         </div>
                       </div>
-                      <div className="absolute top-3 start-3">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${video.type === "suhaib" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"}`}>
-                          {video.type === "suhaib" ? t.videos.suhaibBadge : t.videos.worldBadge}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
-                      <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
-                      <div className="flex items-start gap-2 bg-secondary/40 rounded-xl p-3 border border-border/60">
-                        <Lightbulb className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-bold text-accent mb-1">{t.videos.learnLabel}</p>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
+                      <div className="p-5">
+                        <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
+                        <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
+                        <div className="flex items-start gap-2 bg-secondary/40 rounded-xl p-3 border border-border/60">
+                          <Lightbulb className="w-4 h-4 text-accent shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-bold text-accent mb-1">{t.videos.learnLabel}</p>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    </motion.div>
+                  );
+                })}
             </div>
           </div>
         </section>
@@ -1670,7 +1715,7 @@ export default function Home() {
             >
               <iframe
                 key={videoModalId}
-                src={`https://www.youtube.com/embed/${videoModalId}?autoplay=1`}
+                src={`https://www.youtube.com/embed/${videoModalId}?autoplay=1&cc_load_policy=1&cc_lang_pref=ar&hl=ar`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 className="w-full h-full"
