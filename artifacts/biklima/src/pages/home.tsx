@@ -75,7 +75,7 @@ function useLang() {
   const [lang, setLang] = useState<Lang>(() => {
     try {
       const stored = localStorage.getItem("biklima-lang") as Lang | null;
-      if (stored && ["ar", "en", "fr"].includes(stored)) return stored;
+      if (stored && ["ar", "en"].includes(stored)) return stored;
     } catch {}
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
     const arabicTZ = new Set([
@@ -84,15 +84,7 @@ function useLang() {
       "Asia/Beirut","Asia/Gaza","Asia/Hebron","Asia/Aden","Africa/Tripoli",
       "Africa/Khartoum","Africa/Juba",
     ]);
-    const frenchTZ = new Set([
-      "Africa/Casablanca","Africa/Tunis","Africa/Algiers",
-      "Europe/Paris","Europe/Brussels","America/Montreal",
-      "Africa/Abidjan","Africa/Dakar","Africa/Bamako","Africa/Douala",
-      "Africa/Libreville","Africa/Brazzaville","Africa/Kinshasa",
-      "America/Guadeloupe","America/Martinique","Indian/Reunion",
-    ]);
     if (arabicTZ.has(tz)) return "ar";
-    if (frenchTZ.has(tz)) return "fr";
     return "en";
   });
 
@@ -133,16 +125,6 @@ const wisdomArticles: Record<Lang, WisdomArticle[]> = {
     { source: "The Certified Trainer Program", category: "The Trainer's Mission", icon: <Feather className="w-5 h-5" />, quote: "The real trainer doesn't teach people how to speak — they restore their belief that what they say deserves to be heard.", body: "When you become a trainer, your responsibility multiplies: you create impact and then entrust it to others to create impact after you." },
     { source: "The Trainee's Workbook", category: "Fear and the Power of Words", icon: <Sparkles className="w-5 h-5" />, quote: "Fear of speaking is not your enemy — it is a signal that what you have to say matters.", body: "Nervousness before a speech is not weakness — it is ignition. The body mobilizes energy because the moment is important. Professional speakers don't eliminate fear — they transform it." },
     { source: "The Certified Trainer Program", category: "Voice and Identity", icon: <Globe className="w-5 h-5" />, quote: "Your voice is more than a tool — it is your signature in every room you enter.", body: "No two voices in the world are identical. Your voice carries your history, your culture, and your worldview. That is why public speaking training is not about imitating others — it's about discovering your strongest version." },
-  ],
-  fr: [
-    { source: "Le Cahier du Stagiaire", category: "Le Domaine Mental", icon: <Lightbulb className="w-5 h-5" />, quote: "La confiance ne se donne pas — elle se construit.", body: "Et elle commence au plus profond de soi — à partir de l'image que vous avez de vous-même au moment de prendre la parole." },
-    { source: "Le Cahier du Stagiaire", category: "Le Domaine Verbal", icon: <Mic2 className="w-5 h-5" />, quote: "Même les plus grands prophètes ont demandé la facilité d'élocution.", body: "L'art oratoire est une vocation avant d'être une compétence — un don qui mérite d'être demandé." },
-    { source: "Programme Éducateurs et Parents", category: "Le Fossé Générationnel", icon: <Heart className="w-5 h-5" />, quote: "70 % des personnes souffrent de la peur de parler en public.", body: "Et la cause principale n'est pas le public — c'est l'environnement dans lequel elles ont grandi." },
-    { source: "Programme Éducateurs et Parents", category: "Le Rôle de l'Éducateur", icon: <Users className="w-5 h-5" />, quote: "Le mot que vous dites à un enfant dans son moment de besoin peut façonner sa voix pour la vie.", body: "Un enfant n'a pas besoin d'un formateur éloquent seulement — il a besoin d'un environnement qui croit que sa voix mérite d'être entendue." },
-    { source: "Le Cahier du Jeune Orateur", category: "Philosophie de l'Enseignement", icon: <Star className="w-5 h-5" />, quote: "L'enfant qui apprend à parler avec confiance aujourd'hui est le leader qui change la salle demain.", body: "L'art oratoire pour les enfants n'est pas une activité parascolaire — c'est un investissement dans une personnalité complète." },
-    { source: "Programme du Formateur Certifié", category: "La Mission du Formateur", icon: <Feather className="w-5 h-5" />, quote: "Le vrai formateur n'enseigne pas aux gens comment parler — il leur restitue la croyance que ce qu'ils disent mérite d'être entendu.", body: "Quand vous devenez formateur, votre responsabilité se multiplie : vous créez un impact et vous le confiez ensuite à d'autres." },
-    { source: "Le Cahier du Stagiaire", category: "La Peur et le Pouvoir des Mots", icon: <Sparkles className="w-5 h-5" />, quote: "La peur de parler n'est pas votre ennemi — c'est un signal que ce que vous avez à dire est important.", body: "La nervosité avant un discours n'est pas une faiblesse — c'est une ignition. Les orateurs professionnels n'éliminent pas la peur — ils la transforment." },
-    { source: "Programme du Formateur Certifié", category: "La Voix et l'Identité", icon: <Globe className="w-5 h-5" />, quote: "Votre voix est plus qu'un outil — c'est votre signature dans chaque pièce où vous entrez.", body: "Il n'existe pas deux voix identiques dans le monde. Votre voix porte votre histoire, votre culture et votre vision du monde." },
   ],
 };
 
@@ -201,7 +183,6 @@ function useCurrency() {
 
 const AR_DAYS = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 const EN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const FR_DAYS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
 function MiniCalendar({ lang }: { lang: Lang }) {
   const now = new Date();
@@ -212,10 +193,10 @@ function MiniCalendar({ lang }: { lang: Lang }) {
   const startDay = nextMonth.getDay();
 
   const monthName = nextMonth.toLocaleDateString(
-    lang === "ar" ? "ar-SA" : lang === "fr" ? "fr-FR" : "en-US",
+    lang === "ar" ? "ar-SA" : "en-US",
     { month: "long", year: "numeric" }
   );
-  const dayHeaders = lang === "ar" ? AR_DAYS : lang === "fr" ? FR_DAYS : EN_DAYS;
+  const dayHeaders = lang === "ar" ? AR_DAYS : EN_DAYS;
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < startDay; i++) cells.push(null);
@@ -360,7 +341,7 @@ export default function Home() {
         total: formatPrice(up * wbQuantity),
       });
     } catch {
-      toast({ title: lang === "ar" ? "حدث خطأ" : lang === "fr" ? "Une erreur est survenue" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : lang === "fr" ? "Veuillez réessayer" : "Please try again later", variant: "destructive" });
+      toast({ title: lang === "ar" ? "حدث خطأ" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : "Please try again later", variant: "destructive" });
     } finally {
       setWbSubmitting(false);
     }
@@ -400,7 +381,7 @@ export default function Home() {
       setEnrollSuccess({ name: submittedName, program: submittedProgram });
     } catch {
       setIsSubmitting(false);
-      toast({ title: lang === "ar" ? "حدث خطأ" : lang === "fr" ? "Une erreur est survenue" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : lang === "fr" ? "Veuillez réessayer" : "Please try again later", variant: "destructive" });
+      toast({ title: lang === "ar" ? "حدث خطأ" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : "Please try again later", variant: "destructive" });
     }
   };
 
@@ -438,7 +419,6 @@ export default function Home() {
   const langButtons: { key: Lang; label: string }[] = [
     { key: "ar", label: "ع" },
     { key: "en", label: "EN" },
-    { key: "fr", label: "FR" },
   ];
 
   return (
@@ -460,15 +440,15 @@ export default function Home() {
               isAuthenticated ? (
                 <div className="flex items-center gap-2">
                   <button onClick={() => navigate(`${import.meta.env.BASE_URL}dashboard`)} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
-                    {lang === "ar" ? "منصتي" : lang === "fr" ? "Ma plateforme" : "My Platform"}
+                    {lang === "ar" ? "منصتي" : "My Platform"}
                   </button>
                   <button onClick={logout} className="text-xs text-muted-foreground hover:text-destructive transition-colors border border-border/50 px-2.5 py-1 rounded-full">
-                    {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
+                    {lang === "ar" ? "تسجيل الخروج" : "Log out"}
                   </button>
                 </div>
               ) : (
                 <button onClick={() => navigate(`${import.meta.env.BASE_URL}dashboard`)} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
-                  {lang === "ar" ? "تسجيل الدخول" : lang === "fr" ? "Connexion" : "Log in"}
+                  {lang === "ar" ? "تسجيل الدخول" : "Log in"}
                 </button>
               )
             )}
@@ -517,15 +497,15 @@ export default function Home() {
               isAuthenticated ? (
                 <div className="space-y-3">
                   <button onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}dashboard`); }} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
-                    {lang === "ar" ? "منصتي" : lang === "fr" ? "Ma plateforme" : "My Platform"}
+                    {lang === "ar" ? "منصتي" : "My Platform"}
                   </button>
                   <button onClick={logout} className="w-full text-center py-2.5 text-sm text-muted-foreground hover:text-destructive transition-colors border border-border rounded-2xl">
-                    {lang === "ar" ? "تسجيل الخروج" : lang === "fr" ? "Déconnexion" : "Log out"}
+                    {lang === "ar" ? "تسجيل الخروج" : "Log out"}
                   </button>
                 </div>
               ) : (
                 <button onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}dashboard`); }} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
-                  {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : lang === "fr" ? "Connexion / Inscription" : "Log in / Sign up"}
+                  {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : "Log in / Sign up"}
                 </button>
               )
             )}
@@ -535,7 +515,7 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-3">
-              <div className="text-xs text-muted-foreground text-center mb-2 font-medium">{lang === "ar" ? "العملة" : lang === "fr" ? "Devise" : "Currency"}</div>
+              <div className="text-xs text-muted-foreground text-center mb-2 font-medium">{lang === "ar" ? "العملة" : "Currency"}</div>
               <div className="grid grid-cols-4 gap-1.5">
                 {CURRENCY_ORDER.map((key) => (
                   <button key={key} onClick={() => { setCurrencyKey(key); setMobileMenuOpen(false); }} className={`py-1.5 px-1 text-[11px] font-bold rounded-lg border transition-colors text-center ${currencyKey === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
@@ -810,7 +790,7 @@ export default function Home() {
             {upcomingEvents.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {upcomingEvents.map((ev) => {
-                  const evLoc = lang === "ar" ? { location: ev.location, city: ev.city } : ev.i18n[lang as "en" | "fr"];
+                  const evLoc = lang === "ar" ? { location: ev.location, city: ev.city } : ev.i18n["en"];
                   const prog = programs.find(p => p.id === ev.programId);
                   const lp = prog ? getLocalizedProgram(prog, lang) : null;
                   return (
@@ -990,7 +970,7 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  {lang === "ar" ? "أفواج تدريبية متعددة" : lang === "fr" ? "Plusieurs promotions" : "Multiple cohorts"}
+                  {lang === "ar" ? "أفواج تدريبية متعددة" : "Multiple cohorts"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
@@ -1034,7 +1014,7 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
                   <PlayCircle className="w-4 h-4" />
-                  {lang === "ar" ? "للتعلم والإلهام" : lang === "fr" ? "Pour apprendre et s'inspirer" : "For learning and inspiration"}
+                  {lang === "ar" ? "للتعلم والإلهام" : "For learning and inspiration"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
@@ -1188,10 +1168,10 @@ export default function Home() {
                       {/* Personalized heading */}
                       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
                         <h3 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
-                          {lang === "ar" ? `أهلاً ${enrollSuccess.name}! 🎉` : lang === "fr" ? `Bienvenue, ${enrollSuccess.name} ! 🎉` : `Welcome, ${enrollSuccess.name}! 🎉`}
+                          {lang === "ar" ? `أهلاً ${enrollSuccess.name}! 🎉` : `Welcome, ${enrollSuccess.name}! 🎉`}
                         </h3>
                         <p className="text-xl text-primary font-bold">
-                          {lang === "ar" ? "رحلتك بدأت للتو 🚀" : lang === "fr" ? "Votre aventure commence ! 🚀" : "Your journey starts now 🚀"}
+                          {lang === "ar" ? "رحلتك بدأت للتو 🚀" : "Your journey starts now 🚀"}
                         </p>
                       </motion.div>
 
@@ -1199,7 +1179,7 @@ export default function Home() {
                       {enrollSuccess.program && (
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="bg-primary/5 border border-primary/20 rounded-2xl px-7 py-5 w-full max-w-sm">
                           <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                            {lang === "ar" ? "البرنامج المختار" : lang === "fr" ? "Programme sélectionné" : "Selected Program"}
+                            {lang === "ar" ? "البرنامج المختار" : "Selected Program"}
                           </p>
                           <p className="text-primary font-bold text-lg">{enrollSuccess.program}</p>
                         </motion.div>
@@ -1209,23 +1189,21 @@ export default function Home() {
                       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-muted-foreground max-w-xs leading-relaxed text-sm italic">
                         {lang === "ar"
                           ? "\"الكلمة الواحدة قادرة على تغيير مسار حياتك.\" — استلمنا طلبك وسيصلك إيميل التأكيد قريباً."
-                          : lang === "fr"
-                          ? "\"Un seul mot peut changer le cours d'une vie.\" — Vérifiez votre boîte mail."
                           : "\"One word can change the course of your life.\" — Check your inbox for confirmation."}
                       </motion.p>
 
                       {/* Action buttons */}
                       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="flex flex-col sm:flex-row gap-3">
                         <a
-                          href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${enrollSuccess.name} وقدمت طلب تسجيل في برنامج ${enrollSuccess.program || "بكلمة"}. أودّ الاستفسار عن التفاصيل.` : lang === "fr" ? `Bonjour, je suis ${enrollSuccess.name} et j'ai soumis une demande pour ${enrollSuccess.program || "Bikalima"}. Je souhaite plus d'informations.` : `Hello, I'm ${enrollSuccess.name} and I submitted an enrollment request for ${enrollSuccess.program || "Bikalima"}. I'd like to know more.`)}`}
+                          href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${enrollSuccess.name} وقدمت طلب تسجيل في برنامج ${enrollSuccess.program || "بكلمة"}. أودّ الاستفسار عن التفاصيل.` : `Hello, I'm ${enrollSuccess.name} and I submitted an enrollment request for ${enrollSuccess.program || "Bikalima"}. I'd like to know more.`)}`}
                           target="_blank"
                           className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white font-bold px-7 py-3 rounded-full text-sm transition-colors shadow-lg"
                         >
                           <span>💬</span>
-                          {lang === "ar" ? "تواصل عبر واتساب" : lang === "fr" ? "WhatsApp" : "Chat on WhatsApp"}
+                          {lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"}
                         </a>
                         <Button variant="outline" className="rounded-full px-7 border-primary/30 text-primary hover:bg-primary/5" onClick={() => setEnrollSuccess(null)}>
-                          {lang === "ar" ? "تقديم طلب آخر" : lang === "fr" ? "Nouvelle demande" : "Submit another"}
+                          {lang === "ar" ? "تقديم طلب آخر" : "Submit another"}
                         </Button>
                       </motion.div>
                     </motion.div>
@@ -1280,7 +1258,7 @@ export default function Home() {
                           return (
                             <div className="mt-3 flex items-center gap-2 justify-center">
                               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold">
-                                📅 {lang === "ar" ? "السعر يُحدد بحسب جدول الفعاليات" : lang === "fr" ? "Tarif selon le calendrier des événements" : "Price set per event schedule"}
+                                📅 {lang === "ar" ? "السعر يُحدد بحسب جدول الفعاليات" : "Price set per event schedule"}
                               </span>
                             </div>
                           );
@@ -1289,7 +1267,7 @@ export default function Home() {
                           return (
                             <div className="mt-3 flex items-center gap-2 justify-center">
                               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-sm font-bold">
-                                👤 {formatPrice(Number(price))} — {lang === "ar" ? "١:١ حصري" : lang === "fr" ? "1:1 exclusif" : "Exclusive 1:1"}
+                                👤 {formatPrice(Number(price))} — {lang === "ar" ? "١:١ حصري" : "Exclusive 1:1"}
                               </span>
                             </div>
                           );
@@ -1331,7 +1309,7 @@ export default function Home() {
                             {localizedPrograms.map((p) => {
                               const price = getEnrollPrice(p.id, trainingMode);
                               const priceTag = trainingMode === "group-inperson"
-                                ? (lang === "ar" ? "حسب الجدول" : lang === "fr" ? "selon calendrier" : "per schedule")
+                                ? (lang === "ar" ? "حسب الجدول" : "per schedule")
                                 : price ? `${formatPrice(Number(price))}` : "";
                               return (
                                 <SelectItem key={p.id} value={p.shortTitle}>
@@ -1419,7 +1397,7 @@ export default function Home() {
                 <div className="relative z-10">
                   <div className="mb-2">
                     <span className="text-xs font-semibold tracking-widest uppercase text-primary-foreground/50 border border-primary-foreground/20 rounded-full px-3 py-1">
-                      {lang === "ar" ? "رحلة التحويل" : lang === "fr" ? "Parcours de transformation" : "Transformation Journey"}
+                      {lang === "ar" ? "رحلة التحويل" : "Transformation Journey"}
                     </span>
                   </div>
                   <h3 className="font-serif text-3xl md:text-4xl font-bold mb-5 leading-tight whitespace-pre-line">{t.enroll.sidePanelTitle}</h3>
@@ -1446,7 +1424,7 @@ export default function Home() {
                       <div className="w-10 h-10 rounded-full bg-[#25D366]/20 flex items-center justify-center shrink-0 group-hover:bg-[#25D366]/30 transition-colors">
                         <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current text-[#25D366]"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                       </div>
-                      <p className="text-sm text-primary-foreground/70 group-hover:text-primary-foreground transition-colors">{lang === "ar" ? "تواصل عبر واتساب" : lang === "fr" ? "Contactez via WhatsApp" : "Chat on WhatsApp"}</p>
+                      <p className="text-sm text-primary-foreground/70 group-hover:text-primary-foreground transition-colors">{lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"}</p>
                     </a>
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center shrink-0"><MessageCircle className="w-5 h-5" /></div>
@@ -1823,10 +1801,10 @@ export default function Home() {
                         className="space-y-2"
                       >
                         <h3 className="font-serif text-3xl md:text-4xl font-bold text-foreground">
-                          {lang === "ar" ? `أهلاً ${wbOrderSuccess.name}! 🎉` : lang === "fr" ? `Merci ${wbOrderSuccess.name} ! 🎉` : `Thank you, ${wbOrderSuccess.name}! 🎉`}
+                          {lang === "ar" ? `أهلاً ${wbOrderSuccess.name}! 🎉` : `Thank you, ${wbOrderSuccess.name}! 🎉`}
                         </h3>
                         <p className="text-xl font-semibold text-primary">
-                          {lang === "ar" ? "طلبك في طريقه إليك ✨" : lang === "fr" ? "Votre commande est en route ✨" : "Your order is on its way ✨"}
+                          {lang === "ar" ? "طلبك في طريقه إليك ✨" : "Your order is on its way ✨"}
                         </p>
                       </motion.div>
 
@@ -1839,14 +1817,14 @@ export default function Home() {
                       >
                         <p className="font-bold text-foreground mb-3 text-base flex items-center gap-2 justify-center">
                           <span>🧾</span>
-                          {lang === "ar" ? "ملخص الطلب" : lang === "fr" ? "Récapitulatif" : "Order Summary"}
+                          {lang === "ar" ? "ملخص الطلب" : "Order Summary"}
                         </p>
                         <div className="space-y-2 text-muted-foreground text-start">
-                          <div className="flex justify-between"><span>{lang === "ar" ? "الكراسة" : lang === "fr" ? "Cahier" : "Workbook"}</span><span className="font-semibold text-foreground truncate max-w-[55%] text-end">{wbOrderSuccess.title}</span></div>
-                          <div className="flex justify-between"><span>{lang === "ar" ? "الصيغة" : lang === "fr" ? "Format" : "Format"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.format === "pdf" ? (lang === "ar" ? "PDF رقمي" : "Digital PDF") : (lang === "ar" ? "مطبوعة" : lang === "fr" ? "Imprimé" : "Printed")}</span></div>
-                          <div className="flex justify-between"><span>{lang === "ar" ? "الكمية" : lang === "fr" ? "Qté" : "Qty"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.qty}</span></div>
+                          <div className="flex justify-between"><span>{lang === "ar" ? "الكراسة" : "Workbook"}</span><span className="font-semibold text-foreground truncate max-w-[55%] text-end">{wbOrderSuccess.title}</span></div>
+                          <div className="flex justify-between"><span>{lang === "ar" ? "الصيغة" : "Format"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.format === "pdf" ? (lang === "ar" ? "PDF رقمي" : "Digital PDF") : (lang === "ar" ? "مطبوعة" : "Printed")}</span></div>
+                          <div className="flex justify-between"><span>{lang === "ar" ? "الكمية" : "Qty"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.qty}</span></div>
                           <div className="flex justify-between border-t border-primary/20 pt-2 mt-2">
-                            <span className="font-bold text-primary">{lang === "ar" ? "المجموع" : lang === "fr" ? "Total" : "Total"}</span>
+                            <span className="font-bold text-primary">{lang === "ar" ? "المجموع" : "Total"}</span>
                             <span className="font-bold text-primary text-lg">{wbOrderSuccess.total}</span>
                           </div>
                         </div>
@@ -1862,8 +1840,6 @@ export default function Home() {
                         <p className="text-muted-foreground leading-relaxed text-sm italic">
                           {lang === "ar"
                             ? "\"الكلمة الصادقة تصل أبعد من ألف خطاب مزخرف.\" — سنتواصل معك قريباً على بريدك الإلكتروني."
-                            : lang === "fr"
-                            ? "\"Un seul mot sincère va plus loin que mille discours ornés.\" — Nous vous contacterons bientôt."
                             : "\"An honest word travels farther than a thousand polished speeches.\" — We'll be in touch soon."}
                         </p>
                       </motion.div>
@@ -1876,18 +1852,18 @@ export default function Home() {
                         className="flex flex-col sm:flex-row gap-3"
                       >
                         <a
-                          href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${wbOrderSuccess.name} وأودّ الاستفسار عن طلب كراسة بكلمة.` : lang === "fr" ? `Bonjour, je suis ${wbOrderSuccess.name} et je souhaite me renseigner sur ma commande Bikalima.` : `Hello, I'm ${wbOrderSuccess.name} and I'd like to ask about my Bikalima workbook order.`)}`}
+                          href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${wbOrderSuccess.name} وأودّ الاستفسار عن طلب كراسة بكلمة.` : `Hello, I'm ${wbOrderSuccess.name} and I'd like to ask about my Bikalima workbook order.`)}`}
                           target="_blank"
                           className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white font-bold px-7 py-3 rounded-full text-sm transition-colors shadow-lg"
                         >
                           <span>💬</span>
-                          {lang === "ar" ? "تواصل عبر واتساب" : lang === "fr" ? "WhatsApp" : "Chat on WhatsApp"}
+                          {lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"}
                         </a>
                         <button
                           onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }}
                           className="inline-flex items-center justify-center gap-2 border border-border rounded-full px-7 py-3 text-sm font-medium hover:bg-secondary/40 transition-colors"
                         >
-                          {lang === "ar" ? "إغلاق" : lang === "fr" ? "Fermer" : "Close"}
+                          {lang === "ar" ? "إغلاق" : "Close"}
                         </button>
                       </motion.div>
                     </motion.div>
@@ -1904,7 +1880,7 @@ export default function Home() {
                       disabled={!wb.samplePdf}
                       onClick={() => { if (wb.samplePdf) window.open(wb.samplePdf, "_blank"); }}
                     >
-                      <Download className="w-4 h-4 me-2" />{wb.samplePdf ? t.workbooks.samplePdfBtn : (lang === "ar" ? "قريباً" : lang === "fr" ? "Bientôt" : "Coming Soon")}
+                      <Download className="w-4 h-4 me-2" />{wb.samplePdf ? t.workbooks.samplePdfBtn : (lang === "ar" ? "قريباً" : "Coming Soon")}
                     </Button>
                   </div>
                   <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">

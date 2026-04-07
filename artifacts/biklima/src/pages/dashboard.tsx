@@ -27,7 +27,7 @@ import {
   Video,
 } from "lucide-react";
 
-type Lang = "ar" | "en" | "fr";
+type Lang = "ar" | "en";
 
 const dashT = {
   ar: {
@@ -142,62 +142,6 @@ const dashT = {
       passwordMin: "Password must be at least 6 characters",
     },
   },
-  fr: {
-    title: "Ma Plateforme — Bikalima",
-    welcome: "Bienvenue",
-    tabs: {
-      account: "Mon Compte",
-      courses: "Mes Cours",
-      orders: "Mes Commandes",
-      schedule: "Calendrier",
-    },
-    account: {
-      heading: "Informations du Compte",
-      name: "Nom",
-      email: "E-mail",
-      memberSince: "Membre depuis",
-      editProfile: "Modifier le Profil",
-    },
-    courses: {
-      heading: "Cours Inscrits",
-      noCourses: "Vous n'êtes inscrit à aucun cours",
-      enrollNow: "S'inscrire",
-      progress: "Progression",
-      accessMaterials: "Accéder aux Matériaux",
-      viewRecordings: "Voir les Enregistrements",
-    },
-    orders: {
-      heading: "Historique des Commandes",
-      noOrders: "Aucune commande",
-      shopNow: "Parcourir les Cahiers",
-      orderNum: "Commande #",
-      date: "Date",
-      status: "Statut",
-      total: "Total",
-      statuses: { pending: "En attente", confirmed: "Confirmée", shipped: "Expédiée", delivered: "Livrée" },
-    },
-    schedule: {
-      heading: "Calendrier",
-      noSchedule: "Aucune session programmée",
-      upcoming: "Sessions à Venir",
-      joinZoom: "Rejoindre via Zoom",
-      date: "Date",
-      time: "Heure",
-      type: "Type",
-      online: "En ligne",
-      inPerson: "En présentiel",
-      location: "Lieu",
-    },
-    backHome: "Retour à l'Accueil",
-    logout: "Déconnexion",
-    auth: {
-      loginTitle: "Connexion",
-      email: "E-mail",
-      password: "Mot de passe",
-      loginBtn: "Se connecter",
-      passwordMin: "Le mot de passe doit contenir au moins 6 caractères",
-    },
-  },
 };
 
 const tabIcons = {
@@ -222,8 +166,6 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
   const credentialsNote =
     lang === "ar"
       ? "يتم تزويد الطلبة ببيانات الدخول تلقائياً بعد القبول في البرنامج."
-      : lang === "fr"
-      ? "Les identifiants de connexion sont fournis automatiquement après l'admission."
       : "Login credentials are provided automatically upon program admission.";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -405,7 +347,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const saved = localStorage.getItem("biklima-lang");
-    if (saved === "ar" || saved === "en" || saved === "fr") setLang(saved);
+    if (saved === "ar" || saved === "en") setLang(saved);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -440,10 +382,10 @@ export default function Dashboard() {
 
   const t = dashT[lang];
   const isRtl = lang === "ar";
-  const getTitle = (item: { titleAr: string; titleEn: string; titleFr: string }) =>
-    lang === "en" ? (item.titleEn || item.titleAr) : lang === "fr" ? (item.titleFr || item.titleAr) : item.titleAr;
+  const getTitle = (item: { titleAr: string; titleEn: string; titleFr?: string }) =>
+    lang === "en" ? (item.titleEn || item.titleAr) : item.titleAr;
   const getDesc = (item: { descriptionAr?: string | null; descriptionEn?: string | null; descriptionFr?: string | null }) =>
-    lang === "en" ? (item.descriptionEn || item.descriptionAr) : lang === "fr" ? (item.descriptionFr || item.descriptionAr) : item.descriptionAr;
+    lang === "en" ? (item.descriptionEn || item.descriptionAr) : item.descriptionAr;
 
   if (authLoading) {
     return (
@@ -466,7 +408,6 @@ export default function Dashboard() {
     const labels: Record<string, Record<string, string>> = {
       ar: { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض", confirmed: "مؤكد", shipped: "تم الشحن", delivered: "تم التوصيل" },
       en: { pending: "Pending", approved: "Approved", rejected: "Rejected", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered" },
-      fr: { pending: "En attente", approved: "Approuvé", rejected: "Rejeté", confirmed: "Confirmé", shipped: "Expédié", delivered: "Livré" },
     };
     return labels[lang]?.[s] || s;
   };
@@ -513,12 +454,12 @@ export default function Dashboard() {
                   {!isCompleted ? (
                     <Button onClick={() => markComplete(currentLesson.id)} className="bg-primary text-white rounded-full gap-2">
                       <CheckCircle className="w-4 h-4" />
-                      {isRtl ? "تمت المشاهدة" : lang === "fr" ? "Marquer terminé" : "Mark Complete"}
+                      {isRtl ? "تمت المشاهدة" : "Mark Complete"}
                     </Button>
                   ) : (
                     <span className="flex items-center gap-1 text-green-600 font-medium text-sm">
                       <CheckCircle className="w-4 h-4" />
-                      {isRtl ? "مكتمل" : lang === "fr" ? "Terminé" : "Completed"}
+                      {isRtl ? "مكتمل" : "Completed"}
                     </span>
                   )}
                   {currentLesson.durationMinutes && (
@@ -535,7 +476,7 @@ export default function Dashboard() {
             <div className="lg:w-80 shrink-0">
               <Card className="rounded-2xl">
                 <CardContent className="p-4">
-                  <h4 className="font-bold mb-3 text-sm">{isRtl ? "قائمة الدروس" : lang === "fr" ? "Liste des leçons" : "Lesson List"}</h4>
+                  <h4 className="font-bold mb-3 text-sm">{isRtl ? "قائمة الدروس" : "Lesson List"}</h4>
                   <div className="space-y-1">
                     {currentCourse.lessons.map((l, idx) => {
                       const done = currentCourse.progress.some(p => p.lessonId === l.id && p.completed);
@@ -569,7 +510,7 @@ export default function Dashboard() {
           <div className="container mx-auto px-4 py-3 flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => setViewingCourse(null)} className="gap-1">
               {isRtl ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-              {isRtl ? "دوراتي" : lang === "fr" ? "Mes cours" : "My Courses"}
+              {isRtl ? "دوراتي" : "My Courses"}
             </Button>
           </div>
         </header>
@@ -664,7 +605,7 @@ export default function Dashboard() {
               {isAdmin && (
                 <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium">
                   <Shield className="w-5 h-5" />
-                  <span>{lang === "ar" ? "لوحة الإدارة" : lang === "fr" ? "Panneau admin" : "Admin Panel"}</span>
+                  <span>{lang === "ar" ? "لوحة الإدارة" : "Admin Panel"}</span>
                 </button>
               )}
               <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start">
@@ -751,7 +692,7 @@ export default function Dashboard() {
                     <div className="mt-8 pt-6 border-t border-border">
                       <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
                         <FileText className="w-4 h-4 text-primary" />
-                        {isRtl ? "طلبات التسجيل" : lang === "fr" ? "Demandes d'inscription" : "Enrollment Requests"}
+                        {isRtl ? "طلبات التسجيل" : "Enrollment Requests"}
                       </h4>
                       <div className="space-y-2">
                         {requests.map(r => (

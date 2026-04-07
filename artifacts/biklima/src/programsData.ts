@@ -17,7 +17,7 @@ export type UpcomingEvent = {
   city: string;
   country: EventCountry;
   spotsLeft?: number;
-  i18n: Record<"en" | "fr", { location: string; city: string }>;
+  i18n: Record<"en", { location: string; city: string }>;
 };
 
 export const EVENT_COUNTRIES: { key: EventCountry; flag: string }[] = [
@@ -56,7 +56,7 @@ export type Program = ProgramLocale & {
   tagColor: string;
   samplePdf?: string;
   introVideo?: string;
-  i18n: Record<"en" | "fr", ProgramLocale>;
+  i18n: Record<"en", ProgramLocale>;
 };
 
 const programsBase: Program[] = [
@@ -98,21 +98,6 @@ const programsBase: Program[] = [
         modules: ["From Ordinary Speaker to Influential Speaker", "Confidence, Presence, and First Impressions", "Managing Fear and Controlling Anxiety", "How to Build Your Message Clearly", "Organizing Ideas, Opening, and Closing", "Voice Tone, Pause, and Body Language", "Persuasion and Influence Skills", "Addressing Different Audiences", "Delivering Presentations and Speeches", "Managing Questions and Objections", "Speaking in Meetings and Events", "Feedback and Personal Development Plan"],
         workbook: { title: "The Trainee's Workbook", description: "A deep training workbook containing exercises on presence, performance, speech architecture, and self-assessment" },
       },
-      fr: {
-        role: "Cours Fondateur",
-        shortTitle: "L'Orateur Influent",
-        subtitle: "L'Art de l'Influence et l'Art Oratoire",
-        audience: "Jeunes, Jeunes Adultes, Professionnels",
-        hook: "Votre parole peut changer la salle",
-        description: "Un programme de formation complet pour les jeunes et les professionnels, conçu pour développer un orateur plus présent, plus clair et plus influent dans les contextes académiques, professionnels et publics. Il se concentre sur le développement de la confiance, la structuration des messages, l'amélioration de l'expression et la capacité réelle de persuasion.",
-        transformation: "D'une personne ordinaire à un orateur qui laisse une impression inoubliable",
-        prerequisite: null,
-        prerequisiteLabel: null,
-        delivery: "Ouvert au public — jeunes et professionnels",
-        outcomes: ["Construire une présence personnelle", "Techniques de persuasion et d'influence", "Architecture du discours et du message", "Équilibre émotionnel devant un public", "Outils de présentation professionnelle", "Communication intelligente dans différents contextes"],
-        modules: ["De l'Orateur Ordinaire à l'Orateur Influent", "Confiance, Présence et Premières Impressions", "Gérer la Peur et Contrôler l'Anxiété", "Comment Construire Votre Message Clairement", "Organiser les Idées, Ouvrir et Conclure", "Ton de la Voix, Pause et Langage Corporel", "Compétences de Persuasion et d'Influence", "S'adresser à Différents Publics", "Présenter des Exposés et des Discours", "Gérer les Questions et les Objections", "Parler en Réunions et lors d'Événements", "Retour d'Information et Plan de Développement Personnel"],
-        workbook: { title: "Le Cahier du Stagiaire", description: "Un cahier de formation approfondi contenant des exercices sur la présence, la performance, l'architecture du discours et l'auto-évaluation" },
-      },
     },
   },
   {
@@ -153,21 +138,6 @@ const programsBase: Program[] = [
         modules: ["From Speaker to Trainer", "Bikalima Program Philosophy and Impact", "The Trainer's Personality and Professional Identity", "Training Session Design", "Group Management and Facilitation", "Building Activities and Applications", "Impactful Presentation in Front of an Audience", "Persuasion and Crafting the Message", "Delivering Trial Sessions", "Feedback and Professional Assessment", "Standards of the Certified Trainer", "Market Launch Plan"],
         workbook: { title: "Bikalima – The Certified Trainer Program", description: "The comprehensive professional guide for the certified trainer, including complete curricula, tools, and assessments" },
       },
-      fr: {
-        role: "Formation des Formateurs",
-        shortTitle: "Le Formateur Certifié",
-        badge: "(Formation de Formateurs)",
-        audience: "Formateurs, Facilitateurs, Spécialistes",
-        hook: "Enseignez aux autres ce que vous avez appris, et multipliez l'impact",
-        description: "Un programme de qualification avancé pour préparer des formateurs certifiés capables de délivrer le programme Bikalima pour adultes de manière professionnelle. Il se concentre sur la construction de l'identité du formateur, la compréhension de la philosophie du programme, la maîtrise des outils de formation et la gestion des séances et des groupes.",
-        transformation: "D'un orateur professionnel à un formateur certifié ayant un impact dans sa communauté",
-        prerequisite: "La réussite du cours L'Orateur Influent est requise",
-        prerequisiteLabel: "Prérequis Obligatoire",
-        delivery: "Pour les spécialistes souhaitant une certification — nécessite de suivre d'abord le cours de base",
-        outcomes: ["Méthodologie de formation professionnelle", "Conception de séances de formation", "Gestion de groupe et facilitation", "Certification officielle Bikalima", "Construction d'un parcours de formation", "Mise en œuvre et lancement sur le marché"],
-        modules: ["De l'Orateur au Formateur", "Philosophie et Impact du Programme Bikalima", "La Personnalité du Formateur et son Identité Professionnelle", "Conception de Séances de Formation", "Gestion de Groupes et Facilitation", "Construire des Activités et Applications", "Présentation Impactante devant un Public", "Persuasion et Création du Message", "Animer des Séances d'Essai", "Retour d'Information et Évaluation Professionnelle", "Critères du Formateur Certifié", "Plan de Lancement sur le Marché"],
-        workbook: { title: "Bikalima – Le Programme du Formateur Certifié", description: "Le guide professionnel complet pour le formateur certifié, incluant les curricula, outils et évaluations complets" },
-      },
     },
   },
   {
@@ -205,20 +175,6 @@ const programsBase: Program[] = [
         outcomes: ["Children's public speaking training methodology", "Age-appropriate educational tools", "Integrating the program at home and in the classroom", "Encouraging participation and overcoming shyness", "Assessment, follow-up, and performance development", "Building a confident and expressive generation"],
         modules: ["Why Teach Children Public Speaking?", "The Word as a Tool for Character Building", "How Does Training Differ by Age?", "Individual Differences in Expression", "Psychological Needs at Each Stage", "How to Deliver a Session to Children", "Managing Interaction and Activities", "Encouraging Participation and Overcoming Shyness", "Applying the Program in Class or at Home", "Practical Training Models", "Assessment and Follow-up"],
         workbook: { title: "Bikalima Program for Educators & Parents", description: "A specialized training kit with strategies and practical activities to build a confident generation" },
-      },
-      fr: {
-        role: "Éducateurs & Parents",
-        shortTitle: "Qualifier les Éducateurs pour les Enfants",
-        audience: "Éducateurs, Parents, Mentors",
-        hook: "L'environnement de l'enfant est son avenir",
-        description: "Un programme de qualification pour les éducateurs et les parents, les initiant à la méthodologie de formation des enfants en art oratoire, communication et influence, leur permettant d'appliquer le programme en classe ou à la maison de manière pratique et organisée.",
-        transformation: "De la pression et des attentes au soutien conscient et à l'orientation appropriée",
-        prerequisite: "Suivre le cours L'Orateur Influent est recommandé",
-        prerequisiteLabel: "Recommandé (non obligatoire)",
-        delivery: "Ouvert aux éducateurs et aux parents",
-        outcomes: ["Méthodologie de formation en art oratoire pour enfants", "Outils pédagogiques adaptés à l'âge", "Intégration du programme à la maison et en classe", "Encourager la participation et surmonter la timidité", "Évaluation, suivi et développement des performances", "Construire une génération confiante et expressive"],
-        modules: ["Pourquoi Enseigner l'Art Oratoire aux Enfants ?", "La Parole comme Outil de Construction de la Personnalité", "Comment la Formation Diffère-t-elle selon l'Âge ?", "Différences Individuelles dans l'Expression", "Besoins Psychologiques à Chaque Étape", "Comment Animer une Séance pour les Enfants", "Gérer les Interactions et les Activités", "Encourager la Participation et Surmonter la Timidité", "Appliquer le Programme en Classe ou à la Maison", "Modèles de Formation Pratiques", "Évaluation et Suivi"],
-        workbook: { title: "Programme Bikalima pour Éducateurs & Parents", description: "Un kit de formation spécialisé avec des stratégies et des activités pratiques pour construire une génération confiante" },
       },
     },
   },
@@ -258,20 +214,6 @@ const programsBase: Program[] = [
         modules: ["I Speak with Confidence", "How to Express Myself Without Fear", "What Does It Mean to Speak in Front of Others?", "How to Start Speaking Beautifully", "Organizing My Thoughts Before Speaking", "Voice Tone and Body Language", "How to Communicate My Ideas Clearly", "How to Leave a Beautiful Impression", "My First Presentation in Front of the Group"],
         workbook: { title: "The Young Speaker's Workbook", description: "An interactive workbook designed for children with carefully crafted exercises and activities to build speaking skills" },
       },
-      fr: {
-        role: "Programme Scolaire",
-        shortTitle: "Le Jeune Orateur",
-        audience: "Enfants (5–16 ans) — via les écoles",
-        hook: "Votre voix mérite d'être entendue",
-        description: "Un programme de formation interactif pour les enfants visant à construire la confiance, développer les compétences d'expression et leur apprendre à parler clairement, confortablement et avec impact devant les autres. Dispensé aux écoles par des diplômés certifiés du programme Éducateurs & Parents.",
-        transformation: "D'un enfant timide à un orateur confiant devant son public",
-        prerequisite: "Dispensé par les diplômés du Programme Éducateurs & Parents",
-        prerequisiteLabel: "Dispensé via les Diplômés du Programme Éducateurs",
-        delivery: "Dispensé exclusivement aux écoles par des diplômés certifiés du programme Éducateurs & Parents",
-        outcomes: ["Construire la confiance en soi", "Fondamentaux de l'art oratoire pour enfants", "Utiliser la voix et le langage corporel", "Organiser et communiquer les idées", "Influence et persuasion adaptées à l'âge", "Présence confiante devant un public"],
-        modules: ["Je Parle avec Confiance", "Comment M'exprimer Sans Peur", "Que Signifie Parler devant les Autres ?", "Comment Commencer à Parler Magnifiquement", "Organiser Mes Pensées Avant de Parler", "Ton de la Voix et Langage Corporel", "Comment Communiquer Mes Idées Clairement", "Comment Laisser une Belle Impression", "Ma Première Présentation devant le Groupe"],
-        workbook: { title: "Le Cahier du Jeune Orateur", description: "Un cahier interactif conçu pour les enfants avec des exercices et des activités soigneusement élaborés pour développer les compétences oratoires" },
-      },
     },
   },
 ];
@@ -281,7 +223,7 @@ export function getLocalizedProgram(p: Program, lang: Lang): ProgramLocale & Pic
     const { i18n, ...rest } = p;
     return rest;
   }
-  const locale = p.i18n[lang as "en" | "fr"];
+  const locale = p.i18n["en"];
   return { ...p, ...locale };
 }
 
@@ -299,11 +241,5 @@ export const testimonials: Record<Lang, { name: string; role: string; quote: str
     { name: "Meryem Ouache", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
     { name: "Abu Omar Nassar", role: "Father of three — Palestine", quote: "For the first time, I found a program that teaches me how to talk to my children in a way that builds their confidence. My kids now express themselves in ways I never expected." },
     { name: "Dr. Fahad Al-Zahrani", role: "Certified Bikalima Trainer", quote: "I got certified by Bikalima and I'm now training hundreds. The methodology is scientific and the impact is real — this is not just a program, it's a mission." },
-  ],
-  fr: [
-    { name: "Oum Reem Al-Kaswani", role: "Mère de deux enfants — Amman, Jordanie", quote: "Ma fille tremblait en présentant en classe. Après quelques semaines dans le programme, elle demande maintenant à être la première à parler ! Merci Bikalima." },
-    { name: "Meryem Ouache", role: "Directrice Marketing", quote: "Le programme L'Orateur Influent a changé la façon dont je traite avec les clients. Je sais maintenant comment transmettre mon idée en quelques secondes et laisser une vraie impression dans n'importe quelle réunion." },
-    { name: "Abou Omar Nassar", role: "Père de trois enfants — Palestine", quote: "Pour la première fois, j'ai trouvé un programme qui m'apprend à parler à mes enfants d'une manière qui construit leur confiance. Mes enfants s'expriment maintenant de manières que je n'aurais jamais imaginées." },
-    { name: "Dr. Fahad Al-Zahrani", role: "Formateur Certifié Bikalima", quote: "J'ai obtenu la certification Bikalima et je forme maintenant des centaines de personnes. La méthodologie est scientifique et l'impact est réel — ce n'est pas seulement un programme, c'est une mission." },
   ],
 };
