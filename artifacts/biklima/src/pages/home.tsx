@@ -253,6 +253,7 @@ export default function Home() {
   const [wisdomIndex, setWisdomIndex] = useState(0);
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [bioPageIdx, setBioPageIdx] = useState(0);
+  const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "combined", reason: "", youtube: "",
@@ -966,19 +967,45 @@ export default function Home() {
         {/* ── GALLERY ── */}
         <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-14">
+            <div className="text-center mb-10">
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  {lang === "ar" ? "أفواج تدريبية متعددة" : "Multiple cohorts"}
+                  {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : "Bikalima's journey since 2019"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
               </motion.div>
             </div>
-            <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
-              {galleryPhotos.map((photo, i) => {
-                return (
+
+            {/* ── TABS ── */}
+            <div className="flex justify-center mb-10">
+              <div className="inline-flex p-1 rounded-full bg-muted border border-border gap-1">
+                {(["cohorts", "speeches"] as const).map((tab) => {
+                  const label = tab === "cohorts" ? t.gallery.tabCohorts : t.gallery.tabSpeeches;
+                  const isActive = galleryTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setGalleryTab(tab)}
+                      className={[
+                        "px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      ].join(" ")}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── COHORTS TAB ── */}
+            {galleryTab === "cohorts" && (
+              <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+                {galleryPhotos.map((photo, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 20 }}
@@ -1001,9 +1028,25 @@ export default function Home() {
                       </div>
                     </div>
                   </motion.div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── SPEECHES TAB ── */}
+            {galleryTab === "speeches" && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col items-center justify-center py-24 text-center"
+              >
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                  <span className="text-2xl">🎤</span>
+                </div>
+                <h3 className="font-serif text-2xl font-bold mb-3 text-foreground">{t.gallery.speechesEmpty}</h3>
+                <p className="text-muted-foreground text-base max-w-md">{t.gallery.speechesEmptySub}</p>
+              </motion.div>
+            )}
           </div>
         </section>
 

@@ -1,6 +1,5 @@
 import img1 from "@assets/لقطة_اثناء_التدريب_فوج_1775600657862.jpeg";
 import img2 from "@assets/الاردن_فوج__1775600657862.jpeg";
-import img3 from "@assets/كازان__1775600657862.jpg";
 import img4 from "@assets/تدريب_٤_1775600657862.jpg";
 import img5 from "@assets/تدريب_٥_1775600657862.jpg";
 import img6 from "@assets/تدريب_1775600657862.jpg";
@@ -22,20 +21,19 @@ export type GalleryPhoto = {
 export const galleryPhotos: GalleryPhoto[] = [
   { src: img1 },
   { src: img2 },
-  { src: img3 },
+  { src: img9 },
   { src: img4 },
   { src: img5 },
+  { src: img10 },
+  { src: img13 },
   { src: img6 },
   { src: img7 },
-  { src: img8 },
-  { src: img9 },
-  { src: img10 },
-  { src: img11 },
-  { src: img12 },
-  { src: img13 },
   { src: img14 },
   { src: img15 },
+  { src: img8 },
+  { src: img11 },
   { src: img16 },
+  { src: img12 },
 ];
 
 export type VideoType = "suhaib" | "world";
