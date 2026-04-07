@@ -3,7 +3,6 @@ import img2 from "@assets/الاردن_فوج__1775600657862.jpeg";
 import img4 from "@assets/تدريب_٤_1775600657862.jpg";
 import img5 from "@assets/تدريب_٥_1775600657862.jpg";
 import img6 from "@assets/تدريب_1775600657862.jpg";
-import img7 from "@assets/تدريب_٢_1775600657862.jpg";
 import img8 from "@assets/لتواصل_٨_1775600657862.jpg";
 import img9 from "@assets/فوج_٦_1775600657862.jpg";
 import img10 from "@assets/فوج_الاردن__1775600657862.jpg";
@@ -27,7 +26,6 @@ export const galleryPhotos: GalleryPhoto[] = [
   { src: img10 },
   { src: img13 },
   { src: img6 },
-  { src: img7 },
   { src: img14 },
   { src: img15 },
   { src: img8 },
