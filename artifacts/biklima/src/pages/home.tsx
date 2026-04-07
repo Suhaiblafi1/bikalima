@@ -75,7 +75,7 @@ function useLang() {
   const [lang, setLang] = useState<Lang>(() => {
     try {
       const stored = localStorage.getItem("biklima-lang") as Lang | null;
-      if (stored && ["ar", "en"].includes(stored)) return stored;
+      if (stored && (["ar", "en", "fr"] as string[]).includes(stored)) return stored as Lang;
     } catch {}
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
     const arabicTZ = new Set([
@@ -980,9 +980,10 @@ export default function Home() {
             </div>
 
             {/* ── UNIFIED MASONRY GRID ── */}
-            <div className="columns-2 md:columns-3 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
               {allPhotos.map((photo, i) => {
                 const countryLabel = photo.country[lang as keyof typeof photo.country] ?? photo.country.en;
+                const isWide = i % 7 === 2 || i % 7 === 5;
                 return (
                   <motion.div
                     key={i}
@@ -990,25 +991,28 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: (i % 3) * 0.06, duration: 0.45 }}
-                    className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                    className={[
+                      "relative group cursor-pointer overflow-hidden rounded-xl",
+                      isWide ? "col-span-2" : "",
+                    ].join(" ")}
                     onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
                   >
                     <img
                       src={photo.src}
                       alt={countryLabel}
-                      className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className={["w-full object-cover transition-transform duration-500 group-hover:scale-105", isWide ? "h-56 md:h-72" : "h-40 md:h-52"].join(" ")}
                       loading="lazy"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-2.5 start-2.5">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
                         <span>{photo.flag}</span>
                         <span>{countryLabel}</span>
                       </span>
                     </div>
-                    <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                        <ZoomIn className="w-4 h-4 text-white" />
+                    <div className="absolute top-2.5 end-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <ZoomIn className="w-3.5 h-3.5 text-white" />
                       </div>
                     </div>
                   </motion.div>

@@ -27,7 +27,7 @@ import {
   Video,
 } from "lucide-react";
 
-type Lang = "ar" | "en";
+type Lang = "ar" | "en" | "fr";
 
 const dashT = {
   ar: {
@@ -140,6 +140,62 @@ const dashT = {
       password: "Password",
       loginBtn: "Sign In",
       passwordMin: "Password must be at least 6 characters",
+    },
+  },
+  fr: {
+    title: "Ma Plateforme — Bikalima",
+    welcome: "Bienvenue",
+    tabs: {
+      account: "Mon Compte",
+      courses: "Mes Cours",
+      orders: "Mes Commandes",
+      schedule: "Planning",
+    },
+    account: {
+      heading: "Informations du Compte",
+      name: "Nom",
+      email: "Email",
+      memberSince: "Membre depuis",
+      editProfile: "Modifier le Profil",
+    },
+    courses: {
+      heading: "Cours Inscrits",
+      noCourses: "Vous n'êtes pas encore inscrit à un cours",
+      enrollNow: "S'inscrire",
+      progress: "Progression",
+      accessMaterials: "Accéder aux Matériaux",
+      viewRecordings: "Voir les Enregistrements",
+    },
+    orders: {
+      heading: "Historique des Commandes",
+      noOrders: "Aucune commande pour l'instant",
+      shopNow: "Parcourir les Cahiers",
+      orderNum: "Commande #",
+      date: "Date",
+      status: "Statut",
+      total: "Total",
+      statuses: { pending: "En attente", confirmed: "Confirmé", shipped: "Expédié", delivered: "Livré" },
+    },
+    schedule: {
+      heading: "Planning",
+      noSchedule: "Aucune session planifiée pour l'instant",
+      upcoming: "Sessions à Venir",
+      joinZoom: "Rejoindre via Zoom",
+      date: "Date",
+      time: "Heure",
+      type: "Type",
+      online: "En ligne",
+      inPerson: "En présentiel",
+      location: "Lieu",
+    },
+    backHome: "Retour à l'Accueil",
+    logout: "Se Déconnecter",
+    auth: {
+      loginTitle: "Se Connecter",
+      email: "Email",
+      password: "Mot de passe",
+      loginBtn: "Se Connecter",
+      passwordMin: "Le mot de passe doit contenir au moins 6 caractères",
     },
   },
 };
@@ -347,7 +403,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const saved = localStorage.getItem("biklima-lang");
-    if (saved === "ar" || saved === "en") setLang(saved);
+    if (saved === "ar" || saved === "en" || saved === "fr") setLang(saved as Lang);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -383,9 +439,9 @@ export default function Dashboard() {
   const t = dashT[lang];
   const isRtl = lang === "ar";
   const getTitle = (item: { titleAr: string; titleEn: string; titleFr?: string }) =>
-    lang === "en" ? (item.titleEn || item.titleAr) : item.titleAr;
+    lang !== "ar" ? (item.titleEn || item.titleAr) : item.titleAr;
   const getDesc = (item: { descriptionAr?: string | null; descriptionEn?: string | null; descriptionFr?: string | null }) =>
-    lang === "en" ? (item.descriptionEn || item.descriptionAr) : item.descriptionAr;
+    lang !== "ar" ? (item.descriptionEn || item.descriptionAr) : item.descriptionAr;
 
   if (authLoading) {
     return (

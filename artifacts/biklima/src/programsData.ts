@@ -56,7 +56,7 @@ export type Program = ProgramLocale & {
   tagColor: string;
   samplePdf?: string;
   introVideo?: string;
-  i18n: Record<"en", ProgramLocale>;
+  i18n: { en: ProgramLocale; fr?: ProgramLocale };
 };
 
 const programsBase: Program[] = [
@@ -223,7 +223,7 @@ export function getLocalizedProgram(p: Program, lang: Lang): ProgramLocale & Pic
     const { i18n, ...rest } = p;
     return rest;
   }
-  const locale = p.i18n["en"];
+  const locale = (lang === "fr" ? (p.i18n["fr"] ?? p.i18n["en"]) : p.i18n["en"]);
   return { ...p, ...locale };
 }
 
@@ -241,5 +241,11 @@ export const testimonials: Record<Lang, { name: string; role: string; quote: str
     { name: "Meryem Ouache", role: "Marketing Director", quote: "The Influential Speaker program changed the way I deal with clients. I now know how to convey my idea in seconds and leave a real impression in any meeting." },
     { name: "Abu Omar Nassar", role: "Father of three — Palestine", quote: "For the first time, I found a program that teaches me how to talk to my children in a way that builds their confidence. My kids now express themselves in ways I never expected." },
     { name: "Dr. Fahad Al-Zahrani", role: "Certified Bikalima Trainer", quote: "I got certified by Bikalima and I'm now training hundreds. The methodology is scientific and the impact is real — this is not just a program, it's a mission." },
+  ],
+  fr: [
+    { name: "Umm Reem Al-Kaswani", role: "Mère de deux enfants — Amman, Jordanie", quote: "Ma fille tremblait lorsqu'elle devait présenter en classe. Après quelques semaines dans le programme, elle demandait à parler en premier ! Merci Bikalima." },
+    { name: "Meryem Ouache", role: "Directrice Marketing", quote: "Le programme L'Orateur Influent a changé ma façon de traiter avec mes clients. Je sais désormais comment transmettre mon idée en quelques secondes et laisser une vraie impression lors de chaque réunion." },
+    { name: "Abu Omar Nassar", role: "Père de trois enfants — Palestine", quote: "Pour la première fois, j'ai trouvé un programme qui m'apprend à parler à mes enfants d'une manière qui renforce leur confiance. Mes enfants s'expriment maintenant d'une façon que je n'aurais jamais imaginée." },
+    { name: "Dr. Fahad Al-Zahrani", role: "Formateur Certifié Bikalima", quote: "J'ai obtenu la certification Bikalima et je forme maintenant des centaines de personnes. La méthodologie est scientifique et l'impact est réel — ce n'est pas seulement un programme, c'est une mission." },
   ],
 };
