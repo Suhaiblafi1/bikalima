@@ -1,37 +1,41 @@
-export const COUNTRIES = {
-  qa: { flag: "🇶🇦", ar: "قطر", en: "Qatar", fr: "Qatar" },
-  ae: { flag: "🇦🇪", ar: "الإمارات", en: "UAE", fr: "Émirats" },
-  sd: { flag: "🇸🇩", ar: "السودان", en: "Sudan", fr: "Soudan" },
-  jo: { flag: "🇯🇴", ar: "الأردن", en: "Jordan", fr: "Jordanie" },
-  ru: { flag: "🇷🇺", ar: "روسيا", en: "Russia", fr: "Russie" },
-  gb: { flag: "🇬🇧", ar: "المملكة المتحدة", en: "UK", fr: "Royaume-Uni" },
-  sa: { flag: "🇸🇦", ar: "السعودية", en: "Saudi Arabia", fr: "Arabie Saoudite" },
-} as const;
-
-export type CountryKey = keyof typeof COUNTRIES;
+import img1 from "@assets/لقطة_اثناء_التدريب_فوج_1775600657862.jpeg";
+import img2 from "@assets/الاردن_فوج__1775600657862.jpeg";
+import img3 from "@assets/كازان__1775600657862.jpg";
+import img4 from "@assets/تدريب_٤_1775600657862.jpg";
+import img5 from "@assets/تدريب_٥_1775600657862.jpg";
+import img6 from "@assets/تدريب_1775600657862.jpg";
+import img7 from "@assets/تدريب_٢_1775600657862.jpg";
+import img8 from "@assets/لتواصل_٨_1775600657862.jpg";
+import img9 from "@assets/فوج_٦_1775600657862.jpg";
+import img10 from "@assets/فوج_الاردن__1775600657862.jpg";
+import img11 from "@assets/تدريب_احد_الافواج_1775600657862.jpg";
+import img12 from "@assets/الاردن_1775600657862.jpg";
+import img13 from "@assets/عمان_فوج_1775600657862.jpg";
+import img14 from "@assets/فوج_خخ_1775600657862.jpg";
+import img15 from "@assets/فوج_خ_1775600657862.jpg";
+import img16 from "@assets/UAE_1775600657862.jpg";
 
 export type GalleryPhoto = {
   src: string;
-  countryKey: CountryKey;
 };
 
 export const galleryPhotos: GalleryPhoto[] = [
-  { src: "https://picsum.photos/seed/bk-jo1/700/500", countryKey: "jo" },
-  { src: "https://picsum.photos/seed/bk-ae1/500/680", countryKey: "ae" },
-  { src: "https://picsum.photos/seed/bk-qa1/700/420", countryKey: "qa" },
-  { src: "https://picsum.photos/seed/bk-sa1/500/640", countryKey: "sa" },
-  { src: "https://picsum.photos/seed/bk-gb1/700/480", countryKey: "gb" },
-  { src: "https://picsum.photos/seed/bk-ru1/500/420", countryKey: "ru" },
-  { src: "https://picsum.photos/seed/bk-sd1/700/520", countryKey: "sd" },
-  { src: "https://picsum.photos/seed/bk-jo2/500/600", countryKey: "jo" },
-  { src: "https://picsum.photos/seed/bk-ae2/700/440", countryKey: "ae" },
-  { src: "https://picsum.photos/seed/bk-qa2/500/700", countryKey: "qa" },
-  { src: "https://picsum.photos/seed/bk-sa2/700/500", countryKey: "sa" },
-  { src: "https://picsum.photos/seed/bk-gb2/500/440", countryKey: "gb" },
-  { src: "https://picsum.photos/seed/bk-jo3/700/460", countryKey: "jo" },
-  { src: "https://picsum.photos/seed/bk-ru2/500/560", countryKey: "ru" },
-  { src: "https://picsum.photos/seed/bk-sd2/700/500", countryKey: "sd" },
-  { src: "https://picsum.photos/seed/bk-ae3/500/400", countryKey: "ae" },
+  { src: img1 },
+  { src: img2 },
+  { src: img3 },
+  { src: img4 },
+  { src: img5 },
+  { src: img6 },
+  { src: img7 },
+  { src: img8 },
+  { src: img9 },
+  { src: img10 },
+  { src: img11 },
+  { src: img12 },
+  { src: img13 },
+  { src: img14 },
+  { src: img15 },
+  { src: img16 },
 ];
 
 export type VideoType = "suhaib" | "world";

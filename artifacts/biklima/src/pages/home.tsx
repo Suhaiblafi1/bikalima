@@ -64,7 +64,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
-import { galleryPhotos, videoLibrary, COUNTRIES } from "../galleryData";
+import { galleryPhotos, videoLibrary } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -990,7 +990,7 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  {lang === "ar" ? "٧ دول · أفواج تدريبية متعددة" : lang === "fr" ? "7 pays · Plusieurs promotions" : "7 countries · Multiple cohorts"}
+                  {lang === "ar" ? "أفواج تدريبية متعددة" : lang === "fr" ? "Plusieurs promotions" : "Multiple cohorts"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
@@ -998,8 +998,6 @@ export default function Home() {
             </div>
             <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
               {galleryPhotos.map((photo, i) => {
-                const country = COUNTRIES[photo.countryKey];
-                const countryName = country[lang as keyof typeof country] as string;
                 return (
                   <motion.div
                     key={i}
@@ -1012,7 +1010,7 @@ export default function Home() {
                   >
                     <img
                       src={photo.src}
-                      alt={`${countryName} cohort`}
+                      alt="cohort photo"
                       className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                     />
@@ -1021,11 +1019,6 @@ export default function Home() {
                       <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                         <ZoomIn className="w-4 h-4 text-white" />
                       </div>
-                    </div>
-                    <div className="absolute bottom-3 start-3">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium border border-white/10">
-                        {country.flag} {countryName}
-                      </span>
                     </div>
                   </motion.div>
                 );
@@ -1593,12 +1586,8 @@ export default function Home() {
               {(() => {
                 const photo = galleryPhotos[lightboxIndex];
                 if (!photo) return null;
-                const country = COUNTRIES[photo.countryKey];
-                const countryName = country[lang as keyof typeof country] as string;
                 return (
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm backdrop-blur-sm border border-white/10">
-                    {country.flag} {countryName}
-                    <span className="text-white/50">·</span>
                     <span className="text-white/60">{lightboxIndex + 1} / {galleryPhotos.length}</span>
                   </span>
                 );
