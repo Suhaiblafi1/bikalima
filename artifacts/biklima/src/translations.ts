@@ -197,6 +197,8 @@ export const T = {
     gallery: {
       heading: "معرض بكلمة",
       sub: "لحظات حقيقية من دوراتنا التدريبية وخطاباتنا — أفواج متعددة، وجوه تغيّرت، وكلمات صنعت أثراً.",
+      tabCohorts: "الأفواج التدريبية",
+      tabSpeeches: "الخطابات",
       lightboxPrev: "السابقة",
       lightboxNext: "التالية",
       lightboxClose: "إغلاق",
@@ -431,6 +433,8 @@ export const T = {
     gallery: {
       heading: "Bikalima Gallery",
       sub: "Real moments from our training programs and speeches — cohorts across the globe, lives changed, words that made an impact.",
+      tabCohorts: "Training Cohorts",
+      tabSpeeches: "Speeches",
       lightboxPrev: "Previous",
       lightboxNext: "Next",
       lightboxClose: "Close",
@@ -665,6 +669,8 @@ export const T = {
     gallery: {
       heading: "Galerie Bikalima",
       sub: "De vrais moments de nos programmes de formation et discours — des cohortes à travers le monde, des vies changées, des mots qui ont fait un impact.",
+      tabCohorts: "Cohortes de Formation",
+      tabSpeeches: "Discours",
       lightboxPrev: "Précédente",
       lightboxNext: "Suivante",
       lightboxClose: "Fermer",
