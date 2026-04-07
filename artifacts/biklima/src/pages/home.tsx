@@ -64,7 +64,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
-import { galleryPhotos, videoLibrary } from "../galleryData";
+import { galleryPhotos, speechPhotos, videoLibrary } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -254,6 +254,7 @@ export default function Home() {
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
+  const [lightboxSource, setLightboxSource] = useState<"cohorts" | "speeches">("cohorts");
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "combined", reason: "", youtube: "",
@@ -298,8 +299,9 @@ export default function Home() {
         setVideoModalId(null);
       }
       if (lightboxOpen) {
-        if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % galleryPhotos.length);
-        if (e.key === "ArrowRight") setLightboxIndex((i) => (i - 1 + galleryPhotos.length) % galleryPhotos.length);
+        const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
+        if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % activePhotos.length);
+        if (e.key === "ArrowRight") setLightboxIndex((i) => (i - 1 + activePhotos.length) % activePhotos.length);
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -1013,7 +1015,7 @@ export default function Home() {
                     viewport={{ once: true }}
                     transition={{ delay: (i % 4) * 0.08, duration: 0.5 }}
                     className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
-                    onClick={() => { setLightboxIndex(i); setLightboxOpen(true); }}
+                    onClick={() => { setLightboxSource("cohorts"); setLightboxIndex(i); setLightboxOpen(true); }}
                   >
                     <img
                       src={photo.src}
@@ -1037,14 +1039,33 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="flex flex-col items-center justify-center py-24 text-center"
+                transition={{ duration: 0.35 }}
+                className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4"
               >
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                  <span className="text-2xl">🎤</span>
-                </div>
-                <h3 className="font-serif text-2xl font-bold mb-3 text-foreground">{t.gallery.speechesEmpty}</h3>
-                <p className="text-muted-foreground text-base max-w-md">{t.gallery.speechesEmptySub}</p>
+                {speechPhotos.map((photo, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (i % 4) * 0.07, duration: 0.45 }}
+                    className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                    onClick={() => { setLightboxSource("speeches"); setLightboxIndex(i); setLightboxOpen(true); }}
+                  >
+                    <img
+                      src={photo.src}
+                      alt="speech event photo"
+                      className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <ZoomIn className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
             )}
           </div>
@@ -1576,44 +1597,47 @@ export default function Home() {
             >
               <X className="w-5 h-5 text-white" />
             </button>
-            <button
-              aria-label={t.gallery.lightboxPrev}
-              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + galleryPhotos.length) % galleryPhotos.length); }}
-              className="absolute start-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <ChevronRight className="w-6 h-6 text-white" />
-            </button>
-            <button
-              aria-label={t.gallery.lightboxNext}
-              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % galleryPhotos.length); }}
-              className="absolute end-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <ChevronLeft className="w-6 h-6 text-white" />
-            </button>
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={lightboxIndex}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.2 }}
-                src={galleryPhotos[lightboxIndex]?.src}
-                alt=""
-                className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </AnimatePresence>
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-              {(() => {
-                const photo = galleryPhotos[lightboxIndex];
-                if (!photo) return null;
-                return (
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm backdrop-blur-sm border border-white/10">
-                    <span className="text-white/60">{lightboxIndex + 1} / {galleryPhotos.length}</span>
-                  </span>
-                );
-              })()}
-            </div>
+            {(() => {
+              const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
+              return (
+                <>
+                  <button
+                    aria-label={t.gallery.lightboxPrev}
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + activePhotos.length) % activePhotos.length); }}
+                    className="absolute start-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </button>
+                  <button
+                    aria-label={t.gallery.lightboxNext}
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % activePhotos.length); }}
+                    className="absolute end-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+                  </button>
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={`${lightboxSource}-${lightboxIndex}`}
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.2 }}
+                      src={activePhotos[lightboxIndex]?.src}
+                      alt=""
+                      className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </AnimatePresence>
+                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
+                    {activePhotos[lightboxIndex] && (
+                      <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm backdrop-blur-sm border border-white/10">
+                        <span className="text-white/60">{lightboxIndex + 1} / {activePhotos.length}</span>
+                      </span>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>

@@ -13,6 +13,27 @@ import img14 from "@assets/فوج_خخ_1775600657862.jpg";
 import img15 from "@assets/فوج_خ_1775600657862.jpg";
 import img16 from "@assets/UAE_1775600657862.jpg";
 
+import sp1 from "@assets/الدوحه_ه_1775602066240.jpg";
+import sp2 from "@assets/خطاب_٤_1775602066240.jpg";
+import sp3 from "@assets/خطاب_ب_1775602066240.jpg";
+import sp4 from "@assets/تترستان_1775602066240.jpg";
+import sp5 from "@assets/موسكو_1775602066240.jpg";
+import sp6 from "@assets/خطاب_٣٨_1775602066240.jpg";
+import sp7 from "@assets/عمان_٢_1775602066240.jpg";
+import sp8 from "@assets/السودان__1775602066240.jpg";
+import sp9 from "@assets/موسكو_٢_1775602066240.jpg";
+import sp10 from "@assets/ام_درمان_-_السودان__1775602066240.jpg";
+import sp11 from "@assets/خطاب-_السودان_1775602066240.jpg";
+import sp12 from "@assets/الاردن_1775602066240.jpg";
+import sp13 from "@assets/السعودية_1775602066240.jpg";
+import sp14 from "@assets/472469922_10170418834520644_4137411242115363245_n_1775602066240.jpg";
+import sp15 from "@assets/خطاب_لصهيب_1775602066240.jpg";
+import sp16 from "@assets/خطاب_صهيب_٦_1775602066240.jpg";
+import sp17 from "@assets/خطاب_صهيب_١٠_1775602066240.jpg";
+import sp18 from "@assets/خطاب_لصهيب_٥_1775602066240.jpg";
+import sp19 from "@assets/خطاب_لصهيب_٤_1775602066240.jpg";
+import sp20 from "@assets/خطاب_لصهيب_٣_1775602066240.jpg";
+
 export type GalleryPhoto = {
   src: string;
 };
@@ -32,6 +53,29 @@ export const galleryPhotos: GalleryPhoto[] = [
   { src: img11 },
   { src: img16 },
   { src: img12 },
+];
+
+export const speechPhotos: GalleryPhoto[] = [
+  { src: sp1 },
+  { src: sp2 },
+  { src: sp3 },
+  { src: sp4 },
+  { src: sp5 },
+  { src: sp6 },
+  { src: sp7 },
+  { src: sp8 },
+  { src: sp9 },
+  { src: sp10 },
+  { src: sp11 },
+  { src: sp12 },
+  { src: sp13 },
+  { src: sp14 },
+  { src: sp15 },
+  { src: sp16 },
+  { src: sp17 },
+  { src: sp18 },
+  { src: sp19 },
+  { src: sp20 },
 ];
 
 export type VideoType = "suhaib" | "world";
