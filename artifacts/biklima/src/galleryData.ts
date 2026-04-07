@@ -91,21 +91,18 @@ export const speechPhotos: GalleryPhoto[] = [
 export type VideoType = "suhaib" | "world";
 
 export type VideoCategory =
-  | "delivery"
-  | "english"
-  | "arabic"
-  | "podcast"
-  | "debate"
-  | "comedy"
-  | "education"
-  | "body-language"
-  | "movies"
-  | "classical";
+  | "opening"
+  | "closing"
+  | "storytelling"
+  | "humor"
+  | "voice"
+  | "body";
 
 export type VideoEntry = {
   youtubeId: string;
   speaker: { ar: string; en: string };
   title: { ar: string; en: string };
+  skill: { ar: string; en: string };
   learn: { ar: string; en: string };
   type: VideoType;
   category: VideoCategory;
@@ -114,482 +111,254 @@ export type VideoEntry = {
 export const videoLibrary: VideoEntry[] = [
 
   /* ══════════════════════════════════════════════
-     الإلقاء — DELIVERY
+     البداية — OPENING TECHNIQUES
   ══════════════════════════════════════════════ */
+  {
+    youtubeId: "QRHnlnwcFXI",
+    category: "opening",
+    type: "suhaib",
+    speaker: { ar: "صهيب الخوالدة", en: "Suhaib Al-Khawaldeh" },
+    title: { ar: "خطاب من الميدان", en: "A Field Speech" },
+    skill: { ar: "البداية بالانغماس الفوري", en: "Immediate Immersion Opening" },
+    learn: {
+      ar: "راقب كيف يُسقط الخطيب المستمع في اللحظة فوراً — لا مقدمات، لا شكر، لا تحية مطوّلة. هذا هو مبدأ 'الانغماس الفوري' الذي تعلمته في الكراسة: ابدأ بالمشهد وليس بالتحضير للمشهد.",
+      en: "Watch how the speaker drops the listener into the moment immediately — no preamble, no thanks, no long greeting. This is the 'immediate immersion' principle from the workbook: open with the scene, not the setup.",
+    },
+  },
   {
     youtubeId: "qp0HIF3SfI4",
-    category: "delivery",
+    category: "opening",
+    type: "world",
     speaker: { ar: "سيمون سينك", en: "Simon Sinek" },
     title: { ar: "كيف يلهم القادة العظماء التحرك", en: "How Great Leaders Inspire Action" },
+    skill: { ar: "البداية بالسؤال الجوهري", en: "Core Question Opening" },
     learn: {
-      ar: "ابدأ بالسبب — كيف يُحرّك خطابك الناس من الداخل حين تبدأ بالهدف لا بالمنتج.",
-      en: "Start with Why — move people from within by leading with purpose, not product.",
+      ar: "سينك يفتح بـ'لماذا؟' لا بـ'ماذا؟' — السؤال الذي يُزعزع التوقع ويجعل المستمع يريد الإجابة. من الكراسة: البداية بالسؤال الاستفزازي الذي يربك بشكل إيجابي ويفتح الفضول.",
+      en: "Sinek opens with 'Why?' not 'What?' — the question that disrupts expectation and makes listeners want the answer. Workbook principle: the provocative question opening that creates productive confusion and opens curiosity.",
     },
-    type: "world",
-  },
-  {
-    youtubeId: "eIho2S0ZahI",
-    category: "delivery",
-    speaker: { ar: "جوليان ترجر", en: "Julian Treasure" },
-    title: { ar: "كيف تتحدث لكي يسمعك الناس", en: "How to Speak So That People Want to Listen" },
-    learn: {
-      ar: "الأدوات الصوتية السبعة — الإيقاع والصمت والنبرة والطبقة وكيف توظّفها في كل خطاب.",
-      en: "The 7 vocal tools — rhythm, silence, tone, pitch and how to deploy them in every speech.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "Ks-_Mh1QhMc",
-    category: "delivery",
-    speaker: { ar: "إيمي كودي", en: "Amy Cuddy" },
-    title: { ar: "لغة جسدك تُشكّل شخصيتك", en: "Your Body Language May Shape Who You Are" },
-    learn: {
-      ar: "جسدك يتحدث قبل فمك — وضعيات القوة وكيف تُحوّل ثقتك من اللحظة الأولى.",
-      en: "Your body speaks before you do — power poses and how they transform your confidence from the first second.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "R1vskiVDwl4",
-    category: "delivery",
-    speaker: { ar: "سيليست هيدلي", en: "Celeste Headlee" },
-    title: { ar: "١٠ طرق لحوار أفضل", en: "10 Ways to Have a Better Conversation" },
-    learn: {
-      ar: "الاستماع الحقيقي هو نصف الخطاب — ١٠ قواعد تُجدّد حواراتك اليومية من جذورها.",
-      en: "Real listening is half the speech — 10 rules that will transform your everyday conversations.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "HAnw168huqA",
-    category: "delivery",
-    speaker: { ar: "ماثيو أبراهامز", en: "Matt Abrahams" },
-    title: { ar: "فكّر بسرعة وتحدث بذكاء", en: "Think Fast, Talk Smart" },
-    learn: {
-      ar: "كيف تُجيب وتتحدث بعفوية تحت الضغط دون تحضير — تقنيات الارتجال الذكي.",
-      en: "How to speak spontaneously and intelligently under pressure — the science of smart improvisation.",
-    },
-    type: "world",
-  },
-
-  /* ══════════════════════════════════════════════
-     خطابات إنجليزية — ENGLISH SPEECHES
-  ══════════════════════════════════════════════ */
-  {
-    youtubeId: "8S0FDjFBj8o",
-    category: "english",
-    speaker: { ar: "مارتن لوثر كينغ", en: "Martin Luther King Jr." },
-    title: { ar: "لديّ حلم", en: "I Have a Dream" },
-    learn: {
-      ar: "أعظم خطاب في التاريخ الحديث — تكرار الجملة الواحدة كأداة للاختراق العاطفي الأبدي.",
-      en: "The greatest modern speech — repetition as a tool for eternal emotional impact.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "UF8uR6Z6KLc",
-    category: "english",
-    speaker: { ar: "ستيف جوبز", en: "Steve Jobs" },
-    title: { ar: "خطاب ستانفورد — اربط النقاط", en: "Stanford Commencement — Connecting the Dots" },
-    learn: {
-      ar: "ثلاث قصص شخصية كافية لتُغيّر حياة جيل — بنية الخطاب العاطفي من قلب التجربة الحقيقية.",
-      en: "Three personal stories are enough to change a generation — emotional speech structure from lived experience.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "hg3umXU_gu0",
-    category: "english",
-    speaker: { ar: "شيماماندا نغوزي أديتشي", en: "Chimamanda Ngozi Adichie" },
-    title: { ar: "خطر القصة الواحدة", en: "The Danger of a Single Story" },
-    learn: {
-      ar: "القصة الواحدة تُفقرنا — كيف تبني سرداً متعدد الأوجه يُوسّع أفق مستمعيك.",
-      en: "The single story impoverishes us — how to build multi-layered narratives that expand horizons.",
-    },
-    type: "world",
   },
   {
     youtubeId: "iCvmsMzlF7o",
-    category: "english",
+    category: "opening",
+    type: "world",
     speaker: { ar: "برينيه براون", en: "Brené Brown" },
     title: { ar: "قوة الضعف", en: "The Power of Vulnerability" },
+    skill: { ar: "البداية بالاعتراف", en: "Confession Opening" },
     learn: {
-      ar: "الضعف ليس عكس الشجاعة — بل هو قلبها. كيف تجعل خطابك أصيلاً حين تكشف إنسانيتك.",
-      en: "Vulnerability isn't the opposite of courage — it's its heart. How authenticity makes speeches unforgettable.",
+      ar: "في الدقيقة الأولى تعترف بـ'أزمتها الوجودية كباحثة' — هذا الضعف المُعلَن يكسر الجدار فوراً ويجعل الجمهور يتماهى معها. تقنية 'القناع المكسور': اعترف بالهشاشة قبل أن تقدّم قوتك.",
+      en: "In the first minute she confesses to her 'researcher identity crisis' — this declared vulnerability instantly breaks the wall and creates identification. Workbook technique: 'the broken mask' — admit fragility before you present your strength.",
     },
-    type: "world",
   },
   {
-    youtubeId: "3rNhZu3ttIU",
-    category: "english",
-    speaker: { ar: "ملالا يوسفزاي", en: "Malala Yousafzai" },
-    title: { ar: "خطاب الأمم المتحدة", en: "United Nations Speech" },
-    learn: {
-      ar: "صوت واحد يكفي لتحريك العالم — درس ملالا في الشجاعة والوضوح والرسالة المحورية.",
-      en: "One voice is enough to move the world — Malala's lesson in courage, clarity and a central mission.",
-    },
+    youtubeId: "hg3umXU_gu0",
+    category: "opening",
     type: "world",
-  },
-  {
-    youtubeId: "H14bBuluwB8",
-    category: "english",
-    speaker: { ar: "مالكولم غلادويل", en: "Malcolm Gladwell" },
-    title: { ar: "انتصار الضعفاء — داود وجولياث", en: "The Unheard Story of David and Goliath" },
+    speaker: { ar: "شيماماندا نغوزي أديتشي", en: "Chimamanda Ngozi Adichie" },
+    title: { ar: "خطر القصة الواحدة", en: "The Danger of a Single Story" },
+    skill: { ar: "البداية بالغمرة المباشرة في القصة", en: "Direct Story Immersion Opening" },
     learn: {
-      ar: "كيف تستخدم قصة مألوفة لتقديم فكرة مدهشة — فن تحويل المعلوم إلى مثير.",
-      en: "How to use a familiar story to present a stunning idea — turning the known into the astonishing.",
+      ar: "الكلمة الأولى هي دخول القصة مباشرة — 'عندما كنت صغيرة'. لا مقدمات، لا عنوان، لا شكر. هذا أقوى أساليب البداية: اجعل المستمع داخل المشهد قبل أن يدرك أنك بدأت خطابك.",
+      en: "The first word is direct entry into the story — 'When I was a child'. No intro, no title, no thanks. This is the strongest opening style: put the listener inside the scene before they realize you've begun your speech.",
     },
-    type: "world",
   },
 
   /* ══════════════════════════════════════════════
-     خطابات عربية — ARABIC SPEECHES
+     النهاية — CLOSING TECHNIQUES
   ══════════════════════════════════════════════ */
   {
-    youtubeId: "ObiLbFBGAo4",
-    category: "arabic",
-    speaker: { ar: "وائل غنيم", en: "Wael Ghonim" },
-    title: { ar: "داخل الثورة المصرية", en: "Inside the Egyptian Revolution" },
-    learn: {
-      ar: "كيف يمكن لكلمة واحدة على الإنترنت أن تُشعل ثورة — قوة الخطاب الرقمي والتأثير الجماهيري.",
-      en: "How one digital word can ignite a revolution — the power of digital speech and mass influence.",
-    },
+    youtubeId: "UF8uR6Z6KLc",
+    category: "closing",
     type: "world",
+    speaker: { ar: "ستيف جوبز", en: "Steve Jobs" },
+    title: { ar: "خطاب التخرج في ستانفورد", en: "Stanford Commencement Address" },
+    skill: { ar: "الختام بالجملة الحافرة", en: "The Chiseled Closing Line" },
+    learn: {
+      ar: "'Stay hungry, stay foolish' — جملة واحدة يتذكرها الجميع بعد ٢٠ سنة. راقب كيف تصنع جملتك الختامية: قصيرة، إيقاعية، تحمل تناقضاً جميلاً. من الكراسة: الختام يجب أن يكون 'ثقيلاً بالمعنى، خفيفاً بالألفاظ'.",
+      en: "'Stay hungry, stay foolish' — a line everyone remembers 20 years later. Notice how to craft your closing line: short, rhythmic, carrying a beautiful contradiction. Workbook principle: a closing must be 'heavy in meaning, light in words'.",
+    },
   },
   {
-    youtubeId: "nI7DUjF2CjI",
-    category: "arabic",
-    speaker: { ar: "متحدث عربي", en: "Arabic Speaker" },
-    title: { ar: "فن التأثير بالكلمة العربية", en: "The Art of Influence Through Arabic" },
-    learn: {
-      ar: "كيف تُوظّف جماليات اللغة العربية في خطابك لتُحدث أثراً لا تصنعه أي لغة أخرى.",
-      en: "How to use the aesthetics of Arabic in your speech to create an impact no other language can replicate.",
-    },
+    youtubeId: "8S0FDjFBj8o",
+    category: "closing",
     type: "world",
-  },
-  {
-    youtubeId: "vhXhA8ePoNI",
-    category: "arabic",
-    speaker: { ar: "متحدث عربي", en: "Arabic Speaker" },
-    title: { ar: "الخطاب وبناء الثقة", en: "Speech and Building Confidence" },
+    speaker: { ar: "مارتن لوثر كينغ", en: "Martin Luther King Jr." },
+    title: { ar: "لديّ حلم", en: "I Have a Dream" },
+    skill: { ar: "الختام بالتكرار المتصاعد", en: "Crescendo Repetition Closing" },
     learn: {
-      ar: "ثلاثة أسرار يستخدمها المتحدثون العرب الأكثر تأثيراً لبناء الثقة واستمالة الجمهور.",
-      en: "Three secrets used by the most influential Arab speakers to build trust and captivate audiences.",
+      ar: "'I have a dream' تتكرر ٨ مرات في ٥ دقائق — كل تكرار أعلى صوتاً وأشد وطأة. هذا هو التصاعد الصوتي إلى الذروة. من الكراسة: التكرار المتصاعد يُحرّك العاطفة ويثبّت الرسالة في الذاكرة للأبد.",
+      en: "'I have a dream' repeated 8 times in 5 minutes — each time louder and more intense. This is the vocal crescendo to climax. Workbook principle: escalating repetition moves emotion and permanently embeds the message in memory.",
     },
-    type: "world",
-  },
-  {
-    youtubeId: "lLYMnLCwBM8",
-    category: "arabic",
-    speaker: { ar: "متحدث ملهم", en: "Inspiring Speaker" },
-    title: { ar: "التحدث من القلب — خطاب بالفصحى", en: "Speaking from the Heart — Classical Arabic Speech" },
-    learn: {
-      ar: "الفصحى ليست قيداً — بل هي أداة قوة. كيف تتحدث بها بشكل عفوي وطبيعي دون أن تبدو متكلّفاً.",
-      en: "Classical Arabic isn't a constraint — it's a power tool. How to speak it naturally without sounding stiff.",
-    },
-    type: "world",
-  },
-
-  /* ══════════════════════════════════════════════
-     بودكاست — PODCAST
-  ══════════════════════════════════════════════ */
-  {
-    youtubeId: "hER0Qp6QJNU",
-    category: "podcast",
-    speaker: { ar: "سيمون سينك", en: "Simon Sinek" },
-    title: { ar: "جيل الألفية في بيئة العمل", en: "Millennials in the Workplace" },
-    learn: {
-      ar: "لماذا يشعر الجيل الجديد بالخواء؟ — درس عميق في التواصل بين الأجيال وقراءة الجمهور.",
-      en: "Why does the new generation feel empty? — a profound lesson in cross-generational communication.",
-    },
-    type: "world",
   },
   {
     youtubeId: "rrkrvAUbU9Y",
-    category: "podcast",
+    category: "closing",
+    type: "world",
     speaker: { ar: "دانيال بينك", en: "Daniel Pink" },
     title: { ar: "لغز الدافعية", en: "The Puzzle of Motivation" },
+    skill: { ar: "الختام بالسؤال المفتوح", en: "The Open Question Closing" },
     learn: {
-      ar: "ما الذي يُحرّك الناس حقاً؟ — كيف تُضمّن حديثك أفكاراً تُشعل الرغبة لدى مستمعيك.",
-      en: "What truly moves people? — how to embed ideas in your talk that ignite desire in your listeners.",
+      ar: "بينك يُنهي خطابه بسؤال لا بإجابة — يُلزم المستمع بالتفكير بعد انتهاء الخطاب. الختام المفتوح يُطيل عمر خطابك في عقل جمهورك. من الكراسة: أقوى الخطابات لا تُغلق — بل تُشعل.",
+      en: "Pink ends his speech with a question, not an answer — obligating the listener to keep thinking after the speech ends. The open closing extends your speech's life in your audience's mind. Workbook: the strongest speeches don't close — they ignite.",
     },
-    type: "world",
-  },
-  {
-    youtubeId: "LBbHFjSKOsM",
-    category: "podcast",
-    speaker: { ar: "أنثروبولوجيا التواصل", en: "The Anthropology of Communication" },
-    title: { ar: "أسرار المحادثة الجذابة", en: "Secrets of Magnetic Conversation" },
-    learn: {
-      ar: "كيف تجعل حديثك جذاباً في أي موقف — فن الأسئلة المفتوحة وتقنيات بناء الاتصال العميق.",
-      en: "How to make your conversation magnetic in any situation — open questions and deep connection techniques.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "d9BYYD9DPfE",
-    category: "podcast",
-    speaker: { ar: "خبير الاتصال", en: "Communication Expert" },
-    title: { ar: "كيف تُقنع في دقيقتين", en: "How to Persuade in Two Minutes" },
-    learn: {
-      ar: "هيكل الإقناع السريع — كيف تبني حجتك في دقيقتين بدلاً من ساعة بأثر أكبر.",
-      en: "The rapid persuasion framework — how to build your case in 2 minutes instead of an hour, with greater impact.",
-    },
-    type: "world",
   },
 
   /* ══════════════════════════════════════════════
-     مناظرات — DEBATES
+     السرد والقصة — STORYTELLING
   ══════════════════════════════════════════════ */
   {
-    youtubeId: "wWo2eAe4hiI",
-    category: "debate",
-    speaker: { ar: "جوردان بيترسون", en: "Jordan Peterson" },
-    title: { ar: "جوردان بيترسون في أوكسفورد", en: "Jordan Peterson at Oxford Union" },
-    learn: {
-      ar: "كيف تواجه الأسئلة الصعبة برباطة جأش وتُقلب الحجة لصالحك — فن المناظرة الهادئة.",
-      en: "How to face hard questions with composure and flip arguments in your favor — the art of calm debate.",
-    },
+    youtubeId: "H14bBuluwB8",
+    category: "storytelling",
     type: "world",
+    speaker: { ar: "مالكولم غلادويل", en: "Malcolm Gladwell" },
+    title: { ar: "داود وجولياث — القصة التي لم تسمعها", en: "The Unheard Story of David and Goliath" },
+    skill: { ar: "قلب القصة المألوفة", en: "The Subverted Familiar Story" },
+    learn: {
+      ar: "غلادويل يأخذ قصة داود وجولياث التي تعرفها منذ طفولتك ويقلبها رأساً على عقب. تعلّم تقنية 'الاستعارة المعكوسة': ادخل من باب مألوف جداً ثم أخرج من باب مدهش تماماً — يجعل المستمع يُعيد تقييم كل ما ظنّه يعرفه.",
+      en: "Gladwell takes the David and Goliath story you've known since childhood and flips it completely. Learn the 'inverted metaphor' technique: enter through a very familiar door, exit through a completely astonishing one — making the listener reassess everything they thought they knew.",
+    },
   },
   {
-    youtubeId: "7dKPlSi4nEo",
-    category: "debate",
-    speaker: { ar: "كريستوفر هيتشنز", en: "Christopher Hitchens" },
-    title: { ar: "حرية التعبير — مناظرة أوكسفورد", en: "Free Speech — Oxford Debate" },
-    learn: {
-      ar: "كيف تُدافع عن فكرتك حتى حين يعارضك الجميع — تقنيات بناء الحجة القوية تحت الضغط.",
-      en: "How to defend your idea even when everyone opposes you — building strong arguments under pressure.",
-    },
+    youtubeId: "ObiLbFBGAo4",
+    category: "storytelling",
     type: "world",
-  },
-  {
-    youtubeId: "gPnCmXs9l5c",
-    category: "debate",
-    speaker: { ar: "نقاش فلسفي", en: "Philosophical Debate" },
-    title: { ar: "المناظرة الكبرى — الحق والحرية", en: "The Great Debate — Rights and Freedom" },
+    speaker: { ar: "وائل غنيم", en: "Wael Ghonim" },
+    title: { ar: "داخل الثورة المصرية", en: "Inside the Egyptian Revolution" },
+    skill: { ar: "الشهادة الشخصية كمحرّك جماهيري", en: "Personal Testimony as Mass Catalyst" },
     learn: {
-      ar: "الاستماع الفعّال في المناظرة — كيف تُثبت أنك تسمع حجة خصمك قبل أن تُفنّدها.",
-      en: "Active listening in debate — how to show you truly heard your opponent's argument before dismantling it.",
+      ar: "غنيم لا يُقدّم إحصاءات — يُقدّم اعترافاً شخصياً داخل حدث تاريخي. هذه هي تقنية 'الشهادة الصادقة': أنت لست الراوي، أنت الشاهد. والشاهد أكثر إقناعاً من أي خبير.",
+      en: "Ghonim presents no statistics — he presents personal confession inside a historic event. This is the 'authentic testimony' technique: you're not the narrator, you're the witness. And a witness is more convincing than any expert.",
     },
-    type: "world",
-  },
-
-  /* ══════════════════════════════════════════════
-     كوميديا — COMEDY
-  ══════════════════════════════════════════════ */
-  {
-    youtubeId: "n9hbf4r4Z1g",
-    category: "comedy",
-    speaker: { ar: "ماز جوبراني", en: "Maz Jobrani" },
-    title: { ar: "هل سمعت عن الإيراني الأمريكي؟", en: "Did You Hear the One About the Iranian-American?" },
-    learn: {
-      ar: "كيف يُوظّف الكوميدي ثقافتين مختلفتين ليصنع جسراً بدلاً من جداراً — الفكاهة كأداة للتواصل.",
-      en: "How a comedian uses two cultures to build a bridge not a wall — humor as the ultimate communication tool.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "hJncoLBGBDo",
-    category: "comedy",
-    speaker: { ar: "الفكاهة وفن التواصل", en: "Humor and the Art of Communication" },
-    title: { ar: "الفكاهة سلاح الخطيب الذكي", en: "Humor — The Smart Speaker's Secret Weapon" },
-    learn: {
-      ar: "كيف تدمج الفكاهة في خطابك الجاد دون أن تفقد مصداقيتك — التوقيت هو كل شيء.",
-      en: "How to weave humor into a serious speech without losing credibility — timing is everything.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "XPavsNx37C4",
-    category: "comedy",
-    speaker: { ar: "ستاندأب وإلقاء", en: "Stand-Up and Delivery" },
-    title: { ar: "تعلّم الإلقاء من الكوميديا", en: "Learning Delivery from Stand-Up Comedy" },
-    learn: {
-      ar: "الكوميديا هي علم الإلقاء في أقسى صوره — كيف يُكيّف الستاند أب تقنيات يحتاجها كل خطيب.",
-      en: "Comedy is delivery science at its hardest — how stand-up techniques apply to every public speaker.",
-    },
-    type: "world",
-  },
-
-  /* ══════════════════════════════════════════════
-     تعليم — EDUCATION
-  ══════════════════════════════════════════════ */
-  {
-    youtubeId: "iG9CE55wbtY",
-    category: "education",
-    speaker: { ar: "كن روبنسون", en: "Ken Robinson" },
-    title: { ar: "هل تقتل المدارس الإبداع؟", en: "Do Schools Kill Creativity?" },
-    learn: {
-      ar: "أكثر خطاب TED مشاهدةً — فن الفكاهة الذكية التي تُقنع وتُشعل التفكير في آنٍ واحد.",
-      en: "The most-watched TED talk ever — intelligent humor that simultaneously persuades and ignites thinking.",
-    },
-    type: "world",
   },
   {
     youtubeId: "-MTRxRO5SRA",
-    category: "education",
+    category: "storytelling",
+    type: "world",
     speaker: { ar: "سال خان", en: "Sal Khan" },
     title: { ar: "لنستخدم الفيديو لإعادة اختراع التعليم", en: "Let's Use Video to Reinvent Education" },
+    skill: { ar: "قصة النشأة — لماذا بدأت", en: "The Origin Story" },
     learn: {
-      ar: "كيف تبني خطاباً يُغيّر نظاماً كاملاً — قوة الفكرة البسيطة المُقدَّمة بوضوح تام.",
-      en: "How to build a speech that changes an entire system — the power of a simple idea delivered with total clarity.",
+      ar: "خان يبني خطابه كاملاً على قصة بدايته مع ابنة عمه — قصة شخصية جداً تُولد فكرة كونية. من الكراسة: قصة النشأة هي أقوى أدوات الإقناع، لأنها تُجيب عن السؤال الأعمق: 'لماذا أصدّقك؟'",
+      en: "Khan builds his entire speech on the story of how he started tutoring his cousin — a very personal story that generates a universal idea. Workbook: the origin story is the most powerful persuasion tool, because it answers the deepest question: 'Why should I trust you?'",
     },
-    type: "world",
-  },
-  {
-    youtubeId: "BKyqkn6EUTM",
-    category: "education",
-    speaker: { ar: "خبير تعليمي", en: "Education Expert" },
-    title: { ar: "كيف تتعلم أي شيء بسرعة", en: "How to Learn Anything Fast" },
-    learn: {
-      ar: "تقنية تفكيك المهارات — كيف تُطبّق مبدأ التعلم السريع على الإلقاء والخطابة.",
-      en: "The skill decomposition technique — how to apply rapid learning to public speaking and oratory.",
-    },
-    type: "world",
-  },
-  {
-    youtubeId: "fxbCHn6gE3U",
-    category: "education",
-    speaker: { ar: "ريتشارد فاينمان", en: "Richard Feynman" },
-    title: { ar: "أسلوب فاينمان في الشرح", en: "The Feynman Technique of Explanation" },
-    learn: {
-      ar: "إذا لم تستطع شرح فكرتك لطفل ذي عشر سنوات فأنت لا تفهمها — أبسط قواعد الوضوح.",
-      en: "If you can't explain it to a 10-year-old, you don't understand it — the simplest rule of clarity.",
-    },
-    type: "world",
   },
 
   /* ══════════════════════════════════════════════
-     لغة الجسد — BODY LANGUAGE
+     الفكاهة — HUMOR
   ══════════════════════════════════════════════ */
   {
-    youtubeId: "BdB3aGCdm3I",
-    category: "body-language",
-    speaker: { ar: "فانيسا فان إيدواردز", en: "Vanessa Van Edwards" },
-    title: { ar: "علم الانطباع الأول", en: "The Science of First Impressions" },
-    learn: {
-      ar: "سبع ثوانٍ تُحدد كل شيء — كيف تُدار لغة جسدك لتُصنع انطباعاً أول لا يُنسى.",
-      en: "Seven seconds determine everything — how to control your body language for an unforgettable first impression.",
-    },
+    youtubeId: "n9hbf4r4Z1g",
+    category: "humor",
     type: "world",
+    speaker: { ar: "ماز جوبراني", en: "Maz Jobrani" },
+    title: { ar: "هل سمعت عن الإيراني الأمريكي؟", en: "Did You Hear the One About the Iranian-American?" },
+    skill: { ar: "الفكاهة كجسر ثقافي", en: "Humor as Cultural Bridge" },
+    learn: {
+      ar: "ماز يُوظّف ثقافتين متناقضتين ليصنع ضحكة تُقرّب لا تُبعد. من الكراسة: الفكاهة الناجحة لا تضحك 'على' أحد — بل تضحك 'مع' الجميع. احرص أن يكون الضحك جامعاً لا فارقاً.",
+      en: "Maz uses two contrasting cultures to create laughter that bridges rather than divides. Workbook: successful humor doesn't laugh 'at' anyone — it laughs 'with' everyone. Make sure the laughter is inclusive, not divisive.",
+    },
   },
   {
-    youtubeId: "HZwFDGEJrIQ",
-    category: "body-language",
-    speaker: { ar: "جو نافارو — عميل FBI سابق", en: "Joe Navarro — Former FBI Agent" },
-    title: { ar: "قراءة الناس — أسرار الـ FBI", en: "Reading People — FBI Secrets" },
-    learn: {
-      ar: "كيف يقرأ عميل مخابرات ما لا تقوله الكلمات — إشارات الجسد التي تكشف المشاعر الحقيقية.",
-      en: "How an intelligence agent reads what words don't say — body signals that reveal true emotions.",
-    },
+    youtubeId: "iG9CE55wbtY",
+    category: "humor",
     type: "world",
+    speaker: { ar: "كن روبنسون", en: "Ken Robinson" },
+    title: { ar: "هل تقتل المدارس الإبداع؟", en: "Do Schools Kill Creativity?" },
+    skill: { ar: "الفكاهة المدمجة في الخطاب الجاد", en: "Embedded Humor in Serious Speech" },
+    learn: {
+      ar: "روبنسون يتحدث عن قضية إنسانية خطيرة — لكنه يُدخل الضحكة كل دقيقتين. لاحظ أن الضحكة لا تُخفّف الموضوع، بل تمنح المستمع تنفّساً ثم تُعيده لعمق أكبر. من الكراسة: 'الفكاهة هي نفس بين أعماقين'.",
+      en: "Robinson speaks about a serious human issue — but inserts laughter every two minutes. Notice how the humor doesn't dilute the subject, it gives the listener breath then pulls them into even greater depth. Workbook: 'Humor is a breath between two depths'.",
+    },
   },
   {
-    youtubeId: "1cG8f3gHkmI",
-    category: "body-language",
-    speaker: { ar: "خبير لغة الجسد", en: "Body Language Expert" },
-    title: { ar: "لغة الجسد على المسرح", en: "Body Language on Stage" },
-    learn: {
-      ar: "الفرق بين المتحدث الذي يُشعّ ثقة والذي يخسرها — كل حركة ويدك وعيناك تروي قصة.",
-      en: "The difference between a speaker who radiates confidence and one who loses it — every hand movement tells a story.",
-    },
+    youtubeId: "R1vskiVDwl4",
+    category: "humor",
     type: "world",
-  },
-  {
-    youtubeId: "nolZ7J0Gkps",
-    category: "body-language",
-    speaker: { ar: "علم التعبيرات الدقيقة", en: "Micro-Expressions Science" },
-    title: { ar: "التعبيرات الدقيقة — ما لا يُكذب", en: "Micro-Expressions — What Cannot Be Faked" },
+    speaker: { ar: "سيليست هيدلي", en: "Celeste Headlee" },
+    title: { ar: "١٠ طرق لحوار أفضل", en: "10 Ways to Have a Better Conversation" },
+    skill: { ar: "خفة الظل والدفء في الإلقاء", en: "Lightness and Warmth in Delivery" },
     learn: {
-      ar: "التعبيرات التي تستمر أجزاء من الثانية — كيف تقرأها لتفهم جمهورك في الوقت الفعلي.",
-      en: "Expressions lasting fractions of a second — how to read them to understand your audience in real time.",
+      ar: "هيدلي لا تُخبر نكتة — لكنها دافئة ومُضحكة في كل جملة. الفكاهة ليست فقط النكتة المُعلَنة، بل طريقة النظر للعالم. من الكراسة: 'خفة الظل' ليست مهارة مضافة — إنها روح المتحدث الحقيقي.",
+      en: "Headlee tells no jokes — but she's warm and amusing in every sentence. Humor isn't just the announced joke, it's a way of looking at the world. Workbook: 'lightness' isn't an added skill — it's the soul of the true speaker.",
     },
-    type: "world",
   },
 
   /* ══════════════════════════════════════════════
-     ضمن أفلام — MOVIE SCENES
+     الصوت والإيقاع — VOICE & RHYTHM
   ══════════════════════════════════════════════ */
   {
-    youtubeId: "J7GY1Xg6X20",
-    category: "movies",
-    speaker: { ar: "تشارلي شابلن — الديكتاتور العظيم", en: "Charlie Chaplin — The Great Dictator" },
-    title: { ar: "الخطاب الأعظم في السينما", en: "The Greatest Speech in Cinema" },
-    learn: {
-      ar: "خطاب شابلن الختامي — كيف تُجمع بين العاطفة والفكر الإنساني في دقيقتين تُحرّك العالم.",
-      en: "Chaplin's final speech — how to combine emotion and human thought in two minutes that move the world.",
-    },
+    youtubeId: "eIho2S0ZahI",
+    category: "voice",
     type: "world",
+    speaker: { ar: "جوليان ترجر", en: "Julian Treasure" },
+    title: { ar: "كيف تتحدث لكي يسمعك الناس", en: "How to Speak So That People Want to Listen" },
+    skill: { ar: "الأدوات الصوتية السبعة", en: "The Seven Vocal Tools" },
+    learn: {
+      ar: "ترجر يُعلّمك أدواتك الصوتية: النبرة، الإيقاع، الطبقة، الحجم، الجرس، الصمت، والتلوين. لاحظ في هذا الفيديو بالذات كيف يُطبّق كل أداة وهو يشرحها. من الكراسة: الصوت هو أداتك الأولى — لا تتركها للصدفة.",
+      en: "Treasure teaches you your seven vocal tools: timbre, rhythm, pitch, volume, resonance, silence, and color. Notice in this very video how he applies each tool as he explains it. Workbook: your voice is your primary tool — don't leave it to chance.",
+    },
   },
   {
-    youtubeId: "EcxBrTBGmHk",
-    category: "movies",
-    speaker: { ar: "الملك جورج السادس — الملك يتكلم", en: "King George VI — The King's Speech" },
-    title: { ar: "الملك يتكلم — انتصار التأتأة", en: "The King's Speech — Triumph Over Stuttering" },
-    learn: {
-      ar: "لا عيب يحول دون الخطاب المؤثر — رحلة الملك من التردد إلى الثقة درس لكل متحدث.",
-      en: "No flaw prevents impactful speech — the King's journey from hesitation to confidence is a lesson for every speaker.",
-    },
+    youtubeId: "hER0Qp6QJNU",
+    category: "voice",
     type: "world",
+    speaker: { ar: "سيمون سينك", en: "Simon Sinek" },
+    title: { ar: "جيل الألفية في بيئة العمل", en: "Millennials in the Workplace" },
+    skill: { ar: "الإيقاع الحواري الطبيعي", en: "Natural Conversational Rhythm" },
+    learn: {
+      ar: "سينك يتحدث كأنه يحادثك وحدك — لا كأنه يُلقي خطاباً. راقب التوقفات، التردد المقصود، الإيقاع غير المنتظم. من الكراسة: الخطاب الجيد يُقنعك أنك في حوار لا في محاضرة.",
+      en: "Sinek speaks as if he's talking only to you — not as if he's delivering a speech. Watch the pauses, intentional hesitation, irregular rhythm. Workbook: a great speech convinces you that you're in a conversation, not a lecture.",
+    },
   },
   {
-    youtubeId: "0byL7KUaBhY",
-    category: "movies",
-    speaker: { ar: "هوارد بيل — نيتووورك ١٩٧٦", en: "Howard Beale — Network 1976" },
-    title: { ar: "أنا غاضب ولن أتحمل بعد الآن", en: "I'm Mad as Hell and I'm Not Taking It Anymore" },
-    learn: {
-      ar: "الغضب الحقيقي كأداة خطابية — كيف تُحوّل المشاعر الجارفة إلى طاقة تستقطب الجماهير.",
-      en: "Raw anger as a rhetorical tool — how to channel overwhelming emotion into crowd-gathering energy.",
-    },
+    youtubeId: "3rNhZu3ttIU",
+    category: "voice",
     type: "world",
-  },
-  {
-    youtubeId: "VPCFnTCN-U4",
-    category: "movies",
-    speaker: { ar: "ويليام والاس — بريفهارت", en: "William Wallace — Braveheart" },
-    title: { ar: "خطاب الحرية — بريفهارت", en: "Freedom Speech — Braveheart" },
+    speaker: { ar: "ملالا يوسفزاي", en: "Malala Yousafzai" },
+    title: { ar: "خطاب الأمم المتحدة", en: "United Nations Speech" },
+    skill: { ar: "الثقة بصوت غير متكلّف", en: "Unforced Confidence" },
     learn: {
-      ar: "كيف تُشعل الحماس في لحظة حاسمة — قصر الخطاب وحدّته وتوقيته هي أسلحة القائد الملهم.",
-      en: "How to ignite passion at a decisive moment — brevity, sharpness and timing are the inspired leader's weapons.",
+      ar: "ملالا لا تمتلك صوتاً مُدرَّباً — لكنها تمتلك شيئاً أقوى: اليقين. راقب ثباتها على المنصة أمام قادة العالم. من الكراسة: الثقة الصوتية لا تأتي من التدريب فقط — بل من عمق إيمانك برسالتك.",
+      en: "Malala doesn't have a trained voice — but she has something stronger: certainty. Watch her stillness on stage before world leaders. Workbook: vocal confidence doesn't come from training alone — it comes from deep belief in your message.",
     },
-    type: "world",
   },
 
   /* ══════════════════════════════════════════════
-     الفصحى العربية — CLASSICAL ARABIC
+     الحضور المسرحي — STAGE PRESENCE & BODY
   ══════════════════════════════════════════════ */
   {
-    youtubeId: "PtGqXPfWL0g",
-    category: "classical",
-    speaker: { ar: "الفصاحة والبيان", en: "Arabic Eloquence" },
-    title: { ar: "البلاغة العربية — علم يجب أن تعرفه", en: "Arabic Rhetoric — A Science You Must Know" },
-    learn: {
-      ar: "ثلاثة علوم كانت سلاح الخطباء العرب — البيان والمعاني والبديع وكيف توظّفها اليوم.",
-      en: "Three sciences that armed Arab orators — rhetoric, semantics and literary devices and how to use them today.",
-    },
+    youtubeId: "Ks-_Mh1QhMc",
+    category: "body",
     type: "world",
+    speaker: { ar: "إيمي كودي", en: "Amy Cuddy" },
+    title: { ar: "لغة جسدك تُشكّل شخصيتك", en: "Your Body Language May Shape Who You Are" },
+    skill: { ar: "وضعيات القوة ما قبل المسرح", en: "Pre-Stage Power Posing" },
+    learn: {
+      ar: "كودي تُثبت علمياً أن وضعيات جسدك لا تُرسل رسالة للآخرين فقط — بل تُغيّر كيمياء دماغك هي. دقيقتان في وضعية القوة قبل الخطاب تُغيّر مستوى التستوستيرون والكورتيزول. من الكراسة: جسدك يستطيع أن يُقنعك بنفسك قبل أن تُقنع جمهورك.",
+      en: "Cuddy scientifically proves that your body postures don't just send messages to others — they change your own brain chemistry. Two minutes in a power pose before a speech changes testosterone and cortisol levels. Workbook: your body can convince you before you convince your audience.",
+    },
   },
   {
-    youtubeId: "yGAi40klFM4",
-    category: "classical",
-    speaker: { ar: "الشعر العربي الكلاسيكي", en: "Classical Arabic Poetry" },
-    title: { ar: "الشعر والخطابة — روح واحدة", en: "Poetry and Oratory — One Soul" },
-    learn: {
-      ar: "الشعراء العرب الأوائل كانوا خطباء — كيف تُضمّن البيت الشعري في خطابك ليرفعه درجات.",
-      en: "Early Arab poets were orators — how to embed a poetic verse in your speech to elevate it immeasurably.",
-    },
+    youtubeId: "HAnw168huqA",
+    category: "body",
     type: "world",
+    speaker: { ar: "ماثيو أبراهامز", en: "Matt Abrahams" },
+    title: { ar: "فكّر بسرعة وتحدث بذكاء", en: "Think Fast, Talk Smart" },
+    skill: { ar: "الحضور تحت الضغط المفاجئ", en: "Presence Under Sudden Pressure" },
+    learn: {
+      ar: "أبراهامز يُعلّمك كيف تُجيب على سؤال مفاجئ دون أن تبدو مرتبكاً. الحضور ليس فقط الوقوف بثقة — بل التعافي السريع من اللحظات غير المتوقعة. من الكراسة: الارتجال الناجح ليس فن الإجابة الجاهزة — بل فن إدارة الارتباك بهدوء.",
+      en: "Abrahams teaches you how to respond to a sudden question without appearing flustered. Presence isn't just standing confidently — it's rapid recovery from unexpected moments. Workbook: successful improvisation isn't the art of the ready answer — it's the art of managing confusion calmly.",
+    },
   },
   {
-    youtubeId: "rLz9MFgfSIo",
-    category: "classical",
-    speaker: { ar: "مبادئ الخطابة الفصيحة", en: "Principles of Eloquent Oration" },
-    title: { ar: "كيف تتحدث بالفصحى بطلاقة", en: "How to Speak Classical Arabic Fluently" },
-    learn: {
-      ar: "الفصحى ليست لغة كتب — بل لغة منابر وقلوب. تقنيات عملية لجعلها طبيعية على لسانك.",
-      en: "Classical Arabic isn't a book language — it's a language of pulpits and hearts. Practical techniques for natural fluency.",
-    },
+    youtubeId: "qp0HIF3SfI4",
+    category: "body",
     type: "world",
+    speaker: { ar: "سيمون سينك", en: "Simon Sinek" },
+    title: { ar: "الحضور والتأثير على المسرح", en: "Stage Presence and Impact" },
+    skill: { ar: "الصمت المقصود والتوقف التأثيري", en: "Intentional Silence and Impact Pause" },
+    learn: {
+      ar: "راقب سينك في هذا الفيديو من زاوية مختلفة: التوقفات المقصودة، الهدوء، ومحدودية الحركة تمنحانه ثقلاً استثنائياً. من الكراسة: الصمت ليس فراغاً — بل لحظة تصنع فيها المستمع يُفكّر، ينتظر، ويتفاعل.",
+      en: "Watch Sinek here from a different angle: intentional pauses, stillness, and minimal movement give him exceptional weight. Workbook: silence isn't emptiness — it's the moment you make the listener think, wait, and engage.",
+    },
   },
 ];

@@ -1092,16 +1092,12 @@ export default function Home() {
                 {(
                   [
                     ["all", t.videos.tabs.all],
-                    ["delivery", t.videos.tabs.delivery],
-                    ["english", t.videos.tabs.english],
-                    ["arabic", t.videos.tabs.arabic],
-                    ["podcast", t.videos.tabs.podcast],
-                    ["debate", t.videos.tabs.debate],
-                    ["comedy", t.videos.tabs.comedy],
-                    ["education", t.videos.tabs.education],
-                    ["body-language", t.videos.tabs.bodyLanguage],
-                    ["movies", t.videos.tabs.movies],
-                    ["classical", t.videos.tabs.classical],
+                    ["opening", t.videos.tabs.opening],
+                    ["closing", t.videos.tabs.closing],
+                    ["storytelling", t.videos.tabs.storytelling],
+                    ["humor", t.videos.tabs.humor],
+                    ["voice", t.videos.tabs.voice],
+                    ["body", t.videos.tabs.body],
                   ] as [string, string][]
                 ).map(([key, label]) => {
                   const count = key === "all" ? videoLibrary.length : videoLibrary.filter(v => v.category === key).length;
@@ -1130,19 +1126,19 @@ export default function Home() {
                 .map((video, i) => {
                   const title = video.title[lang as keyof typeof video.title];
                   const speaker = video.speaker[lang as keyof typeof video.speaker];
+                  const skill = video.skill[lang as keyof typeof video.skill];
                   const learn = video.learn[lang as keyof typeof video.learn];
                   const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-                  const catLabel = (t.videos.tabs as Record<string, string>)[
-                    video.category === "body-language" ? "bodyLanguage" : video.category
-                  ] ?? video.category;
+                  const isSuhaib = video.type === "suhaib";
                   return (
                     <motion.div
-                      key={video.youtubeId}
+                      key={`${video.youtubeId}-${video.category}`}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: (i % 3) * 0.08, duration: 0.45 }}
-                      className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer group"
+                      className={`bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group
+                        ${isSuhaib ? "border-primary/40 ring-1 ring-primary/20 hover:ring-primary/40" : "border-border hover:border-primary/20"}`}
                       onClick={() => setVideoModalId(video.youtubeId)}
                     >
                       <div className="relative aspect-video overflow-hidden">
@@ -1152,26 +1148,29 @@ export default function Home() {
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent flex items-center justify-center">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-center justify-center">
                           <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                             <PlayCircle className="w-8 h-8 text-primary fill-primary" />
                           </div>
                         </div>
-                        <div className="absolute top-3 start-3">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary/90 text-primary-foreground backdrop-blur-sm">
-                            {catLabel}
-                          </span>
-                        </div>
+                        {isSuhaib && (
+                          <div className="absolute top-3 start-3">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground shadow-md">
+                              ✦ {t.videos.suhaibBadge}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="p-5">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3 border border-accent/20">
+                          <Lightbulb className="w-3 h-3 shrink-0" />
+                          {skill}
+                        </div>
                         <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
                         <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
-                        <div className="flex items-start gap-2 bg-secondary/40 rounded-xl p-3 border border-border/60">
-                          <Lightbulb className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-bold text-accent mb-1">{t.videos.learnLabel}</p>
-                            <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
-                          </div>
+                        <div className="bg-secondary/40 rounded-xl p-3 border border-border/60">
+                          <p className="text-xs font-bold text-foreground/70 mb-1">{t.videos.skillLabel}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
                         </div>
                       </div>
                     </motion.div>
