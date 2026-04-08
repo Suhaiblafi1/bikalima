@@ -254,7 +254,14 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(16);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [showZoomModal, setShowZoomModal] = useState(false);
-  const [zoomIframeError, setZoomIframeError] = useState(false);
+  const [consultDate, setConsultDate] = useState<string | null>(null);
+  const [consultTime, setConsultTime] = useState<string | null>(null);
+  const [consultName, setConsultName] = useState("");
+  const [consultEmail, setConsultEmail] = useState("");
+  const [consultPhone, setConsultPhone] = useState("");
+  const [consultNotes, setConsultNotes] = useState("");
+  const [consultLoading, setConsultLoading] = useState(false);
+  const [consultBooked, setConsultBooked] = useState(false);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "combined", reason: "", youtube: "",
@@ -369,6 +376,54 @@ export default function Home() {
     const el = document.getElementById(id);
     if (el) {
       window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+    }
+  };
+
+  const getConsultAvailableDays = () => {
+    const result: { date: string; dayName: string; dayNum: string; month: string }[] = [];
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    let count = 0;
+    while (result.length < 8 && count < 30) {
+      const dow = d.getDay();
+      if (dow >= 0 && dow <= 4) {
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        const dayNames = lang === "ar"
+          ? ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"]
+          : ["Sun","Mon","Tue","Wed","Thu"];
+        const monthNames = lang === "ar"
+          ? ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"]
+          : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        result.push({ date: `${dd}/${mm}/${yyyy}`, dayName: dayNames[dow], dayNum: dd, month: monthNames[d.getMonth()] });
+      }
+      d.setDate(d.getDate() + 1);
+      count++;
+    }
+    return result;
+  };
+
+  const handleBookConsultation = async () => {
+    if (!consultDate || !consultTime || !consultName.trim() || !consultEmail.trim()) {
+      toast({ title: lang === "ar" ? "يرجى تعبئة الحقول المطلوبة" : "Please fill in required fields", variant: "destructive" });
+      return;
+    }
+    setConsultLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL || "/";
+      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
+      const res = await fetch(`${apiBase}/book-consultation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: consultName, email: consultEmail, phone: consultPhone, date: consultDate, time: consultTime, notes: consultNotes, lang }),
+      });
+      if (!res.ok) throw new Error("server_error");
+      setConsultBooked(true);
+    } catch {
+      toast({ title: lang === "ar" ? "حدث خطأ، يرجى المحاولة مجدداً" : "Something went wrong, please try again", variant: "destructive" });
+    } finally {
+      setConsultLoading(false);
     }
   };
 
@@ -2035,67 +2090,132 @@ export default function Home() {
               </div>
 
               {/* Body */}
-              <div className="flex-1 relative overflow-hidden flex flex-col">
-                {zoomIframeError ? (
-                  <div className="flex flex-col items-center justify-center flex-1 gap-4 px-6 text-center">
-                    <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
-                      <AlertCircle className="w-7 h-7 text-orange-500" />
+              <div className="flex-1 overflow-y-auto">
+                {consultBooked ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center h-full gap-5 px-8 py-10 text-center">
+                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle2 className="w-9 h-9 text-green-600" />
                     </div>
                     <div>
-                      <p className="font-bold text-base mb-1">{lang === "ar" ? "تعذّر تحميل صفحة الحجز" : "Couldn't load the booking page"}</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {lang === "ar" ? "يمكنك الحجز مباشرة من خلال الرابط أدناه" : "You can book directly via the link below"}
+                      <h4 className="font-serif text-xl font-bold mb-2">{lang === "ar" ? "تم تأكيد حجزك! 🎉" : "Booking Confirmed! 🎉"}</h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                        {lang === "ar"
+                          ? `وصلك تأكيد على ${consultEmail} يتضمن رابط Zoom ودعوة التقويم الخاصة بجلستك في ${consultDate} الساعة ${consultTime}.`
+                          : `A confirmation was sent to ${consultEmail} with your Zoom link and calendar invite for ${consultDate} at ${consultTime}.`}
                       </p>
                     </div>
-                    <a
-                      href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3 rounded-full text-sm transition-colors"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
-                      {lang === "ar" ? "افتح صفحة الحجز" : "Open Booking Page"}
-                    </a>
-                  </div>
+                    <div className="bg-primary/5 border border-primary/15 rounded-2xl px-5 py-3.5 text-sm flex items-center gap-3">
+                      <Calendar className="w-4 h-4 text-primary shrink-0" />
+                      <span className="font-semibold text-primary">{consultDate} · {consultTime} {lang === "ar" ? "(بتوقيت عمّان)" : "(Amman Time)"}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{lang === "ar" ? "رابط Zoom سيصلك قبيل موعد جلستك مباشرة" : "Your Zoom link will be in your confirmation email"}</p>
+                    <Button variant="outline" size="sm" className="rounded-full mt-2" onClick={() => {
+                      setConsultBooked(false); setConsultDate(null); setConsultTime(null);
+                      setConsultName(""); setConsultEmail(""); setConsultPhone(""); setConsultNotes("");
+                    }}>
+                      {lang === "ar" ? "حجز موعد آخر" : "Book another slot"}
+                    </Button>
+                  </motion.div>
                 ) : (
-                  <>
-                    <div className="flex-1 overflow-hidden relative">
-                      <iframe
-                        src="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                        title="Zoom Scheduler"
-                        className="w-full h-full border-0"
-                        allow="camera; microphone"
-                        onError={() => setZoomIframeError(true)}
-                        onLoad={(e) => {
-                          const el = e.target as HTMLIFrameElement;
-                          if (!el.contentWindow || el.contentWindow.length === 0) {
-                            setTimeout(() => {
-                              try {
-                                if (!el.contentDocument || el.contentDocument.body.innerHTML === "") {
-                                  setZoomIframeError(true);
-                                }
-                              } catch {
-                                setZoomIframeError(true);
-                              }
-                            }, 3000);
-                          }
-                        }}
-                      />
+                  <div className="p-5 space-y-5">
+                    {/* Day picker */}
+                    <div>
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2.5">{lang === "ar" ? "١ · اختر اليوم" : "1 · Choose a Day"}</p>
+                      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                        {getConsultAvailableDays().map((day) => (
+                          <button
+                            key={day.date}
+                            onClick={() => { setConsultDate(day.date); setConsultTime(null); }}
+                            className={`shrink-0 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-2xl border-2 text-center transition-all duration-150 min-w-[56px] ${
+                              consultDate === day.date
+                                ? "border-primary bg-primary text-primary-foreground shadow-md"
+                                : "border-border bg-background hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                          >
+                            <span className="text-[9px] font-semibold opacity-70 uppercase">{day.dayName}</span>
+                            <span className="text-lg font-bold leading-none">{day.dayNum}</span>
+                            <span className="text-[9px] opacity-60">{day.month}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="px-4 py-2.5 border-t border-border bg-muted/30 flex items-center justify-center gap-1.5 shrink-0">
-                      <p className="text-[11px] text-muted-foreground">
-                        {lang === "ar" ? "لا يظهر النموذج؟" : "Form not showing?"}
+
+                    {/* Time slots */}
+                    <AnimatePresence>
+                      {consultDate && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2.5">{lang === "ar" ? "٢ · اختر الوقت" : "2 · Choose a Time"}</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {["10:00","11:30","14:00","16:00"].map((slot) => (
+                              <button
+                                key={slot}
+                                onClick={() => setConsultTime(slot)}
+                                className={`py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-150 ${
+                                  consultTime === slot
+                                    ? "border-primary bg-primary text-primary-foreground shadow-md"
+                                    : "border-border bg-background hover:border-primary/50 hover:bg-primary/5"
+                                }`}
+                              >
+                                {slot}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Form fields */}
+                    <AnimatePresence>
+                      {consultDate && consultTime && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25 }} className="space-y-3">
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{lang === "ar" ? "٣ · بياناتك" : "3 · Your Info"}</p>
+                          <div className="bg-primary/5 border border-primary/15 rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-sm">
+                            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="font-semibold text-primary">{consultDate} · {consultTime} {lang === "ar" ? "— بتوقيت عمّان" : "— Amman Time"}</span>
+                          </div>
+                          <Input
+                            placeholder={lang === "ar" ? "اسمك الكريم *" : "Your name *"}
+                            value={consultName} onChange={(e) => setConsultName(e.target.value)}
+                            className="rounded-xl h-11"
+                          />
+                          <Input
+                            type="email"
+                            placeholder={lang === "ar" ? "بريدك الإلكتروني *" : "Your email *"}
+                            value={consultEmail} onChange={(e) => setConsultEmail(e.target.value)}
+                            className="rounded-xl h-11"
+                          />
+                          <Input
+                            placeholder={lang === "ar" ? "رقم الجوال (اختياري)" : "Phone number (optional)"}
+                            value={consultPhone} onChange={(e) => setConsultPhone(e.target.value)}
+                            className="rounded-xl h-11"
+                          />
+                          <Textarea
+                            placeholder={lang === "ar" ? "ماذا تريد أن تناقش؟ (اختياري)" : "What would you like to discuss? (optional)"}
+                            value={consultNotes} onChange={(e) => setConsultNotes(e.target.value)}
+                            rows={2} className="rounded-xl resize-none"
+                          />
+                          <Button
+                            onClick={handleBookConsultation}
+                            disabled={consultLoading || !consultName.trim() || !consultEmail.trim()}
+                            className="w-full h-12 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-lg shadow-primary/20"
+                          >
+                            {consultLoading
+                              ? (lang === "ar" ? "جارٍ الحجز..." : "Booking...")
+                              : (lang === "ar" ? "✦ تأكيد الحجز" : "✦ Confirm Booking")}
+                          </Button>
+                          <p className="text-[11px] text-center text-muted-foreground pb-2">
+                            {lang === "ar" ? "ستصلك دعوة تقويم ورابط Zoom على بريدك فور التأكيد" : "Calendar invite & Zoom link will be sent to your email"}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {!consultDate && (
+                      <p className="text-xs text-center text-muted-foreground pt-2 pb-4">
+                        {lang === "ar" ? "ابدأ باختيار اليوم المناسب ↑" : "Start by picking a day above ↑"}
                       </p>
-                      <a
-                        href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] text-[#2D8CFF] hover:underline font-medium"
-                      >
-                        {lang === "ar" ? "افتح في نافذة جديدة ↗" : "Open in new tab ↗"}
-                      </a>
-                    </div>
-                  </>
+                    )}
+                  </div>
                 )}
               </div>
             </motion.div>
