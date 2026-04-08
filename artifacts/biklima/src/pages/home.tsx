@@ -950,13 +950,28 @@ export default function Home() {
                     </div>
 
                     {consultBooked ? (
-                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
-                        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4 space-y-4">
+                        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
                           <CheckCircle2 className="w-8 h-8 text-green-600" />
                         </div>
-                        <h4 className="font-serif text-lg font-bold mb-2">{lang === "ar" ? "تم تأكيد موعدك!" : "Booking Confirmed!"}</h4>
-                        <p className="text-sm text-muted-foreground">{lang === "ar" ? `سيصلك تأكيد على ${consultEmail} مع دعوة تقويم. سيتواصل معك صهيب قريباً برابط Zoom.` : `A confirmation was sent to ${consultEmail} with a calendar invite.`}</p>
-                        <Button variant="outline" size="sm" className="mt-4 rounded-full" onClick={() => { setConsultBooked(false); setConsultDate(null); setConsultTime(null); setConsultName(""); setConsultEmail(""); setConsultPhone(""); setConsultNotes(""); }}>
+                        <div>
+                          <h4 className="font-serif text-lg font-bold mb-1">{lang === "ar" ? "تم تأكيد موعدك! 🎉" : "Booking Confirmed! 🎉"}</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {lang === "ar"
+                              ? `وصلك تأكيد على ${consultEmail} يتضمن رابط Zoom ودعوة التقويم.`
+                              : `A confirmation was sent to ${consultEmail} with your Zoom link and calendar invite.`}
+                          </p>
+                        </div>
+                        <a
+                          href="https://zoom.us/wc/5974063559/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3 rounded-full text-sm transition-colors shadow-md w-full"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
+                          {lang === "ar" ? "انضم للجلسة الآن عبر Zoom" : "Join Session on Zoom"}
+                        </a>
+                        <Button variant="outline" size="sm" className="rounded-full w-full" onClick={() => { setConsultBooked(false); setConsultDate(null); setConsultTime(null); setConsultName(""); setConsultEmail(""); setConsultPhone(""); setConsultNotes(""); }}>
                           {lang === "ar" ? "حجز موعد آخر" : "Book another"}
                         </Button>
                       </motion.div>

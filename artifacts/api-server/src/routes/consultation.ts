@@ -176,9 +176,14 @@ function buildUserHtml(opts: {
   <div class="body">
     <h1>${isAr ? `مرحباً ${name} 👋` : `Hello ${name} 👋`}</h1>
     <p class="subtitle">${isAr
-      ? "موعدك مع صهيب الخوالدة مؤكّد. هذه الساعة مخصصة لك وحدك — استعدّ لها كما تستحق."
-      : "Your session with Suhaib Al-Khawaldeh is confirmed. This hour is dedicated entirely to you — prepare for it as it deserves."
+      ? "موعدك مع صهيب الخوالدة مؤكّد. اضغط الزر أدناه للدخول على Zoom مباشرة في وقت الجلسة."
+      : "Your session with Suhaib Al-Khawaldeh is confirmed. Click the button below to join Zoom directly at session time."
     }</p>
+
+    ${zoomLink
+      ? `<a class="zoom-btn" href="${zoomLink}" style="display:block;background:#2D8CFF;color:#fff;text-decoration:none;text-align:center;padding:16px 24px;border-radius:14px;font-weight:700;font-size:16px;margin:0 0 28px;letter-spacing:.3px">🎥 &nbsp;${isAr ? "انضم للجلسة عبر Zoom" : "Join Session on Zoom"}</a>`
+      : ``
+    }
 
     <div class="session-box">
       <div class="session-title">${isAr ? "📅 تفاصيل الجلسة" : "📅 Session Details"}</div>
@@ -195,7 +200,7 @@ function buildUserHtml(opts: {
         <div><div class="info-label">${isAr ? "المنصة" : "Platform"}</div><div class="info-value">Zoom</div></div>
       </div>
       ${zoomLink
-        ? `<a class="zoom-btn" href="${zoomLink}">🎥 &nbsp;${isAr ? "انضم للجلسة عبر Zoom" : "Join Session on Zoom"}</a>`
+        ? `<p style="margin:12px 0 0;font-size:13px;color:#555;text-align:center;line-height:1.6">${isAr ? "الرابط أعلاه يمكنك حفظه وفتحه في موعد جلستك مباشرة." : "Save the link above and open it at your session time."}</p>`
         : `<p style="margin:16px 0 0;font-size:13px;color:#888;text-align:center">${isAr ? "سيصلك رابط Zoom على بريدك قبل الموعد مباشرة." : "Your Zoom link will be sent to you shortly before the session."}</p>`
       }
     </div>
