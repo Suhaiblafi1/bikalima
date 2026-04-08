@@ -313,9 +313,8 @@ export default function Home() {
         setVideoModalId(null);
       }
       if (lightboxOpen) {
-        const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
-        if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % activePhotos.length);
-        if (e.key === "ArrowRight") setLightboxIndex((i) => (i - 1 + activePhotos.length) % activePhotos.length);
+        if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % allPhotos.length);
+        if (e.key === "ArrowRight") setLightboxIndex((i) => (i - 1 + allPhotos.length) % allPhotos.length);
       }
     };
     window.addEventListener("keydown", handleKey);
@@ -475,7 +474,7 @@ export default function Home() {
   const navItems: NavItem[] = [
     { label: t.nav.structure, id: "structure" },
     { label: t.nav.workbooks, href: "workbooks" },
-    { label: t.nav.gallery, href: "gallery" },
+    { label: t.nav.gallery, id: "gallery" },
   ];
 
   const langButtons: { key: Lang; label: string }[] = [
@@ -1014,6 +1013,140 @@ export default function Home() {
         </section>
 
 
+        {/* ── GALLERY ── */}
+        <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-10">
+              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : lang === "fr" ? "Le parcours de Bikalima depuis 2019" : "Bikalima's Journey since 2019"}
+                </div>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
+              </motion.div>
+            </div>
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+              {allPhotos.map((photo, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i % 4) * 0.05, duration: 0.4 }}
+                  className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                  onClick={() => {
+                    setLightboxSource("cohorts");
+                    setLightboxIndex(i);
+                    setLightboxOpen(true);
+                  }}
+                >
+                  <img src={photo.src} alt={photo.country[lang as keyof typeof photo.country] || photo.country.en} className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                      <ZoomIn className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+                      <span>{photo.flag}</span>
+                      <span>{photo.country[lang as keyof typeof photo.country] || photo.country.en}</span>
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── VIDEOS ── */}
+        <section id="videos" className="py-24 bg-background">
+          <div className="container mx-auto px-6">
+            <div className="text-center mb-10">
+              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
+                  <PlayCircle className="w-4 h-4" />
+                  {lang === "ar" ? "مكتبة تعليمية شاملة" : lang === "fr" ? "Bibliothèque pédagogique complète" : "Comprehensive Learning Library"}
+                </div>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
+              </motion.div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-none snap-x">
+              {([
+                ["all", t.videos.tabs.all],
+                ["opening", t.videos.tabs.opening],
+                ["closing", t.videos.tabs.closing],
+                ["storytelling", t.videos.tabs.storytelling],
+                ["humor", t.videos.tabs.humor],
+                ["voice", t.videos.tabs.voice],
+                ["body", t.videos.tabs.body],
+              ] as [string, string][]).map(([key, label]) => {
+                const count = key === "all" ? videoLibrary.length : videoLibrary.filter((v) => v.category === key).length;
+                const active = videoTab === key;
+                return (
+                  <button key={key} onClick={() => setVideoTab(key as VideoCategory | "all")} className={`snap-start shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${active ? "bg-primary text-primary-foreground shadow-md shadow-primary/25" : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/60"}`}>
+                    {label}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-muted"}`}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {videoLibrary
+                .filter((v) => videoTab === "all" || v.category === videoTab)
+                .map((video, i) => {
+                  const title = video.title[lang as keyof typeof video.title] || video.title.en;
+                  const speaker = video.speaker[lang as keyof typeof video.speaker] || video.speaker.en;
+                  const skill = video.skill[lang as keyof typeof video.skill] || video.skill.en;
+                  const learn = video.learn[lang as keyof typeof video.learn] || video.learn.en;
+                  const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                  const isSuhaib = video.type === "suhaib";
+                  return (
+                    <motion.div
+                      key={`${video.youtubeId}-${video.category}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: (i % 3) * 0.08, duration: 0.45 }}
+                      className={`bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group ${isSuhaib ? "border-primary/40 ring-1 ring-primary/20 hover:ring-primary/40" : "border-border hover:border-primary/20"}`}
+                      onClick={() => setVideoModalId(video.youtubeId)}
+                    >
+                      <div className="relative aspect-video overflow-hidden">
+                        <img src={thumbUrl} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-center justify-center">
+                          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <PlayCircle className="w-8 h-8 text-primary fill-primary" />
+                          </div>
+                        </div>
+                        {isSuhaib && (
+                          <div className="absolute top-3 start-3">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground shadow-md">
+                              ✦ {t.videos.suhaibBadge}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-5">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3 border border-accent/20">
+                          <Lightbulb className="w-3 h-3 shrink-0" />
+                          {skill}
+                        </div>
+                        <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
+                        <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
+                        <div className="bg-secondary/40 rounded-xl p-3 border border-border/60">
+                          <p className="text-xs font-bold text-foreground/70 mb-1">{t.videos.skillLabel}</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+            </div>
+          </div>
+        </section>
+
         {/* ── FAQ ── */}
         <section className="py-24 bg-background">
           <div className="container mx-auto px-6 max-w-4xl">
@@ -1475,50 +1608,45 @@ export default function Home() {
             >
               <X className="w-5 h-5 text-white" />
             </button>
-            {(() => {
-              const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
-              return (
-                <>
+            <>
                   <button
                     aria-label={t.gallery.lightboxPrev}
-                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + activePhotos.length) % activePhotos.length); }}
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + allPhotos.length) % allPhotos.length); }}
                     className="absolute start-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                   >
                     <ChevronRight className="w-6 h-6 text-white" />
                   </button>
                   <button
                     aria-label={t.gallery.lightboxNext}
-                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % activePhotos.length); }}
+                    onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % allPhotos.length); }}
                     className="absolute end-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                   >
                     <ChevronLeft className="w-6 h-6 text-white" />
                   </button>
                   <AnimatePresence mode="wait">
                     <motion.img
-                      key={`${lightboxSource}-${lightboxIndex}`}
+                      key={lightboxIndex}
                       initial={{ opacity: 0, scale: 0.96 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.96 }}
                       transition={{ duration: 0.2 }}
-                      src={activePhotos[lightboxIndex]?.src}
+                      src={allPhotos[lightboxIndex]?.src}
                       alt=""
                       className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
                       onClick={(e) => e.stopPropagation()}
                     />
                   </AnimatePresence>
                   <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
-                    {activePhotos[lightboxIndex] && (
+                    {allPhotos[lightboxIndex] && (
                       <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm backdrop-blur-sm border border-white/10">
-                        <span>{activePhotos[lightboxIndex].flag}</span>
-                        <span>{activePhotos[lightboxIndex].country[lang as keyof typeof activePhotos[0]["country"]]}</span>
+                        <span>{allPhotos[lightboxIndex].flag}</span>
+                        <span>{allPhotos[lightboxIndex].country[lang as keyof typeof allPhotos[0]["country"]]}</span>
                         <span className="text-white/50">·</span>
-                        <span className="text-white/60">{lightboxIndex + 1} / {activePhotos.length}</span>
+                        <span className="text-white/60">{lightboxIndex + 1} / {allPhotos.length}</span>
                       </span>
                     )}
                   </div>
                 </>
-              );
-            })()}
           </motion.div>
         )}
       </AnimatePresence>
