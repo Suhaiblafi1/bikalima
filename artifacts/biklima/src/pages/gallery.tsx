@@ -17,7 +17,7 @@ export default function GalleryPage() {
   const [lightboxSource, setLightboxSource] = useState<"cohorts" | "speeches">("cohorts");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [videoTab, setVideoTab] = useState<VideoCategory | "all">("all");
+  const [videoTab, setVideoTab] = useState<VideoCategory | "all">("opening");
   const [videoModalId, setVideoModalId] = useState<string | null>(null);
 
   const langButtons: { key: Lang; label: string }[] = [

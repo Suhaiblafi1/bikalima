@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { T, type Lang } from "../translations";
 import { useLang } from "../hooks/useLang";
-import { programs, getLocalizedProgram, WORKBOOK_PRICES } from "../programsData";
+import { programs, getLocalizedProgram, WORKBOOK_PRICES, testimonials as testimonialsData } from "../programsData";
 
 type WisdomArticle = { source: string; category: string; icon: React.ReactNode; quote: string; body: string };
 
@@ -333,6 +333,53 @@ export default function WorkbooksPage() {
                 </motion.div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS ── */}
+      <section className="py-14 bg-secondary/20 border-t border-border">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-10">
+            <motion.h2
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-3"
+            >
+              {lang === "ar" ? "آراء عملائنا" : "Client Reviews"}
+            </motion.h2>
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              {lang === "ar" ? "تجارب حقيقية من متدربين ومتدربات في بكلمة" : "Real experiences from Bikalima trainees"}
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+            {testimonialsData[lang === "en" ? "en" : "ar"].map((rev, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+                className="bg-background rounded-2xl border border-border p-6 hover:border-primary/30 hover:shadow-md transition-all duration-300"
+              >
+                <div className="flex gap-0.5 mb-4">
+                  {[1,2,3,4,5].map(s => (
+                    <Star key={s} className="w-4 h-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <p className="text-foreground text-sm leading-relaxed mb-5 font-medium">"{rev.quote}"</p>
+                <div className="flex items-center gap-3 pt-4 border-t border-border">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                    {rev.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-foreground">{rev.name}</div>
+                    <div className="text-xs text-muted-foreground">{rev.role}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

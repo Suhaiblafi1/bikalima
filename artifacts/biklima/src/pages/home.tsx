@@ -276,7 +276,7 @@ export default function Home() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [videoModalId, setVideoModalId] = useState<string | null>(null);
-  const [videoTab, setVideoTab] = useState<VideoCategory | "all">("all");
+  const [videoTab, setVideoTab] = useState<VideoCategory | "all">("opening");
 
   useEffect(() => {
     document.documentElement.dir = dir;
