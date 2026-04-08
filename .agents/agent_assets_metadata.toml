@@ -6,3 +6,9 @@ id = "85AVOsAB96w2zwL-54c92"
 uri = "file://biklima-deploy.tar.gz"
 type = "unspecified"
 title = "biklima-deploy.tar.gz — الحزمة الكاملة"
+
+[[outputs]]
+id = "YW7GUXfZRN-2AiUYdOLte"
+uri = "file://biklima-src.tar.gz"
+type = "unspecified"
+title = "biklima-src.tar.gz — Source Code كامل غير مجمّع"
