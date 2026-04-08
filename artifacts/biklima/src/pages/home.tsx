@@ -965,36 +965,7 @@ export default function Home() {
             )}
             {/* ── FREE CONSULTATION BOOKING ── */}
             <div className="mt-12 max-w-2xl mx-auto">
-              {/* Consultation intro card */}
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="mb-6">
-                <div className="bg-slate-950 text-white rounded-3xl p-7 relative overflow-hidden">
-                  <div className="absolute top-0 end-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-                  <div className="relative z-10">
-                    <div className="flex items-start gap-4 mb-5">
-                      <div className="w-11 h-11 rounded-2xl bg-amber-400/20 flex items-center justify-center shrink-0">
-                        <span className="text-xl">✦</span>
-                      </div>
-                      <div>
-                        <h3 className="font-serif text-xl font-bold mb-1">{(t.why as any).consultIntro.heading}</h3>
-                        <p className="text-slate-300 text-sm leading-relaxed">{(t.why as any).consultIntro.what}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {(t.why as any).consultIntro.audiences.map((a: any, i: number) => (
-                        <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-3.5 hover:bg-white/10 transition-colors">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <span className="text-lg">{a.icon}</span>
-                            <span className="text-white text-sm font-bold">{a.label}</span>
-                          </div>
-                          <p className="text-slate-400 text-xs leading-relaxed">{a.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}>
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
                 <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 rounded-3xl p-6 overflow-hidden">
                   <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full -mr-12 -mt-12" />
                   <div className="relative z-10">
@@ -1004,7 +975,7 @@ export default function Home() {
                       </div>
                       <div>
                         <h3 className="font-serif text-lg font-bold">{lang === "ar" ? "احجز جلسة استشارية مجانية" : "Book a Free Consultation"}</h3>
-                        <p className="text-xs text-muted-foreground">{lang === "ar" ? "وجلستك ستصلك دعوة تقويم على بريدك مباشرة" : "A calendar invite will be sent to your email"}</p>
+                        <p className="text-xs text-muted-foreground">{lang === "ar" ? "جلسة فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — تُحدّد فيها وضعك الحالي والمسار الأنسب لك." : "A 20-minute one-on-one session with Suhaib — to assess your level and find the right path for you."}</p>
                       </div>
                     </div>
 
