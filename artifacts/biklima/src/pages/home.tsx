@@ -253,6 +253,8 @@ export default function Home() {
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [fontSize, setFontSize] = useState(16);
   const [bioPageIdx, setBioPageIdx] = useState(0);
+  const [showZoomModal, setShowZoomModal] = useState(false);
+  const [zoomIframeError, setZoomIframeError] = useState(false);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "combined", reason: "", youtube: "",
@@ -895,15 +897,13 @@ export default function Home() {
                           : "A 20-minute one-on-one session with Suhaib. Pick your slot and you'll instantly receive a Zoom link and calendar invite."}
                       </p>
                     </div>
-                    <a
-                      href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => { setShowZoomModal(true); setZoomIframeError(false); }}
                       className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-8 py-3.5 rounded-full text-base transition-colors shadow-lg shadow-blue-500/20 w-full max-w-xs"
                     >
                       <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
                       {lang === "ar" ? "احجز موعدك الآن" : "Book Your Slot Now"}
-                    </a>
+                    </button>
                     <p className="text-[11px] text-muted-foreground">
                       {lang === "ar" ? "ستصلك دعوة Zoom ودعوة التقويم تلقائياً فور الحجز" : "Zoom invite & calendar confirmation sent automatically on booking"}
                     </p>
@@ -1980,6 +1980,94 @@ export default function Home() {
             </div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* ── ZOOM SCHEDULER MODAL ── */}
+      <AnimatePresence>
+        {showZoomModal && (
+          <motion.div
+            key="zoom-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowZoomModal(false); }}
+          >
+            <motion.div
+              key="zoom-modal-box"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              style={{ width: "min(680px, 100%)", height: "min(720px, 90vh)" }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#2D8CFF]/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-[#2D8CFF]" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm leading-none">{lang === "ar" ? "احجز جلستك الاستشارية" : "Book Your Consultation"}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{lang === "ar" ? "٢٠ دقيقة مع صهيب الخوالدة · مجاناً" : "20 min with Suhaib Al-Khawaldeh · Free"}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowZoomModal(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 relative overflow-hidden">
+                {zoomIframeError ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center">
+                    <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+                      <AlertCircle className="w-7 h-7 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-base mb-1">{lang === "ar" ? "تعذّر تحميل صفحة الحجز" : "Couldn't load the booking page"}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {lang === "ar" ? "يمكنك الحجز مباشرة من خلال الرابط أدناه" : "You can book directly via the link below"}
+                      </p>
+                    </div>
+                    <a
+                      href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3 rounded-full text-sm transition-colors"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
+                      {lang === "ar" ? "افتح صفحة الحجز" : "Open Booking Page"}
+                    </a>
+                  </div>
+                ) : (
+                  <iframe
+                    src="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+                    title="Zoom Scheduler"
+                    className="w-full h-full border-0"
+                    allow="camera; microphone"
+                    onError={() => setZoomIframeError(true)}
+                    onLoad={(e) => {
+                      try {
+                        const doc = (e.target as HTMLIFrameElement).contentDocument;
+                        if (!doc) setZoomIframeError(true);
+                      } catch {
+                        setZoomIframeError(true);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
