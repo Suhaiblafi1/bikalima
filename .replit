@@ -33,3 +33,15 @@ SMTP_PORT = "587"
 SMTP_USER = "alkhawaldahsuhaib@gmail.com"
 SMTP_FROM = "بكلمة <alkhawaldahsuhaib@gmail.com>"
 ZOOM_MEETING_URL = "https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 24589
+externalPort = 3000
