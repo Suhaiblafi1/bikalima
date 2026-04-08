@@ -252,14 +252,6 @@ export default function Home() {
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [fontSize, setFontSize] = useState(16);
-  const [consultDate, setConsultDate] = useState<string | null>(null);
-  const [consultTime, setConsultTime] = useState<string | null>(null);
-  const [consultName, setConsultName] = useState("");
-  const [consultEmail, setConsultEmail] = useState("");
-  const [consultPhone, setConsultPhone] = useState("");
-  const [consultNotes, setConsultNotes] = useState("");
-  const [consultLoading, setConsultLoading] = useState(false);
-  const [consultBooked, setConsultBooked] = useState(false);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
@@ -366,53 +358,6 @@ export default function Home() {
     if (el) {
       window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
     }
-  };
-
-  const handleBookConsultation = async () => {
-    if (!consultDate || !consultTime || !consultName.trim() || !consultEmail.trim()) {
-      toast({ title: lang === "ar" ? "يرجى تعبئة الحقول المطلوبة" : "Please fill in required fields", variant: "destructive" });
-      return;
-    }
-    setConsultLoading(true);
-    try {
-      const base = import.meta.env.BASE_URL || "/";
-      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
-      const res = await fetch(`${apiBase}/book-consultation`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: consultName, email: consultEmail, phone: consultPhone, date: consultDate, time: consultTime, notes: consultNotes, lang }),
-      });
-      if (!res.ok) throw new Error("server_error");
-      setConsultBooked(true);
-    } catch {
-      toast({ title: lang === "ar" ? "حدث خطأ" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : "Please try again later", variant: "destructive" });
-    } finally {
-      setConsultLoading(false);
-    }
-  };
-
-  const getConsultAvailableDays = () => {
-    const result: { date: string; dayName: string; dayNum: string; dayShort: string }[] = [];
-    const today = new Date();
-    let d = new Date(today);
-    d.setDate(d.getDate() + 1);
-    let count = 0;
-    while (result.length < 7 && count < 30) {
-      const dow = d.getDay();
-      if (dow >= 0 && dow <= 4) {
-        const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const yyyy = d.getFullYear();
-        const dateStr = `${dd}/${mm}/${yyyy}`;
-        const dayNames = lang === "ar"
-          ? ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"]
-          : ["Sun","Mon","Tue","Wed","Thu"];
-        result.push({ date: dateStr, dayName: dayNames[dow], dayNum: dd, dayShort: mm + "/" + dd });
-      }
-      d.setDate(d.getDate() + 1);
-      count++;
-    }
-    return result;
   };
 
   const handleEnrollSubmit = async (e: React.FormEvent) => {
@@ -938,101 +883,30 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
                 <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 rounded-3xl p-6 overflow-hidden">
                   <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full -mr-12 -mt-12" />
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <Calendar className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-serif text-lg font-bold">{lang === "ar" ? "احجز جلسة استشارية مجانية" : "Book a Free Consultation"}</h3>
-                        <p className="text-xs text-muted-foreground">{lang === "ar" ? "جلسة فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — تُحدّد فيها وضعك الحالي والمسار الأنسب لك." : "A 20-minute one-on-one session with Suhaib — to assess your level and find the right path for you."}</p>
-                      </div>
+                  <div className="relative z-10 flex flex-col items-center text-center gap-5">
+                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-primary" />
                     </div>
-
-                    {consultBooked ? (
-                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-4 space-y-4">
-                        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                          <CheckCircle2 className="w-8 h-8 text-green-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-serif text-lg font-bold mb-1">{lang === "ar" ? "تم تأكيد موعدك! 🎉" : "Booking Confirmed! 🎉"}</h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {lang === "ar"
-                              ? `وصلك تأكيد على ${consultEmail} يتضمن رابط Zoom ودعوة التقويم.`
-                              : `A confirmation was sent to ${consultEmail} with your Zoom link and calendar invite.`}
-                          </p>
-                        </div>
-                        <a
-                          href="https://zoom.us/wc/5974063559/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3 rounded-full text-sm transition-colors shadow-md w-full"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
-                          {lang === "ar" ? "انضم للجلسة الآن عبر Zoom" : "Join Session on Zoom"}
-                        </a>
-                        <Button variant="outline" size="sm" className="rounded-full w-full" onClick={() => { setConsultBooked(false); setConsultDate(null); setConsultTime(null); setConsultName(""); setConsultEmail(""); setConsultPhone(""); setConsultNotes(""); }}>
-                          {lang === "ar" ? "حجز موعد آخر" : "Book another"}
-                        </Button>
-                      </motion.div>
-                    ) : (
-                      <div className="space-y-4">
-                        {/* Day selector */}
-                        <div>
-                          <p className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">{lang === "ar" ? "اختر اليوم" : "Choose a Day"}</p>
-                          <div className="flex gap-2 overflow-x-auto pb-1">
-                            {getConsultAvailableDays().map((day) => (
-                              <button
-                                key={day.date}
-                                onClick={() => { setConsultDate(day.date); setConsultTime(null); }}
-                                className={`shrink-0 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl border-2 text-center transition-all duration-200 min-w-[52px] ${consultDate === day.date ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"}`}
-                              >
-                                <span className="text-[10px] font-medium opacity-70">{day.dayName}</span>
-                                <span className="text-lg font-bold leading-none">{day.dayNum}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Time slots */}
-                        {consultDate && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.25 }}>
-                            <p className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">{lang === "ar" ? "اختر الوقت" : "Choose a Time"}</p>
-                            <div className="grid grid-cols-4 gap-2">
-                              {["10:00","11:30","14:00","16:00"].map((slot) => (
-                                <button
-                                  key={slot}
-                                  onClick={() => setConsultTime(slot)}
-                                  className={`py-2 rounded-xl border-2 text-sm font-bold transition-all duration-200 ${consultTime === slot ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"}`}
-                                >
-                                  {slot}
-                                </button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* Form */}
-                        {consultDate && consultTime && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.3 }} className="space-y-2.5">
-                            <div className="bg-primary/5 rounded-xl px-3 py-2 text-xs text-primary font-bold flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {consultDate} · {consultTime} {lang === "ar" ? "— بتوقيت عمّان" : "— Amman Time"}
-                            </div>
-                            <Input placeholder={lang === "ar" ? "اسمك الكريم *" : "Your name *"} value={consultName} onChange={(e) => setConsultName(e.target.value)} className="rounded-xl h-11" />
-                            <Input type="email" placeholder={lang === "ar" ? "بريدك الإلكتروني *" : "Your email *"} value={consultEmail} onChange={(e) => setConsultEmail(e.target.value)} className="rounded-xl h-11" />
-                            <Input placeholder={lang === "ar" ? "رقم الجوال (اختياري)" : "Phone (optional)"} value={consultPhone} onChange={(e) => setConsultPhone(e.target.value)} className="rounded-xl h-11" />
-                            <Textarea placeholder={lang === "ar" ? "ماذا تريد أن تناقش؟ (اختياري)" : "What would you like to discuss? (optional)"} value={consultNotes} onChange={(e) => setConsultNotes(e.target.value)} rows={2} className="rounded-xl resize-none" />
-                            <Button onClick={handleBookConsultation} disabled={consultLoading} className="w-full h-12 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-lg shadow-primary/20">
-                              {consultLoading
-                                ? (lang === "ar" ? "جارٍ الحجز..." : "Booking...")
-                                : (lang === "ar" ? "✦ احجز موعدي المجاني" : "✦ Book My Free Session")}
-                            </Button>
-                            <p className="text-[11px] text-center text-muted-foreground">{lang === "ar" ? "ستصلك دعوة تقويم فور تأكيد الحجز · Zoom" : "You'll receive a calendar invite instantly · via Zoom"}</p>
-                          </motion.div>
-                        )}
-                      </div>
-                    )}
+                    <div>
+                      <h3 className="font-serif text-xl font-bold mb-1">{lang === "ar" ? "احجز جلسة استشارية مجانية" : "Book a Free Consultation"}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
+                        {lang === "ar"
+                          ? "جلسة فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — اختر الموعد المناسب وسيصلك تأكيد فوري برابط Zoom ودعوة التقويم."
+                          : "A 20-minute one-on-one session with Suhaib. Pick your slot and you'll instantly receive a Zoom link and calendar invite."}
+                      </p>
+                    </div>
+                    <a
+                      href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-8 py-3.5 rounded-full text-base transition-colors shadow-lg shadow-blue-500/20 w-full max-w-xs"
+                    >
+                      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
+                      {lang === "ar" ? "احجز موعدك الآن" : "Book Your Slot Now"}
+                    </a>
+                    <p className="text-[11px] text-muted-foreground">
+                      {lang === "ar" ? "ستصلك دعوة Zoom ودعوة التقويم تلقائياً فور الحجز" : "Zoom invite & calendar confirmation sent automatically on booking"}
+                    </p>
                   </div>
                 </div>
               </motion.div>
