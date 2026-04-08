@@ -1035,12 +1035,14 @@ export default function Home() {
                       <ZoomIn className="w-3.5 h-3.5 text-white" />
                     </div>
                   </div>
-                  <div className="absolute bottom-2 start-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
-                      <span>{photo.flag}</span>
-                      <span>{photo.country[lang as keyof typeof photo.country] || photo.country.en}</span>
-                    </span>
-                  </div>
+                  {photo.flag && (
+                    <div className="absolute bottom-2 start-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+                        <span>{photo.flag}</span>
+                        <span>{photo.country[lang as keyof typeof photo.country] || photo.country.en}</span>
+                      </span>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -1625,9 +1627,13 @@ export default function Home() {
                   <div className="absolute bottom-5 left-1/2 -translate-x-1/2">
                     {allPhotos[lightboxIndex] && (
                       <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm backdrop-blur-sm border border-white/10">
-                        <span>{allPhotos[lightboxIndex].flag}</span>
-                        <span>{allPhotos[lightboxIndex].country[lang as keyof typeof allPhotos[0]["country"]]}</span>
-                        <span className="text-white/50">·</span>
+                        {allPhotos[lightboxIndex].flag && (
+                          <>
+                            <span>{allPhotos[lightboxIndex].flag}</span>
+                            <span>{allPhotos[lightboxIndex].country[lang as keyof typeof allPhotos[0]["country"]]}</span>
+                            <span className="text-white/50">·</span>
+                          </>
+                        )}
                         <span className="text-white/60">{lightboxIndex + 1} / {allPhotos.length}</span>
                       </span>
                     )}

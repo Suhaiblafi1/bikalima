@@ -118,12 +118,14 @@ export default function GalleryPage() {
                       <ZoomIn className="w-4 h-4 text-white" />
                     </div>
                   </div>
-                  <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
-                      <span>{photo.flag}</span>
-                      <span>{photo.country[lang as keyof typeof photo.country]}</span>
-                    </span>
-                  </div>
+                  {photo.flag && (
+                    <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+                        <span>{photo.flag}</span>
+                        <span>{photo.country[lang as keyof typeof photo.country]}</span>
+                      </span>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -148,12 +150,14 @@ export default function GalleryPage() {
                       <ZoomIn className="w-4 h-4 text-white" />
                     </div>
                   </div>
-                  <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
-                      <span>{photo.flag}</span>
-                      <span>{photo.country[lang as keyof typeof photo.country]}</span>
-                    </span>
-                  </div>
+                  {photo.flag && (
+                    <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+                        <span>{photo.flag}</span>
+                        <span>{photo.country[lang as keyof typeof photo.country]}</span>
+                      </span>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </motion.div>
