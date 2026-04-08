@@ -254,7 +254,6 @@ export default function Home() {
   const [fontSize, setFontSize] = useState(16);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [showZoomModal, setShowZoomModal] = useState(false);
-  const [zoomIframeError, setZoomIframeError] = useState(false);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
     mode: "combined", reason: "", youtube: "",
@@ -296,6 +295,15 @@ export default function Home() {
     const timer = setInterval(() => setHeroQuoteIdx((i) => (i + 1) % total), 5000);
     return () => clearInterval(timer);
   }, [t.hero.imageQuotes.length, lang]);
+
+  useEffect(() => {
+    if (showZoomModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [showZoomModal]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -2025,45 +2033,28 @@ export default function Home() {
               </div>
 
               {/* Body */}
-              <div className="flex-1 relative overflow-hidden">
-                {zoomIframeError ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center">
-                    <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
-                      <AlertCircle className="w-7 h-7 text-orange-500" />
-                    </div>
-                    <div>
-                      <p className="font-bold text-base mb-1">{lang === "ar" ? "تعذّر تحميل صفحة الحجز" : "Couldn't load the booking page"}</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {lang === "ar" ? "يمكنك الحجز مباشرة من خلال الرابط أدناه" : "You can book directly via the link below"}
-                      </p>
-                    </div>
-                    <a
-                      href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3 rounded-full text-sm transition-colors"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
-                      {lang === "ar" ? "افتح صفحة الحجز" : "Open Booking Page"}
-                    </a>
-                  </div>
-                ) : (
+              <div className="flex-1 relative overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden">
                   <iframe
                     src="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
                     title="Zoom Scheduler"
                     className="w-full h-full border-0"
                     allow="camera; microphone"
-                    onError={() => setZoomIframeError(true)}
-                    onLoad={(e) => {
-                      try {
-                        const doc = (e.target as HTMLIFrameElement).contentDocument;
-                        if (!doc) setZoomIframeError(true);
-                      } catch {
-                        setZoomIframeError(true);
-                      }
-                    }}
                   />
-                )}
+                </div>
+                <div className="px-4 py-2.5 border-t border-border bg-muted/30 flex items-center justify-center gap-1.5 shrink-0">
+                  <p className="text-[11px] text-muted-foreground">
+                    {lang === "ar" ? "لا يظهر النموذج؟" : "Form not showing?"}
+                  </p>
+                  <a
+                    href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-[#2D8CFF] hover:underline font-medium"
+                  >
+                    {lang === "ar" ? "افتح في نافذة جديدة ↗" : "Open in new tab ↗"}
+                  </a>
+                </div>
               </div>
             </motion.div>
           </motion.div>
