@@ -157,19 +157,6 @@ export const videoLibrary: VideoEntry[] = [
       fr: "Dans la première minute, elle confesse sa « crise d'identité de chercheuse » — cette vulnérabilité déclarée brise immédiatement le mur et crée l'identification. Technique du cahier : « le masque brisé » — admettez la fragilité avant de présenter votre force.",
     },
   },
-  {
-    youtubeId: "hg3umXU_gu0",
-    category: "opening",
-    type: "world",
-    speaker: { ar: "شيماماندا نغوزي أديتشي", en: "Chimamanda Ngozi Adichie", fr: "Chimamanda Ngozi Adichie" },
-    title: { ar: "خطر القصة الواحدة", en: "The Danger of a Single Story", fr: "Le danger de l'histoire unique" },
-    skill: { ar: "البداية بالغمرة المباشرة في القصة", en: "Direct Story Immersion Opening", fr: "Ouverture par immersion directe dans l'histoire" },
-    learn: {
-      ar: "الكلمة الأولى هي دخول القصة مباشرة — 'عندما كنت صغيرة'. لا مقدمات، لا عنوان، لا شكر. هذا أقوى أساليب البداية: اجعل المستمع داخل المشهد قبل أن يدرك أنك بدأت خطابك.",
-      en: "The first word is direct entry into the story — 'When I was a child'. No intro, no title, no thanks. This is the strongest opening style: put the listener inside the scene before they realize you've begun your speech.",
-      fr: "Le premier mot est une entrée directe dans l'histoire — « Quand j'étais enfant ». Pas d'introduction, pas de titre, pas de remerciements. C'est le style d'ouverture le plus puissant : placez l'auditeur dans la scène avant qu'il réalise que vous avez commencé.",
-    },
-  },
 
   /* ══════════════════════════════════════════════
      النهاية — CLOSING TECHNIQUES
@@ -231,19 +218,6 @@ export const videoLibrary: VideoEntry[] = [
     },
   },
   {
-    youtubeId: "ObiLbFBGAo4",
-    category: "storytelling",
-    type: "world",
-    speaker: { ar: "وائل غنيم", en: "Wael Ghonim", fr: "Wael Ghonim" },
-    title: { ar: "داخل الثورة المصرية", en: "Inside the Egyptian Revolution", fr: "Au cœur de la révolution égyptienne" },
-    skill: { ar: "الشهادة الشخصية كمحرّك جماهيري", en: "Personal Testimony as Mass Catalyst", fr: "Le témoignage personnel comme catalyseur de masse" },
-    learn: {
-      ar: "غنيم لا يُقدّم إحصاءات — يُقدّم اعترافاً شخصياً داخل حدث تاريخي. هذه هي تقنية 'الشهادة الصادقة': أنت لست الراوي، أنت الشاهد. والشاهد أكثر إقناعاً من أي خبير.",
-      en: "Ghonim presents no statistics — he presents personal confession inside a historic event. This is the 'authentic testimony' technique: you're not the narrator, you're the witness. And a witness is more convincing than any expert.",
-      fr: "Ghonim ne présente pas de statistiques — il présente une confession personnelle au sein d'un événement historique. C'est la technique du « témoignage authentique » : vous n'êtes pas le narrateur, vous êtes le témoin. Et un témoin est plus convaincant que n'importe quel expert.",
-    },
-  },
-  {
     youtubeId: "-MTRxRO5SRA",
     category: "storytelling",
     type: "world",
@@ -260,19 +234,6 @@ export const videoLibrary: VideoEntry[] = [
   /* ══════════════════════════════════════════════
      الفكاهة — HUMOR
   ══════════════════════════════════════════════ */
-  {
-    youtubeId: "n9hbf4r4Z1g",
-    category: "humor",
-    type: "world",
-    speaker: { ar: "ماز جوبراني", en: "Maz Jobrani", fr: "Maz Jobrani" },
-    title: { ar: "هل سمعت عن الإيراني الأمريكي؟", en: "Did You Hear the One About the Iranian-American?", fr: "Avez-vous entendu parler de l'Irano-Américain ?" },
-    skill: { ar: "الفكاهة كجسر ثقافي", en: "Humor as Cultural Bridge", fr: "L'humour comme pont culturel" },
-    learn: {
-      ar: "ماز يُوظّف ثقافتين متناقضتين ليصنع ضحكة تُقرّب لا تُبعد. من الكراسة: الفكاهة الناجحة لا تضحك 'على' أحد — بل تضحك 'مع' الجميع. احرص أن يكون الضحك جامعاً لا فارقاً.",
-      en: "Maz uses two contrasting cultures to create laughter that bridges rather than divides. Workbook: successful humor doesn't laugh 'at' anyone — it laughs 'with' everyone. Make sure the laughter is inclusive, not divisive.",
-      fr: "Maz utilise deux cultures contrastées pour créer un rire qui unit plutôt que divise. Cahier : l'humour réussi ne rit pas « de » quelqu'un — il rit « avec » tout le monde. Assurez-vous que le rire est inclusif, pas divisif.",
-    },
-  },
   {
     youtubeId: "iG9CE55wbtY",
     category: "humor",
@@ -327,19 +288,6 @@ export const videoLibrary: VideoEntry[] = [
       ar: "سينك يتحدث كأنه يحادثك وحدك — لا كأنه يُلقي خطاباً. راقب التوقفات، التردد المقصود، الإيقاع غير المنتظم. من الكراسة: الخطاب الجيد يُقنعك أنك في حوار لا في محاضرة.",
       en: "Sinek speaks as if he's talking only to you — not as if he's delivering a speech. Watch the pauses, intentional hesitation, irregular rhythm. Workbook: a great speech convinces you that you're in a conversation, not a lecture.",
       fr: "Sinek parle comme s'il ne parlait qu'à vous — pas comme s'il prononçait un discours. Observez les pauses, l'hésitation intentionnelle, le rythme irrégulier. Cahier : un grand discours vous convainc que vous êtes dans une conversation, pas dans une conférence.",
-    },
-  },
-  {
-    youtubeId: "AoJ3Sq3b070",
-    category: "voice",
-    type: "world",
-    speaker: { ar: "سوزان كاين", en: "Susan Cain", fr: "Susan Cain" },
-    title: { ar: "قوة الانطوائيين", en: "The Power of Introverts", fr: "Le pouvoir des introvertis" },
-    skill: { ar: "الثقة الهادئة — القوة بلا ضجيج", en: "Quiet Confidence — Power Without Noise", fr: "Confiance tranquille — la force sans bruit" },
-    learn: {
-      ar: "كاين تتحدث بصوت هادئ لكن بثقل استثنائي. لاحظ: لا صراخ، لا إيماءات مبالغة، لا ضجيج. الصوت الهادئ الواثق أحياناً يكون أكثر تأثيراً من الصوت العالي. من الكراسة: الثقة الصوتية لا تعني الحجم — بل اليقين. وصمت الخطيب الواثق أعلى من أي صرخة.",
-      en: "Cain speaks quietly but with extraordinary weight. Notice: no shouting, no exaggerated gestures, no noise. A quiet, confident voice is sometimes more impactful than a loud one. Workbook: vocal confidence doesn't mean volume — it means certainty. And the silence of a confident speaker is louder than any shout.",
-      fr: "Cain parle doucement mais avec un poids extraordinaire. Remarquez : pas de cris, pas de gestes exagérés, pas de bruit. Une voix douce et confiante est parfois plus impactante qu'une voix forte. Cahier : la confiance vocale ne signifie pas le volume — mais la certitude. Et le silence d'un orateur confiant est plus fort que n'importe quel cri.",
     },
   },
 
