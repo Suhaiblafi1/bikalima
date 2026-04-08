@@ -470,6 +470,7 @@ export default function Home() {
   type NavItem = { label: string; id?: string; href?: string };
   const navItems: NavItem[] = [
     { label: t.nav.structure, id: "structure" },
+    { label: t.nav.events, id: "events" },
     { label: t.nav.workbooks, href: "workbooks" },
     { label: t.nav.gallery, id: "gallery" },
     { label: t.nav.videos, id: "videos" },
@@ -835,7 +836,7 @@ export default function Home() {
         </section>
 
         {/* ── UPCOMING EVENTS ── */}
-        <section className="py-10 bg-gradient-to-b from-primary/5 to-background border-b border-border">
+        <section id="events" className="py-10 bg-gradient-to-b from-primary/5 to-background border-b border-border">
           <div className="container mx-auto px-6">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
