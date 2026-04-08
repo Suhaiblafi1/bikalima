@@ -4,6 +4,22 @@ import nodemailer from "nodemailer";
 const consultationRouter = Router();
 
 const ADMIN_EMAIL = "info@bikalima.com";
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 3;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 
 function esc(str: string): string {
@@ -265,6 +281,12 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
     notes?: string;
     lang?: string;
   };
+
+  const clientIp = (req.headers["x-forwarded-for"] as string || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
+  if (!checkRateLimit(clientIp)) {
+    res.status(429).json({ error: "Too many requests. Please try again later." });
+    return;
+  }
 
   if (!name || !email || !date || !time) {
     res.status(400).json({ error: "name, email, date, and time are required" });
