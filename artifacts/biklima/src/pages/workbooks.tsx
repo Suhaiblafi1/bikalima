@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Lightbulb, Mic2, Heart, Users, Star,
   Feather, Sparkles, Globe, ShoppingCart, FileText, Download, Printer,
-  Package, Minus, Plus, X, AlertCircle, ChevronLeft, ChevronRight, Menu,
+  Package, Minus, Plus, X, AlertCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,55 +172,36 @@ export default function WorkbooksPage() {
 
   const base = import.meta.env.BASE_URL || "/";
   const [, navigate] = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const homeNavLinks = [
-    { label: lang === "ar" ? "البرامج التدريبية" : "Training Programs", anchor: "structure" },
-    { label: lang === "ar" ? "الفعاليات القادمة" : "Upcoming Events", anchor: "events" },
-    { label: lang === "ar" ? "المعرض" : "Gallery", anchor: "gallery" },
-    { label: lang === "ar" ? "الفيديوهات" : "Videos", anchor: "videos" },
-  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
       {/* ── NAVBAR ── */}
-      <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-4 shadow-sm">
+      <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-3 shadow-sm">
         <div className="container mx-auto px-6 flex items-center justify-between gap-4">
-          {/* Logo */}
-          <button onClick={() => navigate(base)} className="logo-biklima text-4xl text-primary tracking-tight leading-none hover:opacity-80 transition-opacity">
-            بكلمة
-          </button>
-
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-5 font-medium">
-            {homeNavLinks.map((link) => (
-              <button
-                key={link.anchor}
-                onClick={() => navigate(`${base}#${link.anchor}`)}
-                className="text-sm text-foreground/70 hover:text-primary transition-colors"
-              >
-                {link.label}
-              </button>
-            ))}
-            <span className="text-sm font-bold text-primary border-b-2 border-primary pb-0.5">
-              {lang === "ar" ? "الكراسات" : "Workbooks"}
-            </span>
-          </nav>
+          {/* Back button + Logo */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(base)}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
+            >
+              {dir === "rtl"
+                ? <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                : <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />}
+              {lang === "ar" ? "الرئيسية" : "Home"}
+            </button>
+            <span className="text-border">|</span>
+            <span className="logo-biklima text-3xl text-primary tracking-tight leading-none">بكلمة</span>
+          </div>
 
           {/* Controls */}
           <div className="flex items-center gap-2">
-            {/* Lang toggle */}
             <div className="flex items-center gap-px border border-border rounded-full overflow-hidden">
               {langButtons.map(({ key, label }) => (
                 <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
             </div>
-            {/* Currency selector */}
             <div className="relative">
-              <button
-                onClick={() => setCurrencyMenuOpen(!currencyMenuOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-bold hover:bg-secondary/40 transition-colors"
-              >
+              <button onClick={() => setCurrencyMenuOpen(!currencyMenuOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-bold hover:bg-secondary/40 transition-colors">
                 <span>{currency.symbol}</span>
                 <span className="text-muted-foreground">{currency.code}</span>
               </button>
@@ -235,57 +216,9 @@ export default function WorkbooksPage() {
                 </div>
               )}
             </div>
-            {/* Mobile menu toggle */}
-            <button className="md:hidden text-foreground p-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
           </div>
         </div>
-
-        {/* Mobile menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden border-t border-border bg-background overflow-hidden"
-            >
-              <div className="container mx-auto px-6 py-4 flex flex-col gap-1">
-                <button onClick={() => { navigate(base); setMobileMenuOpen(false); }} className="text-start py-2.5 text-sm font-bold text-primary border-b border-border/50">
-                  {lang === "ar" ? "الصفحة الرئيسية" : "Home"}
-                </button>
-                {homeNavLinks.map((link) => (
-                  <button
-                    key={link.anchor}
-                    onClick={() => { navigate(`${base}#${link.anchor}`); setMobileMenuOpen(false); }}
-                    className="text-start py-2.5 text-sm text-foreground/80 border-b border-border/50 hover:text-primary transition-colors"
-                  >
-                    {link.label}
-                  </button>
-                ))}
-                <span className="py-2.5 text-sm font-bold text-primary">{lang === "ar" ? "الكراسات ✓" : "Workbooks ✓"}</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
-
-      {/* ── PAGE HERO ── */}
-      <div className="py-16 bg-gradient-to-b from-primary/5 to-background text-center border-b border-border">
-        <div className="container mx-auto px-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
-            <BookOpen className="w-4 h-4" />
-            {lang === "ar" ? "الحكمة والمحتوى التعليمي" : "Wisdom & Educational Resources"}
-          </div>
-          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">
-            {lang === "ar" ? "الكراسات التدريبية" : "Training Workbooks"}
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {lang === "ar" ? "منهجية مدروسة ومصمّمة لكل متدرب حسب مساره" : "A thoughtful methodology designed for each trainee according to their path"}
-          </p>
-        </div>
-      </div>
 
       {/* ── WISDOM CAROUSEL ── */}
       <section className="py-16 bg-secondary/10 border-y border-border overflow-hidden">
