@@ -45,35 +45,11 @@ export const T = {
     },
     why: {
       heading: "لماذا بكلمة؟",
-      pullQuote: "كلمة واحدة في المكان الصحيح\nتساوي سنوات من العمل الصامت.",
-      moments: [
-        {
-          num: "٠١",
-          scene: "في غرفة المقابلة",
-          title: "عندما صمتّ، كانت الفرصة تُغلق أمامك",
-          story: "شعرت بها — تلك اللحظة حين سألوك \"أخبرنا عن نفسك\" وتجمّدت. أفكارك كانت هناك، لكن الكلمات لم تأتِ. ليس لأنك غير كفؤ، بل لأن أحداً لم يعلّمك كيف تترجم ما بداخلك إلى كلام يأسر.",
-          after: "بكلمة تتحوّل هذه اللحظة من أصعب لحظاتك إلى أقوى ورقة بيدك.",
-        },
-        {
-          num: "٠٢",
-          scene: "في قاعة الاجتماع",
-          title: "الفكرة كانت عبقرية — لكنها ماتت في صدرك",
-          story: "رأيت الحلّ قبل الجميع، لكن حين جاء دورك للكلام، جاءت الكلمات مشتّتة أو خافتة أو في غير وقتها. وسرعان ما تبنّى شخص آخر الفكرة ذاتها — وأوصلها. الفارق لم يكن في الذكاء، بل في فن الإلقاء.",
-          after: "نمنحك المنهجية التي تجعل فكرتك تُسمع بالقدر الذي تستحق.",
-        },
-        {
-          num: "٠٣",
-          scene: "أمام المنصة",
-          title: "الخوف لم يكن ضعفاً — كان رسالة",
-          story: "القلب يخفق، والكفّان يرتجفان، والصوت يخذلك. لكن ٩٣٪ من المتحدثين المحترفين يشعرون بهذا — الفارق أنهم تعلّموا كيف يُحوّلون الطاقة العصبية إلى وقود للأداء لا إلى عائق. الخوف لا يختفي — يتحوّل.",
-          after: "لأن الثقة ليست موهبة فطرية، إنها مهارة تُبنى بمنهجية — وهذا ما نفعله.",
-        },
-      ],
-      stats: [
-        { value: "+٣٠٠", label: "متدرب ومتدربة" },
-        { value: "+١٢", label: "دولة حول العالم" },
-        { value: "+٧", label: "سنوات من التدريب" },
-        { value: "٤", label: "برامج متخصصة" },
+      sub: "المشكلة ليست أن ليس لديك ما تقوله — المشكلة أن ما تقوله لا يصل كما تريد.",
+      items: [
+        { title: "لأن صمتك في اللحظة الحاسمة له ثمن", desc: "خسارة وظيفة لأن المقابلة لم تُقنع. فكرة عظيمة ضاعت لأن أحداً لم يسمعها. شراكة لم تُعقد لأن الكلمات لم تكن في محلّها. هذه ليست مشكلة تعبير — هي خسارة حقيقية يمكن تجنّبها." },
+        { title: "لأن المشكلة ليست في الأفكار", desc: "معظم من يعانون من ضعف التواصل لديهم أفكار عميقة وحقيقية. المشكلة في الفجوة بين ما يُفكّرون فيه وما يصل للآخرين. بكلمة يجسّر هذه الفجوة بمنهجية تعمل على اللفظ والذهن والأداء معاً." },
+        { title: "لأن الثقة مهارة، لا موهبة", desc: "٧٠٪ ممن يصمتون لم يُولدوا خائفين — بل تعلّموا الخوف في مكان ما. نعمل على الجذور قبل الأداء. ما بُني يمكن إعادة بنائه — وهذا تحديداً ما نفعله." },
       ],
       consultIntro: {
         heading: "احجز جلستك الاستشارية المجانية",
@@ -316,35 +292,11 @@ export const T = {
     },
     why: {
       heading: "Why Bikalima?",
-      pullQuote: "One word in the right moment\noutweighs years of silent effort.",
-      moments: [
-        {
-          num: "01",
-          scene: "In the interview room",
-          title: "When you went silent, the opportunity quietly closed",
-          story: "You felt it — that moment when they said \"Tell us about yourself\" and your mind went blank. Your thoughts were there, but the words weren't. Not because you weren't capable, but because no one ever taught you how to translate what's inside you into words that captivate.",
-          after: "With Bikalima, that moment transforms from your biggest weakness into your most powerful card.",
-        },
-        {
-          num: "02",
-          scene: "In the boardroom",
-          title: "The idea was brilliant — but it died inside your chest",
-          story: "You saw the solution before everyone else, but when your turn came to speak, the words came out scattered, too quiet, or mistimed. Then someone else expressed the same idea — and it landed. The difference wasn't intelligence. It was the art of delivery.",
-          after: "We give you the methodology that makes your idea heard to the degree it deserves.",
-        },
-        {
-          num: "03",
-          scene: "Before the stage",
-          title: "The fear wasn't weakness — it was a signal",
-          story: "Your heart pounds, your hands tremble, your voice betrays you. But 93% of professional speakers feel this — the difference is they learned to convert nervous energy into performance fuel, not a barrier. Fear doesn't disappear — it transforms.",
-          after: "Because confidence isn't an innate talent — it's a skill built systematically. And that's exactly what we do.",
-        },
-      ],
-      stats: [
-        { value: "300+", label: "Trained Professionals" },
-        { value: "12+", label: "Countries Worldwide" },
-        { value: "7+", label: "Years of Training" },
-        { value: "4", label: "Specialized Programs" },
+      sub: "The problem isn't that you have nothing to say — it's that what you say doesn't land the way you intend.",
+      items: [
+        { title: "Because your silence in the critical moment has a cost", desc: "A missed job because the interview didn't convince. A brilliant idea lost because no one heard it. A partnership that never formed because the words weren't there. This isn't a communication problem — it's a real loss that can be prevented." },
+        { title: "Because the problem isn't in your ideas", desc: "Most people who struggle with communication have deep, genuine thoughts. The problem is the gap between what they think and what reaches others. Bikalima bridges that gap with a methodology that works on expression, mindset, and delivery together." },
+        { title: "Because confidence is a skill, not a talent", desc: "70% of those who go silent weren't born afraid — they learned fear somewhere along the way. We work on the roots before the performance. What was built can be rebuilt — and that is exactly what we do." },
       ],
       consultIntro: {
         heading: "Book Your Free Consultation",
