@@ -311,6 +311,7 @@ export default function Home() {
       if (e.key === "Escape") {
         setLightboxOpen(false);
         setVideoModalId(null);
+        setShowZoomModal(false);
       }
       if (lightboxOpen) {
         if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % allPhotos.length);
@@ -2058,13 +2059,27 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-hidden relative">
                       <iframe
                         src="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
                         title="Zoom Scheduler"
                         className="w-full h-full border-0"
                         allow="camera; microphone"
                         onError={() => setZoomIframeError(true)}
+                        onLoad={(e) => {
+                          const el = e.target as HTMLIFrameElement;
+                          if (!el.contentWindow || el.contentWindow.length === 0) {
+                            setTimeout(() => {
+                              try {
+                                if (!el.contentDocument || el.contentDocument.body.innerHTML === "") {
+                                  setZoomIframeError(true);
+                                }
+                              } catch {
+                                setZoomIframeError(true);
+                              }
+                            }, 3000);
+                          }
+                        }}
                       />
                     </div>
                     <div className="px-4 py-2.5 border-t border-border bg-muted/30 flex items-center justify-center gap-1.5 shrink-0">
