@@ -1073,14 +1073,14 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
+            <div className="columns-2 md:columns-3 gap-3 md:gap-4">
               {(galleryTab === "cohorts" ? galleryPhotos : speechPhotos).map((photo, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: (i % 4) * 0.05, duration: 0.4 }}
+                  transition={{ delay: (i % 3) * 0.05, duration: 0.4 }}
                   className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
                   onClick={() => {
                     const offset = galleryTab === "speeches" ? galleryPhotos.length : 0;
@@ -1089,14 +1089,14 @@ export default function Home() {
                   }}
                 >
                   <img src={photo.src} alt={photo.country[lang as keyof typeof photo.country] || photo.country.en} className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                      <ZoomIn className="w-4 h-4 text-white" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <div className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                      <ZoomIn className="w-3.5 h-3.5 text-white" />
                     </div>
                   </div>
-                  <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
+                  <div className="absolute bottom-2 start-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
                       <span>{photo.flag}</span>
                       <span>{photo.country[lang as keyof typeof photo.country] || photo.country.en}</span>
                     </span>

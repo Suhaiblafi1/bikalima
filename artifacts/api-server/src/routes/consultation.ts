@@ -6,6 +6,15 @@ const consultationRouter = Router();
 const ADMIN_EMAIL = "info@bikalima.com";
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 
+function esc(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function buildTransporter() {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
@@ -80,7 +89,9 @@ function buildUserHtml(opts: {
   notes: string;
   lang: string;
 }): string {
-  const { name, dateStr, timeStr, notes, lang } = opts;
+  const { name: rawName, dateStr, timeStr, notes: rawNotes, lang } = opts;
+  const name = esc(rawName);
+  const notes = esc(rawNotes);
   const isAr = lang === "ar";
   const zoomLink = process.env.ZOOM_MEETING_URL ?? "";
 
@@ -209,7 +220,11 @@ function buildAdminHtml(opts: {
   timeStr: string;
   notes: string;
 }): string {
-  const { name, email, phone, dateStr, timeStr, notes } = opts;
+  const { name: rawName, email: rawEmail, phone: rawPhone, dateStr, timeStr, notes: rawNotes } = opts;
+  const name = esc(rawName);
+  const email = esc(rawEmail);
+  const phone = esc(rawPhone);
+  const notes = esc(rawNotes);
   return `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
