@@ -82,46 +82,121 @@ function buildUserHtml(opts: {
 }): string {
   const { name, dateStr, timeStr, notes, lang } = opts;
   const isAr = lang === "ar";
+  const zoomLink = process.env.ZOOM_MEETING_URL ?? "";
+
+  const tips = isAr ? [
+    { icon: "🎯", title: "حدِّد هدفك بدقة", body: "قبل الجلسة، اكتب جملة واحدة تصف التحدي الذي تريد حلّه. كلما كان سؤالك أوضح، كانت الجلسة أعمق وأكثر فائدة لك." },
+    { icon: "📝", title: "ضع أسئلتك مسبقاً", body: "اكتب 2–3 أسئلة تريد الإجابة عنها حتماً. ستساعدك على الاستفادة الكاملة من الوقت دون أن ينتهي قبل أن تصل لما تريد." },
+    { icon: "🎙️", title: "استعدّ بمثال حيّ", body: "فكّر في موقف حقيقي واجهت فيه تحدياً في الإلقاء أو التواصل. المثال الواقعي يجعل الجلسة عملية وقابلة للتطبيق فوراً." },
+    { icon: "🔕", title: "أبعد المشتتات", body: "اجلس في مكان هادئ، أغلق الإشعارات، وخصص هذه الساعة كاملاً لنفسك. الانتباه الكامل هو أثمن ما تقدمه لجلستك." },
+    { icon: "✍️", title: "أحضر ورقة وقلم", body: "ستخرج بأفكار ونصائح مخصصة لك — دوّن كل شيء فوراً. الكلمة المكتوبة تبقى، والكلمة المسموعة تطير." },
+  ] : [
+    { icon: "🎯", title: "Define Your Goal Clearly", body: "Before the session, write one sentence describing the challenge you want to address. The clearer your question, the deeper and more impactful the session will be." },
+    { icon: "📝", title: "Prepare Your Questions", body: "Write 2–3 questions you absolutely want answered. This ensures you make the most of every minute without running out of time." },
+    { icon: "🎙️", title: "Bring a Real Example", body: "Think of a specific situation where you faced a speaking or communication challenge. Real examples make the session practical and immediately actionable." },
+    { icon: "🔕", title: "Eliminate Distractions", body: "Find a quiet space, silence your notifications, and dedicate this full hour to yourself. Your full attention is the greatest gift you can give this session." },
+    { icon: "✍️", title: "Bring Paper and Pen", body: "You'll walk away with personalized insights and tips — write everything down immediately. Written words stay; heard words fly." },
+  ];
+
   return `
 <!DOCTYPE html>
-<html dir="${isAr ? "rtl" : "ltr"}" lang="${lang}">
-<head><meta charset="UTF-8"><style>
-  body{font-family:Arial,sans-serif;background:#f8f5f0;color:#1a1a1a;margin:0;padding:0}
-  .wrap{max-width:520px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 24px rgba(0,0,0,.08)}
-  .header{background:#7c4a2d;padding:32px 28px;color:#fff;text-align:center}
-  .logo{font-family:Georgia,serif;font-size:28px;font-weight:700;letter-spacing:1px}
-  .tagline{font-size:12px;opacity:.7;margin-top:4px}
-  .body{padding:32px 28px}
-  .badge{display:inline-block;background:#7c4a2d1a;color:#7c4a2d;border-radius:999px;padding:6px 16px;font-size:13px;font-weight:600;margin-bottom:20px}
-  h2{font-family:Georgia,serif;font-size:22px;margin:0 0 12px}
-  p{font-size:15px;line-height:1.7;color:#444;margin:0 0 12px}
-  .card{background:#f8f5f0;border-radius:12px;padding:20px;margin:20px 0}
-  .row{display:flex;gap:8px;align-items:center;margin-bottom:10px;font-size:14px}
-  .label{color:#888;min-width:90px}
-  .value{font-weight:600;color:#1a1a1a}
-  .note{background:#fff8f0;border:1px solid #e8d5c0;border-radius:8px;padding:14px;font-size:13px;color:#666;margin-top:8px}
-  .footer{padding:20px 28px;background:#f0ebe3;font-size:12px;color:#888;text-align:center;border-top:1px solid #e8d5c0}
+<html dir="${isAr ? "rtl" : "ltr"}" lang="${isAr ? "ar" : "en"}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f1ed;color:#1a1a1a;margin:0;padding:24px 12px}
+  .wrap{max-width:560px;margin:0 auto}
+  .card{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.09)}
+  .header{background:linear-gradient(135deg,#1a6b5a 0%,#0d4d3d 100%);padding:40px 32px;text-align:center;position:relative}
+  .header::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:32px;background:#fff;border-radius:32px 32px 0 0}
+  .logo{font-family:Georgia,serif;font-size:36px;font-weight:700;color:#fff;letter-spacing:1px}
+  .tagline{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px;letter-spacing:.5px}
+  .confirmed{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 18px;font-size:13px;font-weight:600;margin-top:20px}
+  .body{padding:32px}
+  h1{font-family:Georgia,serif;font-size:24px;margin:0 0 8px;color:#0d4d3d}
+  .subtitle{font-size:15px;color:#666;margin:0 0 28px;line-height:1.6}
+  .session-box{background:linear-gradient(135deg,#f0faf7,#e8f5f0);border:1px solid #b2ddd4;border-radius:16px;padding:24px;margin:0 0 32px}
+  .session-title{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#1a6b5a;margin:0 0 16px}
+  .info-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .info-icon{width:36px;height:36px;border-radius:10px;background:#1a6b5a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .info-label{font-size:12px;color:#888}
+  .info-value{font-size:15px;font-weight:700;color:#0d4d3d}
+  .zoom-btn{display:block;background:#2d8cff;color:#fff;text-decoration:none;text-align:center;padding:14px 24px;border-radius:12px;font-weight:700;font-size:15px;margin-top:16px;letter-spacing:.3px}
+  .tips-section{margin:0 0 28px}
+  .tips-heading{font-family:Georgia,serif;font-size:18px;font-weight:700;color:#0d4d3d;margin:0 0 4px}
+  .tips-sub{font-size:13px;color:#888;margin:0 0 20px}
+  .tip{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}
+  .tip-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+  .tip-title{font-size:14px;font-weight:700;color:#1a1a1a;margin:0 0 3px}
+  .tip-body{font-size:13px;color:#666;line-height:1.6;margin:0}
+  .user-note{background:#fffbf5;border:1px solid #f0d9b5;border-radius:12px;padding:16px;margin:0 0 28px}
+  .note-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#c07a2a;margin:0 0 6px}
+  .note-text{font-size:14px;color:#555;line-height:1.6;margin:0}
+  .footer-quote{background:#0d4d3d;border-radius:14px;padding:20px 24px;margin:0 0 28px;text-align:center}
+  .quote-text{font-family:Georgia,serif;font-size:15px;color:rgba(255,255,255,.9);line-height:1.7;margin:0 0 8px}
+  .quote-author{font-size:12px;color:rgba(255,255,255,.5)}
+  .contact-row{text-align:center;font-size:13px;color:#aaa;margin:0 0 8px}
+  .contact-row a{color:#1a6b5a;text-decoration:none;font-weight:600}
+  .copyright{text-align:center;font-size:11px;color:#ccc}
 </style></head>
 <body>
 <div class="wrap">
+<div class="card">
   <div class="header">
-    <div class="logo">بكلمة · Bikalima</div>
-    <div class="tagline">منهج متكامل في فن الخطابة والتأثير</div>
+    <div class="logo">بكلمة</div>
+    <div class="tagline">${isAr ? "منهج متكامل في فن الخطابة والتأثير" : "A Complete Methodology in Public Speaking & Influence"}</div>
+    <div class="confirmed">✓ &nbsp;${isAr ? "تم تأكيد موعدك" : "Session Confirmed"}</div>
   </div>
   <div class="body">
-    <div class="badge">${isAr ? "✅ تم تأكيد موعدك" : "✅ Booking Confirmed"}</div>
-    <h2>${isAr ? `مرحباً ${name}،` : `Hello ${name},`}</h2>
-    <p>${isAr ? "تم حجز جلستك الاستشارية المجانية بنجاح. ستجد تفاصيل الموعد أدناه، وقد أرفقنا دعوة التقويم لإضافتها مباشرة." : "Your free consultation session has been booked successfully. Find the details below. A calendar invite is attached."}</p>
-    <div class="card">
-      <div class="row"><span class="label">${isAr ? "التاريخ" : "Date"}:</span><span class="value">${dateStr}</span></div>
-      <div class="row"><span class="label">${isAr ? "الوقت" : "Time"}:</span><span class="value">${timeStr}</span></div>
-      <div class="row"><span class="label">${isAr ? "المنصة" : "Platform"}:</span><span class="value">Zoom</span></div>
-      ${notes ? `<div class="note"><strong>${isAr ? "ملاحظاتك:" : "Your notes:"}</strong><br>${notes}</div>` : ""}
+    <h1>${isAr ? `مرحباً ${name} 👋` : `Hello ${name} 👋`}</h1>
+    <p class="subtitle">${isAr
+      ? "موعدك مع صهيب الخوالدة مؤكّد. هذه الساعة مخصصة لك وحدك — استعدّ لها كما تستحق."
+      : "Your session with Suhaib Al-Khawaldeh is confirmed. This hour is dedicated entirely to you — prepare for it as it deserves."
+    }</p>
+
+    <div class="session-box">
+      <div class="session-title">${isAr ? "📅 تفاصيل الجلسة" : "📅 Session Details"}</div>
+      <div class="info-row">
+        <div class="info-icon">🗓</div>
+        <div><div class="info-label">${isAr ? "التاريخ" : "Date"}</div><div class="info-value">${dateStr}</div></div>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">⏰</div>
+        <div><div class="info-label">${isAr ? "الوقت" : "Time"}</div><div class="info-value">${timeStr}</div></div>
+      </div>
+      <div class="info-row">
+        <div class="info-icon">💻</div>
+        <div><div class="info-label">${isAr ? "المنصة" : "Platform"}</div><div class="info-value">Zoom</div></div>
+      </div>
+      ${zoomLink
+        ? `<a class="zoom-btn" href="${zoomLink}">🎥 &nbsp;${isAr ? "انضم للجلسة عبر Zoom" : "Join Session on Zoom"}</a>`
+        : `<p style="margin:16px 0 0;font-size:13px;color:#888;text-align:center">${isAr ? "سيصلك رابط Zoom على بريدك قبل الموعد مباشرة." : "Your Zoom link will be sent to you shortly before the session."}</p>`
+      }
     </div>
-    <p>${isAr ? "سيتواصل معك صهيب الخوالدة قريباً لتأكيد الموعد وإرسال رابط Zoom." : "Suhaib Al-Khawaldeh will reach out to confirm and send the Zoom link."}</p>
-    <p style="margin-top:20px;font-size:13px;color:#888">${isAr ? "للاستفسار: info@bikalima.com" : "Questions? info@bikalima.com"}</p>
+
+    ${notes ? `<div class="user-note"><div class="note-label">${isAr ? "ملاحظاتك" : "Your Notes"}</div><div class="note-text">${notes}</div></div>` : ""}
+
+    <div class="tips-section">
+      <div class="tips-heading">${isAr ? "كيف تستغل جلستك على أكمل وجه؟" : "How to Get the Most from Your Session"}</div>
+      <p class="tips-sub">${isAr ? "٥ نصائح من صهيب الخوالدة لجلسة استثنائية:" : "5 tips from Suhaib Al-Khawaldeh for an exceptional session:"}</p>
+      ${tips.map(tip => `
+      <div class="tip">
+        <div class="tip-icon">${tip.icon}</div>
+        <div>
+          <div class="tip-title">${tip.title}</div>
+          <p class="tip-body">${tip.body}</p>
+        </div>
+      </div>`).join("")}
+    </div>
+
+    <div class="footer-quote">
+      <div class="quote-text">"${isAr ? "لا تخف من صوتك... خف من اليوم الذي تُقرر فيه ألا تتكلم." : "Don't fear your voice… fear the day you decide not to speak."}"</div>
+      <div class="quote-author">— ${isAr ? "صهيب الخوالدة" : "Suhaib Al-Khawaldeh"}</div>
+    </div>
+
+    <div class="contact-row">${isAr ? "استفسار؟ راسلنا:" : "Questions? Write to us:"} <a href="mailto:info@bikalima.com">info@bikalima.com</a></div>
+    <div class="copyright">© ${new Date().getFullYear()} Bikalima · بكلمة</div>
   </div>
-  <div class="footer">Bikalima · بكلمة · © ${new Date().getFullYear()}</div>
+</div>
 </div>
 </body></html>`;
 }

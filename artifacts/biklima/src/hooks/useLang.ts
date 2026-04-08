@@ -12,7 +12,7 @@ export function useLang() {
   const [lang, setLang] = useState<Lang>(() => {
     try {
       const stored = localStorage.getItem("biklima-lang") as Lang | null;
-      if (stored && (["ar", "en", "fr"] as string[]).includes(stored)) return stored as Lang;
+      if (stored && (["ar", "en"] as string[]).includes(stored)) return stored as Lang;
     } catch {}
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
     if (ARABIC_TZ.has(tz)) return "ar";

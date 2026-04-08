@@ -75,7 +75,7 @@ function useLang() {
   const [lang, setLang] = useState<Lang>(() => {
     try {
       const stored = localStorage.getItem("biklima-lang") as Lang | null;
-      if (stored && (["ar", "en", "fr"] as string[]).includes(stored)) return stored as Lang;
+      if (stored && (["ar", "en"] as string[]).includes(stored)) return stored as Lang;
     } catch {}
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
     const arabicTZ = new Set([
@@ -479,7 +479,6 @@ export default function Home() {
   const langButtons: { key: Lang; label: string }[] = [
     { key: "ar", label: "ع" },
     { key: "en", label: "EN" },
-    { key: "fr", label: "FR" },
   ];
 
   return (
@@ -862,7 +861,7 @@ export default function Home() {
                   const prog = programs.find(p => p.id === ev.programId);
                   const lp = prog ? getLocalizedProgram(prog, lang) : null;
                   const isOnline = ev.type === "online";
-                  const l = lang as "ar" | "en" | "fr";
+                  const l = lang as "ar" | "en";
                   return (
                     <Card key={ev.id} className={`border-2 hover:shadow-lg transition-all duration-300 overflow-hidden ${isOnline ? "border-blue-200 hover:border-blue-400" : "border-primary/20 hover:border-primary/40"}`}>
                       <CardContent className="p-5 flex flex-col gap-3">
@@ -930,8 +929,8 @@ export default function Home() {
                         <Calendar className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-serif text-lg font-bold">{lang === "ar" ? "احجز جلسة استشارية مجانية" : lang === "fr" ? "Réserver une consultation gratuite" : "Book a Free Consultation"}</h3>
-                        <p className="text-xs text-muted-foreground">{lang === "ar" ? "وجلستك ستصلك دعوة تقويم على بريدك مباشرة" : lang === "fr" ? "Une invitation calendrier vous sera envoyée par email" : "A calendar invite will be sent to your email"}</p>
+                        <h3 className="font-serif text-lg font-bold">{lang === "ar" ? "احجز جلسة استشارية مجانية" : "Book a Free Consultation"}</h3>
+                        <p className="text-xs text-muted-foreground">{lang === "ar" ? "وجلستك ستصلك دعوة تقويم على بريدك مباشرة" : "A calendar invite will be sent to your email"}</p>
                       </div>
                     </div>
 
@@ -997,7 +996,7 @@ export default function Home() {
                             <Button onClick={handleBookConsultation} disabled={consultLoading} className="w-full h-12 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-lg shadow-primary/20">
                               {consultLoading
                                 ? (lang === "ar" ? "جارٍ الحجز..." : "Booking...")
-                                : (lang === "ar" ? "✦ احجز موعدي المجاني" : lang === "fr" ? "✦ Réserver ma consultation" : "✦ Book My Free Session")}
+                                : (lang === "ar" ? "✦ احجز موعدي المجاني" : "✦ Book My Free Session")}
                             </Button>
                             <p className="text-[11px] text-center text-muted-foreground">{lang === "ar" ? "ستصلك دعوة تقويم فور تأكيد الحجز · Zoom" : "You'll receive a calendar invite instantly · via Zoom"}</p>
                           </motion.div>
@@ -1050,7 +1049,7 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : lang === "fr" ? "Le parcours de Bikalima depuis 2019" : "Bikalima's Journey since 2019"}
+                  {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : "Bikalima's Journey since 2019"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
@@ -1069,8 +1068,8 @@ export default function Home() {
                   }`}
                 >
                   {tab === "cohorts"
-                    ? (lang === "ar" ? "صور الدورات" : lang === "fr" ? "Photos des Cohortes" : "Cohort Photos")
-                    : (lang === "ar" ? "صور المحاضرات" : lang === "fr" ? "Photos des Conférences" : "Speech Photos")}
+                    ? (lang === "ar" ? "صور الدورات" : "Cohort Photos")
+                    : (lang === "ar" ? "صور المحاضرات" : "Speech Photos")}
                 </button>
               ))}
             </div>
@@ -1115,7 +1114,7 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
                   <PlayCircle className="w-4 h-4" />
-                  {lang === "ar" ? "مكتبة تعليمية شاملة" : lang === "fr" ? "Bibliothèque pédagogique complète" : "Comprehensive Learning Library"}
+                  {lang === "ar" ? "مكتبة تعليمية شاملة" : "Comprehensive Learning Library"}
                 </div>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>

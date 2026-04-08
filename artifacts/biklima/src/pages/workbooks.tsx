@@ -115,7 +115,6 @@ export default function WorkbooksPage() {
   const langButtons: { key: Lang; label: string }[] = [
     { key: "ar", label: "ع" },
     { key: "en", label: "EN" },
-    { key: "fr", label: "FR" },
   ];
 
   useEffect(() => {
@@ -222,13 +221,13 @@ export default function WorkbooksPage() {
         <div className="container mx-auto px-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <BookOpen className="w-4 h-4" />
-            {lang === "ar" ? "الحكمة والمحتوى التعليمي" : lang === "fr" ? "Sagesse et contenu éducatif" : "Wisdom & Educational Resources"}
+            {lang === "ar" ? "الحكمة والمحتوى التعليمي" : "Wisdom & Educational Resources"}
           </div>
           <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">
-            {lang === "ar" ? "الكراسات التدريبية" : lang === "fr" ? "Les Cahiers Pédagogiques" : "Training Workbooks"}
+            {lang === "ar" ? "الكراسات التدريبية" : "Training Workbooks"}
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            {lang === "ar" ? "منهجية مدروسة ومصمّمة لكل متدرب حسب مساره" : lang === "fr" ? "Une méthodologie réfléchie et conçue pour chaque stagiaire selon son parcours" : "A thoughtful methodology designed for each trainee according to their path"}
+            {lang === "ar" ? "منهجية مدروسة ومصمّمة لكل متدرب حسب مساره" : "A thoughtful methodology designed for each trainee according to their path"}
           </p>
         </div>
       </div>
@@ -357,7 +356,7 @@ export default function WorkbooksPage() {
           <p className="text-background/50 text-sm">{t.footer.copyright}</p>
           <a href={base} className="inline-flex items-center gap-2 mt-4 text-sm text-background/60 hover:text-background transition-colors">
             {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            {lang === "ar" ? "العودة للرئيسية" : lang === "fr" ? "Retour à l'accueil" : "Back to Home"}
+            {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
           </a>
         </div>
       </footer>

@@ -23,7 +23,6 @@ export default function GalleryPage() {
   const langButtons: { key: Lang; label: string }[] = [
     { key: "ar", label: "ع" },
     { key: "en", label: "EN" },
-    { key: "fr", label: "FR" },
   ];
 
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function GalleryPage() {
         <div className="container mx-auto px-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
             <span className="w-2 h-2 rounded-full bg-primary" />
-            {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : lang === "fr" ? "Le parcours de Bikalima depuis 2019" : "Bikalima's Journey since 2019"}
+            {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : "Bikalima's Journey since 2019"}
           </div>
           <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">{t.gallery.heading}</h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
@@ -169,7 +168,7 @@ export default function GalleryPage() {
             <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
                 <PlayCircle className="w-4 h-4" />
-                {lang === "ar" ? "مكتبة تعليمية شاملة" : lang === "fr" ? "Bibliothèque pédagogique complète" : "Comprehensive Learning Library"}
+                {lang === "ar" ? "مكتبة تعليمية شاملة" : "Comprehensive Learning Library"}
               </div>
               <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
@@ -264,7 +263,7 @@ export default function GalleryPage() {
           <p className="text-background/50 text-sm">{t.footer.copyright}</p>
           <a href={base} className="inline-flex items-center gap-2 mt-4 text-sm text-background/60 hover:text-background transition-colors">
             {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            {lang === "ar" ? "العودة للرئيسية" : lang === "fr" ? "Retour à l'accueil" : "Back to Home"}
+            {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
           </a>
         </div>
       </footer>
