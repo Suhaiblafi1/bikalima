@@ -14,9 +14,9 @@ export const T = {
     },
     hero: {
       badge: "منهج متكامل في فنّ الخطابة والتأثير",
-      h1a: "بكلمة، نصنع",
-      h1b: "أثراً لا يُنسى.",
-      sub: "دورة أساسية في الخطابة تؤهّل الشباب والمهنيين، وتنبثق منها مسارات لتأهيل المدربين والمعلمين وأولياء الأمور والأطفال.",
+      h1a: "لديك ما تقوله —",
+      h1b: "وبكلمة ستُسمَع.",
+      sub: "كثيرون يخسرون فرصهم لأن أفكارهم تتوه بين العقل والكلام. في المقابلة، الاجتماع، المنصة، والحياة — بكلمة هي الحل لمن أسكته التردد ولم يُسمع بعد.",
       ctaPrimary: "ابدأ الآن",
       ctaSecondary: "اكتشف البرامج التدريبية",
       imageQuotes: [
@@ -44,11 +44,11 @@ export const T = {
     },
     why: {
       heading: "لماذا بكلمة؟",
-      sub: "في عالم مليء بالأفكار، المنتصر هو من يستطيع إيصال فكرته بوضوح، بثقة، وبطريقة تترك أثراً.",
+      sub: "المشكلة ليست أن ليس لديك ما تقوله — المشكلة أن ما تقوله لا يصل كما تريد.",
       items: [
-        { title: "منهجية علمية متدرجة", desc: "لا نعتمد على التحفيز المؤقت، بل نبني المهارات عبر مناهج مدروسة تنقل المتدرب خطوة بخطوة عبر أربعة نطاقات: اللفظي، الذهني، الاجتماعي، وهندسة الخطاب." },
-        { title: "معالجة الجذور", desc: "نعمل على بناء الثقة من الداخل (النطاق الذهني) قبل العمل على الأداء الخارجي (النطاق اللفظي). الكلمة تبدأ قبل الفم." },
-        { title: "أثر يمتد للأجيال", desc: "نؤهّل المدربين والمعلمين لينقلوا المهارة إلى الأطفال. ما تتعلمه اليوم سيسمعه جيل لم يولد بعد." },
+        { title: "لأن صمتك في اللحظة الحاسمة له ثمن", desc: "خسارة وظيفة لأن المقابلة لم تُقنع. فكرة عظيمة ضاعت لأن أحداً لم يسمعها كما يجب. شراكة لم تُعقد لأن الكلمات لم تكن في محلّها. هذه ليست مشكلة تعبير — هي خسارة حقيقية يمكن تجنبها." },
+        { title: "لأن المشكلة ليست في الأفكار", desc: "معظم من يعانون من ضعف التواصل لديهم أفكار عميقة وحقيقية. المشكلة في الفجوة بين ما يُفكّرون فيه وما يصل للآخرين. بكلمة يجسّر هذه الفجوة بمنهجية تعمل على اللفظ والذهن والأداء والبنية معاً." },
+        { title: "لأن الثقة مهارة، لا موهبة", desc: "٧٠٪ ممن يصمتون لم يُولدوا خائفين من الكلام — بل تعلّموا الخوف في مكان ما. نعمل على الجذور قبل الأداء. ما بُني يمكن إعادة بنائه — وهذا تحديداً ما نفعله." },
       ],
     },
     structure: {
@@ -280,11 +280,11 @@ export const T = {
     },
     why: {
       heading: "Why Bikalima?",
-      sub: "In a world full of ideas, winners are those who can communicate clearly, with confidence, in a way that leaves a lasting impression.",
+      sub: "The problem isn't that you don't have something to say — it's that what you say doesn't land the way you intended.",
       items: [
-        { title: "A Scientific, Gradual Methodology", desc: "We don't rely on temporary motivation. We build skills through structured curricula that guide learners step by step across four domains: verbal, mental, social, and speech architecture." },
-        { title: "Addressing the Root", desc: "We work on building confidence from within (the mental domain) before working on external performance (the verbal domain). The word begins before the mouth." },
-        { title: "Impact Across Generations", desc: "We certify trainers and educators to pass on the skill to children. What you learn today will be heard by a generation not yet born." },
+        { title: "Because silence at the critical moment has a price", desc: "A job lost because the interview didn't convince. A great idea that disappeared because no one heard it right. A partnership that never happened because the words weren't there. These aren't expression problems — they're real losses that can be avoided." },
+        { title: "Because the problem isn't your ideas", desc: "Most people who struggle to communicate have deep, valuable ideas. The problem is the gap between what they think and what others receive. Bikalima bridges that gap through a methodology that works on verbal, mental, performance, and structural levels." },
+        { title: "Because confidence is a skill, not a gift", desc: "70% of those who stay silent were not born afraid of speaking — they learned the fear somewhere along the way. We work on the roots before the performance. What was built can be rebuilt — and that's exactly what we do." },
       ],
     },
     structure: {

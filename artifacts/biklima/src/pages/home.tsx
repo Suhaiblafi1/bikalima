@@ -254,6 +254,15 @@ export default function Home() {
   const [lightboxSource, setLightboxSource] = useState<"cohorts" | "speeches">("cohorts");
   const [wisdomIndex, setWisdomIndex] = useState(0);
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
+  const [fontSize, setFontSize] = useState(16);
+  const [consultDate, setConsultDate] = useState<string | null>(null);
+  const [consultTime, setConsultTime] = useState<string | null>(null);
+  const [consultName, setConsultName] = useState("");
+  const [consultEmail, setConsultEmail] = useState("");
+  const [consultPhone, setConsultPhone] = useState("");
+  const [consultNotes, setConsultNotes] = useState("");
+  const [consultLoading, setConsultLoading] = useState(false);
+  const [consultBooked, setConsultBooked] = useState(false);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", category: "", program: "",
@@ -276,6 +285,10 @@ export default function Home() {
     document.documentElement.dir = dir;
     document.documentElement.lang = lang;
   }, [dir, lang]);
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`;
+  }, [fontSize]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -359,6 +372,53 @@ export default function Home() {
     }
   };
 
+  const handleBookConsultation = async () => {
+    if (!consultDate || !consultTime || !consultName.trim() || !consultEmail.trim()) {
+      toast({ title: lang === "ar" ? "يرجى تعبئة الحقول المطلوبة" : "Please fill in required fields", variant: "destructive" });
+      return;
+    }
+    setConsultLoading(true);
+    try {
+      const base = import.meta.env.BASE_URL || "/";
+      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
+      const res = await fetch(`${apiBase}/book-consultation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: consultName, email: consultEmail, phone: consultPhone, date: consultDate, time: consultTime, notes: consultNotes, lang }),
+      });
+      if (!res.ok) throw new Error("server_error");
+      setConsultBooked(true);
+    } catch {
+      toast({ title: lang === "ar" ? "حدث خطأ" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : "Please try again later", variant: "destructive" });
+    } finally {
+      setConsultLoading(false);
+    }
+  };
+
+  const getConsultAvailableDays = () => {
+    const result: { date: string; dayName: string; dayNum: string; dayShort: string }[] = [];
+    const today = new Date();
+    let d = new Date(today);
+    d.setDate(d.getDate() + 1);
+    let count = 0;
+    while (result.length < 7 && count < 30) {
+      const dow = d.getDay();
+      if (dow >= 0 && dow <= 4) {
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        const dateStr = `${dd}/${mm}/${yyyy}`;
+        const dayNames = lang === "ar"
+          ? ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"]
+          : ["Sun","Mon","Tue","Wed","Thu"];
+        result.push({ date: dateStr, dayName: dayNames[dow], dayNum: dd, dayShort: mm + "/" + dd });
+      }
+      d.setDate(d.getDate() + 1);
+      count++;
+    }
+    return result;
+  };
+
   const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -411,13 +471,11 @@ export default function Home() {
     return null;
   };
 
-  const navItems = [
+  type NavItem = { label: string; id?: string; href?: string };
+  const navItems: NavItem[] = [
     { label: t.nav.structure, id: "structure" },
-    { label: t.nav.wisdom, id: "wisdom" },
-    { label: t.nav.workbooks, id: "workbooks" },
-    { label: t.nav.testimonials, id: "testimonials" },
-    { label: t.nav.gallery, id: "gallery" },
-    { label: t.nav.videos, id: "videos" },
+    { label: t.nav.workbooks, href: "workbooks" },
+    { label: t.nav.gallery, href: "gallery" },
   ];
 
   const langButtons: { key: Lang; label: string }[] = [
@@ -438,7 +496,9 @@ export default function Home() {
           <div className="logo-biklima text-5xl text-primary tracking-tight leading-none">بكلمة</div>
           <nav className="hidden md:flex items-center gap-6 font-medium">
             {navItems.map((item) => (
-              <button key={item.id} onClick={() => scrollTo(item.id)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
+              item.href
+                ? <a key={item.href || item.id} href={`${import.meta.env.BASE_URL}${item.href}`} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</a>
+                : <button key={item.id || item.href} onClick={() => scrollTo(item.id!)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
             ))}
             <Button onClick={() => scrollTo("enroll")} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 rounded-full">{t.nav.cta}</Button>
             {!authLoading && (
@@ -461,6 +521,10 @@ export default function Home() {
               {langButtons.map(({ key, label }) => (
                 <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
               ))}
+            </div>
+            <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
+              <button onClick={() => setFontSize(s => Math.max(13, s - 1))} className="px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors" title="تصغير الخط">A-</button>
+              <button onClick={() => setFontSize(s => Math.min(20, s + 1))} className="px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors" title="تكبير الخط">A+</button>
             </div>
             <div className="relative">
               <button
@@ -495,7 +559,9 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed inset-0 z-40 bg-background flex flex-col pt-24 px-8 gap-6">
             <button className="absolute top-6 left-6 text-foreground" onClick={() => setMobileMenuOpen(false)}><X size={28} /></button>
             {navItems.map((item) => (
-              <button key={item.id} onClick={() => scrollTo(item.id)} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
+              item.href
+                ? <a key={item.href} href={`${import.meta.env.BASE_URL}${item.href}`} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4 block">{item.label}</a>
+                : <button key={item.id} onClick={() => { scrollTo(item.id!); setMobileMenuOpen(false); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
             ))}
             <Button size="lg" onClick={() => scrollTo("enroll")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
             {!authLoading && (
@@ -793,25 +859,52 @@ export default function Home() {
               })}
             </div>
             {upcomingEvents.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
                 {upcomingEvents.map((ev) => {
-                  const evLoc = lang === "ar" ? { location: ev.location, city: ev.city } : ev.i18n["en"];
                   const prog = programs.find(p => p.id === ev.programId);
                   const lp = prog ? getLocalizedProgram(prog, lang) : null;
+                  const isOnline = ev.type === "online";
+                  const l = lang as "ar" | "en" | "fr";
                   return (
-                    <Card key={ev.id} className="border-2 border-primary/20 hover:border-primary/40 transition-colors overflow-hidden">
-                      <CardContent className="p-6 flex flex-col gap-3">
-                        {lp && <span className="text-xs font-bold text-primary uppercase">{lp.shortTitle}</span>}
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-primary" />
-                          <span className="font-semibold">{ev.date}</span>
+                    <Card key={ev.id} className={`border-2 hover:shadow-lg transition-all duration-300 overflow-hidden ${isOnline ? "border-blue-200 hover:border-blue-400" : "border-primary/20 hover:border-primary/40"}`}>
+                      <CardContent className="p-5 flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          {lp && <span className="text-xs font-bold text-primary uppercase tracking-wide">{lp.shortTitle}</span>}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${isOnline ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                            {isOnline ? <Wifi className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                            {isOnline ? (lang === "ar" ? "أونلاين" : "Online") : (lang === "ar" ? "وجاهي" : "In-person")}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="w-4 h-4" />
-                          <span>{evLoc.location} — {evLoc.city}</span>
+                        <div className="text-sm font-bold text-foreground">{ev.organization[l] || ev.organization.ar}</div>
+                        <div className="space-y-1.5 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>{ev.trainer[l] || ev.trainer.ar}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>{ev.days[l] || ev.days.ar} · {ev.timeSlot[l] || ev.timeSlot.ar}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="font-semibold text-foreground">{ev.startDate} ← {ev.endDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                            <span>{ev.location[l] || ev.location.ar}</span>
+                          </div>
                         </div>
-                        {ev.spotsLeft && <span className="text-xs text-orange-600 font-medium">{ev.spotsLeft} {t.structure.spotsLeft}</span>}
-                        <Button size="sm" onClick={() => scrollTo("enroll")} className="mt-2 bg-primary hover:bg-primary/90 text-white rounded-full">{t.structure.registerNow}</Button>
+                        {ev.spotsLeft && ev.spotsLeft <= 15 && (
+                          <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                            {ev.spotsLeft} {t.structure.spotsLeft}
+                          </span>
+                        )}
+                        <a href={ev.registrationLink} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" className="mt-1 w-full bg-primary hover:bg-primary/90 text-white rounded-full">
+                            {lang === "ar" ? "سجّل عبر الموقع الرسمي" : "Register at Official Site"} ↗
+                          </Button>
+                        </a>
                       </CardContent>
                     </Card>
                   );
@@ -828,370 +921,98 @@ export default function Home() {
                 </div>
               </div>
             )}
-            <div className="mt-10 max-w-2xl mx-auto grid sm:grid-cols-2 gap-4">
-              <div onClick={() => scrollTo("enroll")} className="flex items-center gap-3 bg-background border rounded-xl p-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group">
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <User className="w-5 h-5 text-amber-700" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">{t.structure.privateLabel}</p>
-                  <p className="text-xs text-muted-foreground">{t.structure.privateDesc}</p>
-                </div>
-                <ArrowDown className="w-4 h-4 text-muted-foreground ms-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <div onClick={() => scrollTo("enroll")} className="flex items-center gap-3 bg-background border rounded-xl p-4 cursor-pointer hover:border-primary/40 hover:shadow-md transition-all group">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                  <Video className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">{t.structure.recordedLabel}</p>
-                  <p className="text-xs text-muted-foreground">{t.structure.recordedDesc}</p>
-                </div>
-                <ArrowDown className="w-4 h-4 text-muted-foreground ms-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── WISDOM CAROUSEL ── */}
-        <section id="wisdom" className="py-24 bg-secondary/20 border-y border-border overflow-hidden">
-          <div className="container mx-auto px-6 mb-12">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-6 text-sm">
-                <BookOpen className="w-4 h-4" />{t.wisdom.badge}
-              </div>
-              <h2 className="font-serif text-4xl font-bold mb-6">{t.wisdom.heading}</h2>
-              <p className="text-xl text-muted-foreground">{t.wisdom.sub}</p>
-            </motion.div>
-          </div>
-          <div className="container mx-auto px-6">
-            <div className="relative max-w-3xl mx-auto">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={wisdomIndex}
-                  initial={{ opacity: 0, x: dir === "rtl" ? -40 : 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: dir === "rtl" ? 40 : -40 }}
-                  transition={{ duration: 0.35 }}
-                  className="bg-card border border-border rounded-3xl p-8 relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
+            {/* ── FREE CONSULTATION BOOKING ── */}
+            <div className="mt-12 max-w-2xl mx-auto">
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+                <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 rounded-3xl p-6 overflow-hidden">
+                  <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full -mr-12 -mt-12" />
                   <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">{articles[wisdomIndex].icon}</div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Calendar className="w-5 h-5 text-primary" />
+                      </div>
                       <div>
-                        <div className="text-xs font-bold text-primary">{articles[wisdomIndex].category}</div>
-                        <div className="text-xs text-muted-foreground">{articles[wisdomIndex].source}</div>
+                        <h3 className="font-serif text-lg font-bold">{lang === "ar" ? "احجز جلسة استشارية مجانية" : lang === "fr" ? "Réserver une consultation gratuite" : "Book a Free Consultation"}</h3>
+                        <p className="text-xs text-muted-foreground">{lang === "ar" ? "وجلستك ستصلك دعوة تقويم على بريدك مباشرة" : lang === "fr" ? "Une invitation calendrier vous sera envoyée par email" : "A calendar invite will be sent to your email"}</p>
                       </div>
                     </div>
-                    <Quote className="w-7 h-7 text-primary/30 mb-3" />
-                    <blockquote className="font-serif text-lg font-semibold leading-relaxed text-foreground mb-4">{articles[wisdomIndex].quote}</blockquote>
-                    <div className="border-t border-border/50 pt-4">
-                      <p className="text-sm text-muted-foreground leading-relaxed">{articles[wisdomIndex].body}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-              <div className="flex items-center justify-center gap-3 mt-8">
-                <button onClick={() => setWisdomIndex((prev) => (prev - 1 + articles.length) % articles.length)} className="w-10 h-10 rounded-full border border-border bg-card hover:bg-secondary flex items-center justify-center transition-colors">
-                  {dir === "rtl" ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-                </button>
-                <div className="flex gap-2">
-                  {articles.map((_, i) => (
-                    <button key={i} onClick={() => setWisdomIndex(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === wisdomIndex ? "bg-primary w-6" : "bg-border hover:bg-muted-foreground"}`} />
-                  ))}
-                </div>
-                <button onClick={() => setWisdomIndex((prev) => (prev + 1) % articles.length)} className="w-10 h-10 rounded-full border border-border bg-card hover:bg-secondary flex items-center justify-center transition-colors">
-                  {dir === "rtl" ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
 
-        {/* ── WORKBOOKS STORE ── */}
-        <section id="workbooks" className="py-24 bg-background">
-          <div className="container mx-auto px-6">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="font-serif text-4xl font-bold mb-6">{t.workbooks.heading}</h2>
-              <p className="text-xl text-muted-foreground">{t.workbooks.sub}</p>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {localizedPrograms.map((program, i) => (
-                <motion.div key={`wb-${program.id}`} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                  <div className="group cursor-pointer" onClick={() => { setSelectedWorkbook(program); setWbQuantity(1); setWbFormat("pdf"); setWbDeliveryAddress(""); setWbBuyerName(""); setWbBuyerPhone(""); setWbBuyerEmail(""); setWbExpandedPage(null); }}>
-                    <div className="relative rounded-2xl overflow-hidden shadow-lg border border-border/50 group-hover:shadow-xl transition-shadow duration-300 mb-4">
-                      <div className="relative" style={{ paddingBottom: "140%" }}>
-                        <img src={program.image} alt={program.workbook.title} className={`absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${program.id === "teachers" ? "object-[25%_center]" : ""}`} />
-                        <div className={`absolute inset-0 bg-gradient-to-br ${program.accentColor} opacity-70 mix-blend-multiply`} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
-                        <div className="absolute inset-y-0 start-0 w-6 bg-black/20 flex flex-col justify-center items-center gap-1">
-                          {[...Array(8)].map((_, j) => (<div key={j} className="w-1 h-1 rounded-full bg-white/30" />))}
+                    {consultBooked ? (
+                      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
+                        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                          <CheckCircle2 className="w-8 h-8 text-green-600" />
                         </div>
-                        <div className="absolute bottom-0 left-0 right-0 p-5 ps-8">
-                          <div className="text-white/70 text-xs mb-2 font-medium">{program.audience}</div>
-                          <h3 className="font-serif text-base font-bold text-white leading-tight mb-3">{program.workbook.title}</h3>
-                          <div className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm font-bold">
-                            {formatPrice(WORKBOOK_PRICES[program.id as keyof typeof WORKBOOK_PRICES])}
+                        <h4 className="font-serif text-lg font-bold mb-2">{lang === "ar" ? "تم تأكيد موعدك!" : "Booking Confirmed!"}</h4>
+                        <p className="text-sm text-muted-foreground">{lang === "ar" ? `سيصلك تأكيد على ${consultEmail} مع دعوة تقويم. سيتواصل معك صهيب قريباً برابط Zoom.` : `A confirmation was sent to ${consultEmail} with a calendar invite.`}</p>
+                        <Button variant="outline" size="sm" className="mt-4 rounded-full" onClick={() => { setConsultBooked(false); setConsultDate(null); setConsultTime(null); setConsultName(""); setConsultEmail(""); setConsultPhone(""); setConsultNotes(""); }}>
+                          {lang === "ar" ? "حجز موعد آخر" : "Book another"}
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Day selector */}
+                        <div>
+                          <p className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">{lang === "ar" ? "اختر اليوم" : "Choose a Day"}</p>
+                          <div className="flex gap-2 overflow-x-auto pb-1">
+                            {getConsultAvailableDays().map((day) => (
+                              <button
+                                key={day.date}
+                                onClick={() => { setConsultDate(day.date); setConsultTime(null); }}
+                                className={`shrink-0 flex flex-col items-center gap-0.5 px-3 py-2.5 rounded-xl border-2 text-center transition-all duration-200 min-w-[52px] ${consultDate === day.date ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"}`}
+                              >
+                                <span className="text-[10px] font-medium opacity-70">{day.dayName}</span>
+                                <span className="text-lg font-bold leading-none">{day.dayNum}</span>
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white transition-colors">{(program.id === "tot" || program.id === "teachers") ? t.workbooks.orderBtnKit : t.workbooks.orderBtn}</Button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* ── TESTIMONIALS ── */}
-        <section id="testimonials" className="py-20 bg-primary text-primary-foreground relative overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
-          <div className="container mx-auto px-6 relative z-10">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-center mb-12">{t.testimonials.heading}</h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {localizedTestimonials.map((item, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="bg-primary-foreground/10 p-5 rounded-2xl border border-primary-foreground/20">
-                  <Quote className="w-6 h-6 text-accent mb-3" />
-                  <p className="font-serif text-sm leading-relaxed mb-5">"{item.quote}"</p>
-                  <div className="flex items-center gap-2 pt-3 border-t border-primary-foreground/10">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent/60 shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-sm">{item.name}</h4>
-                      <p className="text-primary-foreground/50 text-xs">{item.role}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
+                        {/* Time slots */}
+                        {consultDate && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.25 }}>
+                            <p className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">{lang === "ar" ? "اختر الوقت" : "Choose a Time"}</p>
+                            <div className="grid grid-cols-4 gap-2">
+                              {["10:00","11:30","14:00","16:00"].map((slot) => (
+                                <button
+                                  key={slot}
+                                  onClick={() => setConsultTime(slot)}
+                                  className={`py-2 rounded-xl border-2 text-sm font-bold transition-all duration-200 ${consultTime === slot ? "border-primary bg-primary text-primary-foreground shadow-md" : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"}`}
+                                >
+                                  {slot}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
 
-        {/* ── GALLERY ── */}
-        <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-10">
-              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-5">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                  {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : "Bikalima's journey since 2019"}
-                </div>
-                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
-              </motion.div>
-            </div>
-
-            {/* ── TABS ── */}
-            <div className="flex justify-center mb-10">
-              <div className="inline-flex p-1 rounded-full bg-muted border border-border gap-1">
-                {(["cohorts", "speeches"] as const).map((tab) => {
-                  const label = tab === "cohorts" ? t.gallery.tabCohorts : t.gallery.tabSpeeches;
-                  const isActive = galleryTab === tab;
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => setGalleryTab(tab)}
-                      className={[
-                        "px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground",
-                      ].join(" ")}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ── COHORTS TAB ── */}
-            {galleryTab === "cohorts" && (
-              <div className="columns-2 md:columns-3 gap-3 md:gap-4">
-                {galleryPhotos.map((photo, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (i % 4) * 0.08, duration: 0.5 }}
-                    className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
-                    onClick={() => { setLightboxSource("cohorts"); setLightboxIndex(i); setLightboxOpen(true); }}
-                  >
-                    <img
-                      src={photo.src}
-                      alt={photo.country.en}
-                      className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                        <ZoomIn className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                    <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
-                        <span>{photo.flag}</span>
-                        <span>{photo.country[lang as keyof typeof photo.country]}</span>
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            {/* ── SPEECHES TAB ── */}
-            {galleryTab === "speeches" && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35 }}
-                className="columns-2 md:columns-3 gap-3 md:gap-4"
-              >
-                {speechPhotos.map((photo, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (i % 4) * 0.07, duration: 0.45 }}
-                    className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
-                    onClick={() => { setLightboxSource("speeches"); setLightboxIndex(i); setLightboxOpen(true); }}
-                  >
-                    <img
-                      src={photo.src}
-                      alt={photo.country.en}
-                      className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                        <ZoomIn className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                    <div className="absolute bottom-3 start-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white text-xs font-medium">
-                        <span>{photo.flag}</span>
-                        <span>{photo.country[lang as keyof typeof photo.country]}</span>
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </div>
-        </section>
-
-        {/* ── VIDEOS ── */}
-        <section id="videos" className="py-24 bg-background">
-          <div className="container mx-auto px-6">
-            <div className="text-center mb-10">
-              <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
-                  <PlayCircle className="w-4 h-4" />
-                  {lang === "ar" ? "مكتبة تعليمية شاملة" : "Comprehensive Learning Library"}
-                </div>
-                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
-              </motion.div>
-            </div>
-
-            {/* Tab strip */}
-            <div className="relative mb-10">
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x snap-mandatory">
-                {(
-                  [
-                    ["all", t.videos.tabs.all],
-                    ["opening", t.videos.tabs.opening],
-                    ["closing", t.videos.tabs.closing],
-                    ["storytelling", t.videos.tabs.storytelling],
-                    ["humor", t.videos.tabs.humor],
-                    ["voice", t.videos.tabs.voice],
-                    ["body", t.videos.tabs.body],
-                  ] as [string, string][]
-                ).map(([key, label]) => {
-                  const count = key === "all" ? videoLibrary.length : videoLibrary.filter(v => v.category === key).length;
-                  const active = videoTab === key;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => setVideoTab(key as VideoCategory | "all")}
-                      className={`snap-start shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap
-                        ${active
-                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                          : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/60"}`}
-                    >
-                      {label}
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-muted"}`}>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Video grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {videoLibrary
-                .filter(v => videoTab === "all" || v.category === videoTab)
-                .map((video, i) => {
-                  const title = video.title[lang as keyof typeof video.title];
-                  const speaker = video.speaker[lang as keyof typeof video.speaker];
-                  const skill = video.skill[lang as keyof typeof video.skill];
-                  const learn = video.learn[lang as keyof typeof video.learn];
-                  const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-                  const isSuhaib = video.type === "suhaib";
-                  return (
-                    <motion.div
-                      key={`${video.youtubeId}-${video.category}`}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: (i % 3) * 0.08, duration: 0.45 }}
-                      className={`bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group
-                        ${isSuhaib ? "border-primary/40 ring-1 ring-primary/20 hover:ring-primary/40" : "border-border hover:border-primary/20"}`}
-                      onClick={() => setVideoModalId(video.youtubeId)}
-                    >
-                      <div className="relative aspect-video overflow-hidden">
-                        <img
-                          src={thumbUrl}
-                          alt={title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-center justify-center">
-                          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                            <PlayCircle className="w-8 h-8 text-primary fill-primary" />
-                          </div>
-                        </div>
-                        {isSuhaib && (
-                          <div className="absolute top-3 start-3">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground shadow-md">
-                              ✦ {t.videos.suhaibBadge}
-                            </span>
-                          </div>
+                        {/* Form */}
+                        {consultDate && consultTime && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ duration: 0.3 }} className="space-y-2.5">
+                            <div className="bg-primary/5 rounded-xl px-3 py-2 text-xs text-primary font-bold flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {consultDate} · {consultTime} {lang === "ar" ? "— بتوقيت عمّان" : "— Amman Time"}
+                            </div>
+                            <Input placeholder={lang === "ar" ? "اسمك الكريم *" : "Your name *"} value={consultName} onChange={(e) => setConsultName(e.target.value)} className="rounded-xl h-11" />
+                            <Input type="email" placeholder={lang === "ar" ? "بريدك الإلكتروني *" : "Your email *"} value={consultEmail} onChange={(e) => setConsultEmail(e.target.value)} className="rounded-xl h-11" />
+                            <Input placeholder={lang === "ar" ? "رقم الجوال (اختياري)" : "Phone (optional)"} value={consultPhone} onChange={(e) => setConsultPhone(e.target.value)} className="rounded-xl h-11" />
+                            <Textarea placeholder={lang === "ar" ? "ماذا تريد أن تناقش؟ (اختياري)" : "What would you like to discuss? (optional)"} value={consultNotes} onChange={(e) => setConsultNotes(e.target.value)} rows={2} className="rounded-xl resize-none" />
+                            <Button onClick={handleBookConsultation} disabled={consultLoading} className="w-full h-12 rounded-full bg-primary hover:bg-primary/90 text-white font-bold text-base shadow-lg shadow-primary/20">
+                              {consultLoading
+                                ? (lang === "ar" ? "جارٍ الحجز..." : "Booking...")
+                                : (lang === "ar" ? "✦ احجز موعدي المجاني" : lang === "fr" ? "✦ Réserver ma consultation" : "✦ Book My Free Session")}
+                            </Button>
+                            <p className="text-[11px] text-center text-muted-foreground">{lang === "ar" ? "ستصلك دعوة تقويم فور تأكيد الحجز · Zoom" : "You'll receive a calendar invite instantly · via Zoom"}</p>
+                          </motion.div>
                         )}
                       </div>
-                      <div className="p-5">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3 border border-accent/20">
-                          <Lightbulb className="w-3 h-3 shrink-0" />
-                          {skill}
-                        </div>
-                        <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
-                        <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
-                        <div className="bg-secondary/40 rounded-xl p-3 border border-border/60">
-                          <p className="text-xs font-bold text-foreground/70 mb-1">{t.videos.skillLabel}</p>
-                          <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                    )}
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
         </section>
+
 
         {/* ── FAQ ── */}
         <section className="py-24 bg-background">

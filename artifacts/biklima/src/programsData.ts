@@ -12,12 +12,18 @@ export type EventCountry = "uae" | "saudi" | "jordan" | "uk";
 export type UpcomingEvent = {
   id: string;
   programId: string;
-  date: string;
-  location: string;
-  city: string;
+  type: "inPerson" | "online";
+  startDate: string;
+  endDate: string;
+  trainer: Record<"ar" | "en" | "fr", string>;
+  days: Record<"ar" | "en" | "fr", string>;
+  timeSlot: Record<"ar" | "en" | "fr", string>;
+  organization: Record<"ar" | "en" | "fr", string>;
+  location: Record<"ar" | "en" | "fr", string>;
+  city: Record<"ar" | "en" | "fr", string>;
   country: EventCountry;
+  registrationLink: string;
   spotsLeft?: number;
-  i18n: Record<"en", { location: string; city: string }>;
 };
 
 export const EVENT_COUNTRIES: { key: EventCountry; flag: string }[] = [
@@ -27,7 +33,40 @@ export const EVENT_COUNTRIES: { key: EventCountry; flag: string }[] = [
   { key: "uk", flag: "🇬🇧" },
 ];
 
-export const upcomingEvents: UpcomingEvent[] = [];
+export const upcomingEvents: UpcomingEvent[] = [
+  {
+    id: "sensorial-core-2026-05",
+    programId: "core",
+    type: "inPerson",
+    startDate: "03/05/2026",
+    endDate: "07/06/2026",
+    trainer: { ar: "صهيب الخوالدة", en: "Suhaib Al-Khawaldeh", fr: "Suhaib Al-Khawaldeh" },
+    days: { ar: "الأحد · الثلاثاء · الخميس", en: "Sun · Tue · Thu", fr: "Dim · Mar · Jeu" },
+    timeSlot: { ar: "٣:٠٠ م — ٥:٠٠ م", en: "3:00 PM – 5:00 PM", fr: "15h00 – 17h00" },
+    organization: { ar: "أكاديمية Sensorial Life", en: "Sensorial Life Academy", fr: "Académie Sensorial Life" },
+    location: { ar: "وجاهي — عمّان، الأردن", en: "In-person — Amman, Jordan", fr: "Présentiel — Amman, Jordanie" },
+    city: { ar: "عمّان", en: "Amman", fr: "Amman" },
+    country: "jordan",
+    registrationLink: "https://sensoriallife.com/Jo/CourseDetails.aspx?N=The_Influential_Speaker_–_Public_Speaking,_Presentation,_and_Impact_Skills",
+    spotsLeft: 8,
+  },
+  {
+    id: "sensorial-teachers-2026-05",
+    programId: "teachers",
+    type: "online",
+    startDate: "09/05/2026",
+    endDate: "11/07/2026",
+    trainer: { ar: "صهيب الخوالدة", en: "Suhaib Al-Khawaldeh", fr: "Suhaib Al-Khawaldeh" },
+    days: { ar: "السبت", en: "Saturday", fr: "Samedi" },
+    timeSlot: { ar: "٦:٠٠ م — ٩:٠٠ م", en: "6:00 PM – 9:00 PM", fr: "18h00 – 21h00" },
+    organization: { ar: "أكاديمية Sensorial Life", en: "Sensorial Life Academy", fr: "Académie Sensorial Life" },
+    location: { ar: "Zoom — عبر الإنترنت", en: "Zoom — Online", fr: "Zoom — En ligne" },
+    city: { ar: "أونلاين", en: "Online", fr: "En ligne" },
+    country: "jordan",
+    registrationLink: "https://sensoriallife.com/Jo/CourseDetails.aspx?N=The_Influential_Speaker_–_Public_Speaking,_Presentation,_and_Impact_Skills",
+    spotsLeft: 12,
+  },
+];
 
 export type ProgramLocale = {
   role: string;
