@@ -45,12 +45,46 @@ export const T = {
     },
     why: {
       heading: "لماذا بكلمة؟",
-      sub: "المشكلة ليست أن ليس لديك ما تقوله — المشكلة أن ما تقوله لا يصل كما تريد.",
-      items: [
-        { title: "لأن صمتك في اللحظة الحاسمة له ثمن", desc: "خسارة وظيفة لأن المقابلة لم تُقنع. فكرة عظيمة ضاعت لأن أحداً لم يسمعها كما يجب. شراكة لم تُعقد لأن الكلمات لم تكن في محلّها. هذه ليست مشكلة تعبير — هي خسارة حقيقية يمكن تجنبها." },
-        { title: "لأن المشكلة ليست في الأفكار", desc: "معظم من يعانون من ضعف التواصل لديهم أفكار عميقة وحقيقية. المشكلة في الفجوة بين ما يُفكّرون فيه وما يصل للآخرين. بكلمة يجسّر هذه الفجوة بمنهجية تعمل على اللفظ والذهن والأداء والبنية معاً." },
-        { title: "لأن الثقة مهارة، لا موهبة", desc: "٧٠٪ ممن يصمتون لم يُولدوا خائفين من الكلام — بل تعلّموا الخوف في مكان ما. نعمل على الجذور قبل الأداء. ما بُني يمكن إعادة بنائه — وهذا تحديداً ما نفعله." },
+      pullQuote: "كلمة واحدة في المكان الصحيح\nتساوي سنوات من العمل الصامت.",
+      moments: [
+        {
+          num: "٠١",
+          scene: "في غرفة المقابلة",
+          title: "عندما صمتّ، كانت الفرصة تُغلق أمامك",
+          story: "شعرت بها — تلك اللحظة حين سألوك \"أخبرنا عن نفسك\" وتجمّدت. أفكارك كانت هناك، لكن الكلمات لم تأتِ. ليس لأنك غير كفؤ، بل لأن أحداً لم يعلّمك كيف تترجم ما بداخلك إلى كلام يأسر.",
+          after: "بكلمة تتحوّل هذه اللحظة من أصعب لحظاتك إلى أقوى ورقة بيدك.",
+        },
+        {
+          num: "٠٢",
+          scene: "في قاعة الاجتماع",
+          title: "الفكرة كانت عبقرية — لكنها ماتت في صدرك",
+          story: "رأيت الحلّ قبل الجميع، لكن حين جاء دورك للكلام، جاءت الكلمات مشتّتة أو خافتة أو في غير وقتها. وسرعان ما تبنّى شخص آخر الفكرة ذاتها — وأوصلها. الفارق لم يكن في الذكاء، بل في فن الإلقاء.",
+          after: "نمنحك المنهجية التي تجعل فكرتك تُسمع بالقدر الذي تستحق.",
+        },
+        {
+          num: "٠٣",
+          scene: "أمام المنصة",
+          title: "الخوف لم يكن ضعفاً — كان رسالة",
+          story: "القلب يخفق، والكفّان يرتجفان، والصوت يخذلك. لكن ٩٣٪ من المتحدثين المحترفين يشعرون بهذا — الفارق أنهم تعلّموا كيف يُحوّلون الطاقة العصبية إلى وقود للأداء لا إلى عائق. الخوف لا يختفي — يتحوّل.",
+          after: "لأن الثقة ليست موهبة فطرية، إنها مهارة تُبنى بمنهجية — وهذا ما نفعله.",
+        },
       ],
+      stats: [
+        { value: "+٣٠٠", label: "متدرب ومتدربة" },
+        { value: "+١٢", label: "دولة حول العالم" },
+        { value: "+٧", label: "سنوات من التدريب" },
+        { value: "٤", label: "برامج متخصصة" },
+      ],
+      consultIntro: {
+        heading: "احجز جلستك الاستشارية المجانية",
+        what: "جلسة فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — تُحدّد فيها وضعك الحالي والمسار الأنسب لك.",
+        audiences: [
+          { icon: "🎓", label: "طلاب وخريجون", desc: "تميّز في المقابلات وابنِ شخصيتك المهنية" },
+          { icon: "💼", label: "مهنيون وموظفون", desc: "قُد الاجتماعات واجعل صوتك يُسمع في المؤسسة" },
+          { icon: "🏫", label: "معلمون ومدرّبون", desc: "أسلوب إلقاء يُلهم ويُقنع ويُؤثّر في الفصل" },
+          { icon: "👨‍👩‍👧", label: "آباء وأولياء أمور", desc: "ابنِ ثقة طفلك بالتعبير من سنٍّ مبكرة" },
+        ],
+      },
     },
     structure: {
       heading: "البرامج التدريبية",
@@ -282,12 +316,46 @@ export const T = {
     },
     why: {
       heading: "Why Bikalima?",
-      sub: "The problem isn't that you don't have something to say — it's that what you say doesn't land the way you intended.",
-      items: [
-        { title: "Because silence at the critical moment has a price", desc: "A job lost because the interview didn't convince. A great idea that disappeared because no one heard it right. A partnership that never happened because the words weren't there. These aren't expression problems — they're real losses that can be avoided." },
-        { title: "Because the problem isn't your ideas", desc: "Most people who struggle to communicate have deep, valuable ideas. The problem is the gap between what they think and what others receive. Bikalima bridges that gap through a methodology that works on verbal, mental, performance, and structural levels." },
-        { title: "Because confidence is a skill, not a gift", desc: "70% of those who stay silent were not born afraid of speaking — they learned the fear somewhere along the way. We work on the roots before the performance. What was built can be rebuilt — and that's exactly what we do." },
+      pullQuote: "One word in the right moment\noutweighs years of silent effort.",
+      moments: [
+        {
+          num: "01",
+          scene: "In the interview room",
+          title: "When you went silent, the opportunity quietly closed",
+          story: "You felt it — that moment when they said \"Tell us about yourself\" and your mind went blank. Your thoughts were there, but the words weren't. Not because you weren't capable, but because no one ever taught you how to translate what's inside you into words that captivate.",
+          after: "With Bikalima, that moment transforms from your biggest weakness into your most powerful card.",
+        },
+        {
+          num: "02",
+          scene: "In the boardroom",
+          title: "The idea was brilliant — but it died inside your chest",
+          story: "You saw the solution before everyone else, but when your turn came to speak, the words came out scattered, too quiet, or mistimed. Then someone else expressed the same idea — and it landed. The difference wasn't intelligence. It was the art of delivery.",
+          after: "We give you the methodology that makes your idea heard to the degree it deserves.",
+        },
+        {
+          num: "03",
+          scene: "Before the stage",
+          title: "The fear wasn't weakness — it was a signal",
+          story: "Your heart pounds, your hands tremble, your voice betrays you. But 93% of professional speakers feel this — the difference is they learned to convert nervous energy into performance fuel, not a barrier. Fear doesn't disappear — it transforms.",
+          after: "Because confidence isn't an innate talent — it's a skill built systematically. And that's exactly what we do.",
+        },
       ],
+      stats: [
+        { value: "300+", label: "Trained Professionals" },
+        { value: "12+", label: "Countries Worldwide" },
+        { value: "7+", label: "Years of Training" },
+        { value: "4", label: "Specialized Programs" },
+      ],
+      consultIntro: {
+        heading: "Book Your Free Consultation",
+        what: "A 20-minute one-on-one session with Suhaib Al-Khawaldeh — to assess your current level and identify the best path forward.",
+        audiences: [
+          { icon: "🎓", label: "Students & Graduates", desc: "Stand out in interviews and build your professional voice" },
+          { icon: "💼", label: "Professionals & Employees", desc: "Lead meetings and make your voice heard in the organization" },
+          { icon: "🏫", label: "Teachers & Trainers", desc: "A delivery style that inspires, persuades, and impacts the classroom" },
+          { icon: "👨‍👩‍👧", label: "Parents & Guardians", desc: "Build your child's confidence in self-expression from an early age" },
+        ],
+      },
     },
     structure: {
       heading: "Training Programs",

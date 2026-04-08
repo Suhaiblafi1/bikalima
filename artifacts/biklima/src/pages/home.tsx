@@ -732,22 +732,67 @@ export default function Home() {
         </section>
 
         {/* ── WHY BIKLIMA ── */}
-        <section className="py-24 bg-secondary/30">
-          <div className="container mx-auto px-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="font-serif text-4xl font-bold mb-6">{t.why.heading}</h2>
-              <p className="text-xl text-muted-foreground">{t.why.sub}</p>
+        <section className="relative overflow-hidden bg-slate-950 text-white">
+          {/* Ambient glow spots */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/8 rounded-full blur-[120px]" />
+            <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-amber-500/6 rounded-full blur-[100px]" />
+          </div>
+
+          {/* Pull quote hero */}
+          <div className="relative z-10 pt-24 pb-16 px-6 text-center">
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+              <p className="text-xs uppercase tracking-[0.3em] text-amber-400/80 font-bold mb-8">{t.why.heading}</p>
+              <h2 className="font-serif text-4xl md:text-6xl lg:text-7xl font-bold leading-tight max-w-4xl mx-auto whitespace-pre-line">
+                {(t.why as any).pullQuote.split("\n").map((line: string, i: number) => (
+                  <span key={i} className={`block ${i === 1 ? "text-amber-400" : ""}`}>{line}</span>
+                ))}
+              </h2>
             </motion.div>
-            <div className="grid md:grid-cols-3 gap-8">
-              {t.why.items.map((item, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="bg-card p-8 rounded-3xl border border-border/50 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-6">
-                    {i === 0 ? <Layers className="w-8 h-8" /> : i === 1 ? <CheckCircle2 className="w-8 h-8" /> : <Sparkles className="w-8 h-8" />}
+          </div>
+
+          {/* Story moments */}
+          <div className="relative z-10 container mx-auto px-6 pb-8">
+            <div className="grid md:grid-cols-3 gap-px bg-white/5 rounded-3xl overflow-hidden border border-white/10">
+              {(t.why as any).moments.map((m: any, i: number) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15, duration: 0.6 }}
+                  className="relative bg-slate-950 p-8 md:p-10 group hover:bg-slate-900/80 transition-colors duration-500"
+                >
+                  {/* Big background number */}
+                  <div className="absolute top-4 end-6 font-serif text-7xl font-bold text-white/[0.04] select-none leading-none">
+                    {m.num}
                   </div>
-                  <h3 className="font-serif text-2xl font-bold mb-4">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+                  {/* Scene tag */}
+                  <p className="text-amber-400/70 text-xs font-bold uppercase tracking-widest mb-4">{m.scene}</p>
+                  {/* Title */}
+                  <h3 className="font-serif text-xl md:text-2xl font-bold text-white mb-5 leading-snug">{m.title}</h3>
+                  {/* Story */}
+                  <p className="text-slate-400 text-sm leading-relaxed mb-6">{m.story}</p>
+                  {/* After – gold stripe at bottom */}
+                  <div className="pt-5 border-t border-white/10">
+                    <p className="text-amber-300 text-sm font-medium leading-relaxed">{m.after}</p>
+                  </div>
                 </motion.div>
               ))}
+            </div>
+          </div>
+
+          {/* Stats bar */}
+          <div className="relative z-10 border-t border-white/10">
+            <div className="container mx-auto px-6 py-10">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                {(t.why as any).stats.map((s: any, i: number) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+                    <p className="font-serif text-4xl md:text-5xl font-bold text-amber-400 mb-1">{s.value}</p>
+                    <p className="text-slate-400 text-sm">{s.label}</p>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -920,7 +965,36 @@ export default function Home() {
             )}
             {/* ── FREE CONSULTATION BOOKING ── */}
             <div className="mt-12 max-w-2xl mx-auto">
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+              {/* Consultation intro card */}
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="mb-6">
+                <div className="bg-slate-950 text-white rounded-3xl p-7 relative overflow-hidden">
+                  <div className="absolute top-0 end-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="flex items-start gap-4 mb-5">
+                      <div className="w-11 h-11 rounded-2xl bg-amber-400/20 flex items-center justify-center shrink-0">
+                        <span className="text-xl">✦</span>
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-xl font-bold mb-1">{(t.why as any).consultIntro.heading}</h3>
+                        <p className="text-slate-300 text-sm leading-relaxed">{(t.why as any).consultIntro.what}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(t.why as any).consultIntro.audiences.map((a: any, i: number) => (
+                        <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-3.5 hover:bg-white/10 transition-colors">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-lg">{a.icon}</span>
+                            <span className="text-white text-sm font-bold">{a.label}</span>
+                          </div>
+                          <p className="text-slate-400 text-xs leading-relaxed">{a.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}>
                 <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 rounded-3xl p-6 overflow-hidden">
                   <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full -mr-12 -mt-12" />
                   <div className="relative z-10">
