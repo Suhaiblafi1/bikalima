@@ -222,6 +222,8 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
   const credentialsNote =
     lang === "ar"
       ? "يتم تزويد الطلبة ببيانات الدخول تلقائياً بعد القبول في البرنامج."
+      : lang === "fr"
+      ? "Les identifiants de connexion sont fournis automatiquement lors de l'admission au programme."
       : "Login credentials are provided automatically upon program admission.";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -439,9 +441,9 @@ export default function Dashboard() {
   const t = dashT[lang];
   const isRtl = lang === "ar";
   const getTitle = (item: { titleAr: string; titleEn: string; titleFr?: string }) =>
-    lang !== "ar" ? (item.titleEn || item.titleAr) : item.titleAr;
+    lang === "ar" ? item.titleAr : lang === "fr" ? (item.titleFr || item.titleEn || item.titleAr) : (item.titleEn || item.titleAr);
   const getDesc = (item: { descriptionAr?: string | null; descriptionEn?: string | null; descriptionFr?: string | null }) =>
-    lang !== "ar" ? (item.descriptionEn || item.descriptionAr) : item.descriptionAr;
+    lang === "ar" ? item.descriptionAr : lang === "fr" ? (item.descriptionFr || item.descriptionEn || item.descriptionAr) : (item.descriptionEn || item.descriptionAr);
 
   if (authLoading) {
     return (
@@ -661,7 +663,7 @@ export default function Dashboard() {
               {isAdmin && (
                 <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium">
                   <Shield className="w-5 h-5" />
-                  <span>{lang === "ar" ? "لوحة الإدارة" : "Admin Panel"}</span>
+                  <span>{lang === "ar" ? "لوحة الإدارة" : lang === "fr" ? "Panneau Admin" : "Admin Panel"}</span>
                 </button>
               )}
               <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start">

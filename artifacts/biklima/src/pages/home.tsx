@@ -244,15 +244,12 @@ export default function Home() {
   const [wbBuyerPhone, setWbBuyerPhone] = useState("");
   const [wbBuyerEmail, setWbBuyerEmail] = useState("");
   const [wbSubmitting, setWbSubmitting] = useState(false);
-  const [wbExpandedPage, setWbExpandedPage] = useState<number | null>(null);
+  const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
   const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const [wbOrderSuccess, setWbOrderSuccess] = useState<{ name: string; title: string; format: string; qty: number; total: string } | null>(null);
   const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
-  const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
-  const [lightboxSource, setLightboxSource] = useState<"cohorts" | "speeches">("cohorts");
-  const [wisdomIndex, setWisdomIndex] = useState(0);
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [fontSize, setFontSize] = useState(16);
   const [consultDate, setConsultDate] = useState<string | null>(null);
@@ -475,6 +472,7 @@ export default function Home() {
     { label: t.nav.structure, id: "structure" },
     { label: t.nav.workbooks, href: "workbooks" },
     { label: t.nav.gallery, id: "gallery" },
+    { label: t.nav.videos, id: "videos" },
   ];
 
   const langButtons: { key: Lang; label: string }[] = [
@@ -1013,6 +1011,37 @@ export default function Home() {
         </section>
 
 
+        {/* ── TESTIMONIALS ── */}
+        <section id="testimonials" className="py-20 bg-primary text-primary-foreground relative overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+          <div className="container mx-auto px-6 relative z-10">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-center mb-12">{t.testimonials.heading}</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {localizedTestimonials.map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
+                >
+                  <p className="text-primary-foreground/90 leading-relaxed mb-5 text-sm">"{item.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">
+                      {item.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{item.name}</p>
+                      <p className="text-primary-foreground/60 text-xs">{item.role}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── GALLERY ── */}
         <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
@@ -1026,8 +1055,26 @@ export default function Home() {
                 <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
               </motion.div>
             </div>
+            {/* Tab buttons */}
+            <div className="flex justify-center gap-3 mb-8">
+              {(["cohorts", "speeches"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setGalleryTab(tab)}
+                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    galleryTab === tab
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  }`}
+                >
+                  {tab === "cohorts"
+                    ? (lang === "ar" ? "صور الدورات" : lang === "fr" ? "Photos des Cohortes" : "Cohort Photos")
+                    : (lang === "ar" ? "صور المحاضرات" : lang === "fr" ? "Photos des Conférences" : "Speech Photos")}
+                </button>
+              ))}
+            </div>
             <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
-              {allPhotos.map((photo, i) => (
+              {(galleryTab === "cohorts" ? galleryPhotos : speechPhotos).map((photo, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -1036,8 +1083,8 @@ export default function Home() {
                   transition={{ delay: (i % 4) * 0.05, duration: 0.4 }}
                   className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
                   onClick={() => {
-                    setLightboxSource("cohorts");
-                    setLightboxIndex(i);
+                    const offset = galleryTab === "speeches" ? galleryPhotos.length : 0;
+                    setLightboxIndex(offset + i);
                     setLightboxOpen(true);
                   }}
                 >
