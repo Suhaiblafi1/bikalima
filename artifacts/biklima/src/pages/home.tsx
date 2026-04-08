@@ -982,37 +982,6 @@ export default function Home() {
         </section>
 
 
-        {/* ── TESTIMONIALS ── */}
-        <section id="testimonials" className="py-20 bg-primary text-primary-foreground relative overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
-          <div className="container mx-auto px-6 relative z-10">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-center mb-12">{t.testimonials.heading}</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {localizedTestimonials.map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
-                >
-                  <p className="text-primary-foreground/90 leading-relaxed mb-5 text-sm">"{item.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold shrink-0">
-                      {item.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm">{item.name}</p>
-                      <p className="text-primary-foreground/60 text-xs">{item.role}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* ── GALLERY ── */}
         <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
@@ -1562,7 +1531,6 @@ export default function Home() {
                   { label: t.footer.linkLabels.structure, id: "structure" },
                   { label: t.footer.linkLabels.wisdom, id: "wisdom" },
                   { label: t.footer.linkLabels.workbooks, id: "workbooks" },
-                  { label: t.footer.linkLabels.testimonials, id: "testimonials" },
                 ].map((item) => (
                   <li key={item.id}><button onClick={() => scrollTo(item.id)} className="hover:text-accent transition text-start">{item.label}</button></li>
                 ))}
