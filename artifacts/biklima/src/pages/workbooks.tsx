@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, BookOpen, Lightbulb, Mic2, Heart, Users, Star,
   Feather, Sparkles, Globe, ShoppingCart, FileText, Download, Printer,
-  Package, Minus, Plus, X, AlertCircle, ChevronLeft, ChevronRight,
+  Package, Minus, Plus, X, AlertCircle, ChevronLeft, ChevronRight, Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,19 +171,50 @@ export default function WorkbooksPage() {
   };
 
   const base = import.meta.env.BASE_URL || "/";
+  const [, navigate] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const homeNavLinks = [
+    { label: lang === "ar" ? "البرامج التدريبية" : "Training Programs", anchor: "structure" },
+    { label: lang === "ar" ? "الفعاليات القادمة" : "Upcoming Events", anchor: "events" },
+    { label: lang === "ar" ? "المعرض" : "Gallery", anchor: "gallery" },
+    { label: lang === "ar" ? "الفيديوهات" : "Videos", anchor: "videos" },
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
       {/* ── NAVBAR ── */}
       <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-4 shadow-sm">
         <div className="container mx-auto px-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <a href={base} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary/50 transition-colors">
-              {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            </a>
-            <a href={base} className="logo-biklima text-4xl text-primary tracking-tight leading-none">بكلمة</a>
-          </div>
+          {/* Logo */}
+          <button onClick={() => navigate(base)} className="logo-biklima text-4xl text-primary tracking-tight leading-none hover:opacity-80 transition-opacity">
+            بكلمة
+          </button>
+
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-5 font-medium">
+            {homeNavLinks.map((link) => (
+              <button
+                key={link.anchor}
+                onClick={() => navigate(`${base}#${link.anchor}`)}
+                className="text-sm text-foreground/70 hover:text-primary transition-colors"
+              >
+                {link.label}
+              </button>
+            ))}
+            <span className="text-sm font-bold text-primary border-b-2 border-primary pb-0.5">
+              {lang === "ar" ? "الكراسات" : "Workbooks"}
+            </span>
+          </nav>
+
+          {/* Controls */}
           <div className="flex items-center gap-2">
+            {/* Lang toggle */}
+            <div className="flex items-center gap-px border border-border rounded-full overflow-hidden">
+              {langButtons.map(({ key, label }) => (
+                <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
+              ))}
+            </div>
             {/* Currency selector */}
             <div className="relative">
               <button
@@ -195,11 +227,7 @@ export default function WorkbooksPage() {
               {currencyMenuOpen && (
                 <div className="absolute top-full mt-1 end-0 bg-card border border-border rounded-xl shadow-xl z-50 min-w-[130px] py-1 overflow-hidden">
                   {CURRENCY_ORDER.map(key => (
-                    <button
-                      key={key}
-                      onClick={() => { setCurrencyKey(key); setCurrencyMenuOpen(false); }}
-                      className={`w-full px-4 py-2 text-xs text-start hover:bg-secondary/50 flex items-center justify-between gap-2 ${key === currencyKey ? "font-bold text-primary bg-primary/5" : ""}`}
-                    >
+                    <button key={key} onClick={() => { setCurrencyKey(key); setCurrencyMenuOpen(false); }} className={`w-full px-4 py-2 text-xs text-start hover:bg-secondary/50 flex items-center justify-between gap-2 ${key === currencyKey ? "font-bold text-primary bg-primary/5" : ""}`}>
                       <span>{CURRENCIES[key].symbol}</span>
                       <span>{CURRENCIES[key].code}</span>
                     </button>
@@ -207,13 +235,40 @@ export default function WorkbooksPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
-              {langButtons.map(({ key, label }) => (
-                <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
-              ))}
-            </div>
+            {/* Mobile menu toggle */}
+            <button className="md:hidden text-foreground p-1" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden border-t border-border bg-background overflow-hidden"
+            >
+              <div className="container mx-auto px-6 py-4 flex flex-col gap-1">
+                <button onClick={() => { navigate(base); setMobileMenuOpen(false); }} className="text-start py-2.5 text-sm font-bold text-primary border-b border-border/50">
+                  {lang === "ar" ? "الصفحة الرئيسية" : "Home"}
+                </button>
+                {homeNavLinks.map((link) => (
+                  <button
+                    key={link.anchor}
+                    onClick={() => { navigate(`${base}#${link.anchor}`); setMobileMenuOpen(false); }}
+                    className="text-start py-2.5 text-sm text-foreground/80 border-b border-border/50 hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+                <span className="py-2.5 text-sm font-bold text-primary">{lang === "ar" ? "الكراسات ✓" : "Workbooks ✓"}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* ── PAGE HERO ── */}

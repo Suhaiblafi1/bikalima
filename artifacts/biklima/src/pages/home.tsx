@@ -494,8 +494,8 @@ export default function Home() {
           <nav className="hidden md:flex items-center gap-6 font-medium">
             {navItems.map((item) => (
               item.href
-                ? <a key={item.href || item.id} href={`${import.meta.env.BASE_URL}${item.href}`} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</a>
-                : <button key={item.id || item.href} onClick={() => scrollTo(item.id!)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
+                ? <button key={item.href} onClick={() => navigate(`${import.meta.env.BASE_URL}${item.href}`)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
+                : <button key={item.id} onClick={() => scrollTo(item.id!)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
             ))}
             <Button onClick={() => scrollTo("enroll")} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 rounded-full">{t.nav.cta}</Button>
             {!authLoading && (
@@ -557,7 +557,7 @@ export default function Home() {
             <button className="absolute top-6 left-6 text-foreground" onClick={() => setMobileMenuOpen(false)}><X size={28} /></button>
             {navItems.map((item) => (
               item.href
-                ? <a key={item.href} href={`${import.meta.env.BASE_URL}${item.href}`} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4 block">{item.label}</a>
+                ? <button key={item.href} onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}${item.href}`); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
                 : <button key={item.id} onClick={() => { scrollTo(item.id!); setMobileMenuOpen(false); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
             ))}
             <Button size="lg" onClick={() => scrollTo("enroll")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
