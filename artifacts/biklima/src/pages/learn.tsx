@@ -5,7 +5,6 @@ import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 type Lang = "ar" | "en";
 
@@ -162,7 +161,6 @@ function buildSectionGroups(sections: Section[], lessons: Lesson[]): SectionGrou
 export default function LearnPage() {
   const { slug } = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
-  const { toast } = useToast();
 
   const [lang, setLang] = useState<Lang>(() => {
     try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
@@ -237,22 +235,18 @@ export default function LearnPage() {
     if (idx < 0 || idx >= lessons.length) return;
     const lesson = lessons[idx];
     if (!enrolled && !lesson.isFreePreview) {
-      toast({
-        title: isRtl ? "الدرس مقفل" : "Lesson Locked",
-        description: t.lockedMsg,
-        variant: "destructive",
-      });
+      navigate(`/courses/${slug}`);
       return;
     }
     setCurrentIdx(idx);
     try { localStorage.setItem(lastKey(slug ?? ""), String(idx)); } catch {}
     const sectionGroups = buildSectionGroups(sections, lessons);
-    const sectionGroup = sectionGroups.find(g => g.lessons.some((_, i) => lessons.indexOf(g.lessons[i]) === idx));
+    const sectionGroup = sectionGroups.find(g => g.lessons.some((l) => lessons.indexOf(l) === idx));
     if (sectionGroup) {
       setExpandedSections(prev => ({ ...prev, [sectionGroup.id ?? "0"]: true }));
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [lessons, enrolled, sections, slug, t, isRtl, toast]);
+  }, [lessons, enrolled, sections, slug, navigate]);
 
   const completedCount = lessons.filter(l => progressMap[l.id]).length;
   const totalCount = lessons.length;
@@ -622,8 +616,11 @@ export default function LearnPage() {
               )}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-muted-foreground">{t.notFound}</p>
+            <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
+              <BookOpen className="w-12 h-12 text-muted-foreground/40" />
+              <p className="text-muted-foreground">
+                {lang === "ar" ? "لا توجد دروس في هذه الدورة بعد." : "No lessons have been added to this course yet."}
+              </p>
             </div>
           )}
         </main>

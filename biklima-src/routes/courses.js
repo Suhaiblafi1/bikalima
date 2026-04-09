@@ -218,9 +218,16 @@ router.get("/courses/:slug/learn", async (req, res) => {
       .where(eq(courseSectionsTable.courseId, course.id))
       .orderBy(asc(courseSectionsTable.sortOrder));
 
-    const lessons = await db.select().from(lessonsTable)
+    const rawLessons = await db.select().from(lessonsTable)
       .where(eq(lessonsTable.courseId, course.id))
       .orderBy(asc(lessonsTable.sortOrder));
+
+    const lessons = rawLessons.map(l => {
+      if (!enrolled && !l.isFreePreview) {
+        return { ...l, videoUrl: null, resources: null };
+      }
+      return l;
+    });
 
     res.json({ course, sections, lessons, progressMap, enrolled });
   } catch (err) {

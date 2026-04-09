@@ -94,9 +94,9 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
       enrolled = !!enrollment && enrollment.status === "active";
 
       if (enrolled) {
-        const lessons = await db.select({ lessonId: lessonsTable.id }).from(lessonsTable)
+        const allLessons = await db.select({ id: lessonsTable.id }).from(lessonsTable)
           .where(eq(lessonsTable.courseId, course.id));
-        const lessonIds = lessons.map(l => l.lessonId);
+        const lessonIds = allLessons.map(l => l.id);
         if (lessonIds.length > 0) {
           const progress = await db.select().from(lessonProgressTable)
             .where(eq(lessonProgressTable.userId, req.user.id));
@@ -113,9 +113,16 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
       .where(eq(courseSectionsTable.courseId, course.id))
       .orderBy(asc(courseSectionsTable.sortOrder));
 
-    const lessons = await db.select().from(lessonsTable)
+    const rawLessons = await db.select().from(lessonsTable)
       .where(eq(lessonsTable.courseId, course.id))
       .orderBy(asc(lessonsTable.sortOrder));
+
+    const lessons = rawLessons.map(l => {
+      if (!enrolled && !l.isFreePreview) {
+        return { ...l, videoUrl: null, resources: null };
+      }
+      return l;
+    });
 
     res.json({ course, sections, lessons, progressMap, enrolled });
   } catch {
