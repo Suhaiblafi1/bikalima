@@ -1,0 +1,258 @@
+You are a senior frontend + UX engineer.
+
+I have a course website with 4 programs:
+
+1. المتحدث المؤثر (main)
+2. حقيبة المعلم
+3. الدليل التدريبي
+4. المتحدث الصغير
+
+Current pages are visually okay but NOT professional in structure, UX, or conversion.
+
+I need you to rebuild ONE reusable course page template and apply it to all 4 programs.
+
+---
+
+## 🎯 GOAL
+
+Create a **clean, modern, global-level course page** with:
+
+* strong UX
+* clear conversion flow
+* minimal friction
+* reusable components
+
+---
+
+## ⚙️ CORE RULES
+
+* RTL (Arabic)
+* Clean Tailwind UI
+* Mobile-first
+* One CTA only per section
+* No heavy forms on course page
+* No unnecessary fields before payment
+
+---
+
+## 🧱 PAGE STRUCTURE (MANDATORY)
+
+Build ONE reusable template with these sections:
+
+### 1. HERO
+
+* course title
+* one-line transformation (clear, not poetic)
+* duration (e.g. 14 جلسة / 27 ساعة)
+* format (مباشر + مسجل)
+* price
+* CTA: "سجّل وادفع الآن"
+
+---
+
+### 2. STICKY PURCHASE CARD (desktop)
+
+* price
+* duration
+* format
+* start date (placeholder ok)
+* CTA button
+* small text:
+  "بعد التسجيل ستصلك بيانات الدخول فوراً"
+
+👉 remove any full registration form from this page
+
+---
+
+### 3. WHO THIS IS FOR
+
+Different content per course:
+
+* المتحدث المؤثر → شباب / مهنيون / من يقدم عروض
+* حقيبة المعلم → معلمون / أولياء أمور
+* الدليل التدريبي → مدربون
+* المتحدث الصغير → أطفال / أولياء أمور
+
+---
+
+### 4. OUTCOMES
+
+Show 4–6 bullet results (clear, practical)
+
+Example:
+
+* بناء الحضور
+* تنظيم الرسالة
+* تقنيات الإقناع
+* تقديم العروض بثقة
+
+---
+
+### 5. HOW THE PROGRAM WORKS
+
+4 steps:
+
+* تعلّم
+* طبّق
+* تغذية راجعة
+* تطوّر
+
+Simple grid UI.
+
+---
+
+### 6. PROGRAM CONTENT
+
+Convert sessions into:
+
+* accordion OR grouped modules
+
+Each item:
+
+* title
+* short outcome
+
+NOT flat boxes.
+
+---
+
+### 7. PRACTICE SECTION
+
+Explain clearly:
+
+* تمارين داخل الجلسة
+* تطبيق عملي
+* ملاحظات مباشرة
+* تطوير تدريجي
+
+---
+
+### 8. ACCESS AFTER REGISTRATION
+
+Very important section:
+
+Explain:
+
+* user pays
+* account created OR login link sent
+* course يظهر في الحساب
+* access to:
+
+  * الجلسات
+  * التسجيلات
+  * المواد
+
+---
+
+### 9. TRAINER / TRUST
+
+Simple block:
+
+* trainer name
+* short credibility
+* optional image
+
+---
+
+### 10. FAQ
+
+Add 5–6 questions:
+
+* هل يناسب المبتدئين؟
+* هل يوجد تسجيل؟
+* كيف يتم الوصول؟
+* هل يوجد تطبيق عملي؟
+
+---
+
+### 11. FINAL CTA
+
+Repeat:
+👉 "سجّل وادفع الآن"
+
+---
+
+## 🚫 REMOVE FROM CURRENT PAGE
+
+* full registration form
+* password field
+* "reason for joining"
+* "training type" field
+* empty video placeholder
+
+---
+
+## 🔁 CREATE NEW FLOW
+
+### /checkout page
+
+Fields:
+
+* الاسم الكامل
+* البريد الإلكتروني
+* رقم الهاتف
+
+Button:
+👉 "إتمام الدفع"
+
+---
+
+### /confirmation page
+
+Show:
+
+* تم التسجيل بنجاح
+* next steps
+* button → dashboard
+
+---
+
+### /dashboard page
+
+Sections:
+
+* دوراتي
+* ابدأ الدورة
+* الجلسات
+* التسجيلات
+* المواد
+
+---
+
+## 🧩 COMPONENTS
+
+Create reusable components:
+
+* CourseHero
+* StickyCard
+* AudienceSection
+* OutcomesSection
+* HowItWorks
+* SessionsAccordion
+* PracticeSection
+* AccessSection
+* FAQ
+
+---
+
+## 🧼 DESIGN RULES
+
+* spacing consistent (p-6 / gap-6)
+* rounded-2xl cards
+* soft shadow only
+* max-width layout
+* strong typography hierarchy
+
+---
+
+## OUTPUT
+
+Deliver:
+
+* reusable course page template
+* 4 course variants using same structure
+* checkout page
+* confirmation page
+* basic dashboard
+
+Keep code simple, modular, and optimized.
