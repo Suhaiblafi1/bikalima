@@ -140,9 +140,6 @@ router.get("/courses/:slug", async (req, res) => {
 router.get("/courses/:slug/access", async (req, res) => {
   try {
     const { slug } = req.params;
-    if (!req.isAuthenticated() || !req.user) {
-      return res.json({ hasAccess: false, isAuthenticated: false });
-    }
 
     const [course] = await db
       .select({ id: coursesTable.id })
@@ -150,7 +147,11 @@ router.get("/courses/:slug/access", async (req, res) => {
       .where(eq(coursesTable.slug, slug));
 
     if (!course) {
-      return res.json({ hasAccess: false });
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    if (!req.isAuthenticated() || !req.user) {
+      return res.json({ hasAccess: false, enrolled: false });
     }
 
     const [enrollment] = await db
@@ -159,12 +160,11 @@ router.get("/courses/:slug/access", async (req, res) => {
       .where(
         and(
           eq(enrollmentsTable.userId, req.user.id),
-          eq(enrollmentsTable.courseId, course.id),
-          eq(enrollmentsTable.status, "active")
+          eq(enrollmentsTable.courseId, course.id)
         )
       );
 
-    res.json({ hasAccess: !!enrollment, isAuthenticated: true });
+    res.json({ hasAccess: !!enrollment && enrollment.status === "active", enrolled: !!enrollment });
   } catch (err) {
     console.error("GET /courses/:slug/access error:", err);
     res.status(500).json({ error: "Failed to check access" });

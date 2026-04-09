@@ -416,15 +416,19 @@ async function adminPatchLmsOrder(req, res) {
     if (status === "paid") updates.adminApprovedBy = req.user.id;
     const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
     if (!order) { res.status(404).json({ error: "Not found" }); return; }
-    if (status === "paid" && order.userId && order.courseId) {
+    if (order.userId && order.courseId && (status === "paid" || status === "cancelled")) {
       const existing = await db
         .select()
         .from(enrollmentsTable)
         .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
-      if (existing.length === 0) {
-        await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId, status: "active" });
-      } else if (existing[0].status !== "active") {
-        await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+      if (status === "paid") {
+        if (existing.length === 0) {
+          await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId, status: "active" });
+        } else if (existing[0].status !== "active") {
+          await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+        }
+      } else if (status === "cancelled" && existing.length > 0 && existing[0].status === "active") {
+        await db.update(enrollmentsTable).set({ status: "cancelled" }).where(eq(enrollmentsTable.id, existing[0].id));
       }
     }
     res.json({ order });
