@@ -1,7 +1,9 @@
 import { Router } from "express";
 import nodemailer from "nodemailer";
-import { db, enrollmentRequestsTable } from "../db.js";
+import { db, enrollmentRequestsTable, usersTable } from "../db.js";
+import { eq } from "drizzle-orm";
 import { toWaPhone } from "../lib/phone.js";
+import { hashPassword, createSession, SESSION_COOKIE, SESSION_TTL } from "../lib/auth.js";
 
 const router = Router();
 
@@ -232,13 +234,35 @@ function buildApplicantConfirmationHtml(p, isInstitution) {
 router.post("/enroll", async (req, res) => {
   try {
     const p = req.body;
-    const isInstitution = p.applicantType === "institution";
-    const userId = req.isAuthenticated() ? req.user?.id : null;
+    const isInstitution = p.type === "institution" || p.applicantType === "institution";
+    let userId = req.isAuthenticated() ? req.user?.id : null;
+    let autoLoggedIn = false;
+
+    if (!userId && p.password && p.email) {
+      const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, p.email)).limit(1);
+      if (existing.length > 0) {
+        return res.status(409).json({ success: false, message: "EMAIL_EXISTS" });
+      }
+      const passwordHash = await hashPassword(p.password);
+      const [newUser] = await db.insert(usersTable).values({
+        email: p.email,
+        passwordHash,
+        firstName: p.firstName || null,
+        lastName: p.lastName || null,
+        phone: p.phone || null,
+      }).returning({ id: usersTable.id });
+      userId = newUser.id;
+      const sid = await createSession({ userId: newUser.id, email: p.email });
+      res.cookie(SESSION_COOKIE, sid, {
+        httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: SESSION_TTL,
+      });
+      autoLoggedIn = true;
+    }
 
     await db.insert(enrollmentRequestsTable).values({
       userId: userId || null,
       applicantType: isInstitution ? "institution" : "individual",
-      fullName: isInstitution ? (p.contactPerson || p.orgName || "") : (p.name || ""),
+      fullName: isInstitution ? (p.contactPerson || p.orgName || "") : (p.name || `${p.firstName || ""} ${p.lastName || ""}`.trim()),
       email: p.email || "",
       phone: p.phone || "",
       programId: p.program || "",
@@ -289,7 +313,7 @@ router.post("/enroll", async (req, res) => {
       }
     }
 
-    res.json({ success: true });
+    res.json({ success: true, autoLoggedIn });
   } catch (err) {
     console.error("[Enroll] Error:", err);
     res.status(500).json({ error: "Failed to submit enrollment" });

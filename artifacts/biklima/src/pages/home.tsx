@@ -274,6 +274,19 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [enrollSuccess, setEnrollSuccess] = useState<{ name: string; program: string } | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+
+  const [enrollStep, setEnrollStep] = useState<"idle" | "form" | "success">("idle");
+  const [modalAutoLoggedIn, setModalAutoLoggedIn] = useState(false);
+  const [modalSubmitting, setModalSubmitting] = useState(false);
+  const [modalEnrollError, setModalEnrollError] = useState("");
+  const [modalFormData, setModalFormData] = useState({
+    firstName: "", lastName: "", email: "", phone: "", password: "", mode: "combined", reason: "",
+  });
+  const [programLmsData, setProgramLmsData] = useState<{
+    course: { titleAr: string; titleEn: string } | null;
+    sections: { id: string; titleAr: string; titleEn: string; sortOrder: number }[];
+    lessons: { id: string; sectionId: string | null; titleAr: string; titleEn: string; durationMinutes: number | null; isFreePreview: boolean; sortOrder: number }[];
+  } | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [videoModalId, setVideoModalId] = useState<string | null>(null);
@@ -333,8 +346,6 @@ export default function Home() {
     e.preventDefault();
     setWbSubmitting(true);
     try {
-      const base = import.meta.env.BASE_URL || "/";
-      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
       const res = await fetch(`${apiBase}/workbook-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -411,8 +422,6 @@ export default function Home() {
     }
     setConsultLoading(true);
     try {
-      const base = import.meta.env.BASE_URL || "/";
-      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
       const res = await fetch(`${apiBase}/book-consultation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -427,6 +436,81 @@ export default function Home() {
     }
   };
 
+  const apiBase = (() => {
+    const base = import.meta.env.BASE_URL || "/";
+    return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
+  })();
+
+  useEffect(() => {
+    if (!selectedProgram) {
+      setProgramLmsData(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${apiBase}/programs/${selectedProgram.id}/preview`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setProgramLmsData(data); })
+      .catch(() => { if (!cancelled) setProgramLmsData(null); });
+    return () => { cancelled = true; };
+  }, [selectedProgram?.id]);
+
+  const closeModal = useCallback(() => {
+    setSelectedProgram(null);
+    setEnrollStep("idle");
+    setModalFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", mode: "combined", reason: "" });
+    setModalEnrollError("");
+    setModalAutoLoggedIn(false);
+  }, []);
+
+  const handleModalEnroll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProgram) return;
+    setModalSubmitting(true);
+    setModalEnrollError("");
+    const fullName = `${modalFormData.firstName} ${modalFormData.lastName}`.trim();
+    const payload: Record<string, string> = {
+      type: "individual",
+      name: fullName,
+      firstName: modalFormData.firstName,
+      lastName: modalFormData.lastName,
+      email: isAuthenticated && user ? user.email : modalFormData.email,
+      phone: modalFormData.phone,
+      mode: modalFormData.mode,
+      reason: modalFormData.reason,
+      program: selectedProgram.shortTitle,
+      lang,
+    };
+    if (!isAuthenticated && modalFormData.password) {
+      payload.password = modalFormData.password;
+    }
+    try {
+      const res = await fetch(`${apiBase}/enroll`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.message === "EMAIL_EXISTS") {
+          setModalEnrollError(t.modal.emailExists);
+        } else {
+          setModalEnrollError(lang === "ar" ? "حدث خطأ، يرجى المحاولة مجدداً" : "Something went wrong. Please try again.");
+        }
+        setModalSubmitting(false);
+        return;
+      }
+      setModalAutoLoggedIn(!!data.autoLoggedIn);
+      setEnrollStep("success");
+      if (data.autoLoggedIn) {
+        window.dispatchEvent(new Event("auth-refresh"));
+      }
+    } catch {
+      setModalEnrollError(lang === "ar" ? "حدث خطأ، يرجى المحاولة مجدداً" : "Something went wrong. Please try again.");
+    }
+    setModalSubmitting(false);
+  };
+
   const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -434,8 +518,6 @@ export default function Home() {
       ? { type: "individual", ...formData, mode: trainingMode, lang }
       : { type: "institution", ...orgFormData, lang };
     try {
-      const base = import.meta.env.BASE_URL || "/";
-      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
       const res = await fetch(`${apiBase}/enroll`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -510,7 +592,7 @@ export default function Home() {
                 ? <button key={item.href} onClick={() => navigate(`${import.meta.env.BASE_URL}${item.href}`)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
                 : <button key={item.id} onClick={() => scrollTo(item.id!)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
             ))}
-            <Button onClick={() => scrollTo("enroll")} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 rounded-full">{t.nav.cta}</Button>
+            <Button onClick={() => scrollTo("programs")} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 rounded-full">{t.nav.cta}</Button>
             {!authLoading && (
               isAuthenticated ? (
                 <div className="flex items-center gap-2">
@@ -573,7 +655,7 @@ export default function Home() {
                 ? <button key={item.href} onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}${item.href}`); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
                 : <button key={item.id} onClick={() => { scrollTo(item.id!); setMobileMenuOpen(false); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
             ))}
-            <Button size="lg" onClick={() => scrollTo("enroll")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
+            <Button size="lg" onClick={() => scrollTo("programs")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
             {!authLoading && (
               isAuthenticated ? (
                 <div className="space-y-3">
@@ -628,7 +710,7 @@ export default function Home() {
                   </h1>
                   <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-10 max-w-lg">{t.hero.sub}</p>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-lg h-14 px-8">{t.hero.ctaPrimary}</Button>
+                    <Button size="lg" onClick={() => scrollTo("programs")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-lg h-14 px-8">{t.hero.ctaPrimary}</Button>
                     <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-lg h-14 px-8">{t.hero.ctaSecondary}</Button>
                   </div>
                   <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
@@ -1191,7 +1273,7 @@ export default function Home() {
         </section>
 
         {/* ── ENROLLMENT FORM ── */}
-        <section id="enroll" className="py-24 bg-secondary/20 border-t border-border">
+        <section id="enroll" className="hidden py-24 bg-secondary/20 border-t border-border">
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto bg-card rounded-[2.5rem] shadow-xl overflow-hidden border border-border/50 grid lg:grid-cols-5">
               <div className="lg:col-span-3 p-8 md:p-12">
@@ -1686,9 +1768,9 @@ export default function Home() {
       <AnimatePresence>
         {selectedProgram && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedProgram(null)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={closeModal} />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-2xl relative z-10 border border-border">
-              <button aria-label="Close" onClick={() => setSelectedProgram(null)} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
+              <button aria-label="Close" onClick={closeModal} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
               <div className="relative aspect-[21/8] overflow-hidden rounded-t-[2rem]">
                 <img src={selectedProgram.image} alt={selectedProgram.shortTitle} className="w-full h-full object-cover" />
                 <div className={`absolute inset-0 bg-gradient-to-br ${selectedProgram.accentColor} opacity-75 mix-blend-multiply`} />
@@ -1754,16 +1836,64 @@ export default function Home() {
                       <p className="font-serif text-sm font-medium">{selectedProgram.transformation}</p>
                     </div>
                   </section>
+                  {/* Course content: LMS sections if available, else static modules */}
                   <section>
-                    <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4">{t.modal.sessionsHeading} ({selectedProgram.sessions} {t.structure.sessionsUnit})</h3>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {selectedProgram.modules.map((mod, idx) => (
-                        <div key={idx} className="flex items-start gap-3 bg-background p-4 rounded-xl border border-border">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">{idx + 1}</div>
-                          <span className="font-medium text-foreground text-sm">{mod}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-primary" />
+                      {programLmsData?.course ? t.modal.courseContentHeading : `${t.modal.sessionsHeading} (${selectedProgram.sessions} ${t.structure.sessionsUnit})`}
+                    </h3>
+                    {programLmsData?.course && programLmsData.sections.length > 0 ? (
+                      <div className="space-y-3">
+                        {programLmsData.sections.map((section) => {
+                          const sectionLessons = programLmsData.lessons.filter(l => l.sectionId === section.id);
+                          const freeLessons = sectionLessons.filter(l => l.isFreePreview);
+                          const totalDuration = sectionLessons.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
+                          return (
+                            <div key={section.id} className="bg-background border border-border rounded-xl overflow-hidden">
+                              <div className="flex items-center justify-between p-4 gap-2">
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                  <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{section.sortOrder + 1}</div>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-foreground">{lang === "ar" ? section.titleAr : section.titleEn}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {sectionLessons.length} {t.modal.lessonsUnit}{totalDuration > 0 ? ` · ${totalDuration} ${t.modal.hoursUnit.includes("ساعة") ? "دقيقة" : "min"}` : ""}
+                                    </p>
+                                  </div>
+                                </div>
+                                {freeLessons.length > 0 && (
+                                  <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {t.modal.freePreviewBadge}
+                                  </span>
+                                )}
+                              </div>
+                              {freeLessons.length > 0 && (
+                                <div className="border-t border-border bg-emerald-50/30 px-4 py-2 space-y-1">
+                                  {freeLessons.map(lesson => (
+                                    <div key={lesson.id} className="flex items-center gap-2 text-xs text-emerald-700">
+                                      <PlayCircle className="w-3.5 h-3.5 shrink-0" />
+                                      <span>{lang === "ar" ? lesson.titleAr : lesson.titleEn}</span>
+                                      {lesson.durationMinutes && <span className="text-emerald-500 ms-auto">{lesson.durationMinutes} {lang === "ar" ? "د" : "m"}</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <p className="text-xs text-muted-foreground pt-1">
+                          {programLmsData.sections.length} {t.modal.sectionsUnit} · {programLmsData.lessons.length} {t.modal.lessonsUnit}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {selectedProgram.modules.map((mod, idx) => (
+                          <div key={idx} className="flex items-start gap-3 bg-background p-4 rounded-xl border border-border">
+                            <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">{idx + 1}</div>
+                            <span className="font-medium text-foreground text-sm">{mod}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </section>
                 </div>
                 <div className="space-y-6">
@@ -1781,7 +1911,7 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">{selectedProgram.workbook.description}</p>
                     <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
                       <span className="font-bold text-lg">{formatPrice(WORKBOOK_PRICES[selectedProgram.id as keyof typeof WORKBOOK_PRICES])}</span>
-                      <Button variant="outline" size="sm" className="rounded-full">{t.modal.orderWorkbook}</Button>
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => { closeModal(); setSelectedWorkbook(localizedPrograms.find(p => p.id === selectedProgram.id) || null); }}>{t.modal.orderWorkbook}</Button>
                     </div>
                   </div>
                   <div className="bg-card p-5 rounded-3xl border border-border">
@@ -1789,14 +1919,104 @@ export default function Home() {
                     <p className="text-sm font-medium">{selectedProgram.audience}</p>
                     <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">{selectedProgram.delivery}</div>
                   </div>
-                  <div className="space-y-3">
-                    <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle, mode: "combined" })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
-                      <ShoppingCart className="w-5 h-5 me-2" />
-                      {t.modal.buyRecordedBtn} — {formatPrice(Math.round(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES] * 1.5))}
-                    </Button>
-                    <Button size="lg" variant="outline" className="w-full rounded-full h-12 font-bold border-primary/30 text-primary hover:bg-primary/5" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
-                      {t.modal.registerInterestBtn}
-                    </Button>
+
+                  {/* ── ENROLLMENT FORM ── */}
+                  <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl border-2 border-primary/20 overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      {enrollStep === "idle" && (
+                        <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-5">
+                          <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">{lang === "ar" ? "التسجيل في البرنامج" : "Program Registration"}</p>
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <p className="text-sm font-bold text-foreground">{selectedProgram.shortTitle}</p>
+                              <p className="text-xs text-muted-foreground">{selectedProgram.hours} {t.modal.hoursUnit} · {selectedProgram.sessions} {t.structure.sessionsUnit}</p>
+                            </div>
+                            <div className="text-end">
+                              <p className="font-bold text-primary text-lg">{formatPrice(Math.round(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES] * 1.5))}</p>
+                            </div>
+                          </div>
+                          <Button size="lg" className="w-full rounded-full h-12 font-bold bg-primary text-white hover:bg-primary/90 shadow-md" onClick={() => setEnrollStep("form")}>
+                            {t.modal.enrollNowBtn} ←
+                          </Button>
+                        </motion.div>
+                      )}
+                      {enrollStep === "form" && (
+                        <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-5">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="font-bold text-sm">{isAuthenticated ? t.modal.enrollFormLoggedInTitle : t.modal.enrollFormTitle}</p>
+                            <button onClick={() => { setEnrollStep("idle"); setModalEnrollError(""); }} className="text-muted-foreground hover:text-foreground text-xs">← {lang === "ar" ? "رجوع" : "Back"}</button>
+                          </div>
+                          <form onSubmit={handleModalEnroll} className="space-y-3">
+                            {!isAuthenticated && (
+                              <>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label className="text-xs mb-1 block">{t.modal.firstName}</Label>
+                                    <Input value={modalFormData.firstName} onChange={e => setModalFormData(p => ({ ...p, firstName: e.target.value }))} placeholder={t.modal.firstName} required className="h-9 text-sm" />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs mb-1 block">{t.modal.lastName}</Label>
+                                    <Input value={modalFormData.lastName} onChange={e => setModalFormData(p => ({ ...p, lastName: e.target.value }))} placeholder={t.modal.lastName} required className="h-9 text-sm" />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-xs mb-1 block">{t.modal.email}</Label>
+                                  <Input type="email" value={modalFormData.email} onChange={e => setModalFormData(p => ({ ...p, email: e.target.value }))} placeholder={t.modal.email} required className="h-9 text-sm" />
+                                </div>
+                                <div>
+                                  <Label className="text-xs mb-1 block">{t.modal.password}</Label>
+                                  <Input type="password" value={modalFormData.password} onChange={e => setModalFormData(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" required minLength={6} className="h-9 text-sm" />
+                                </div>
+                              </>
+                            )}
+                            <div>
+                              <Label className="text-xs mb-1 block">{t.modal.phone}</Label>
+                              <Input type="tel" value={modalFormData.phone} onChange={e => setModalFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+962 7X XXX XXXX" required className="h-9 text-sm" />
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">{t.modal.trainingMode}</Label>
+                              <Select value={modalFormData.mode} onValueChange={v => setModalFormData(p => ({ ...p, mode: v }))}>
+                                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="combined">{t.enroll.modeCombined}</SelectItem>
+                                  <SelectItem value="group-inperson">{t.enroll.modeGroupInPerson}</SelectItem>
+                                  <SelectItem value="private">{t.enroll.modePrivate}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">{t.modal.reason}</Label>
+                              <Input value={modalFormData.reason} onChange={e => setModalFormData(p => ({ ...p, reason: e.target.value }))} placeholder={t.modal.reason} className="h-9 text-sm" />
+                            </div>
+                            {modalEnrollError && <p className="text-xs text-destructive font-medium">{modalEnrollError}</p>}
+                            <Button type="submit" disabled={modalSubmitting} className="w-full rounded-full h-10 font-bold bg-primary text-white hover:bg-primary/90 text-sm mt-1">
+                              {modalSubmitting ? "..." : (isAuthenticated ? t.modal.submitEnrollLoggedIn : t.modal.submitEnroll)}
+                            </Button>
+                            {!isAuthenticated && (
+                              <p className="text-center text-xs text-muted-foreground">
+                                {t.modal.enrollAlreadyUser}{" "}
+                                <button type="button" onClick={() => { closeModal(); navigate("/dashboard"); }} className="text-primary hover:underline font-medium">{t.modal.enrollLoginLink}</button>
+                              </p>
+                            )}
+                          </form>
+                        </motion.div>
+                      )}
+                      {enrollStep === "success" && (
+                        <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="p-6 text-center">
+                          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle2 className="w-9 h-9 text-primary" />
+                          </div>
+                          <h4 className="font-bold text-lg mb-2">{t.modal.enrollSuccess}</h4>
+                          <p className="text-sm text-muted-foreground mb-5 leading-relaxed">{t.modal.enrollSuccessMsg}</p>
+                          {modalAutoLoggedIn && (
+                            <Button className="rounded-full font-bold bg-primary text-white hover:bg-primary/90 mb-2 w-full" onClick={() => { closeModal(); navigate("/dashboard"); }}>
+                              {t.modal.enrollGoToDashboard} ←
+                            </Button>
+                          )}
+                          <button onClick={closeModal} className="text-xs text-muted-foreground hover:text-foreground">{lang === "ar" ? "إغلاق" : "Close"}</button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   User,
   BookOpen,
@@ -25,6 +26,8 @@ import {
   ArrowLeft,
   FileText,
   Video,
+  Settings,
+  Camera,
 } from "lucide-react";
 
 type Lang = "ar" | "en";
@@ -38,6 +41,7 @@ const dashT = {
       courses: "دوراتي",
       orders: "طلباتي",
       schedule: "الجدول الزمني",
+      profile: "الملف الشخصي",
     },
     account: {
       heading: "معلومات الحساب",
@@ -45,6 +49,20 @@ const dashT = {
       email: "البريد الإلكتروني",
       memberSince: "عضو منذ",
       editProfile: "تعديل الملف الشخصي",
+    },
+    profile: {
+      heading: "الملف الشخصي",
+      firstName: "الاسم الأول",
+      lastName: "الاسم الأخير",
+      phone: "رقم الهاتف",
+      email: "البريد الإلكتروني",
+      profileImage: "صورة الملف الشخصي",
+      profileImageUrl: "رابط الصورة (URL)",
+      saveChanges: "حفظ التغييرات",
+      saving: "جار الحفظ...",
+      saved: "تم الحفظ بنجاح ✓",
+      saveError: "حدث خطأ. حاول مجدداً.",
+      emailNote: "لا يمكن تغيير البريد الإلكتروني",
     },
     courses: {
       heading: "الدورات المسجلة",
@@ -102,6 +120,7 @@ const dashT = {
       courses: "My Courses",
       orders: "My Orders",
       schedule: "Schedule",
+      profile: "My Profile",
     },
     account: {
       heading: "Account Information",
@@ -109,6 +128,20 @@ const dashT = {
       email: "Email",
       memberSince: "Member since",
       editProfile: "Edit Profile",
+    },
+    profile: {
+      heading: "My Profile",
+      firstName: "First Name",
+      lastName: "Last Name",
+      phone: "Phone Number",
+      email: "Email",
+      profileImage: "Profile Picture",
+      profileImageUrl: "Image URL",
+      saveChanges: "Save Changes",
+      saving: "Saving...",
+      saved: "Saved ✓",
+      saveError: "An error occurred. Please try again.",
+      emailNote: "Email cannot be changed",
     },
     courses: {
       heading: "Enrolled Courses",
@@ -165,9 +198,10 @@ const tabIcons = {
   courses: BookOpen,
   orders: ShoppingCart,
   schedule: Calendar,
+  profile: Settings,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule";
+type Tab = "account" | "courses" | "orders" | "schedule" | "profile";
 
 function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
   const { login, register } = useAuth();
@@ -461,6 +495,11 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const apiBase = getApiBase();
 
+  const [profileData, setProfileData] = useState({ firstName: "", lastName: "", phone: "", profileImageUrl: "", email: "" });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<"" | "saved" | "error">("");
+
   useEffect(() => {
     const saved = localStorage.getItem("biklima-lang");
     if (saved === "ar" || saved === "en") setLang(saved as Lang);
@@ -498,6 +537,50 @@ export default function Dashboard() {
     fetchData();
   };
 
+  useEffect(() => {
+    if (activeTab === "profile" && isAuthenticated && !profileLoaded) {
+      fetch(`${apiBase}/my/profile`, { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.profile) {
+            setProfileData({
+              firstName: d.profile.firstName || "",
+              lastName: d.profile.lastName || "",
+              phone: d.profile.phone || "",
+              profileImageUrl: d.profile.profileImageUrl || "",
+              email: d.profile.email || "",
+            });
+            setProfileLoaded(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [activeTab, isAuthenticated, profileLoaded, apiBase]);
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileMsg("");
+    try {
+      const res = await fetch(`${apiBase}/my/profile`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: profileData.firstName,
+          lastName: profileData.lastName,
+          phone: profileData.phone,
+          profileImageUrl: profileData.profileImageUrl,
+        }),
+      });
+      setProfileMsg(res.ok ? "saved" : "error");
+    } catch {
+      setProfileMsg("error");
+    }
+    setProfileSaving(false);
+    setTimeout(() => setProfileMsg(""), 3000);
+  };
+
   const t = dashT[lang];
   const isRtl = lang === "ar";
   const getTitle = (item: { titleAr: string; titleEn: string; titleFr?: string }) =>
@@ -517,7 +600,7 @@ export default function Dashboard() {
     return <AuthForm lang={lang} t={t} />;
   }
 
-  const tabs: Tab[] = ["account", "courses", "orders", "schedule"];
+  const tabs: Tab[] = ["account", "courses", "orders", "schedule", "profile"];
 
   const currentCourse = viewingCourse ? courses.find(c => c.courseId === viewingCourse) : null;
   const currentLesson = currentCourse && activeLesson ? currentCourse.lessons.find(l => l.id === activeLesson) : null;
@@ -944,6 +1027,119 @@ export default function Dashboard() {
                     </div>
                     <p className="text-muted-foreground text-lg">{t.schedule.noSchedule}</p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "profile" && (
+              <Card className="rounded-2xl">
+                <CardContent className="p-6 md:p-8">
+                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-primary" />
+                    {t.profile.heading}
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-6 items-start mb-8">
+                    <div className="shrink-0">
+                      <div className="w-24 h-24 rounded-2xl bg-primary/10 overflow-hidden flex items-center justify-center border-2 border-primary/20">
+                        {profileData.profileImageUrl ? (
+                          <img src={profileData.profileImageUrl} alt="profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-10 h-10 text-primary/50" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-lg">{profileData.firstName} {profileData.lastName}</p>
+                      <p className="text-sm text-muted-foreground" dir="ltr">{profileData.email}</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleProfileSave} className="space-y-5">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pFirstName" className="text-sm font-medium">{t.profile.firstName}</Label>
+                        <Input
+                          id="pFirstName"
+                          value={profileData.firstName}
+                          onChange={e => setProfileData(p => ({ ...p, firstName: e.target.value }))}
+                          className="rounded-xl"
+                          placeholder={isRtl ? "أحمد" : "John"}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pLastName" className="text-sm font-medium">{t.profile.lastName}</Label>
+                        <Input
+                          id="pLastName"
+                          value={profileData.lastName}
+                          onChange={e => setProfileData(p => ({ ...p, lastName: e.target.value }))}
+                          className="rounded-xl"
+                          placeholder={isRtl ? "محمد" : "Doe"}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pPhone" className="text-sm font-medium">{t.profile.phone}</Label>
+                      <Input
+                        id="pPhone"
+                        type="tel"
+                        value={profileData.phone}
+                        onChange={e => setProfileData(p => ({ ...p, phone: e.target.value }))}
+                        className="rounded-xl"
+                        placeholder="+962 7X XXX XXXX"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pEmail" className="text-sm font-medium flex items-center gap-1.5">
+                        {t.profile.email}
+                        <span className="text-[10px] text-muted-foreground font-normal border border-border rounded px-1.5 py-0.5">{t.profile.emailNote}</span>
+                      </Label>
+                      <Input
+                        id="pEmail"
+                        value={profileData.email}
+                        disabled
+                        className="rounded-xl bg-muted/50 text-muted-foreground"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pImgUrl" className="text-sm font-medium flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5" />
+                        {t.profile.profileImageUrl}
+                      </Label>
+                      <Input
+                        id="pImgUrl"
+                        type="url"
+                        value={profileData.profileImageUrl}
+                        onChange={e => setProfileData(p => ({ ...p, profileImageUrl: e.target.value }))}
+                        className="rounded-xl"
+                        placeholder="https://..."
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <Button
+                        type="submit"
+                        disabled={profileSaving}
+                        className="rounded-full bg-primary text-white hover:bg-primary/90 font-bold px-8"
+                      >
+                        {profileSaving ? t.profile.saving : t.profile.saveChanges}
+                      </Button>
+                      {profileMsg === "saved" && (
+                        <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4" />
+                          {t.profile.saved}
+                        </span>
+                      )}
+                      {profileMsg === "error" && (
+                        <span className="text-sm text-destructive font-medium">{t.profile.saveError}</span>
+                      )}
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             )}
