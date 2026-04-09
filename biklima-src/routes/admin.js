@@ -106,15 +106,27 @@ router.delete("/admin/users/:id", async (req, res) => {
   }
 });
 
+const COURSE_FIELDS = [
+  "titleAr", "titleEn", "titleFr", "subtitleAr", "subtitleEn",
+  "descriptionAr", "descriptionEn", "descriptionFr",
+  "programId", "slug", "imageUrl", "trailerUrl",
+  "price", "discountPrice", "level", "language", "category", "instructorId",
+  "whatYouLearnAr", "whatYouLearnEn", "requirementsAr", "requirementsEn",
+  "targetAudienceAr", "targetAudienceEn", "seoTitle", "seoDescription",
+  "isPublished", "isFeatured",
+];
+
 router.get("/admin/courses", async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
     const courses = await db.select().from(coursesTable).orderBy(desc(coursesTable.createdAt));
     const allLessons = await db.select().from(lessonsTable).orderBy(asc(lessonsTable.sortOrder));
+    const allSections = await db.select().from(courseSectionsTable).orderBy(asc(courseSectionsTable.sortOrder));
     const allEnrollments = await db.select().from(enrollmentsTable);
     const result = courses.map((c) => ({
       ...c,
       lessons: allLessons.filter((l) => l.courseId === c.id),
+      sections: allSections.filter((s) => s.courseId === c.id),
       enrollmentCount: allEnrollments.filter((e) => e.courseId === c.id).length,
     }));
     res.json({ courses: result });
@@ -126,12 +138,12 @@ router.get("/admin/courses", async (req, res) => {
 router.post("/admin/courses", async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const { titleAr, titleEn, titleFr, descriptionAr, descriptionEn, descriptionFr, programId, imageUrl, isPublished } = req.body;
-    const [course] = await db.insert(coursesTable).values({
-      titleAr, titleEn, titleFr: titleFr || titleEn,
-      descriptionAr, descriptionEn, descriptionFr: descriptionFr || descriptionEn,
-      programId, imageUrl, isPublished: isPublished ?? false,
-    }).returning();
+    const vals = { titleAr: req.body.titleAr, titleEn: req.body.titleEn, titleFr: req.body.titleFr || "" };
+    for (const key of COURSE_FIELDS) {
+      if (req.body[key] !== undefined) vals[key] = req.body[key];
+    }
+    if (!vals.isPublished) vals.isPublished = false;
+    const [course] = await db.insert(coursesTable).values(vals).returning();
     res.json({ course });
   } catch (err) {
     res.status(500).json({ error: "Failed to create course" });
@@ -143,9 +155,10 @@ router.patch("/admin/courses/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const updates = {};
-    for (const key of ["titleAr", "titleEn", "titleFr", "descriptionAr", "descriptionEn", "descriptionFr", "programId", "imageUrl", "isPublished"]) {
+    for (const key of COURSE_FIELDS) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
+    if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [course] = await db.update(coursesTable).set(updates).where(eq(coursesTable.id, id)).returning();
     if (!course) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ course });
@@ -164,15 +177,54 @@ router.delete("/admin/courses/:id", async (req, res) => {
   }
 });
 
+router.post("/admin/courses/:id/duplicate", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const [orig] = await db.select().from(coursesTable).where(eq(coursesTable.id, req.params.id));
+    if (!orig) { res.status(404).json({ error: "Course not found" }); return; }
+    const { id: _id, createdAt: _c, updatedAt: _u, slug, titleAr, titleEn, ...rest } = orig;
+    const [newCourse] = await db.insert(coursesTable).values({
+      ...rest,
+      titleAr: `${titleAr} (نسخة)`,
+      titleEn: `${titleEn} (copy)`,
+      slug: slug ? `${slug}-copy-${Date.now()}` : null,
+      isPublished: false,
+    }).returning();
+    const sections = await db.select().from(courseSectionsTable).where(eq(courseSectionsTable.courseId, req.params.id)).orderBy(asc(courseSectionsTable.sortOrder));
+    const sectionIdMap = {};
+    for (const s of sections) {
+      const { id: _sid, courseId: _cid, ...sRest } = s;
+      const [ns] = await db.insert(courseSectionsTable).values({ ...sRest, courseId: newCourse.id }).returning();
+      sectionIdMap[s.id] = ns.id;
+    }
+    const lessons = await db.select().from(lessonsTable).where(eq(lessonsTable.courseId, req.params.id)).orderBy(asc(lessonsTable.sortOrder));
+    for (const l of lessons) {
+      const { id: _lid, courseId: _cid, sectionId, ...lRest } = l;
+      await db.insert(lessonsTable).values({ ...lRest, courseId: newCourse.id, sectionId: sectionId ? (sectionIdMap[sectionId] ?? null) : null });
+    }
+    res.json({ course: newCourse });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to duplicate course" });
+  }
+});
+
+const LESSON_FIELDS = [
+  "titleAr", "titleEn", "titleFr", "descriptionAr", "descriptionEn",
+  "videoUrl", "videoType", "durationMinutes", "sortOrder",
+  "sectionId", "isFreePreview", "isPublished", "resources",
+];
+
 router.post("/admin/courses/:courseId/lessons", async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
     const { courseId } = req.params;
-    const { titleAr, titleEn, titleFr, videoUrl, videoType, durationMinutes, sortOrder } = req.body;
-    const [lesson] = await db.insert(lessonsTable).values({
-      courseId, titleAr, titleEn, titleFr: titleFr || titleEn,
-      videoUrl, videoType: videoType || "youtube", durationMinutes, sortOrder: sortOrder ?? 0,
-    }).returning();
+    const vals = { courseId };
+    for (const key of LESSON_FIELDS) {
+      if (req.body[key] !== undefined) vals[key] = req.body[key];
+    }
+    if (!vals.videoType) vals.videoType = "youtube";
+    if (vals.sortOrder == null) vals.sortOrder = 0;
+    const [lesson] = await db.insert(lessonsTable).values(vals).returning();
     res.json({ lesson });
   } catch (err) {
     res.status(500).json({ error: "Failed to create lesson" });
@@ -183,14 +235,45 @@ router.patch("/admin/lessons/:id", async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
     const updates = {};
-    for (const key of ["titleAr", "titleEn", "titleFr", "videoUrl", "videoType", "durationMinutes", "sortOrder", "isPublished"]) {
+    for (const key of LESSON_FIELDS) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
+    if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [lesson] = await db.update(lessonsTable).set(updates).where(eq(lessonsTable.id, req.params.id)).returning();
     if (!lesson) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ lesson });
   } catch (err) {
     res.status(500).json({ error: "Failed to update lesson" });
+  }
+});
+
+router.post("/admin/lessons/:id/resources", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, req.params.id));
+    if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
+    const { titleAr, titleEn, url, type } = req.body;
+    if (!titleAr || !url) { res.status(400).json({ error: "titleAr and url required" }); return; }
+    const existing = lesson.resources ?? [];
+    const updated = [...existing, { titleAr, titleEn: titleEn || titleAr, url, type: type || "link" }];
+    const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, req.params.id)).returning();
+    res.json({ lesson: updatedLesson });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add resource" });
+  }
+});
+
+router.delete("/admin/lessons/:id/resources/:idx", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, req.params.id));
+    if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
+    const existing = lesson.resources ?? [];
+    const updated = existing.filter((_, i) => i !== parseInt(req.params.idx));
+    const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, req.params.id)).returning();
+    res.json({ lesson: updatedLesson });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to remove resource" });
   }
 });
 

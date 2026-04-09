@@ -211,6 +211,38 @@ router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/admin/lessons/:id/resources", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, id));
+    if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
+    const { titleAr, titleEn, url, type } = req.body;
+    if (!titleAr || !url) { res.status(400).json({ error: "titleAr and url required" }); return; }
+    const existing = (lesson.resources as any[]) ?? [];
+    const updated = [...existing, { titleAr, titleEn: titleEn || titleAr, url, type: type || "link" }];
+    const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, id)).returning();
+    res.json({ lesson: updatedLesson });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to add resource" });
+  }
+});
+
+router.delete("/admin/lessons/:id/resources/:idx", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id, idx } = req.params;
+    const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, id));
+    if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
+    const existing = (lesson.resources as any[]) ?? [];
+    const updated = existing.filter((_, i) => i !== parseInt(idx));
+    const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, id)).returning();
+    res.json({ lesson: updatedLesson });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to remove resource" });
+  }
+});
+
 router.post("/admin/courses/:courseId/sections", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {

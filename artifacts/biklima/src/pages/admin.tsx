@@ -17,10 +17,12 @@ type UserRecord = { id: string; email: string; firstName: string | null; lastNam
 
 type SectionRecord = { id: string; courseId: string; titleAr: string; titleEn: string; sortOrder: number; isPublished: boolean };
 
+type LessonResource = { titleAr: string; titleEn: string; url: string; type: string };
 type LessonRecord = {
   id: string; courseId: string; sectionId: string | null; titleAr: string; titleEn: string;
   videoUrl: string | null; videoType: string; durationMinutes: number | null;
   sortOrder: number; isFreePreview: boolean; isPublished: boolean;
+  resources: LessonResource[] | null;
 };
 
 type InstructorRecord = { id: string; nameAr: string; nameEn: string; bioAr: string | null; bioEn: string | null; photoUrl: string | null; email: string | null };
@@ -314,6 +316,13 @@ export default function AdminPanel() {
     if (!confirm("حذف هذا الدرس؟")) return;
     await apiFetch(`/admin/lessons/${id}`, { method: "DELETE" });
     fetchAll();
+  };
+
+  const updateLessonInState = (updatedLesson: LessonRecord) => {
+    setCourses(prev => prev.map(c => c.id === updatedLesson.courseId
+      ? { ...c, lessons: c.lessons.map(l => l.id === updatedLesson.id ? updatedLesson : l) }
+      : c
+    ));
   };
 
   const moveLessonOrder = async (lesson: LessonRecord, dir: -1 | 1, allLessons: LessonRecord[]) => {
@@ -750,6 +759,7 @@ export default function AdminPanel() {
                                       onCancel={() => setEditingLesson(null)}
                                       onDelete={() => deleteLesson(lesson.id)}
                                       onMove={(dir) => moveLessonOrder(lesson, dir, sectionLessons)}
+                                      onLessonUpdated={updateLessonInState}
                                     />
                                   ))}
                                 </div>
@@ -775,6 +785,7 @@ export default function AdminPanel() {
                                       onCancel={() => setEditingLesson(null)}
                                       onDelete={() => deleteLesson(lesson.id)}
                                       onMove={(dir) => moveLessonOrder(lesson, dir, unsectioned)}
+                                      onLessonUpdated={updateLessonInState}
                                     />
                                   ))}
                                 </div>
@@ -1181,12 +1192,39 @@ export default function AdminPanel() {
 }
 
 // ── LessonRow sub-component ────────────────────────────────────────────────
-function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, setEditForm, onEdit, onSave, onCancel, onDelete, onMove }: {
+function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, setEditForm, onEdit, onSave, onCancel, onDelete, onMove, onLessonUpdated }: {
   lesson: LessonRecord; idx: number; allLessons: LessonRecord[]; sections: SectionRecord[];
   isEditing: boolean; editForm: any; setEditForm: (f: any) => void;
   onEdit: () => void; onSave: () => void; onCancel: () => void; onDelete: () => void;
-  onMove: (dir: -1 | 1) => void;
+  onMove: (dir: -1 | 1) => void; onLessonUpdated: (l: LessonRecord) => void;
 }) {
+  const apiBase = getApiBase();
+  const [newResTitle, setNewResTitle] = useState("");
+  const [newResUrl, setNewResUrl] = useState("");
+  const [newResType, setNewResType] = useState("link");
+  const [resLoading, setResLoading] = useState(false);
+
+  const addResource = async () => {
+    if (!newResTitle.trim() || !newResUrl.trim()) return;
+    setResLoading(true);
+    try {
+      const r = await fetch(`${apiBase}api/admin/lessons/${lesson.id}/resources`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titleAr: newResTitle, titleEn: newResTitle, url: newResUrl, type: newResType }),
+      });
+      if (r.ok) { const d = await r.json(); onLessonUpdated(d.lesson); setNewResTitle(""); setNewResUrl(""); }
+    } finally { setResLoading(false); }
+  };
+
+  const removeResource = async (idx: number) => {
+    setResLoading(true);
+    try {
+      const r = await fetch(`${apiBase}api/admin/lessons/${lesson.id}/resources/${idx}`, { method: "DELETE", credentials: "include" });
+      if (r.ok) { const d = await r.json(); onLessonUpdated(d.lesson); }
+    } finally { setResLoading(false); }
+  };
+
   if (isEditing) {
     return (
       <div className="p-3 bg-blue-50/50 space-y-2">
@@ -1215,6 +1253,31 @@ function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, set
           <Button size="sm" onClick={onSave} className="h-6 px-2 text-xs bg-primary text-white">حفظ</Button>
           <Button size="sm" variant="outline" onClick={onCancel} className="h-6 px-2 text-xs">إلغاء</Button>
         </div>
+        {/* Resources Section */}
+        <div className="border-t pt-2 mt-1 space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> الملفات والروابط المرفقة</p>
+          {(lesson.resources ?? []).length > 0 && (
+            <ul className="space-y-1">
+              {(lesson.resources ?? []).map((r, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-xs bg-white rounded px-2 py-1 border">
+                  <span className="flex-1 truncate" dir="ltr">{r.titleAr} — <a href={r.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{r.url}</a></span>
+                  <span className="text-[9px] bg-gray-100 px-1 rounded">{r.type}</span>
+                  <button onClick={() => removeResource(i)} disabled={resLoading} className="text-destructive hover:text-red-700 shrink-0"><X className="w-3 h-3" /></button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex gap-1 items-center">
+            <Input value={newResTitle} onChange={e => setNewResTitle(e.target.value)} placeholder="اسم المرفق" className="text-xs h-7 flex-1" />
+            <Input value={newResUrl} onChange={e => setNewResUrl(e.target.value)} placeholder="https://..." className="text-xs h-7 flex-[2]" dir="ltr" />
+            <select value={newResType} onChange={e => setNewResType(e.target.value)} className="border rounded p-1 text-xs bg-background h-7">
+              <option value="link">رابط</option>
+              <option value="pdf">PDF</option>
+              <option value="file">ملف</option>
+            </select>
+            <Button size="sm" onClick={addResource} disabled={resLoading || !newResTitle.trim() || !newResUrl.trim()} className="h-7 px-2 text-xs"><Plus className="w-3 h-3" /></Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1233,6 +1296,7 @@ function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, set
           {!lesson.isPublished && <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-bold">مخفي</span>}
           {lesson.videoUrl && <span className="text-[9px] text-muted-foreground">▶ فيديو</span>}
           {lesson.durationMinutes && <span className="text-[9px] text-muted-foreground">{lesson.durationMinutes} دق</span>}
+          {(lesson.resources ?? []).length > 0 && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><FileText className="w-2.5 h-2.5" />{(lesson.resources ?? []).length} مرفق</span>}
         </div>
       </div>
       <Button variant="ghost" size="sm" onClick={onEdit} className="h-6 w-6 p-0 text-blue-600 shrink-0"><Edit3 className="w-3 h-3" /></Button>
