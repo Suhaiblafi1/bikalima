@@ -180,6 +180,7 @@ export default function LearnPage() {
   const [completing, setCompleting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [autoAdvance, setAutoAdvance] = useState(false);
 
   const lastKey = (s: string) => `bk_learn_${s}`;
 
@@ -195,15 +196,28 @@ export default function LearnPage() {
       .then(data => {
         setCourse(data.course);
         const allLessons: Lesson[] = (data.lessons ?? []).filter((l: Lesson) => l.isPublished !== false);
+        const isEnrolled = !!data.enrolled;
+
+        if (!isEnrolled) {
+          const hasFreePreview = allLessons.some(l => l.isFreePreview);
+          if (!hasFreePreview) {
+            navigate(`/courses/${slug}`);
+            return;
+          }
+        }
+
         setSections(data.sections ?? []);
         setLessons(allLessons);
         setProgressMap(data.progressMap ?? {});
-        setEnrolled(!!data.enrolled);
+        setEnrolled(isEnrolled);
+
         const saved = parseInt(localStorage.getItem(lastKey(slug)) ?? "0", 10);
-        const startIdx = Math.min(Math.max(0, saved), Math.max(0, allLessons.length - 1));
-        const firstAccessible = allLessons.findIndex((l, i) => i === startIdx && (data.enrolled || l.isFreePreview));
-        const idx = firstAccessible >= 0 ? startIdx : (allLessons.findIndex(l => l.isFreePreview || data.enrolled) ?? 0);
-        setCurrentIdx(idx < 0 ? 0 : idx);
+        const savedLesson = allLessons[saved];
+        const savedOk = savedLesson && (isEnrolled || savedLesson.isFreePreview);
+        const firstFreePreview = allLessons.findIndex(l => l.isFreePreview);
+        const idx = savedOk ? saved : (isEnrolled ? 0 : Math.max(0, firstFreePreview));
+        setCurrentIdx(Math.min(idx, Math.max(0, allLessons.length - 1)));
+
         const sectionGroups = buildSectionGroups(data.sections ?? [], allLessons);
         const initialExpanded: Record<string, boolean> = {};
         if (sectionGroups.length > 0) initialExpanded[sectionGroups[0].id ?? "0"] = true;
@@ -216,7 +230,7 @@ export default function LearnPage() {
   const currentLesson = lessons[currentIdx] ?? null;
   const isLocked = currentLesson ? (!enrolled && !currentLesson.isFreePreview) : false;
 
-  const markComplete = useCallback(async () => {
+  const markComplete = useCallback(async (advanceAfter = false) => {
     if (!currentLesson || completing || !enrolled) return;
     setCompleting(true);
     try {
@@ -226,10 +240,18 @@ export default function LearnPage() {
       });
       if (r.ok) {
         setProgressMap(prev => ({ ...prev, [currentLesson.id]: true }));
+        if (advanceAfter && currentIdx < lessons.length - 1) {
+          setCurrentIdx(prev => {
+            const next = prev + 1;
+            try { localStorage.setItem(lastKey(slug ?? ""), String(next)); } catch {}
+            return next;
+          });
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
       }
     } catch {}
     setCompleting(false);
-  }, [currentLesson, completing, enrolled, base]);
+  }, [currentLesson, completing, enrolled, base, currentIdx, lessons.length, slug]);
 
   const goToLesson = useCallback((idx: number) => {
     if (idx < 0 || idx >= lessons.length) return;
@@ -319,9 +341,12 @@ export default function LearnPage() {
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors text-start"
                 onClick={() => setExpandedSections(prev => ({ ...prev, [groupKey]: !prev[groupKey] }))}
               >
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-foreground truncate">{sectionTitle(group)}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{sectionDone}/{group.lessons.length}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <span className="text-xs text-muted-foreground">{sectionDone}/{group.lessons.length} {lang === "ar" ? "درس" : "lessons"}</span>
+                    {(() => { const dur = group.lessons.reduce((s, l) => s + (l.durationMinutes ?? 0), 0); return dur > 0 ? <span className="text-xs text-muted-foreground/70 flex items-center gap-0.5"><Clock className="w-3 h-3" />{dur} {t.min}</span> : null; })()}
+                  </div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ms-2 ${isOpen ? "rotate-180" : ""}`} />
               </button>
@@ -408,6 +433,16 @@ export default function LearnPage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {enrolled && (
+              <button
+                onClick={() => setAutoAdvance(a => !a)}
+                title={lang === "ar" ? "التقدم التلقائي" : "Auto-advance"}
+                className={`hidden sm:flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors ${autoAdvance ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"}`}
+              >
+                <Play className={`w-3 h-3 ${autoAdvance ? "fill-primary" : ""}`} />
+                {lang === "ar" ? "تلقائي" : "Auto"}
+              </button>
+            )}
             <button
               onClick={() => switchLang(lang === "ar" ? "en" : "ar")}
               className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:bg-muted transition-colors"
@@ -526,7 +561,7 @@ export default function LearnPage() {
                 {/* Mark complete button (enrolled only) */}
                 {enrolled && !isLocked && (
                   <button
-                    onClick={isCompleted ? undefined : markComplete}
+                    onClick={isCompleted ? undefined : () => markComplete(autoAdvance)}
                     disabled={isCompleted || completing}
                     className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                       isCompleted
@@ -539,7 +574,7 @@ export default function LearnPage() {
                     ) : completing ? (
                       <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> {t.completing}</>
                     ) : (
-                      <><CheckCircle className="w-4 h-4" /> {t.complete}</>
+                      <><CheckCircle className="w-4 h-4" /> {t.complete}{autoAdvance && currentIdx < lessons.length - 1 ? ` →` : ""}</>
                     )}
                   </button>
                 )}
@@ -644,7 +679,7 @@ export default function LearnPage() {
             {currentIdx < lessons.length - 1 ? (
               <button
                 onClick={async () => {
-                  if (enrolled && !isCompleted) await markComplete();
+                  if (enrolled && !isCompleted) await markComplete(false);
                   goToLesson(currentIdx + 1);
                 }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90"
