@@ -178,7 +178,7 @@ export default function LearnPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [completing, setCompleting] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [autoAdvance, setAutoAdvance] = useState(false);
 

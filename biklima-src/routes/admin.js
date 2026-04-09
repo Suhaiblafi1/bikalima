@@ -316,6 +316,7 @@ router.get("/my/courses", async (req, res) => {
       descriptionFr: coursesTable.descriptionFr,
       imageUrl: coursesTable.imageUrl,
       programId: coursesTable.programId,
+      slug: coursesTable.slug,
     })
     .from(enrollmentsTable)
     .innerJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
