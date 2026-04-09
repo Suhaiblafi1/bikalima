@@ -1,5 +1,4 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import nodemailer from "nodemailer";
 import {
   db,
   usersTable,
@@ -14,68 +13,6 @@ import {
   instructorsTable,
 } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
-
-function buildAdminTransporter() {
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
-  if (!host || !user || !pass) return null;
-  return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
-}
-
-const FROM_ADMIN = process.env.SMTP_FROM ?? `"بكلمة" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
-
-function buildEnrollmentApprovedHtml(name: string, program: string, lang: string, dashboardUrl: string) {
-  const isEn = lang === "en";
-  const dir = isEn ? "ltr" : "rtl";
-  const bSide = isEn ? "left" : "right";
-  const headline = isEn
-    ? `Congratulations, ${name}! Your enrollment is confirmed. ✦`
-    : `مبروك ${name}! تم قبول تسجيلك رسمياً. ✦`;
-  const body = isEn
-    ? `Your enrollment request for <strong>${program}</strong> has been officially approved. Welcome to the Bikalima family — your transformational journey begins now.`
-    : `تمت الموافقة على طلب تسجيلك في برنامج <strong>${program}</strong> رسمياً. أهلاً بك في عائلة بكلمة — رحلتك التحويلية تبدأ الآن.`;
-  const subText = isEn
-    ? "You can now sign in and access all your enrolled program content directly from your dashboard."
-    : "يمكنك الآن تسجيل الدخول والوصول إلى كامل محتوى برنامجك من لوحة التحكم الخاصة بك.";
-  const btnText = isEn ? "Go to My Dashboard →" : "ادخل إلى لوحتي الآن ←";
-  const programLabel = isEn ? "Enrolled Program" : "البرنامج المسجّل";
-  const quote = isEn
-    ? "Words are not measured by their count, but by the impression they leave on hearts."
-    : "لا تُقاس الكلمات بعددها، بل بالأثر الذي تتركه في القلوب.";
-  const footer = isEn ? "Bikalima ✦ The Art of Impactful Speech" : "بكلمة ✦ صناعة الأثر وفن الإلقاء";
-
-  return `<div dir="${dir}" style="font-family:Tahoma,'Geeza Pro','Al Nile',Arial,Helvetica,sans-serif;max-width:620px;margin:0 auto;background:#f0f2f1;">
-  <table cellpadding="0" cellspacing="0" bgcolor="#0d3d36" style="width:100%;background:linear-gradient(150deg,#07201c 0%,#1a5c52 100%);">
-    <tr><td style="padding:52px 32px 44px;text-align:center;">
-      <p style="margin:0 0 10px;font-size:40px;">🎙️</p>
-      <span style="display:inline-block;background:#f59e0b;color:#1a0a00;font-size:11px;padding:5px 14px;border-radius:20px;letter-spacing:0.5px;margin-bottom:16px;">✅ ${isEn ? "Official Enrollment Confirmation" : "تأكيد رسمي للتسجيل"}</span>
-      <h1 style="margin:0;font-size:22px;color:#ffffff;line-height:1.4;">${headline}</h1>
-    </td></tr>
-  </table>
-  <div style="background:#fff;padding:36px 32px 24px;">
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.85;color:#1f2937;">${body}</p>
-    <div style="background:#f0faf8;border-${bSide}:4px solid #1a5c52;border-radius:4px;padding:13px 18px;margin-bottom:18px;">
-      <p style="margin:0 0 3px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">${programLabel}</p>
-      <p style="margin:0;font-size:16px;color:#1a5c52;font-weight:bold;">${program}</p>
-    </div>
-    <p style="margin:0;font-size:13px;line-height:1.75;color:#6b7280;">${subText}</p>
-  </div>
-  <div style="padding:24px 32px 36px;text-align:center;background:#fff;">
-    <a href="${dashboardUrl}" style="display:inline-block;background:linear-gradient(135deg,#1a5c52,#25786a);color:#fff;padding:16px 40px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;box-shadow:0 4px 20px rgba(26,92,82,0.3);">
-      ${btnText}
-    </a>
-    <p style="margin:14px 0 0;font-size:12px;color:#9ca3af;">${isEn ? "Your courses are waiting for you" : "كورساتك بانتظارك"}</p>
-  </div>
-  <div style="background:#f0faf8;padding:24px 32px;text-align:center;border-top:1px solid #d1ede9;border-bottom:1px solid #d1ede9;">
-    <p style="margin:0;font-size:14px;font-style:italic;color:#374151;line-height:1.75;max-width:380px;margin:0 auto;">"${quote}"</p>
-  </div>
-  <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.88);">${footer} | info@bikalima.com</p>
-  </div>
-</div>`;
-}
 
 const router: IRouter = Router();
 
@@ -502,30 +439,6 @@ router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Respons
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     const [updated] = await db.update(enrollmentRequestsTable).set(updates).where(eq(enrollmentRequestsTable.id, req.params.id)).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
-
-    if (status === "approved" && updated.email) {
-      try {
-        const transporter = buildAdminTransporter();
-        if (transporter) {
-          const applicantLang = (updated.formData as Record<string, string> | null)?.lang || "ar";
-          const appUrl = process.env.APP_URL || "https://bikalima.com";
-          const dashboardUrl = `${appUrl}/dashboard`;
-          const subject = applicantLang === "en"
-            ? `Bikalima ✦ Your enrollment in ${updated.programId} is confirmed!`
-            : `بكلمة ✦ تم قبول تسجيلك في ${updated.programId}! 🎙️`;
-          await transporter.sendMail({
-            from: FROM_ADMIN,
-            to: updated.email,
-            replyTo: "info@bikalima.com",
-            subject,
-            html: buildEnrollmentApprovedHtml(updated.fullName, updated.programId, applicantLang, dashboardUrl),
-          });
-        }
-      } catch (mailErr) {
-        console.error("[SMTP] Failed to send approval email:", mailErr);
-      }
-    }
-
     res.json({ request: updated });
   } catch (err) {
     res.status(500).json({ error: "Failed to update request" });
@@ -599,44 +512,6 @@ router.get("/my/courses", async (req: Request, res: Response) => {
     res.json({ courses: result });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch courses" });
-  }
-});
-
-router.get("/my/profile", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated() || !req.user) { res.status(401).json({ error: "Not authenticated" }); return; }
-  try {
-    const [user] = await db.select({
-      id: usersTable.id,
-      email: usersTable.email,
-      firstName: usersTable.firstName,
-      lastName: usersTable.lastName,
-      phone: usersTable.phone,
-      profileImageUrl: usersTable.profileImageUrl,
-      createdAt: usersTable.createdAt,
-    }).from(usersTable).where(eq(usersTable.id, req.user.id));
-    if (!user) { res.status(404).json({ error: "User not found" }); return; }
-    res.json({ profile: user });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch profile" });
-  }
-});
-
-router.patch("/my/profile", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated() || !req.user) { res.status(401).json({ error: "Not authenticated" }); return; }
-  try {
-    const { firstName, lastName, phone, profileImageUrl } = req.body;
-    const updates: Partial<{ firstName: string; lastName: string; phone: string; profileImageUrl: string }> = {};
-    if (firstName !== undefined) updates.firstName = firstName;
-    if (lastName !== undefined) updates.lastName = lastName;
-    if (phone !== undefined) updates.phone = phone;
-    if (profileImageUrl !== undefined) updates.profileImageUrl = profileImageUrl;
-    const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, req.user.id)).returning({
-      id: usersTable.id, email: usersTable.email, firstName: usersTable.firstName,
-      lastName: usersTable.lastName, phone: usersTable.phone, profileImageUrl: usersTable.profileImageUrl,
-    });
-    res.json({ profile: updated });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update profile" });
   }
 });
 

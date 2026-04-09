@@ -130,37 +130,6 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/programs/:programId/preview", async (req: Request, res: Response) => {
-  try {
-    const { programId } = req.params;
-    const [course] = await db.select().from(coursesTable)
-      .where(and(eq(coursesTable.programId, programId), eq(coursesTable.isPublished, true)))
-      .limit(1);
-    if (!course) { res.json({ course: null, sections: [], lessons: [] }); return; }
-
-    const sections = await db.select().from(courseSectionsTable)
-      .where(and(eq(courseSectionsTable.courseId, course.id), eq(courseSectionsTable.isPublished, true)))
-      .orderBy(asc(courseSectionsTable.sortOrder));
-
-    const lessons = await db.select({
-      id: lessonsTable.id,
-      sectionId: lessonsTable.sectionId,
-      titleAr: lessonsTable.titleAr,
-      titleEn: lessonsTable.titleEn,
-      durationMinutes: lessonsTable.durationMinutes,
-      isFreePreview: lessonsTable.isFreePreview,
-      sortOrder: lessonsTable.sortOrder,
-      isPublished: lessonsTable.isPublished,
-    }).from(lessonsTable)
-      .where(and(eq(lessonsTable.courseId, course.id), eq(lessonsTable.isPublished, true)))
-      .orderBy(asc(lessonsTable.sortOrder));
-
-    res.json({ course, sections, lessons });
-  } catch {
-    res.status(500).json({ error: "Failed to load program preview" });
-  }
-});
-
 router.get("/courses/:slug/access", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;

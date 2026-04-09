@@ -17,7 +17,6 @@ export const usersTable = pgTable("users", {
   passwordHash: varchar("password_hash").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
-  phone: varchar("phone"),
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

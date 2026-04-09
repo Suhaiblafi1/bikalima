@@ -1,9 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
-import { db, enrollmentRequestsTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { db, enrollmentRequestsTable } from "@workspace/db";
 import { toWaPhone } from "../lib/phone.js";
-import { hashPassword, createSession, SESSION_COOKIE, SESSION_TTL } from "../lib/auth.js";
 
 const enrollRouter = Router();
 
@@ -385,40 +383,14 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
   const log = req.log ?? console;
 
   let dbStored = false;
-  let autoLoggedIn = false;
-
   try {
-    let userId = req.isAuthenticated() ? req.user?.id : null;
+    const userId = req.isAuthenticated() ? req.user?.id : null;
     const isInstitution = payload.type === "institution";
-
-    if (!userId && payload.password && payload.email) {
-      const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, payload.email)).limit(1);
-      if (existing.length > 0) {
-        res.status(409).json({ success: false, message: "EMAIL_EXISTS" });
-        return;
-      }
-      const passwordHash = await hashPassword(payload.password);
-      const [newUser] = await db.insert(usersTable).values({
-        email: payload.email,
-        passwordHash,
-        firstName: payload.firstName || null,
-        lastName: payload.lastName || null,
-        phone: payload.phone || null,
-      }).returning({ id: usersTable.id });
-      userId = newUser.id;
-
-      const sid = await createSession({ userId: newUser.id, email: payload.email });
-      res.cookie(SESSION_COOKIE, sid, {
-        httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: SESSION_TTL,
-      });
-      autoLoggedIn = true;
-      log.info({ email: payload.email }, "New user account created during enrollment");
-    }
 
     await db.insert(enrollmentRequestsTable).values({
       userId: userId || null,
       applicantType: isInstitution ? "institution" : "individual",
-      fullName: isInstitution ? (payload.contactPerson || payload.orgName) : (payload.name || `${payload.firstName || ""} ${payload.lastName || ""}`.trim()),
+      fullName: isInstitution ? (payload.contactPerson || payload.orgName) : payload.name,
       email: payload.email,
       phone: payload.phone,
       programId: payload.program || "",
@@ -494,7 +466,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
     return;
   }
 
-  res.status(200).json({ success: true, message: "Enrollment received", autoLoggedIn });
+  res.status(200).json({ success: true, message: "Enrollment received" });
 });
 
 enrollRouter.get("/my/enrollment-requests", async (req: Request, res: Response) => {
