@@ -419,7 +419,7 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
     const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
 
-    if (status === "paid" && order.userId) {
+    if (status === "paid" && order.userId && order.courseId) {
       const existing = await db
         .select()
         .from(enrollmentsTable)
