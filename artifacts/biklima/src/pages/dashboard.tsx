@@ -80,10 +80,18 @@ const dashT = {
     logout: "تسجيل الخروج",
     auth: {
       loginTitle: "تسجيل الدخول",
+      registerTitle: "إنشاء حساب",
       email: "البريد الإلكتروني",
       password: "كلمة المرور",
+      confirmPassword: "تأكيد كلمة المرور",
+      firstName: "الاسم الأول",
+      lastName: "الاسم الأخير",
       loginBtn: "تسجيل الدخول",
+      registerBtn: "إنشاء الحساب",
       passwordMin: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+      passwordMismatch: "كلمتا المرور غير متطابقتين",
+      switchToRegister: "ليس لديك حساب؟ أنشئ حسابًا",
+      switchToLogin: "لديك حساب بالفعل؟ سجّل الدخول",
     },
   },
   en: {
@@ -136,10 +144,18 @@ const dashT = {
     logout: "Log Out",
     auth: {
       loginTitle: "Sign In",
+      registerTitle: "Create Account",
       email: "Email",
       password: "Password",
+      confirmPassword: "Confirm Password",
+      firstName: "First Name",
+      lastName: "Last Name",
       loginBtn: "Sign In",
+      registerBtn: "Create Account",
       passwordMin: "Password must be at least 6 characters",
+      passwordMismatch: "Passwords do not match",
+      switchToRegister: "Don't have an account? Sign up",
+      switchToLogin: "Already have an account? Sign in",
     },
   },
 };
@@ -154,11 +170,15 @@ const tabIcons = {
 type Tab = "account" | "courses" | "orders" | "schedule";
 
 function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const [, navigate] = useLocation();
   const isRtl = lang === "ar";
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -168,6 +188,16 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
       ? "يتم تزويد الطلبة ببيانات الدخول تلقائياً بعد القبول في البرنامج."
       : "Login credentials are provided automatically upon program admission.";
 
+  const switchMode = (next: "login" | "register") => {
+    setMode(next);
+    setError("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setFirstName("");
+    setLastName("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -175,13 +205,28 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
       setError(t.auth.passwordMin);
       return;
     }
-    setLoading(true);
-    const result = await login(email, password);
-    setLoading(false);
-    if (result.error) {
-      setError(result.error);
+    if (mode === "register") {
+      if (password !== confirmPassword) {
+        setError(t.auth.passwordMismatch);
+        return;
+      }
+      setLoading(true);
+      const result = await register({ email, password, firstName: firstName || undefined, lastName: lastName || undefined });
+      setLoading(false);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        navigate("/dashboard");
+      }
     } else {
-      navigate("/");
+      setLoading(true);
+      const result = await login(email, password);
+      setLoading(false);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        navigate("/");
+      }
     }
   };
 
@@ -191,12 +236,16 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-3">
             <div className="logo-biklima text-5xl text-primary">بكلمة</div>
-            <h1 className="text-2xl font-bold">{t.auth.loginTitle}</h1>
+            <h1 className="text-2xl font-bold">
+              {mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}
+            </h1>
           </div>
 
-          <div className="bg-primary/8 border border-primary/20 rounded-xl px-4 py-3 text-center text-sm text-primary/80">
-            {credentialsNote}
-          </div>
+          {mode === "login" && (
+            <div className="bg-primary/8 border border-primary/20 rounded-xl px-4 py-3 text-center text-sm text-primary/80">
+              {credentialsNote}
+            </div>
+          )}
 
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-xl px-4 py-3 text-center">
@@ -205,6 +254,29 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "register" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t.auth.firstName}</label>
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="rounded-xl"
+                    placeholder={lang === "ar" ? "أحمد" : "John"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t.auth.lastName}</label>
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="rounded-xl"
+                    placeholder={lang === "ar" ? "علي" : "Doe"}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <label className="text-sm font-medium flex items-center gap-1.5">
                 <Mail className="w-4 h-4" />
@@ -246,6 +318,24 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
               </div>
             </div>
 
+            {mode === "register" && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <Lock className="w-4 h-4" />
+                  {t.auth.confirmPassword}
+                </label>
+                <Input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="rounded-xl"
+                  dir="ltr"
+                  minLength={6}
+                />
+              </div>
+            )}
+
             <Button
               type="submit"
               disabled={loading}
@@ -253,11 +343,23 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
             >
               {loading ? (
                 <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-              ) : (
+              ) : mode === "login" ? (
                 t.auth.loginBtn
+              ) : (
+                t.auth.registerBtn
               )}
             </Button>
           </form>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => switchMode(mode === "login" ? "register" : "login")}
+              className="text-sm text-primary hover:underline"
+            >
+              {mode === "login" ? t.auth.switchToRegister : t.auth.switchToLogin}
+            </button>
+          </div>
 
           <Button variant="ghost" onClick={() => navigate("/")} className="w-full">
             <Home className="w-4 h-4 me-2" />{t.backHome}
