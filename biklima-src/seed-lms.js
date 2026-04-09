@@ -66,6 +66,9 @@ async function seed() {
       subtitleEn: "Crafting Influence & the Art of Public Speaking",
       descriptionAr: "برنامج تدريبي متكامل لليافعين والشباب والكبار، يهدف إلى بناء متحدث أكثر حضوراً ووضوحاً وتأثيراً في الدراسة والعمل والحياة العامة. يركز على تطوير الثقة، وتنظيم الرسائل، وتحسين الإلقاء، ورفع جودة العروض، وبناء قدرة حقيقية على الإقناع.",
       descriptionEn: "A comprehensive training program for youth and professionals, designed to build a more present, clear, and impactful speaker in academic, professional, and public contexts.",
+      trailerUrl: "https://www.youtube.com/watch?v=QRHnlnwcFXI",
+      seoTitle: "المتحدث المؤثر — برنامج بكلمة للخطابة والتأثير",
+      seoDescription: "برنامج تدريبي متكامل لبناء مهارات الخطابة والإلقاء والتأثير — ٢٧ ساعة تدريب مع صهيب الخوالدة",
       price: 70,
       hours: 27,
       sessions: 14,
@@ -110,6 +113,9 @@ async function seed() {
       subtitleEn: "Train the Trainer — From Professional Speaker to Certified Coach",
       descriptionAr: "برنامج تأهيلي متقدم لإعداد مدربين معتمدين قادرين على تقديم برنامج بكلمة للكبار باحتراف. يركز على بناء هوية المدرب، وفهم فلسفة البرنامج، وإتقان أدوات التدريب، وإدارة الجلسات والمجموعات.",
       descriptionEn: "An advanced qualification program to prepare certified trainers capable of delivering the Bikalima program for adults professionally.",
+      trailerUrl: "https://www.youtube.com/watch?v=HAnw168huqA",
+      seoTitle: "المدرب المعتمد — برنامج بكلمة لتدريب المدربين ToT",
+      seoDescription: "برنامج تأهيل مدربي الخطابة المعتمدين — ٤٠ ساعة تدريب احترافي مع صهيب الخوالدة",
       price: 110,
       hours: 40,
       sessions: 20,
@@ -150,6 +156,9 @@ async function seed() {
       subtitleEn: "Educators & Parents Program — A child's environment is their future",
       descriptionAr: "برنامج تأهيلي مخصص للمعلمين وأولياء الأمور، يعرّفهم بمنهجية تدريب الأطفال على الخطابة والتواصل وقوة التأثير، ويمكنهم من تطبيق البرنامج داخل الصف أو المنزل.",
       descriptionEn: "A qualification program for educators and parents, introducing them to the methodology of training children in public speaking, communication, and influence.",
+      trailerUrl: "https://www.youtube.com/watch?v=iG9CE55wbtY",
+      seoTitle: "تأهيل المعلمين وأولياء الأمور — برنامج بكلمة لتدريب الأطفال",
+      seoDescription: "برنامج متخصص يؤهل المعلمين وأولياء الأمور لتدريب الأطفال على الخطابة والتواصل — ٢١ ساعة تدريب",
       price: 90,
       hours: 21,
       sessions: 11,
@@ -189,6 +198,9 @@ async function seed() {
       subtitleEn: "Children's Program — Your voice deserves to be heard",
       descriptionAr: "برنامج تدريبي تفاعلي للأطفال لبناء الثقة، وتنمية مهارات التعبير، وتعليمهم كيف يتحدثون بوضوح وراحة وتأثير أمام الآخرين. يُقدَّم للمدارس عبر خريجي برنامج المعلمين وأولياء الأمور المعتمدين.",
       descriptionEn: "An interactive training program for children to build confidence, develop expression skills, and teach them how to speak clearly, comfortably, and impactfully in front of others.",
+      trailerUrl: "https://www.youtube.com/watch?v=R1vskiVDwl4",
+      seoTitle: "المتحدث الصغير — برنامج بكلمة للأطفال",
+      seoDescription: "برنامج تدريبي للأطفال لبناء الثقة وتطوير مهارات الخطابة والتعبير — للمدارس فقط",
       price: 50,
       hours: 18,
       sessions: 9,
@@ -225,6 +237,7 @@ async function seed() {
       INSERT INTO courses (
         program_id, slug, title_ar, title_en, title_fr,
         subtitle_ar, subtitle_en, description_ar, description_en,
+        trailer_url, seo_title, seo_description,
         price, hours, sessions,
         what_you_learn_ar, what_you_learn_en,
         requirements_ar, requirements_en,
@@ -233,20 +246,23 @@ async function seed() {
         language, level
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
-        $13,$14,$15,$16,$17,$18,$19,$20,TRUE,TRUE,'ar','all'
+        $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+        TRUE,TRUE,'ar','all'
       )
       ON CONFLICT (slug) DO UPDATE SET
         subtitle_ar=$6, subtitle_en=$7,
-        price=$10, hours=$11, sessions=$12,
-        what_you_learn_ar=$13, what_you_learn_en=$14,
-        requirements_ar=$15, requirements_en=$16,
-        target_audience_ar=$17, target_audience_en=$18,
-        instructor_id=$19, category_id=$20,
+        trailer_url=$10, seo_title=$11, seo_description=$12,
+        price=$13, hours=$14, sessions=$15,
+        what_you_learn_ar=$16, what_you_learn_en=$17,
+        requirements_ar=$18, requirements_en=$19,
+        target_audience_ar=$20, target_audience_en=$21,
+        instructor_id=$22, category_id=$22,
         is_published=TRUE, is_featured=TRUE, updated_at=NOW()
       RETURNING id
     `, [
       prog.programId, prog.slug, prog.titleAr, prog.titleEn, prog.titleFr,
       prog.subtitleAr, prog.subtitleEn, prog.descriptionAr, prog.descriptionEn,
+      prog.trailerUrl || null, prog.seoTitle || null, prog.seoDescription || null,
       prog.price, prog.hours, prog.sessions,
       JSON.stringify(prog.whatYouLearnAr), JSON.stringify(prog.whatYouLearnEn),
       JSON.stringify(prog.requirementsAr), JSON.stringify(prog.requirementsEn),

@@ -111,6 +111,7 @@ export const lessonsTable = pgTable("lessons", {
   durationMinutes: integer("duration_minutes"),
   sortOrder: integer("sort_order").notNull().default(0),
   isFreePreview: boolean("is_free_preview").notNull().default(false),
+  resources: jsonb("resources"),
   isPublished: boolean("is_published").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

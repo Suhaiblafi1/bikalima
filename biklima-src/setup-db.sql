@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS lessons (
 -- Add LMS columns to lessons (safe, additive only)
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS section_id VARCHAR REFERENCES course_sections(id) ON DELETE SET NULL;
 ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_free_preview BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS resources JSONB;
 
 -- ── LMS: Lesson Resources ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lesson_resources (
