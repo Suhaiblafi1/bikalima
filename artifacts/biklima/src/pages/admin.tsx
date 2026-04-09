@@ -102,6 +102,22 @@ type OrderRecord = {
   createdAt: string;
 };
 
+type LmsOrderRecord = {
+  id: string;
+  userId: string | null;
+  courseId: string | null;
+  courseTitle: string | null;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  amount: number | null;
+  currency: string;
+  status: string;
+  paymentNotes: string | null;
+  adminNotes: string | null;
+  createdAt: string;
+};
+
 type Stats = {
   totalUsers: number;
   todaySignups: number;
@@ -110,9 +126,10 @@ type Stats = {
   totalEnrollments: number;
   totalRequests: number;
   totalOrders: number;
+  totalLmsOrders?: number;
 };
 
-type AdminTab = "users" | "courses" | "requests" | "orders";
+type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders";
 
 function getApiBase() {
   const base = import.meta.env.BASE_URL || "/";
@@ -129,6 +146,7 @@ export default function AdminPanel() {
   const [enrollments, setEnrollments] = useState<EnrollmentRecord[]>([]);
   const [requests, setRequests] = useState<RequestRecord[]>([]);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [lmsOrders, setLmsOrders] = useState<LmsOrderRecord[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -156,9 +174,10 @@ export default function AdminPanel() {
   }, [apiFetch]);
 
   const fetchAll = useCallback(async () => {
-    const [usersRes, coursesRes, requestsRes, ordersRes, statsRes, enrollRes] = await Promise.all([
+    const [usersRes, coursesRes, requestsRes, ordersRes, statsRes, enrollRes, lmsOrdersRes] = await Promise.all([
       apiFetch("/admin/users"), apiFetch("/admin/courses"), apiFetch("/admin/enrollment-requests"),
       apiFetch("/admin/workbook-orders"), apiFetch("/admin/stats"), apiFetch("/admin/enrollments"),
+      apiFetch("/admin/lms-orders"),
     ]);
     if (usersRes.ok) { const d = await usersRes.json(); setUsers(d.users); }
     if (coursesRes.ok) { const d = await coursesRes.json(); setCourses(d.courses); }
@@ -166,6 +185,7 @@ export default function AdminPanel() {
     if (ordersRes.ok) { const d = await ordersRes.json(); setOrders(d.orders); }
     if (statsRes.ok) { const d = await statsRes.json(); setStats(d); }
     if (enrollRes.ok) { const d = await enrollRes.json(); setEnrollments(d.enrollments); }
+    if (lmsOrdersRes.ok) { const d = await lmsOrdersRes.json(); setLmsOrders(d.orders); }
   }, [apiFetch]);
 
   useEffect(() => {
@@ -240,6 +260,11 @@ export default function AdminPanel() {
     fetchAll();
   };
 
+  const updateLmsOrderStatus = async (id: string, status: string) => {
+    await apiFetch(`/admin/lms-orders/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    fetchAll();
+  };
+
   const filteredUsers = users.filter(u => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -280,11 +305,13 @@ export default function AdminPanel() {
     { key: "courses", label: "الدورات", icon: <BookOpen className="w-4 h-4" />, count: stats?.totalCourses },
     { key: "requests", label: "طلبات التسجيل", icon: <FileText className="w-4 h-4" />, count: stats?.totalRequests },
     { key: "orders", label: "طلبات الكراسات", icon: <ShoppingCart className="w-4 h-4" />, count: stats?.totalOrders },
+    { key: "lms-orders", label: "طلبات الدورات", icon: <GraduationCap className="w-4 h-4" />, count: stats?.totalLmsOrders },
   ];
 
   const statusBadge = (s: string) => {
-    const colors: Record<string, string> = { pending: "bg-amber-100 text-amber-800", approved: "bg-green-100 text-green-800", rejected: "bg-red-100 text-red-800", confirmed: "bg-blue-100 text-blue-800", shipped: "bg-purple-100 text-purple-800", delivered: "bg-green-100 text-green-800", active: "bg-green-100 text-green-800" };
-    return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${colors[s] || "bg-gray-100 text-gray-800"}`}>{s}</span>;
+    const labels: Record<string, string> = { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض", confirmed: "مؤكد", shipped: "تم الشحن", delivered: "تم التوصيل", active: "نشط", paid: "مدفوع", cancelled: "ملغى" };
+    const colors: Record<string, string> = { pending: "bg-amber-100 text-amber-800", approved: "bg-green-100 text-green-800", rejected: "bg-red-100 text-red-800", confirmed: "bg-blue-100 text-blue-800", shipped: "bg-purple-100 text-purple-800", delivered: "bg-green-100 text-green-800", active: "bg-green-100 text-green-800", paid: "bg-green-100 text-green-800", cancelled: "bg-red-100 text-red-800" };
+    return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${colors[s] || "bg-gray-100 text-gray-800"}`}>{labels[s] || s}</span>;
   };
 
   return (
@@ -305,12 +332,13 @@ export default function AdminPanel() {
 
       <main className="container mx-auto px-6 py-6 space-y-6">
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
               { label: "المستخدمون", value: stats.totalUsers, icon: <Users className="w-5 h-5 text-primary" />, bg: "bg-primary/10" },
               { label: "الدورات", value: stats.totalCourses, icon: <BookOpen className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100" },
               { label: "طلبات التسجيل", value: stats.totalRequests, icon: <FileText className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100" },
               { label: "طلبات الكراسات", value: stats.totalOrders, icon: <ShoppingCart className="w-5 h-5 text-purple-600" />, bg: "bg-purple-100" },
+              { label: "طلبات الدورات", value: stats.totalLmsOrders ?? 0, icon: <GraduationCap className="w-5 h-5 text-teal-600" />, bg: "bg-teal-100" },
             ].map((s, i) => (
               <Card key={i}><CardContent className="p-4 flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full ${s.bg} flex items-center justify-center shrink-0`}>{s.icon}</div>
@@ -581,6 +609,79 @@ export default function AdminPanel() {
                     </tr>
                   ))}
                   {orders.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">لا توجد طلبات</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </CardContent></Card>
+        )}
+
+        {tab === "lms-orders" && (
+          <Card><CardContent className="p-5">
+            <h2 className="font-bold flex items-center gap-2 mb-4">
+              <GraduationCap className="w-5 h-5 text-primary" /> طلبات تسجيل الدورات ({lmsOrders.length})
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b text-muted-foreground">
+                  <th className="text-start py-2 px-3 font-medium">الاسم</th>
+                  <th className="text-start py-2 px-3 font-medium">البريد</th>
+                  <th className="text-start py-2 px-3 font-medium">الهاتف</th>
+                  <th className="text-start py-2 px-3 font-medium">الدورة</th>
+                  <th className="text-start py-2 px-3 font-medium">المبلغ</th>
+                  <th className="text-start py-2 px-3 font-medium">ملاحظات الدفع</th>
+                  <th className="text-start py-2 px-3 font-medium">الحالة</th>
+                  <th className="text-start py-2 px-3 font-medium">التاريخ</th>
+                  <th className="text-end py-2 px-3 font-medium">إجراءات</th>
+                </tr></thead>
+                <tbody>
+                  {lmsOrders.map(o => (
+                    <tr key={o.id} className="border-b border-border/30 hover:bg-muted/20">
+                      <td className="py-2 px-3 font-medium">{o.buyerName}</td>
+                      <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerEmail}</td>
+                      <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerPhone}</td>
+                      <td className="py-2 px-3 text-xs">{o.courseTitle || "—"}</td>
+                      <td className="py-2 px-3 font-bold text-primary">{o.amount ? `${o.amount} JOD` : "—"}</td>
+                      <td className="py-2 px-3 text-xs text-muted-foreground max-w-[150px] truncate">{o.paymentNotes || "—"}</td>
+                      <td className="py-2 px-3">
+                        {statusBadge(o.status)}
+                        {o.status === "paid" && !o.userId && (
+                          <span className="ms-1 text-[9px] text-amber-600">بدون حساب</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString("ar-SA")}</td>
+                      <td className="py-2 px-3 text-end">
+                        <div className="flex items-center justify-end gap-1">
+                          {o.status === "pending" && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => updateLmsOrderStatus(o.id, "paid")}
+                                className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white gap-1"
+                              >
+                                <CheckCircle className="w-3 h-3" /> قبول
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateLmsOrderStatus(o.id, "cancelled")}
+                                className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 border-destructive/30 gap-1"
+                              >
+                                <XCircle className="w-3 h-3" /> رفض
+                              </Button>
+                            </>
+                          )}
+                          {o.status !== "pending" && (
+                            <select value={o.status} onChange={e => updateLmsOrderStatus(o.id, e.target.value)} className="text-xs border rounded p-1 bg-background">
+                              <option value="pending">قيد المراجعة</option>
+                              <option value="paid">مدفوع</option>
+                              <option value="cancelled">ملغى</option>
+                            </select>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {lmsOrders.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">لا توجد طلبات دورات بعد</td></tr>}
                 </tbody>
               </table>
             </div>

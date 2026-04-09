@@ -8,6 +8,7 @@ import {
   lessonProgressTable,
   enrollmentRequestsTable,
   workbookOrdersTable,
+  ordersTable,
 } from "../db.js";
 import { eq, desc, sql, asc, inArray, and } from "drizzle-orm";
 
@@ -42,6 +43,7 @@ router.get("/admin/stats", async (req, res) => {
     const [enrollmentsCount] = await db.select({ count: sql`count(*)::int` }).from(enrollmentsTable);
     const [requestsCount] = await db.select({ count: sql`count(*)::int` }).from(enrollmentRequestsTable);
     const [ordersCount] = await db.select({ count: sql`count(*)::int` }).from(workbookOrdersTable);
+    const [lmsOrdersCount] = await db.select({ count: sql`count(*)::int` }).from(ordersTable);
     res.json({
       totalUsers: usersCount.count,
       todaySignups: todayCount.count,
@@ -50,6 +52,7 @@ router.get("/admin/stats", async (req, res) => {
       totalEnrollments: enrollmentsCount.count,
       totalRequests: requestsCount.count,
       totalOrders: ordersCount.count,
+      totalLmsOrders: lmsOrdersCount.count,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch stats" });
@@ -363,6 +366,65 @@ router.post("/my/lessons/:lessonId/complete", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update progress" });
+  }
+});
+
+router.get("/admin/lms-orders", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const orders = await db
+      .select({
+        id: ordersTable.id,
+        userId: ordersTable.userId,
+        courseId: ordersTable.courseId,
+        buyerName: ordersTable.buyerName,
+        buyerEmail: ordersTable.buyerEmail,
+        buyerPhone: ordersTable.buyerPhone,
+        amount: ordersTable.amount,
+        currency: ordersTable.currency,
+        status: ordersTable.status,
+        paymentNotes: ordersTable.paymentNotes,
+        adminNotes: ordersTable.adminNotes,
+        createdAt: ordersTable.createdAt,
+        courseTitle: coursesTable.titleAr,
+      })
+      .from(ordersTable)
+      .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
+      .orderBy(desc(ordersTable.createdAt));
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch LMS orders" });
+  }
+});
+
+router.patch("/admin/lms-orders/:id", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const { status, adminNotes } = req.body;
+    const updates = { updatedAt: new Date() };
+    if (status) updates.status = status;
+    if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+    if (status === "paid") updates.adminApprovedBy = req.user.email;
+
+    const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
+    if (!order) { res.status(404).json({ error: "Not found" }); return; }
+
+    if (status === "paid" && order.userId && order.courseId) {
+      const existing = await db
+        .select()
+        .from(enrollmentsTable)
+        .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
+      if (existing.length === 0) {
+        await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId, status: "active" });
+      } else if (existing[0].status !== "active") {
+        await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+      }
+    }
+
+    res.json({ order });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update LMS order" });
   }
 });
 

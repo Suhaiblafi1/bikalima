@@ -5,6 +5,7 @@ import { usersTable } from "./auth";
 export const coursesTable = pgTable("courses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   programId: varchar("program_id"),
+  slug: varchar("slug"),
   titleAr: varchar("title_ar").notNull(),
   titleEn: varchar("title_en").notNull(),
   titleFr: varchar("title_fr").notNull(),
@@ -12,6 +13,7 @@ export const coursesTable = pgTable("courses", {
   descriptionEn: text("description_en"),
   descriptionFr: text("description_fr"),
   imageUrl: varchar("image_url"),
+  price: integer("price"),
   isPublished: boolean("is_published").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -87,9 +89,39 @@ export const workbookOrdersTable = pgTable("workbook_orders", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const ordersTable = pgTable("orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  courseId: varchar("course_id").references(() => coursesTable.id, { onDelete: "set null" }),
+  buyerName: varchar("buyer_name").notNull(),
+  buyerEmail: varchar("buyer_email").notNull(),
+  buyerPhone: varchar("buyer_phone").notNull(),
+  amount: integer("amount"),
+  currency: varchar("currency").default("JOD"),
+  status: varchar("status").notNull().default("pending"),
+  paymentNotes: text("payment_notes"),
+  adminNotes: text("admin_notes"),
+  adminApprovedBy: varchar("admin_approved_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const reviewsTable = pgTable("reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  courseId: varchar("course_id").notNull().references(() => coursesTable.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(),
+  commentAr: text("comment_ar"),
+  commentEn: text("comment_en"),
+  reviewerName: varchar("reviewer_name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type Course = typeof coursesTable.$inferSelect;
 export type Lesson = typeof lessonsTable.$inferSelect;
 export type Enrollment = typeof enrollmentsTable.$inferSelect;
 export type LessonProgress = typeof lessonProgressTable.$inferSelect;
 export type EnrollmentRequest = typeof enrollmentRequestsTable.$inferSelect;
 export type WorkbookOrder = typeof workbookOrdersTable.$inferSelect;
+export type Order = typeof ordersTable.$inferSelect;
+export type Review = typeof reviewsTable.$inferSelect;

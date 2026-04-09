@@ -6,6 +6,7 @@ import workbookOrderRouter from "./workbook-order.js";
 import adminRouter from "./admin.js";
 import consultationRouter from "./consultation.js";
 import coursesRouter from "./courses.js";
+import ordersRouter from "./orders.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use(workbookOrderRouter);
 router.use(adminRouter);
 router.use(consultationRouter);
 router.use(coursesRouter);
+router.use(ordersRouter);
 
 export default router;

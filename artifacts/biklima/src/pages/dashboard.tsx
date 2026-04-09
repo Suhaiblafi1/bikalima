@@ -142,62 +142,6 @@ const dashT = {
       passwordMin: "Password must be at least 6 characters",
     },
   },
-  fr: {
-    title: "Ma Plateforme — Bikalima",
-    welcome: "Bienvenue",
-    tabs: {
-      account: "Mon Compte",
-      courses: "Mes Cours",
-      orders: "Mes Commandes",
-      schedule: "Planning",
-    },
-    account: {
-      heading: "Informations du Compte",
-      name: "Nom",
-      email: "Email",
-      memberSince: "Membre depuis",
-      editProfile: "Modifier le Profil",
-    },
-    courses: {
-      heading: "Cours Inscrits",
-      noCourses: "Vous n'êtes pas encore inscrit à un cours",
-      enrollNow: "S'inscrire",
-      progress: "Progression",
-      accessMaterials: "Accéder aux Matériaux",
-      viewRecordings: "Voir les Enregistrements",
-    },
-    orders: {
-      heading: "Historique des Commandes",
-      noOrders: "Aucune commande pour l'instant",
-      shopNow: "Parcourir les Cahiers",
-      orderNum: "Commande #",
-      date: "Date",
-      status: "Statut",
-      total: "Total",
-      statuses: { pending: "En attente", confirmed: "Confirmé", shipped: "Expédié", delivered: "Livré" },
-    },
-    schedule: {
-      heading: "Planning",
-      noSchedule: "Aucune session planifiée pour l'instant",
-      upcoming: "Sessions à Venir",
-      joinZoom: "Rejoindre via Zoom",
-      date: "Date",
-      time: "Heure",
-      type: "Type",
-      online: "En ligne",
-      inPerson: "En présentiel",
-      location: "Lieu",
-    },
-    backHome: "Retour à l'Accueil",
-    logout: "Se Déconnecter",
-    auth: {
-      loginTitle: "Se Connecter",
-      email: "Email",
-      password: "Mot de passe",
-      loginBtn: "Se Connecter",
-      passwordMin: "Le mot de passe doit contenir au moins 6 caractères",
-    },
-  },
 };
 
 const tabIcons = {
@@ -378,6 +322,18 @@ type OrderData = {
   createdAt: string;
 };
 
+type LmsOrderData = {
+  id: string;
+  courseId: string | null;
+  courseTitleAr: string | null;
+  courseTitleEn: string | null;
+  amount: number | null;
+  currency: string;
+  status: string;
+  paymentNotes: string | null;
+  createdAt: string;
+};
+
 type RequestData = {
   id: string;
   applicantType: string;
@@ -394,6 +350,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>("account");
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
+  const [lmsOrders, setLmsOrders] = useState<LmsOrderData[]>([]);
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [viewingCourse, setViewingCourse] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
@@ -409,14 +366,16 @@ export default function Dashboard() {
   const fetchData = useCallback(async () => {
     setDataLoading(true);
     try {
-      const [cRes, oRes, rRes] = await Promise.all([
+      const [cRes, oRes, rRes, lmsRes] = await Promise.all([
         fetch(`${apiBase}/my/courses`, { credentials: "include" }),
         fetch(`${apiBase}/my/orders`, { credentials: "include" }),
         fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
+        fetch(`${apiBase}/my/lms-orders`, { credentials: "include" }),
       ]);
       if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); }
       if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders || []); }
       if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
+      if (lmsRes.ok) { const d = await lmsRes.json(); setLmsOrders(d.orders || []); }
     } catch {}
     setDataLoading(false);
   }, [apiBase]);
@@ -462,14 +421,14 @@ export default function Dashboard() {
 
   const statusLabel = (s: string) => {
     const labels: Record<string, Record<string, string>> = {
-      ar: { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض", confirmed: "مؤكد", shipped: "تم الشحن", delivered: "تم التوصيل" },
-      en: { pending: "Pending", approved: "Approved", rejected: "Rejected", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered" },
+      ar: { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض", confirmed: "مؤكد", shipped: "تم الشحن", delivered: "تم التوصيل", paid: "مدفوع", cancelled: "ملغى" },
+      en: { pending: "Pending", approved: "Approved", rejected: "Rejected", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered", paid: "Paid", cancelled: "Cancelled" },
     };
     return labels[lang]?.[s] || s;
   };
 
   const statusColor = (s: string) => {
-    const c: Record<string, string> = { pending: "bg-amber-100 text-amber-800", approved: "bg-green-100 text-green-800", rejected: "bg-red-100 text-red-800", confirmed: "bg-blue-100 text-blue-800", shipped: "bg-purple-100 text-purple-800", delivered: "bg-green-100 text-green-800" };
+    const c: Record<string, string> = { pending: "bg-amber-100 text-amber-800", approved: "bg-green-100 text-green-800", rejected: "bg-red-100 text-red-800", confirmed: "bg-blue-100 text-blue-800", shipped: "bg-purple-100 text-purple-800", delivered: "bg-green-100 text-green-800", paid: "bg-green-100 text-green-800", cancelled: "bg-red-100 text-red-800" };
     return c[s] || "bg-gray-100 text-gray-800";
   };
 
@@ -768,52 +727,90 @@ export default function Dashboard() {
             )}
 
             {activeTab === "orders" && (
-              <Card className="rounded-2xl">
-                <CardContent className="p-6 md:p-8">
-                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-primary" />
-                    {t.orders.heading}
-                  </h3>
-                  {dataLoading ? (
-                    <div className="py-12 text-center"><div className="animate-spin w-6 h-6 border-3 border-primary border-t-transparent rounded-full mx-auto" /></div>
-                  ) : orders.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead><tr className="border-b text-muted-foreground">
-                          <th className="text-start py-2 px-3 font-medium">{t.orders.orderNum}</th>
-                          <th className="text-start py-2 px-3 font-medium">{isRtl ? "الكراسة" : "Workbook"}</th>
-                          <th className="text-start py-2 px-3 font-medium">{isRtl ? "الصيغة" : "Format"}</th>
-                          <th className="text-start py-2 px-3 font-medium">{t.orders.total}</th>
-                          <th className="text-start py-2 px-3 font-medium">{t.orders.status}</th>
-                          <th className="text-start py-2 px-3 font-medium">{t.orders.date}</th>
-                        </tr></thead>
-                        <tbody>
-                          {orders.map((o, idx) => (
-                            <tr key={o.id} className="border-b border-border/30">
-                              <td className="py-3 px-3 font-medium">#{idx + 1}</td>
-                              <td className="py-3 px-3">{o.workbookId}</td>
-                              <td className="py-3 px-3">{o.format === "pdf" ? (isRtl ? "رقمية" : "PDF") : (isRtl ? "مطبوعة" : "Print")}</td>
-                              <td className="py-3 px-3 font-bold">{o.totalPrice} JOD</td>
-                              <td className="py-3 px-3"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor(o.status)}`}>{statusLabel(o.status)}</span></td>
-                              <td className="py-3 px-3 text-muted-foreground text-xs">{new Date(o.createdAt).toLocaleDateString(isRtl ? "ar-SA" : undefined)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 space-y-4">
-                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                        <ShoppingCart className="w-10 h-10 text-primary/50" />
+              <div className="space-y-6">
+                {/* LMS Course Orders */}
+                <Card className="rounded-2xl">
+                  <CardContent className="p-6 md:p-8">
+                    <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-primary" />
+                      {isRtl ? "طلبات الدورات" : "Course Orders"}
+                    </h3>
+                    {dataLoading ? (
+                      <div className="py-8 text-center"><div className="animate-spin w-6 h-6 border-3 border-primary border-t-transparent rounded-full mx-auto" /></div>
+                    ) : lmsOrders.length > 0 ? (
+                      <div className="space-y-3">
+                        {lmsOrders.map((o) => (
+                          <div key={o.id} className="flex items-center justify-between bg-muted/30 border border-border/40 rounded-xl p-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{isRtl ? (o.courseTitleAr || "—") : (o.courseTitleEn || o.courseTitleAr || "—")}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{new Date(o.createdAt).toLocaleDateString(isRtl ? "ar-SA" : undefined)}</p>
+                              {o.paymentNotes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{o.paymentNotes}</p>}
+                            </div>
+                            <div className="flex items-center gap-3 ms-4 shrink-0">
+                              {o.amount && <span className="font-bold text-primary text-sm">{o.amount} JOD</span>}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor(o.status)}`}>{statusLabel(o.status)}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-muted-foreground text-lg">{t.orders.noOrders}</p>
-                      <Button onClick={() => navigate("/")} className="rounded-full bg-primary text-white">
-                        {t.orders.shopNow}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    ) : (
+                      <div className="text-center py-10 space-y-3">
+                        <BookOpen className="w-10 h-10 text-primary/30 mx-auto" />
+                        <p className="text-muted-foreground">{isRtl ? "لم تُقدّم أي طلب للدورات بعد" : "No course orders yet"}</p>
+                        <Button onClick={() => navigate("/courses")} className="rounded-full bg-primary text-white text-sm">
+                          {isRtl ? "تصفح الدورات" : "Browse Courses"}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Workbook Orders */}
+                <Card className="rounded-2xl">
+                  <CardContent className="p-6 md:p-8">
+                    <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+                      <ShoppingCart className="w-5 h-5 text-primary" />
+                      {isRtl ? "طلبات الكراسات" : "Workbook Orders"}
+                    </h3>
+                    {dataLoading ? (
+                      <div className="py-8 text-center"><div className="animate-spin w-6 h-6 border-3 border-primary border-t-transparent rounded-full mx-auto" /></div>
+                    ) : orders.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead><tr className="border-b text-muted-foreground">
+                            <th className="text-start py-2 px-3 font-medium">{t.orders.orderNum}</th>
+                            <th className="text-start py-2 px-3 font-medium">{isRtl ? "الكراسة" : "Workbook"}</th>
+                            <th className="text-start py-2 px-3 font-medium">{isRtl ? "الصيغة" : "Format"}</th>
+                            <th className="text-start py-2 px-3 font-medium">{t.orders.total}</th>
+                            <th className="text-start py-2 px-3 font-medium">{t.orders.status}</th>
+                            <th className="text-start py-2 px-3 font-medium">{t.orders.date}</th>
+                          </tr></thead>
+                          <tbody>
+                            {orders.map((o, idx) => (
+                              <tr key={o.id} className="border-b border-border/30">
+                                <td className="py-3 px-3 font-medium">#{idx + 1}</td>
+                                <td className="py-3 px-3">{o.workbookId}</td>
+                                <td className="py-3 px-3">{o.format === "pdf" ? (isRtl ? "رقمية" : "PDF") : (isRtl ? "مطبوعة" : "Print")}</td>
+                                <td className="py-3 px-3 font-bold">{o.totalPrice} JOD</td>
+                                <td className="py-3 px-3"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor(o.status)}`}>{statusLabel(o.status)}</span></td>
+                                <td className="py-3 px-3 text-muted-foreground text-xs">{new Date(o.createdAt).toLocaleDateString(isRtl ? "ar-SA" : undefined)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 space-y-3">
+                        <ShoppingCart className="w-10 h-10 text-primary/30 mx-auto" />
+                        <p className="text-muted-foreground">{t.orders.noOrders}</p>
+                        <Button onClick={() => navigate("/")} className="rounded-full bg-primary text-white text-sm">
+                          {t.orders.shopNow}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeTab === "schedule" && (

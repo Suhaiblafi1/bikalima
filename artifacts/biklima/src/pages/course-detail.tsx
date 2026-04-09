@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Star, Clock, BookOpen, Users, CheckCircle2, Lock,
   Play, ChevronDown, ChevronRight, ChevronLeft, Award, Globe, Signal, X, ExternalLink,
+  Send, CheckCircle, AlertCircle, Phone, Mail, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { programs, getLocalizedProgram, RECORDED_PRICES } from "@/programsData";
 import type { Lang } from "@/translations";
 
@@ -72,6 +74,21 @@ const T = {
     sessions: "جلسة",
     trainerTitle: "مستشار · باحث دكتوراه · متحدث TEDx · مؤسس بكلمة",
     trainerBio: "مستشار يعمل مع مجموعة من المؤسسات التنموية والخيرية والحكومية في المنطقة، من بينها Qatar Foundation، ووزارة الاقتصاد والسياحة في الإمارات. محاضر في عدد من الجامعات، باحث دكتوراه في Aston University (UK)، ومتحدث TEDx ومؤلف سلسلة كراسات بكلمة.",
+    orderModal: {
+      title: "طلب التسجيل في الدورة",
+      subtitle: "أكمل بياناتك وسنتواصل معك لتأكيد الدفع وتفعيل حسابك",
+      name: "الاسم الكامل",
+      email: "البريد الإلكتروني",
+      phone: "رقم الهاتف (واتساب)",
+      notes: "ملاحظات حول الدفع (اختياري)",
+      notesPlaceholder: "مثلاً: سأدفع عبر كليك / تحويل بنكي",
+      submit: "إرسال الطلب",
+      submitting: "جاري الإرسال...",
+      successTitle: "تم إرسال طلبك بنجاح!",
+      successMsg: "سيتواصل معك فريق بكلمة خلال 24 ساعة لإتمام إجراءات الدفع وتفعيل حسابك.",
+      errorMsg: "حدث خطأ أثناء الإرسال — يرجى المحاولة مرة أخرى.",
+      close: "إغلاق",
+    },
   },
   en: {
     back: "All Courses",
@@ -119,6 +136,21 @@ const T = {
     sessions: "sessions",
     trainerTitle: "Consultant · PhD Researcher · TEDx Speaker · Founder of Bikalima",
     trainerBio: "A consultant working with development, charitable and government organisations across the region, including Qatar Foundation and the UAE Ministry of Economy and Tourism. Lecturer and PhD researcher at Aston University (UK). TEDx speaker and author of the Bikalima training workbook series.",
+    orderModal: {
+      title: "Course Enrollment Request",
+      subtitle: "Complete your details and we'll contact you to confirm payment and activate your account",
+      name: "Full Name",
+      email: "Email Address",
+      phone: "Phone Number (WhatsApp)",
+      notes: "Payment Notes (optional)",
+      notesPlaceholder: "e.g., I'll pay via bank transfer",
+      submit: "Submit Request",
+      submitting: "Submitting...",
+      successTitle: "Request Submitted Successfully!",
+      successMsg: "The Bikalima team will contact you within 24 hours to complete payment and activate your account.",
+      errorMsg: "An error occurred — please try again.",
+      close: "Close",
+    },
   },
 };
 
@@ -213,6 +245,172 @@ function VideoModal({ url, title, onClose }: { url: string; title: string; onClo
   );
 }
 
+// ─── Order Form Modal ────────────────────────────────────────
+function OrderModal({
+  lang, t, courseDbId, courseTitle, price, priceUnit, isChildren, onClose,
+}: {
+  lang: Lang;
+  t: typeof T.ar;
+  courseDbId: string;
+  courseTitle: string;
+  price: number | string;
+  priceUnit: string;
+  isChildren: boolean;
+  onClose: () => void;
+}) {
+  const isRtl = lang === "ar";
+  const mt = t.orderModal;
+  const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch(`${baseUrl}/api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: courseDbId,
+          buyerName: form.name.trim(),
+          buyerEmail: form.email.trim(),
+          buyerPhone: form.phone.trim(),
+          paymentNotes: form.notes.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setSuccess(true);
+    } catch {
+      setError(mt.errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" dir={isRtl ? "rtl" : "ltr"} onClick={onClose}>
+      <motion.div
+        initial={{ scale: 0.92, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.92, opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="w-full max-w-md bg-card rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
+          <div>
+            <h2 className="font-bold text-lg text-foreground">{mt.title}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{courseTitle}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {success ? (
+            <div className="text-center py-6 space-y-4">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="font-bold text-lg text-foreground">{mt.successTitle}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{mt.successMsg}</p>
+              <Button onClick={onClose} className="w-full rounded-xl mt-2">{mt.close}</Button>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">{mt.subtitle}</p>
+
+              {!isChildren && (
+                <div className="mb-5 px-4 py-3 bg-primary/8 border border-primary/20 rounded-xl flex items-center gap-3">
+                  <span className="text-2xl font-black text-primary">{price}</span>
+                  <span className="text-sm text-primary/80 font-medium">{priceUnit}</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="mb-4 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-xl flex items-center gap-2 text-destructive text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <User className="w-4 h-4 text-primary" />{mt.name}
+                  </label>
+                  <Input
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
+                    className="rounded-xl"
+                    placeholder={lang === "ar" ? "محمد أحمد" : "John Smith"}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <Mail className="w-4 h-4 text-primary" />{mt.email}
+                  </label>
+                  <Input
+                    type="email"
+                    required
+                    dir="ltr"
+                    value={form.email}
+                    onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                    className="rounded-xl"
+                    placeholder="name@example.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <Phone className="w-4 h-4 text-primary" />{mt.phone}
+                  </label>
+                  <Input
+                    type="tel"
+                    required
+                    dir="ltr"
+                    value={form.phone}
+                    onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
+                    className="rounded-xl"
+                    placeholder="+962 7X XXX XXXX"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">{mt.notes}</label>
+                  <textarea
+                    value={form.notes}
+                    onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))}
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                    rows={2}
+                    placeholder={mt.notesPlaceholder}
+                  />
+                </div>
+                <Button type="submit" disabled={submitting} className="w-full rounded-xl py-3 bg-primary text-primary-foreground font-bold gap-2">
+                  <Send className="w-4 h-4" />
+                  {submitting ? mt.submitting : mt.submit}
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────
 export default function CourseDetailPage() {
   const [, params] = useRoute("/courses/:slug");
@@ -223,6 +421,17 @@ export default function CourseDetailPage() {
   });
   const [previewModal, setPreviewModal] = useState<{ url: string; title: string } | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({ 0: true });
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [courseDbId, setCourseDbId] = useState<string>("");
+
+  useEffect(() => {
+    if (!slug) return;
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+    fetch(`${base}/api/courses/${slug}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.course?.id) setCourseDbId(data.course.id); })
+      .catch(() => {});
+  }, [slug]);
 
   const isRtl = lang === "ar";
   const t = T[lang];
@@ -304,7 +513,8 @@ export default function CourseDetailPage() {
         )}
         <Button
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-3 text-base font-bold mb-3"
-          onClick={() => navigate(`${baseUrl}/#enroll`)}
+          onClick={() => setOrderModalOpen(true)}
+          disabled={!courseDbId}
         >
           {t.enroll}
         </Button>
@@ -618,7 +828,8 @@ export default function CourseDetailPage() {
             <div className="lg:hidden mt-8 mb-4">
               <Button
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-4 text-base font-bold"
-                onClick={() => navigate(`${baseUrl}/#enroll`)}
+                onClick={() => setOrderModalOpen(true)}
+                disabled={!courseDbId}
               >
                 {t.enroll} — {programId !== "children" ? `${price} ${t.priceUnit}` : t.free}
               </Button>
@@ -645,6 +856,22 @@ export default function CourseDetailPage() {
       {previewModal && (
         <VideoModal url={previewModal.url} title={previewModal.title} onClose={() => setPreviewModal(null)} />
       )}
+
+      {/* ── Order modal ── */}
+      <AnimatePresence>
+        {orderModalOpen && courseDbId && (
+          <OrderModal
+            lang={lang}
+            t={t}
+            courseDbId={courseDbId}
+            courseTitle={loc.shortTitle}
+            price={price}
+            priceUnit={t.priceUnit}
+            isChildren={programId === "children"}
+            onClose={() => setOrderModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
