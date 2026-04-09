@@ -19,17 +19,31 @@ export const coursesTable = pgTable("courses", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export const lessonsTable = pgTable("lessons", {
+export const courseSectionsTable = pgTable("course_sections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   courseId: varchar("course_id").notNull().references(() => coursesTable.id, { onDelete: "cascade" }),
   titleAr: varchar("title_ar").notNull(),
   titleEn: varchar("title_en").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isPublished: boolean("is_published").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const lessonsTable = pgTable("lessons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => coursesTable.id, { onDelete: "cascade" }),
+  sectionId: varchar("section_id").references(() => courseSectionsTable.id, { onDelete: "set null" }),
+  titleAr: varchar("title_ar").notNull(),
+  titleEn: varchar("title_en").notNull(),
   titleFr: varchar("title_fr").notNull(),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
   videoUrl: varchar("video_url"),
   videoType: varchar("video_type").$type<"youtube" | "vimeo" | "other">().default("youtube"),
   durationMinutes: integer("duration_minutes"),
   sortOrder: integer("sort_order").notNull().default(0),
   isFreePreview: boolean("is_free_preview").notNull().default(false),
+  resources: jsonb("resources").$type<{ titleAr: string; titleEn: string; url: string; type?: string }[]>(),
   isPublished: boolean("is_published").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -119,6 +133,7 @@ export const reviewsTable = pgTable("reviews", {
 });
 
 export type Course = typeof coursesTable.$inferSelect;
+export type CourseSection = typeof courseSectionsTable.$inferSelect;
 export type Lesson = typeof lessonsTable.$inferSelect;
 export type Enrollment = typeof enrollmentsTable.$inferSelect;
 export type LessonProgress = typeof lessonProgressTable.$inferSelect;

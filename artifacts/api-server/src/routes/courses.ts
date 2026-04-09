@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import {
   db,
   coursesTable,
+  courseSectionsTable,
   lessonsTable,
   enrollmentsTable,
   lessonProgressTable,
@@ -79,38 +80,44 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
 });
 
 router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated() || !req.user) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
   try {
     const { slug } = req.params;
     const course = await getCourseBySlug(slug);
     if (!course) { res.status(404).json({ error: "Course not found" }); return; }
 
-    const enrollment = await getEnrollmentStatus(req.user.id, course.id);
-    if (!enrollment || enrollment.status !== "active") {
-      res.status(403).json({ error: "Not enrolled in this course" });
-      return;
+    const isLoggedIn = req.isAuthenticated() && !!req.user;
+    let enrolled = false;
+    let progressMap: Record<string, boolean> = {};
+
+    if (isLoggedIn && req.user) {
+      const enrollment = await getEnrollmentStatus(req.user.id, course.id);
+      enrolled = !!enrollment && enrollment.status === "active";
+
+      if (enrolled) {
+        const lessons = await db.select({ lessonId: lessonsTable.id }).from(lessonsTable)
+          .where(eq(lessonsTable.courseId, course.id));
+        const lessonIds = lessons.map(l => l.lessonId);
+        if (lessonIds.length > 0) {
+          const progress = await db.select().from(lessonProgressTable)
+            .where(eq(lessonProgressTable.userId, req.user.id));
+          for (const p of progress) {
+            if (p.completed && lessonIds.includes(p.lessonId)) {
+              progressMap[p.lessonId] = true;
+            }
+          }
+        }
+      }
     }
 
-    const lessons = await db
-      .select()
-      .from(lessonsTable)
+    const sections = await db.select().from(courseSectionsTable)
+      .where(eq(courseSectionsTable.courseId, course.id))
+      .orderBy(asc(courseSectionsTable.sortOrder));
+
+    const lessons = await db.select().from(lessonsTable)
       .where(eq(lessonsTable.courseId, course.id))
       .orderBy(asc(lessonsTable.sortOrder));
 
-    const progress = await db
-      .select()
-      .from(lessonProgressTable)
-      .where(eq(lessonProgressTable.userId, req.user.id));
-
-    const progressMap: Record<string, boolean> = {};
-    for (const p of progress) {
-      if (p.completed) progressMap[p.lessonId] = true;
-    }
-
-    res.json({ course, lessons, progressMap });
+    res.json({ course, sections, lessons, progressMap, enrolled });
   } catch {
     res.status(500).json({ error: "Failed to load course" });
   }

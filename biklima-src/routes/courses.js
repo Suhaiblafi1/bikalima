@@ -186,34 +186,43 @@ router.get("/courses/:slug/access", async (req, res) => {
 });
 
 router.get("/courses/:slug/learn", async (req, res) => {
-  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
   try {
     const { slug } = req.params;
     const [course] = await db.select().from(coursesTable).where(eq(coursesTable.slug, slug));
     if (!course) return res.status(404).json({ error: "Course not found" });
 
-    const [enrollment] = await db.select().from(enrollmentsTable)
-      .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.courseId, course.id)));
+    const isLoggedIn = req.isAuthenticated && req.isAuthenticated() && req.user;
+    let enrolled = false;
+    let progressMap = {};
 
-    if (!enrollment || enrollment.status !== "active") {
-      return res.status(403).json({ error: "Not enrolled in this course" });
+    if (isLoggedIn) {
+      const [enrollment] = await db.select().from(enrollmentsTable)
+        .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.courseId, course.id)));
+      enrolled = !!enrollment && enrollment.status === "active";
+
+      if (enrolled) {
+        const lessonIds = await db.select({ lessonId: lessonsTable.id }).from(lessonsTable)
+          .where(eq(lessonsTable.courseId, course.id));
+        const ids = lessonIds.map(l => l.lessonId);
+        if (ids.length > 0) {
+          const progress = await db.select().from(lessonProgressTable)
+            .where(eq(lessonProgressTable.userId, req.user.id));
+          for (const p of progress) {
+            if (p.completed && ids.includes(p.lessonId)) progressMap[p.lessonId] = true;
+          }
+        }
+      }
     }
+
+    const sections = await db.select().from(courseSectionsTable)
+      .where(eq(courseSectionsTable.courseId, course.id))
+      .orderBy(asc(courseSectionsTable.sortOrder));
 
     const lessons = await db.select().from(lessonsTable)
       .where(eq(lessonsTable.courseId, course.id))
       .orderBy(asc(lessonsTable.sortOrder));
 
-    const progress = await db.select().from(lessonProgressTable)
-      .where(eq(lessonProgressTable.userId, req.user.id));
-
-    const progressMap = {};
-    for (const p of progress) {
-      if (p.completed) progressMap[p.lessonId] = true;
-    }
-
-    res.json({ course, lessons, progressMap });
+    res.json({ course, sections, lessons, progressMap, enrolled });
   } catch (err) {
     console.error("GET /courses/:slug/learn error:", err);
     res.status(500).json({ error: "Failed to load course" });
