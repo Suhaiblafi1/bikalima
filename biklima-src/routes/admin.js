@@ -433,4 +433,63 @@ router.patch("/admin/lms-orders/:id", async (req, res) => {
   }
 });
 
+// Aliases: /admin/orders mirrors /admin/lms-orders
+router.get("/admin/orders", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { desc } = await import("drizzle-orm");
+    const orders = await db
+      .select({
+        id: ordersTable.id,
+        courseId: ordersTable.courseId,
+        userId: ordersTable.userId,
+        buyerName: ordersTable.buyerName,
+        buyerEmail: ordersTable.buyerEmail,
+        buyerPhone: ordersTable.buyerPhone,
+        amount: ordersTable.amount,
+        currency: ordersTable.currency,
+        status: ordersTable.status,
+        paymentNotes: ordersTable.paymentNotes,
+        adminNotes: ordersTable.adminNotes,
+        adminApprovedBy: ordersTable.adminApprovedBy,
+        createdAt: ordersTable.createdAt,
+        updatedAt: ordersTable.updatedAt,
+      })
+      .from(ordersTable)
+      .orderBy(desc(ordersTable.createdAt));
+    res.json({ orders });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+router.patch("/admin/orders/:id", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const { status, adminNotes } = req.body;
+    if (status && !VALID_LMS_STATUSES.includes(status)) {
+      return res.status(400).json({ error: "Invalid status value" });
+    }
+    const updates = { updatedAt: new Date() };
+    if (status) updates.status = status;
+    if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+    if (status === "paid") updates.adminApprovedBy = req.user.id;
+    const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
+    if (!order) { res.status(404).json({ error: "Not found" }); return; }
+    if (status === "paid" && order.userId && order.courseId) {
+      const existing = await db.select().from(enrollmentsTable)
+        .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
+      if (existing.length === 0) {
+        await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId, status: "active" });
+      } else if (existing[0].status !== "active") {
+        await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+      }
+    }
+    res.json({ order });
+  } catch {
+    res.status(500).json({ error: "Failed to update order" });
+  }
+});
+
 export default router;

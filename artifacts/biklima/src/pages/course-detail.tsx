@@ -429,10 +429,13 @@ export default function CourseDetailPage() {
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [courseDbId, setCourseDbId] = useState<string>("");
   const [hasAccess, setHasAccess] = useState(false);
-  const [dbLessons, setDbLessons] = useState<{ id: string; isFreePreview: boolean; sortOrder: number }[]>([]);
+  const [dbLessons, setDbLessons] = useState<{ id: string; titleAr: string; titleEn: string; isFreePreview: boolean; sortOrder: number }[]>([]);
 
   useEffect(() => {
     if (!slug) return;
+    setCourseDbId("");
+    setHasAccess(false);
+    setDbLessons([]);
     const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
     fetch(`${base}/api/courses/${slug}`)
       .then(r => r.ok ? r.json() : null)
@@ -440,8 +443,10 @@ export default function CourseDetailPage() {
         if (data?.course?.id) {
           setCourseDbId(data.course.id);
           if (Array.isArray(data.course.lessons)) {
-            setDbLessons(data.course.lessons.map((l: { id: string; isFreePreview?: boolean; sortOrder?: number }) => ({
+            setDbLessons(data.course.lessons.map((l: { id: string; titleAr?: string; titleEn?: string; isFreePreview?: boolean; sortOrder?: number }) => ({
               id: l.id,
+              titleAr: l.titleAr ?? "",
+              titleEn: l.titleEn ?? "",
               isFreePreview: l.isFreePreview ?? false,
               sortOrder: l.sortOrder ?? 0,
             })));
@@ -451,7 +456,7 @@ export default function CourseDetailPage() {
       .catch(() => {});
     fetch(`${base}/api/courses/${slug}/access`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.hasAccess) setHasAccess(true); })
+      .then(data => { setHasAccess(data?.hasAccess === true); })
       .catch(() => {});
   }, [slug]);
 
@@ -495,11 +500,15 @@ export default function CourseDetailPage() {
   const faq = FAQ[programId] || [];
   const previewVideoUrl = PROGRAM_PREVIEW_VIDEOS[programId];
 
-  // Build sections from modules
+  // Build lesson outline: prefer DB lessons when available, fall back to static modules
   const SECTION_SIZE = 3;
-  const syntheticSections = [];
-  for (let i = 0; i < loc.modules.length; i += SECTION_SIZE) {
-    syntheticSections.push(loc.modules.slice(i, i + SECTION_SIZE));
+  const hasDbLessons = dbLessons.length > 0;
+  const lessonOutline: { title: string; isFreePreview: boolean; id?: string }[] = hasDbLessons
+    ? dbLessons.map(l => ({ title: lang === "ar" ? l.titleAr || l.titleEn : l.titleEn || l.titleAr, isFreePreview: l.isFreePreview, id: l.id }))
+    : loc.modules.map((m, i) => ({ title: m, isFreePreview: i === 0, id: undefined }));
+  const syntheticSections: { title: string; isFreePreview: boolean; id?: string }[][] = [];
+  for (let i = 0; i < lessonOutline.length; i += SECTION_SIZE) {
+    syntheticSections.push(lessonOutline.slice(i, i + SECTION_SIZE));
   }
 
   const ArrowEnd = isRtl ? ArrowLeft : ArrowRight;
@@ -706,7 +715,7 @@ export default function CourseDetailPage() {
                 {t.courseContent}
               </h2>
               <p className="text-muted-foreground text-sm mb-5">
-                {syntheticSections.length} {t.sections} · {loc.modules.length} {t.lessons} · {program.hours} {t.hours}
+                {syntheticSections.length} {t.sections} · {lessonOutline.length} {t.lessons} · {program.hours} {t.hours}
               </p>
 
               <div>
@@ -732,27 +741,22 @@ export default function CourseDetailPage() {
                           <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
                             <div className="divide-y divide-border/50">
                               {section.map((lesson, li) => {
-                                const globalIdx = si * SECTION_SIZE + li;
-                                const dbLesson = dbLessons[globalIdx];
-                                const isFreePreviewFromDb = dbLesson?.isFreePreview ?? false;
-                                const hasDbLessons = dbLessons.length > 0;
-                                const isFirstLessonFallback = !hasDbLessons && globalIdx === 0;
-                                const isFreePreview = hasAccess || isFreePreviewFromDb || isFirstLessonFallback;
-                                const canPlay = isFreePreview && previewVideoUrl;
+                                const isUnlocked = hasAccess || lesson.isFreePreview;
+                                const canPlay = isUnlocked && !!previewVideoUrl;
                                 return (
                                   <div
-                                    key={li}
+                                    key={lesson.id ?? `${si}-${li}`}
                                     className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${canPlay ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/20"}`}
-                                    onClick={canPlay ? () => setPreviewModal({ url: previewVideoUrl!, title: lesson }) : undefined}
+                                    onClick={canPlay ? () => setPreviewModal({ url: previewVideoUrl!, title: lesson.title }) : undefined}
                                     title={canPlay ? t.freePreview : undefined}
                                   >
-                                    {isFreePreview ? (
+                                    {isUnlocked ? (
                                       <Play className="w-4 h-4 text-primary shrink-0" />
                                     ) : (
                                       <Lock className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                                     )}
-                                    <span className={`text-sm flex-1 ${isFreePreview ? "text-foreground font-medium" : "text-foreground/70"}`}>{lesson}</span>
-                                    {!hasAccess && (isFreePreviewFromDb || isFirstLessonFallback) && (
+                                    <span className={`text-sm flex-1 ${isUnlocked ? "text-foreground font-medium" : "text-foreground/70"}`}>{lesson.title}</span>
+                                    {!hasAccess && lesson.isFreePreview && (
                                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
                                         {t.freePreview}
                                       </span>
