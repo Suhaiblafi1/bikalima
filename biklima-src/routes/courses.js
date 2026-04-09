@@ -123,7 +123,7 @@ router.get("/courses/:slug", async (req, res) => {
     const ungroupedLessons = lessons.filter((l) => !l.sectionId);
 
     res.json({
-      course,
+      course: { ...course, lessons },
       sections: sectionsWithLessons,
       ungroupedLessons,
       instructor,

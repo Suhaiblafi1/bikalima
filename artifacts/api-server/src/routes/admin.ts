@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import {
   db,
   usersTable,
@@ -366,7 +366,10 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
   }
 });
 
-router.get("/admin/lms-orders", async (req: Request, res: Response) => {
+const VALID_ORDER_STATUSES = ["pending", "paid", "cancelled"] as const;
+type OrderStatus = typeof VALID_ORDER_STATUSES[number];
+
+async function adminGetLmsOrders(req: Request, res: Response) {
   if (!requireAdmin(req, res)) return;
   try {
     const orders = await db
@@ -391,121 +394,19 @@ router.get("/admin/lms-orders", async (req: Request, res: Response) => {
       .from(ordersTable)
       .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
       .orderBy(desc(ordersTable.createdAt));
-    const result = orders.map(o => ({
-      ...o,
-      courseTitle: o.courseTitleAr ?? o.courseTitleEn ?? null,
-    }));
-    res.json({ orders: result });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch LMS orders" });
-  }
-});
-
-router.patch("/admin/lms-orders/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
-  try {
-    const { id } = req.params;
-    const { status, adminNotes } = req.body as { status?: string; adminNotes?: string };
-
-    const VALID_STATUSES = ["pending", "paid", "cancelled"] as const;
-    if (status !== undefined && !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
-      res.status(400).json({ error: "Invalid status. Must be pending, paid, or cancelled." });
-      return;
-    }
-
-    const updates: {
-      updatedAt: Date;
-      status?: string;
-      adminNotes?: string;
-      adminApprovedBy?: string;
-    } = { updatedAt: new Date() };
-    if (status !== undefined) updates.status = status;
-    if (adminNotes !== undefined) updates.adminNotes = adminNotes;
-    if (status === "paid" && req.user) updates.adminApprovedBy = req.user.id;
-
-    const [order] = await db
-      .update(ordersTable)
-      .set(updates)
-      .where(eq(ordersTable.id, id))
-      .returning();
-
-    if (!order) {
-      res.status(404).json({ error: "Order not found" });
-      return;
-    }
-
-    if (status === "paid" && order.userId) {
-      const existingEnrollment = await db
-        .select()
-        .from(enrollmentsTable)
-        .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
-
-      if (existingEnrollment.length === 0) {
-        await db.insert(enrollmentsTable).values({
-          userId: order.userId,
-          courseId: order.courseId,
-          status: "active",
-          enrolledAt: new Date(),
-        });
-      } else if (existingEnrollment[0].status !== "active") {
-        await db.update(enrollmentsTable).set({ status: "active" })
-          .where(eq(enrollmentsTable.id, existingEnrollment[0].id));
-      }
-    }
-
-    res.json({ order });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to update LMS order" });
-  }
-});
-
-// Aliases: /admin/orders mirrors /admin/lms-orders for API contract compatibility
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function handleGetLmsOrders(req: Request, res: Response, _next?: NextFunction) {
-  if (!requireAdmin(req, res)) return;
-  try {
-    const { desc: descOp } = await import("drizzle-orm");
-    const orders = await db
-      .select({
-        id: ordersTable.id,
-        courseId: ordersTable.courseId,
-        courseTitleAr: coursesTable.titleAr,
-        courseTitleEn: coursesTable.titleEn,
-        userId: ordersTable.userId,
-        buyerName: ordersTable.buyerName,
-        buyerEmail: ordersTable.buyerEmail,
-        buyerPhone: ordersTable.buyerPhone,
-        amount: ordersTable.amount,
-        currency: ordersTable.currency,
-        status: ordersTable.status,
-        paymentNotes: ordersTable.paymentNotes,
-        adminNotes: ordersTable.adminNotes,
-        adminApprovedBy: ordersTable.adminApprovedBy,
-        createdAt: ordersTable.createdAt,
-        updatedAt: ordersTable.updatedAt,
-      })
-      .from(ordersTable)
-      .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
-      .orderBy(descOp(ordersTable.createdAt));
-    const result = orders.map(o => ({
-      ...o,
-      courseTitle: o.courseTitleAr ?? o.courseTitleEn ?? null,
-    }));
-    res.json({ orders: result });
+    res.json({ orders: orders.map(o => ({ ...o, courseTitle: o.courseTitleAr ?? o.courseTitleEn ?? null })) });
   } catch {
     res.status(500).json({ error: "Failed to fetch LMS orders" });
   }
 }
-router.get("/admin/orders", handleGetLmsOrders);
 
-router.patch("/admin/orders/:id", async (req: Request, res: Response) => {
+async function adminPatchLmsOrder(req: Request, res: Response) {
   if (!requireAdmin(req, res)) return;
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body as { status?: string; adminNotes?: string };
 
-    const VALID_STATUSES = ["pending", "paid", "cancelled"] as const;
-    if (status !== undefined && !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
+    if (status !== undefined && !VALID_ORDER_STATUSES.includes(status as OrderStatus)) {
       res.status(400).json({ error: "Invalid status. Must be pending, paid, or cancelled." });
       return;
     }
@@ -519,20 +420,25 @@ router.patch("/admin/orders/:id", async (req: Request, res: Response) => {
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
 
     if (status === "paid" && order.userId) {
-      const existingEnrollment = await db
+      const existing = await db
         .select()
         .from(enrollmentsTable)
         .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
-      if (existingEnrollment.length === 0) {
+      if (existing.length === 0) {
         await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId, status: "active", enrolledAt: new Date() });
-      } else if (existingEnrollment[0].status !== "active") {
-        await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existingEnrollment[0].id));
+      } else if (existing[0].status !== "active") {
+        await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
       }
     }
     res.json({ order });
   } catch {
-    res.status(500).json({ error: "Failed to update order" });
+    res.status(500).json({ error: "Failed to update LMS order" });
   }
-});
+}
+
+router.get("/admin/lms-orders", adminGetLmsOrders);
+router.get("/admin/orders", adminGetLmsOrders);
+router.patch("/admin/lms-orders/:id", adminPatchLmsOrder);
+router.patch("/admin/orders/:id", adminPatchLmsOrder);
 
 export default router;
