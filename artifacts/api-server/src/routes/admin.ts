@@ -322,11 +322,12 @@ router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) 
     const [original] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
     if (!original) { res.status(404).json({ error: "Not found" }); return; }
     const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = original;
+    const suffix = `-copy-${Date.now()}`;
     const [course] = await db.insert(coursesTable).values({
       ...rest,
       titleAr: `${rest.titleAr} (نسخة)`,
       titleEn: `${rest.titleEn} (copy)`,
-      slug: rest.slug ? `${rest.slug}-copy` : null,
+      slug: rest.slug ? `${rest.slug}${suffix}` : null,
       isPublished: false,
     }).returning();
     const origSections = await db.select().from(courseSectionsTable).where(eq(courseSectionsTable.courseId, id)).orderBy(asc(courseSectionsTable.sortOrder));

@@ -55,6 +55,12 @@ type RevenueDay = { date: string; revenue: number; count: number };
 type TopEnrolled = { courseId: string | null; courseTitleAr: string | null; courseTitleEn: string | null; enrollments: number };
 type RevenueData = { totalRevenue: number; paidOrders: number; pendingRevenue: number; pendingOrders: number; cancelledOrders: number; byCourse: RevenueCourse[]; last30Days: RevenueDay[]; topEnrolled: TopEnrolled[] };
 
+type LessonEditForm = {
+  titleAr: string; titleEn: string; videoUrl: string; videoType: string;
+  durationMinutes: string; sectionId: string; isFreePreview: boolean;
+  isPublished: boolean; descriptionAr: string; descriptionEn: string;
+};
+
 type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors";
 
 function getApiBase() {
@@ -142,7 +148,7 @@ export default function AdminPanel() {
   const [showLessonForm, setShowLessonForm] = useState<string | null>(null);
   const [lessonForm, setLessonForm] = useState({ titleAr: "", titleEn: "", videoUrl: "", videoType: "youtube", durationMinutes: "", sectionId: "", isFreePreview: false, isPublished: true, descriptionAr: "", descriptionEn: "" });
   const [editingLesson, setEditingLesson] = useState<string | null>(null);
-  const [editingLessonForm, setEditingLessonForm] = useState({ titleAr: "", titleEn: "", videoUrl: "", videoType: "youtube", durationMinutes: "", sectionId: "", isFreePreview: false, isPublished: true, descriptionAr: "", descriptionEn: "" });
+  const [editingLessonForm, setEditingLessonForm] = useState<LessonEditForm>({ titleAr: "", titleEn: "", videoUrl: "", videoType: "youtube", durationMinutes: "", sectionId: "", isFreePreview: false, isPublished: true, descriptionAr: "", descriptionEn: "" });
 
   // Enroll form
   const [enrollForm, setEnrollForm] = useState({ userId: "", courseId: "" });
@@ -1064,127 +1070,7 @@ export default function AdminPanel() {
 
         {/* ── REVENUE TAB ── */}
         {tab === "revenue" && (
-          <div className="space-y-5">
-            <h2 className="font-bold flex items-center gap-2"><BarChart3 className="w-5 h-5 text-primary" /> لوحة الإيرادات</h2>
-
-            {!revenue ? (
-              <div className="flex items-center justify-center py-16"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>
-            ) : (
-              <>
-                {/* Stat cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { label: "إجمالي الإيرادات", value: `${revenue.totalRevenue} JOD`, icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-100", bold: true },
-                    { label: "أوامر مدفوعة", value: revenue.paidOrders, icon: <CheckCircle className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", bold: false },
-                    { label: "إيرادات معلّقة", value: `${revenue.pendingRevenue} JOD`, icon: <Clock className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", bold: false },
-                    { label: "طلبات ملغاة", value: revenue.cancelledOrders, icon: <XCircle className="w-5 h-5 text-red-500" />, bg: "bg-red-100", bold: false },
-                  ].map((s, i) => (
-                    <Card key={i}><CardContent className="p-4 flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full ${s.bg} flex items-center justify-center shrink-0`}>{s.icon}</div>
-                      <div>
-                        <p className={`text-xl ${s.bold ? "font-extrabold text-green-700" : "font-bold"}`}>{s.value}</p>
-                        <p className="text-xs text-muted-foreground">{s.label}</p>
-                      </div>
-                    </CardContent></Card>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  {/* Revenue by course */}
-                  <Card><CardContent className="p-5">
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" /> الإيرادات حسب الدورة</h3>
-                    {revenue.byCourse.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات بعد</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {revenue.byCourse.map((c, i) => {
-                          const maxRev = Math.max(...revenue.byCourse.map(x => x.revenue), 1);
-                          return (
-                            <div key={i}>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="font-medium truncate">{c.courseTitleAr || c.courseTitleEn || "غير معروف"}</span>
-                                <span className="font-bold text-primary shrink-0 ms-2">{c.revenue} JOD</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${(c.revenue / maxRev) * 100}%` }} />
-                                </div>
-                                <span className="text-xs text-muted-foreground shrink-0">{c.orders} طلب</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent></Card>
-
-                  {/* Top enrolled */}
-                  <Card><CardContent className="p-5">
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> أكثر الدورات تسجيلاً</h3>
-                    {revenue.topEnrolled.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات بعد</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {revenue.topEnrolled.map((c, i) => {
-                          const maxEnroll = Math.max(...revenue.topEnrolled.map(x => x.enrollments), 1);
-                          return (
-                            <div key={i} className="flex items-center gap-3">
-                              <span className="text-sm font-bold text-muted-foreground w-5 shrink-0">{i + 1}</span>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium truncate">{c.courseTitleAr || c.courseTitleEn || "غير معروف"}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                                    <div className="h-full bg-teal-500 rounded-full" style={{ width: `${(c.enrollments / maxEnroll) * 100}%` }} />
-                                  </div>
-                                  <span className="text-xs text-muted-foreground shrink-0">{c.enrollments} طالب</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent></Card>
-                </div>
-
-                {/* Last 30 days */}
-                <Card><CardContent className="p-5">
-                  <h3 className="font-bold mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> الإيرادات - آخر 30 يوم</h3>
-                  {revenue.last30Days.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد مبيعات في آخر 30 يوم</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead><tr className="border-b text-muted-foreground">
-                          <th className="text-start py-2 px-3 font-medium">التاريخ</th>
-                          <th className="text-start py-2 px-3 font-medium">الإيراد</th>
-                          <th className="text-start py-2 px-3 font-medium">عدد الطلبات</th>
-                          <th className="text-start py-2 px-3 font-medium w-40">الشريط</th>
-                        </tr></thead>
-                        <tbody>
-                          {revenue.last30Days.map((d, i) => {
-                            const maxDay = Math.max(...revenue.last30Days.map(x => x.revenue), 1);
-                            return (
-                              <tr key={i} className="border-b border-border/20 hover:bg-muted/10">
-                                <td className="py-2 px-3">{d.date}</td>
-                                <td className="py-2 px-3 font-bold text-primary">{d.revenue} JOD</td>
-                                <td className="py-2 px-3">{d.count}</td>
-                                <td className="py-2 px-3">
-                                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary rounded-full" style={{ width: `${(d.revenue / maxDay) * 100}%` }} />
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent></Card>
-              </>
-            )}
-          </div>
+          <RevenueTab revenue={revenue} onRefresh={fetchRevenue} />
         )}
       </main>
     </div>
@@ -1194,7 +1080,7 @@ export default function AdminPanel() {
 // ── LessonRow sub-component ────────────────────────────────────────────────
 function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, setEditForm, onEdit, onSave, onCancel, onDelete, onMove, onLessonUpdated }: {
   lesson: LessonRecord; idx: number; allLessons: LessonRecord[]; sections: SectionRecord[];
-  isEditing: boolean; editForm: any; setEditForm: (f: any) => void;
+  isEditing: boolean; editForm: LessonEditForm; setEditForm: (f: LessonEditForm) => void;
   onEdit: () => void; onSave: () => void; onCancel: () => void; onDelete: () => void;
   onMove: (dir: -1 | 1) => void; onLessonUpdated: (l: LessonRecord) => void;
 }) {
@@ -1301,6 +1187,182 @@ function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, set
       </div>
       <Button variant="ghost" size="sm" onClick={onEdit} className="h-6 w-6 p-0 text-blue-600 shrink-0"><Edit3 className="w-3 h-3" /></Button>
       <Button variant="ghost" size="sm" onClick={onDelete} className="h-6 w-6 p-0 text-destructive shrink-0"><Trash2 className="w-3 h-3" /></Button>
+    </div>
+  );
+}
+
+// ── RevenueTab component ────────────────────────────────────────────────────
+type RevenueSortKey = "revenue" | "orders" | "courseTitleAr";
+type DaySortKey = "date" | "revenue" | "count";
+
+function SortButton({ col, sort, dir, onSort }: { col: string; sort: string; dir: "asc" | "desc"; onSort: () => void }) {
+  const active = col === sort;
+  return (
+    <button onClick={onSort} className={`flex items-center gap-0.5 hover:text-foreground transition-colors ${active ? "text-primary font-bold" : "text-muted-foreground"}`}>
+      {col === "revenue" ? "الإيراد" : col === "orders" ? "الطلبات" : col === "courseTitleAr" ? "الدورة" : col === "date" ? "التاريخ" : col === "count" ? "عدد الطلبات" : col === "enrollments" ? "التسجيلات" : col}
+      {active ? (dir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ChevronDown className="w-3 h-3 opacity-30" />}
+    </button>
+  );
+}
+
+function RevenueTab({ revenue, onRefresh }: { revenue: RevenueData | null; onRefresh: () => void }) {
+  const [courseSort, setCourseSort] = useState<RevenueSortKey>("revenue");
+  const [courseSortDir, setCourseSortDir] = useState<"asc" | "desc">("desc");
+  const [daySort, setDaySort] = useState<DaySortKey>("date");
+  const [daySortDir, setDaySortDir] = useState<"asc" | "desc">("desc");
+
+  const toggleCourseSort = (key: RevenueSortKey) => {
+    if (courseSort === key) setCourseSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setCourseSort(key); setCourseSortDir("desc"); }
+  };
+  const toggleDaySort = (key: DaySortKey) => {
+    if (daySort === key) setDaySortDir(d => d === "asc" ? "desc" : "asc");
+    else { setDaySort(key); setDaySortDir("desc"); }
+  };
+
+  if (!revenue) {
+    return <div className="flex items-center justify-center py-16"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
+  }
+
+  const sortedByCourse = [...revenue.byCourse].sort((a, b) => {
+    let va: string | number = 0, vb: string | number = 0;
+    if (courseSort === "revenue") { va = a.revenue; vb = b.revenue; }
+    else if (courseSort === "orders") { va = a.orders; vb = b.orders; }
+    else { va = a.courseTitleAr || ""; vb = b.courseTitleAr || ""; }
+    if (va < vb) return courseSortDir === "asc" ? -1 : 1;
+    if (va > vb) return courseSortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const sortedDays = [...revenue.last30Days].sort((a, b) => {
+    let va: string | number = 0, vb: string | number = 0;
+    if (daySort === "date") { va = a.date; vb = b.date; }
+    else if (daySort === "revenue") { va = a.revenue; vb = b.revenue; }
+    else { va = a.count; vb = b.count; }
+    if (va < vb) return daySortDir === "asc" ? -1 : 1;
+    if (va > vb) return daySortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const maxRev = Math.max(...revenue.byCourse.map(x => x.revenue), 1);
+  const maxEnroll = Math.max(...revenue.topEnrolled.map(x => x.enrollments), 1);
+  const maxDay = Math.max(...revenue.last30Days.map(x => x.revenue), 1);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold flex items-center gap-2"><BarChart3 className="w-5 h-5 text-primary" /> لوحة الإيرادات</h2>
+        <Button size="sm" variant="outline" onClick={onRefresh} className="h-8 text-xs gap-1"><TrendingUp className="w-3.5 h-3.5" /> تحديث</Button>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "إجمالي الإيرادات", value: `${revenue.totalRevenue} JOD`, icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-100", bold: true },
+          { label: "أوامر مدفوعة", value: revenue.paidOrders, icon: <CheckCircle className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100", bold: false },
+          { label: "إيرادات معلّقة", value: `${revenue.pendingRevenue} JOD`, icon: <Clock className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100", bold: false },
+          { label: "طلبات ملغاة", value: revenue.cancelledOrders, icon: <XCircle className="w-5 h-5 text-red-500" />, bg: "bg-red-100", bold: false },
+        ].map((s, i) => (
+          <Card key={i}><CardContent className="p-4 flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full ${s.bg} flex items-center justify-center shrink-0`}>{s.icon}</div>
+            <div>
+              <p className={`text-xl ${s.bold ? "font-extrabold text-green-700" : "font-bold"}`}>{s.value}</p>
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+            </div>
+          </CardContent></Card>
+        ))}
+      </div>
+
+      {/* Revenue by course — sortable table */}
+      <Card><CardContent className="p-5">
+        <h3 className="font-bold mb-4 flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" /> الإيرادات حسب الدورة</h3>
+        {sortedByCourse.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات بعد</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b text-xs">
+                <th className="text-start py-2 px-3"><SortButton col="courseTitleAr" sort={courseSort} dir={courseSortDir} onSort={() => toggleCourseSort("courseTitleAr")} /></th>
+                <th className="text-start py-2 px-3"><SortButton col="revenue" sort={courseSort} dir={courseSortDir} onSort={() => toggleCourseSort("revenue")} /></th>
+                <th className="text-start py-2 px-3"><SortButton col="orders" sort={courseSort} dir={courseSortDir} onSort={() => toggleCourseSort("orders")} /></th>
+                <th className="text-start py-2 px-3 w-32 hidden sm:table-cell">الشريط</th>
+              </tr></thead>
+              <tbody>
+                {sortedByCourse.map((c, i) => (
+                  <tr key={i} className="border-b border-border/20 hover:bg-muted/10">
+                    <td className="py-2 px-3 font-medium max-w-[200px] truncate">{c.courseTitleAr || c.courseTitleEn || "غير معروف"}</td>
+                    <td className="py-2 px-3 font-bold text-primary">{c.revenue} JOD</td>
+                    <td className="py-2 px-3">{c.orders} طلب</td>
+                    <td className="py-2 px-3 hidden sm:table-cell">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden w-24">
+                        <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${(c.revenue / maxRev) * 100}%` }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent></Card>
+
+      {/* Top enrolled */}
+      <Card><CardContent className="p-5">
+        <h3 className="font-bold mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> أكثر الدورات تسجيلاً</h3>
+        {revenue.topEnrolled.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">لا توجد بيانات بعد</p>
+        ) : (
+          <div className="space-y-3">
+            {revenue.topEnrolled.map((c, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-sm font-bold text-muted-foreground w-5 shrink-0">{i + 1}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium truncate">{c.courseTitleAr || c.courseTitleEn || "غير معروف"}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-teal-500 rounded-full" style={{ width: `${(c.enrollments / maxEnroll) * 100}%` }} />
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">{c.enrollments} طالب</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent></Card>
+
+      {/* Last 30 days — sortable table */}
+      <Card><CardContent className="p-5">
+        <h3 className="font-bold mb-4 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> الإيرادات — آخر 30 يوم</h3>
+        {sortedDays.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">لا توجد مبيعات في آخر 30 يوم</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b text-xs">
+                <th className="text-start py-2 px-3"><SortButton col="date" sort={daySort} dir={daySortDir} onSort={() => toggleDaySort("date")} /></th>
+                <th className="text-start py-2 px-3"><SortButton col="revenue" sort={daySort} dir={daySortDir} onSort={() => toggleDaySort("revenue")} /></th>
+                <th className="text-start py-2 px-3"><SortButton col="count" sort={daySort} dir={daySortDir} onSort={() => toggleDaySort("count")} /></th>
+                <th className="text-start py-2 px-3 w-32 hidden sm:table-cell">الشريط</th>
+              </tr></thead>
+              <tbody>
+                {sortedDays.map((d, i) => (
+                  <tr key={i} className="border-b border-border/20 hover:bg-muted/10">
+                    <td className="py-2 px-3">{d.date}</td>
+                    <td className="py-2 px-3 font-bold text-primary">{d.revenue} JOD</td>
+                    <td className="py-2 px-3">{d.count}</td>
+                    <td className="py-2 px-3 hidden sm:table-cell">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden w-24">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${(d.revenue / maxDay) * 100}%` }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent></Card>
     </div>
   );
 }
