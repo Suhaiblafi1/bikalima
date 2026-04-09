@@ -159,6 +159,7 @@ export default function AdminPanel() {
   const [lessonForm, setLessonForm] = useState({ titleAr: "", titleEn: "", titleFr: "", videoUrl: "", durationMinutes: "" });
   const [enrollForm, setEnrollForm] = useState({ userId: "", courseId: "" });
   const [showEnrollForm, setShowEnrollForm] = useState(false);
+  const [lmsOrderStatusFilter, setLmsOrderStatusFilter] = useState<string>("all");
   const apiBase = getApiBase();
 
   const apiFetch = useCallback(async (path: string, opts?: RequestInit) => {
@@ -617,9 +618,23 @@ export default function AdminPanel() {
 
         {tab === "lms-orders" && (
           <Card><CardContent className="p-5">
-            <h2 className="font-bold flex items-center gap-2 mb-4">
-              <GraduationCap className="w-5 h-5 text-primary" /> طلبات تسجيل الدورات ({lmsOrders.length})
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h2 className="font-bold flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-primary" /> طلبات تسجيل الدورات ({lmsOrders.length})
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">تصفية:</span>
+                {(["all", "pending", "paid", "cancelled"] as const).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setLmsOrderStatusFilter(s)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${lmsOrderStatusFilter === s ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border text-muted-foreground hover:bg-muted"}`}
+                  >
+                    {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "paid" ? "مدفوع" : "ملغى"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b text-muted-foreground">
@@ -634,7 +649,7 @@ export default function AdminPanel() {
                   <th className="text-end py-2 px-3 font-medium">إجراءات</th>
                 </tr></thead>
                 <tbody>
-                  {lmsOrders.map(o => (
+                  {lmsOrders.filter(o => lmsOrderStatusFilter === "all" || o.status === lmsOrderStatusFilter).map(o => (
                     <tr key={o.id} className="border-b border-border/30 hover:bg-muted/20">
                       <td className="py-2 px-3 font-medium">{o.buyerName}</td>
                       <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerEmail}</td>
@@ -681,7 +696,7 @@ export default function AdminPanel() {
                       </td>
                     </tr>
                   ))}
-                  {lmsOrders.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">لا توجد طلبات دورات بعد</td></tr>}
+                  {lmsOrders.filter(o => lmsOrderStatusFilter === "all" || o.status === lmsOrderStatusFilter).length === 0 && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">لا توجد طلبات دورات بعد</td></tr>}
                 </tbody>
               </table>
             </div>

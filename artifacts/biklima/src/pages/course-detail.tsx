@@ -423,6 +423,7 @@ export default function CourseDetailPage() {
   const [expandedSections, setExpandedSections] = useState<Record<number, boolean>>({ 0: true });
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [courseDbId, setCourseDbId] = useState<string>("");
+  const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -430,6 +431,10 @@ export default function CourseDetailPage() {
     fetch(`${base}/api/courses/${slug}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.course?.id) setCourseDbId(data.course.id); })
+      .catch(() => {});
+    fetch(`${base}/api/courses/${slug}/access`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.hasAccess) setHasAccess(true); })
       .catch(() => {});
   }, [slug]);
 
@@ -711,13 +716,14 @@ export default function CourseDetailPage() {
                             <div className="divide-y divide-border/50">
                               {section.map((lesson, li) => {
                                 const globalIdx = si * SECTION_SIZE + li;
-                                const isFreePreview = globalIdx === 0;
+                                const isFreePreview = hasAccess || globalIdx === 0;
+                                const canPlay = isFreePreview && previewVideoUrl;
                                 return (
                                   <div
                                     key={li}
-                                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${isFreePreview && previewVideoUrl ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/20"}`}
-                                    onClick={isFreePreview && previewVideoUrl ? () => setPreviewModal({ url: previewVideoUrl, title: lesson }) : undefined}
-                                    title={isFreePreview && previewVideoUrl ? t.freePreview : undefined}
+                                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${canPlay ? "hover:bg-primary/5 cursor-pointer" : "hover:bg-muted/20"}`}
+                                    onClick={canPlay ? () => setPreviewModal({ url: previewVideoUrl!, title: lesson }) : undefined}
+                                    title={canPlay ? t.freePreview : undefined}
                                   >
                                     {isFreePreview ? (
                                       <Play className="w-4 h-4 text-primary shrink-0" />
@@ -725,9 +731,14 @@ export default function CourseDetailPage() {
                                       <Lock className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                                     )}
                                     <span className={`text-sm flex-1 ${isFreePreview ? "text-foreground font-medium" : "text-foreground/70"}`}>{lesson}</span>
-                                    {isFreePreview && (
+                                    {globalIdx === 0 && !hasAccess && (
                                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
                                         {t.freePreview}
+                                      </span>
+                                    )}
+                                    {hasAccess && (
+                                      <span className="text-xs bg-green-500/10 text-green-700 px-2 py-0.5 rounded-full font-medium shrink-0">
+                                        {lang === "ar" ? "مفتوح" : "Unlocked"}
                                       </span>
                                     )}
                                     <span className="text-xs text-muted-foreground shrink-0">٩٠ {t.mins}</span>

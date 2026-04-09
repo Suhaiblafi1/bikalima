@@ -51,7 +51,7 @@ router.post("/orders", async (req: Request, res: Response) => {
       buyerName: buyerName.trim(),
       buyerEmail: buyerEmail.toLowerCase().trim(),
       buyerPhone: buyerPhone.trim(),
-      amount: (course as any).price ?? null,
+      amount: course.price ?? null,
       currency: "JOD",
       status: "pending",
       paymentNotes: paymentNotes?.trim() || null,
@@ -103,6 +103,36 @@ router.post("/orders", async (req: Request, res: Response) => {
 });
 
 router.get("/my/lms-orders", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const orders = await db
+      .select({
+        id: ordersTable.id,
+        courseId: ordersTable.courseId,
+        courseTitleAr: coursesTable.titleAr,
+        courseTitleEn: coursesTable.titleEn,
+        amount: ordersTable.amount,
+        currency: ordersTable.currency,
+        status: ordersTable.status,
+        paymentNotes: ordersTable.paymentNotes,
+        adminNotes: ordersTable.adminNotes,
+        createdAt: ordersTable.createdAt,
+      })
+      .from(ordersTable)
+      .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
+      .where(eq(ordersTable.userId, req.user.id))
+      .orderBy(desc(ordersTable.createdAt));
+
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+router.get("/my/orders", async (req: Request, res: Response) => {
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Not authenticated" });
     return;

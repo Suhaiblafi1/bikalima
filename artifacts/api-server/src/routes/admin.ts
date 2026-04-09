@@ -318,7 +318,7 @@ router.get("/my/courses", async (req: Request, res: Response) => {
     })
     .from(enrollmentsTable)
     .innerJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
-    .where(eq(enrollmentsTable.userId, req.user.id));
+    .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.status, "active")));
 
     const courseIds = enrollments.map(e => e.courseId);
     let lessons: any[] = [];
@@ -366,6 +366,72 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
   }
 });
 
+router.get("/admin/orders", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const orders = await db
+      .select({
+        id: ordersTable.id,
+        courseId: ordersTable.courseId,
+        courseTitleAr: coursesTable.titleAr,
+        courseTitleEn: coursesTable.titleEn,
+        userId: ordersTable.userId,
+        buyerName: ordersTable.buyerName,
+        buyerEmail: ordersTable.buyerEmail,
+        buyerPhone: ordersTable.buyerPhone,
+        amount: ordersTable.amount,
+        currency: ordersTable.currency,
+        status: ordersTable.status,
+        paymentNotes: ordersTable.paymentNotes,
+        adminNotes: ordersTable.adminNotes,
+        adminApprovedBy: ordersTable.adminApprovedBy,
+        createdAt: ordersTable.createdAt,
+        updatedAt: ordersTable.updatedAt,
+      })
+      .from(ordersTable)
+      .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
+      .orderBy(desc(ordersTable.createdAt));
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch LMS orders" });
+  }
+});
+
+router.patch("/admin/orders/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const { status, adminNotes } = req.body as { status?: string; adminNotes?: string };
+
+    const VALID_STATUSES = ["pending", "paid", "cancelled"] as const;
+    if (status !== undefined && !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
+      res.status(400).json({ error: "Invalid status. Must be pending, paid, or cancelled." });
+      return;
+    }
+
+    const updates: { updatedAt: Date; status?: string; adminNotes?: string; adminApprovedBy?: string } = { updatedAt: new Date() };
+    if (status !== undefined) updates.status = status;
+    if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+    if (status === "paid" && req.user) updates.adminApprovedBy = req.user.id;
+
+    const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
+    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+
+    if (status === "paid" && order.userId) {
+      const existing = await db.select().from(enrollmentsTable)
+        .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId!)));
+      if (existing.length === 0) {
+        await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId!, status: "active", enrolledAt: new Date() });
+      } else if (existing[0].status !== "active") {
+        await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+      }
+    }
+    res.json({ order });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update LMS order" });
+  }
+});
+
 router.get("/admin/lms-orders", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
@@ -401,10 +467,21 @@ router.patch("/admin/lms-orders/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
     const { id } = req.params;
-    const { status, adminNotes } = req.body;
+    const { status, adminNotes } = req.body as { status?: string; adminNotes?: string };
 
-    const updates: Record<string, any> = { updatedAt: new Date() };
-    if (status) updates.status = status;
+    const VALID_STATUSES = ["pending", "paid", "cancelled"] as const;
+    if (status !== undefined && !VALID_STATUSES.includes(status as typeof VALID_STATUSES[number])) {
+      res.status(400).json({ error: "Invalid status. Must be pending, paid, or cancelled." });
+      return;
+    }
+
+    const updates: {
+      updatedAt: Date;
+      status?: string;
+      adminNotes?: string;
+      adminApprovedBy?: string;
+    } = { updatedAt: new Date() };
+    if (status !== undefined) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     if (status === "paid" && req.user) updates.adminApprovedBy = req.user.id;
 
