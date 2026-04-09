@@ -328,31 +328,34 @@ router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) 
     const { id } = req.params;
     const [original] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
     if (!original) { res.status(404).json({ error: "Not found" }); return; }
-    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = original;
-    const suffix = `-copy-${Date.now()}`;
-    const [course] = await db.insert(coursesTable).values({
-      ...rest,
-      titleAr: `${rest.titleAr} (نسخة)`,
-      titleEn: `${rest.titleEn} (copy)`,
-      slug: rest.slug ? `${rest.slug}${suffix}` : null,
-      isPublished: false,
-    }).returning();
     const origSections = await db.select().from(courseSectionsTable).where(eq(courseSectionsTable.courseId, id)).orderBy(asc(courseSectionsTable.sortOrder));
     const origLessons = await db.select().from(lessonsTable).where(eq(lessonsTable.courseId, id)).orderBy(asc(lessonsTable.sortOrder));
-    const sectionIdMap: Record<string, string> = {};
-    for (const s of origSections) {
-      const { id: _sid, createdAt: _sc, courseId: _cid, ...sRest } = s;
-      const [ns] = await db.insert(courseSectionsTable).values({ ...sRest, courseId: course.id }).returning();
-      sectionIdMap[s.id] = ns.id;
-    }
-    for (const l of origLessons) {
-      const { id: _lid, createdAt: _lc, courseId: _lcid, ...lRest } = l;
-      await db.insert(lessonsTable).values({
-        ...lRest,
-        courseId: course.id,
-        sectionId: lRest.sectionId ? (sectionIdMap[lRest.sectionId] ?? null) : null,
-      });
-    }
+    const course = await db.transaction(async (tx) => {
+      const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = original;
+      const suffix = `-copy-${Date.now()}`;
+      const [newCourse] = await tx.insert(coursesTable).values({
+        ...rest,
+        titleAr: `${rest.titleAr} (نسخة)`,
+        titleEn: `${rest.titleEn} (copy)`,
+        slug: rest.slug ? `${rest.slug}${suffix}` : null,
+        isPublished: false,
+      }).returning();
+      const sectionIdMap: Record<string, string> = {};
+      for (const s of origSections) {
+        const { id: _sid, createdAt: _sc, courseId: _cid, ...sRest } = s;
+        const [ns] = await tx.insert(courseSectionsTable).values({ ...sRest, courseId: newCourse.id }).returning();
+        sectionIdMap[s.id] = ns.id;
+      }
+      for (const l of origLessons) {
+        const { id: _lid, createdAt: _lc, courseId: _lcid, ...lRest } = l;
+        await tx.insert(lessonsTable).values({
+          ...lRest,
+          courseId: newCourse.id,
+          sectionId: lRest.sectionId ? (sectionIdMap[lRest.sectionId] ?? null) : null,
+        });
+      }
+      return newCourse;
+    });
     res.json({ course });
   } catch (err) {
     res.status(500).json({ error: "Failed to duplicate course" });

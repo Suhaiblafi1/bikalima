@@ -22,6 +22,7 @@ type LessonRecord = {
   id: string; courseId: string; sectionId: string | null; titleAr: string; titleEn: string;
   videoUrl: string | null; videoType: string; durationMinutes: number | null;
   sortOrder: number; isFreePreview: boolean; isPublished: boolean;
+  descriptionAr: string | null; descriptionEn: string | null;
   resources: LessonResource[] | null;
 };
 
