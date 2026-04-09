@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,8 @@ import {
   Users, Search, Trash2, Edit3, Save, X, Home, Shield, UserPlus,
   LogOut, ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText,
   ShoppingCart, CheckCircle, Clock, XCircle, GraduationCap,
-  BarChart3, DollarSign, TrendingUp, Eye, EyeOff, Copy, ChevronRight,
-  Star, UserCircle, Tag, Globe, Layers,
+  BarChart3, DollarSign, TrendingUp, Copy,
+  Star, UserCircle, Layers,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -760,7 +760,7 @@ export default function AdminPanel() {
                                       isEditing={editingLesson === lesson.id}
                                       editForm={editingLessonForm}
                                       setEditForm={setEditingLessonForm}
-                                      onEdit={() => { setEditingLesson(lesson.id); setEditingLessonForm({ titleAr: lesson.titleAr, titleEn: lesson.titleEn, videoUrl: lesson.videoUrl || "", videoType: lesson.videoType, durationMinutes: lesson.durationMinutes?.toString() || "", sectionId: lesson.sectionId || "", isFreePreview: lesson.isFreePreview, isPublished: lesson.isPublished, descriptionAr: "", descriptionEn: "" }); }}
+                                      onEdit={() => { setEditingLesson(lesson.id); setEditingLessonForm({ titleAr: lesson.titleAr, titleEn: lesson.titleEn, videoUrl: lesson.videoUrl || "", videoType: lesson.videoType, durationMinutes: lesson.durationMinutes?.toString() || "", sectionId: lesson.sectionId || "", isFreePreview: lesson.isFreePreview, isPublished: lesson.isPublished, descriptionAr: lesson.descriptionAr || "", descriptionEn: lesson.descriptionEn || "" }); }}
                                       onSave={() => saveLesson(lesson.id)}
                                       onCancel={() => setEditingLesson(null)}
                                       onDelete={() => deleteLesson(lesson.id)}
@@ -786,7 +786,7 @@ export default function AdminPanel() {
                                       isEditing={editingLesson === lesson.id}
                                       editForm={editingLessonForm}
                                       setEditForm={setEditingLessonForm}
-                                      onEdit={() => { setEditingLesson(lesson.id); setEditingLessonForm({ titleAr: lesson.titleAr, titleEn: lesson.titleEn, videoUrl: lesson.videoUrl || "", videoType: lesson.videoType, durationMinutes: lesson.durationMinutes?.toString() || "", sectionId: lesson.sectionId || "", isFreePreview: lesson.isFreePreview, isPublished: lesson.isPublished, descriptionAr: "", descriptionEn: "" }); }}
+                                      onEdit={() => { setEditingLesson(lesson.id); setEditingLessonForm({ titleAr: lesson.titleAr, titleEn: lesson.titleEn, videoUrl: lesson.videoUrl || "", videoType: lesson.videoType, durationMinutes: lesson.durationMinutes?.toString() || "", sectionId: lesson.sectionId || "", isFreePreview: lesson.isFreePreview, isPublished: lesson.isPublished, descriptionAr: lesson.descriptionAr || "", descriptionEn: lesson.descriptionEn || "" }); }}
                                       onSave={() => saveLesson(lesson.id)}
                                       onCancel={() => setEditingLesson(null)}
                                       onDelete={() => deleteLesson(lesson.id)}

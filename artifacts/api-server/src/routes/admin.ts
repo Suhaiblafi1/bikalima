@@ -214,9 +214,16 @@ router.post("/admin/courses/:courseId/lessons", async (req: Request, res: Respon
   try {
     const { courseId } = req.params;
     const { titleAr, titleEn, titleFr, videoUrl, videoType, durationMinutes, sortOrder, sectionId, isFreePreview, isPublished, descriptionAr, descriptionEn, resources } = req.body;
+    let nextSortOrder = 0;
+    if (sortOrder !== undefined && sortOrder !== null) {
+      nextSortOrder = Number(sortOrder);
+    } else {
+      const [maxRow] = await db.select({ maxOrder: sql<number>`coalesce(max(sort_order), -1)` }).from(lessonsTable).where(eq(lessonsTable.courseId, courseId));
+      nextSortOrder = (maxRow?.maxOrder ?? -1) + 1;
+    }
     const [lesson] = await db.insert(lessonsTable).values({
       courseId, titleAr, titleEn, titleFr: titleFr || "", videoUrl, videoType: videoType || "youtube",
-      durationMinutes, sortOrder: sortOrder ?? 0, sectionId: sectionId || null,
+      durationMinutes, sortOrder: nextSortOrder, sectionId: sectionId || null,
       isFreePreview: isFreePreview ?? false, isPublished: isPublished ?? true,
       descriptionAr, descriptionEn, resources,
     }).returning();
