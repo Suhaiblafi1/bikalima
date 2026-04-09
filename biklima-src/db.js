@@ -19,10 +19,16 @@ export {
 export const {
   sessionsTable,
   usersTable,
+  instructorsTable,
+  categoriesTable,
   coursesTable,
+  courseSectionsTable,
   lessonsTable,
+  lessonResourcesTable,
   enrollmentsTable,
   lessonProgressTable,
+  ordersTable,
+  reviewsTable,
   enrollmentRequestsTable,
   workbookOrdersTable,
 } = schema;

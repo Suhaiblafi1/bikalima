@@ -481,6 +481,7 @@ export default function Home() {
 
   type NavItem = { label: string; id?: string; href?: string };
   const navItems: NavItem[] = [
+    { label: t.nav.courses, href: "courses" },
     { label: t.nav.structure, id: "structure" },
     { label: t.nav.events, id: "events" },
     { label: t.nav.workbooks, href: "workbooks" },

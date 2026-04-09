@@ -52,16 +52,22 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 
 ### `artifacts/biklima` (`@workspace/biklima`)
 
-Arabic RTL landing page for "بكلمة" (Biklima), a public speaking training program. React + Vite + Tailwind CSS.
+Arabic RTL landing page + LMS for "بكلمة" (Biklima), a public speaking training program. React + Vite + Tailwind CSS.
 
-- **Pages**: `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, **photo gallery (masonry + lightbox)**, **video library (YouTube embed modal)**, FAQ, enrollment form; `src/pages/dashboard.tsx` — student dashboard with account info, courses, orders, schedule tabs
-- **Data**: `src/translations.ts` (3-language: ar/en/fr), `src/programsData.ts` (programs, prices, testimonials), `src/galleryData.ts` (gallery photos with country metadata, educational video library)
+- **Pages**: 
+  - `src/pages/home.tsx` — full single-page landing with hero, trainer bio, author message, program structure, wisdom carousel, workbooks store, testimonials, **photo gallery (masonry + lightbox)**, **video library (YouTube embed modal)**, FAQ, enrollment form
+  - `src/pages/dashboard.tsx` — student dashboard with account info, courses, orders, schedule tabs
+  - `src/pages/admin.tsx` — admin panel (Users/Courses/Requests/Orders tabs)
+  - `src/pages/courses.tsx` — **LMS course catalog** (/courses) showing all 4 programs as cards with images, stats, prices
+  - `src/pages/course-detail.tsx` — **LMS Udemy-style course detail page** (/courses/:slug) with hero, what you'll learn, content accordion, requirements, description, instructor bio, FAQ, sticky purchase card
+- **Data**: `src/translations.ts` (2-language: ar/en — French permanently removed), `src/programsData.ts` (programs, prices, testimonials), `src/galleryData.ts` (gallery photos + video library)
 - **Design**: Teal primary (#25786A), warm ivory background, Tajawal + Noto Naskh Arabic fonts, Almarai Bold for logo
+- **LMS Routes**: `/courses` (catalog), `/courses/:slug` (detail). Slug mapping: core→influential-speaker, tot→certified-trainer, teachers→educators-program, children→young-speaker
 - **Features**:
   - Photo gallery (masonry grid, 16 photos, country badge per photo, lightbox with prev/next + keyboard nav, 7 countries: QA/AE/SD/JO/RU/GB/SA)
   - Video library (6 curated YouTube speeches with "ما ستتعلمه" learning descriptions, modal embed with autoplay, speaker badge for Suhaib vs. world speech)
-  - Gallery and video nav links ("الأفواج"/"Cohorts"/"Promotions" and "فيديوهات"/"Videos"/"Vidéos") in all 3 languages
-  - 3-language support (Arabic/English/French) with RTL auto-switch
+  - Gallery and video nav links ("الأفواج"/"Cohorts" and "فيديوهات"/"Videos") in AR/EN
+  - 2-language support (Arabic/English only — French permanently removed) with RTL auto-switch
   - Auto currency detection (JOD, SAR, AED, etc.)
   - 4 programs in branching structure (core + 3 tracks)
   - Enrollment form with Individual/Institution toggle, 3 training modes, YouTube link, discount code (interest/category field removed)

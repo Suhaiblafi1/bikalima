@@ -1,6 +1,6 @@
 -- =============================================
 -- إعداد قاعدة بيانات موقع بكلمة
--- شغّل هذا الملف مرة واحدة فقط
+-- آمن للتشغيل المتكرر — يستخدم IF NOT EXISTS
 -- =============================================
 
 CREATE TABLE IF NOT EXISTS sessions (
@@ -21,6 +21,30 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- ── LMS: Instructors ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS instructors (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  name_ar VARCHAR NOT NULL,
+  name_en VARCHAR NOT NULL,
+  title_ar VARCHAR,
+  title_en VARCHAR,
+  bio_ar TEXT,
+  bio_en TEXT,
+  photo_url VARCHAR,
+  email VARCHAR,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ── LMS: Categories ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS categories (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  name_ar VARCHAR NOT NULL,
+  name_en VARCHAR NOT NULL,
+  slug VARCHAR UNIQUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ── Courses (base table) ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS courses (
   id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id VARCHAR,
@@ -36,6 +60,41 @@ CREATE TABLE IF NOT EXISTS courses (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Add LMS columns to courses (safe, additive only)
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS slug VARCHAR UNIQUE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS subtitle_ar VARCHAR;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS subtitle_en VARCHAR;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS trailer_url VARCHAR;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS what_you_learn_ar JSONB;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS what_you_learn_en JSONB;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS requirements_ar JSONB;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS requirements_en JSONB;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS target_audience_ar JSONB;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS target_audience_en JSONB;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS level VARCHAR DEFAULT 'all';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS language VARCHAR DEFAULT 'ar';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS price INTEGER;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS discount_price INTEGER;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS hours INTEGER;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS sessions INTEGER;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructor_id VARCHAR REFERENCES instructors(id) ON DELETE SET NULL;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS category_id VARCHAR REFERENCES categories(id) ON DELETE SET NULL;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS seo_title VARCHAR;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS seo_description TEXT;
+
+-- ── LMS: Course Sections ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS course_sections (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id VARCHAR NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  title_ar VARCHAR NOT NULL,
+  title_en VARCHAR NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_published BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ── Lessons (base table) ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lessons (
   id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id VARCHAR NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
@@ -50,6 +109,23 @@ CREATE TABLE IF NOT EXISTS lessons (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Add LMS columns to lessons (safe, additive only)
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS section_id VARCHAR REFERENCES course_sections(id) ON DELETE SET NULL;
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_free_preview BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ── LMS: Lesson Resources ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS lesson_resources (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  lesson_id VARCHAR NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+  title_ar VARCHAR NOT NULL,
+  title_en VARCHAR NOT NULL,
+  resource_url VARCHAR NOT NULL,
+  resource_type VARCHAR DEFAULT 'pdf',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ── Enrollments ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS enrollments (
   id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -58,6 +134,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
   enrolled_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- ── Lesson Progress ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lesson_progress (
   id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -66,6 +143,38 @@ CREATE TABLE IF NOT EXISTS lesson_progress (
   completed_at TIMESTAMP WITH TIME ZONE
 );
 
+-- ── LMS: Course Orders ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS orders (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR REFERENCES users(id) ON DELETE SET NULL,
+  course_id VARCHAR REFERENCES courses(id) ON DELETE SET NULL,
+  buyer_name VARCHAR NOT NULL,
+  buyer_email VARCHAR NOT NULL,
+  buyer_phone VARCHAR NOT NULL,
+  amount INTEGER,
+  currency VARCHAR DEFAULT 'JOD',
+  status VARCHAR NOT NULL DEFAULT 'pending',
+  payment_notes TEXT,
+  admin_notes TEXT,
+  admin_approved_by VARCHAR,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ── LMS: Reviews ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS reviews (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id VARCHAR REFERENCES users(id) ON DELETE SET NULL,
+  course_id VARCHAR NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL,
+  comment_ar TEXT,
+  comment_en TEXT,
+  reviewer_name VARCHAR,
+  is_approved BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- ── Enrollment Requests ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS enrollment_requests (
   id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id VARCHAR REFERENCES users(id) ON DELETE SET NULL,
@@ -89,6 +198,7 @@ CREATE TABLE IF NOT EXISTS enrollment_requests (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- ── Workbook Orders ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS workbook_orders (
   id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id VARCHAR REFERENCES users(id) ON DELETE SET NULL,
