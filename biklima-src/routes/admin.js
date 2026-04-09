@@ -218,7 +218,9 @@ router.post("/admin/courses/:courseId/lessons", async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
     const { courseId } = req.params;
-    const vals = { courseId };
+    const { titleAr, titleEn } = req.body;
+    if (!titleAr || !titleEn) { res.status(400).json({ error: "titleAr and titleEn required" }); return; }
+    const vals = { courseId, titleAr, titleEn, titleFr: req.body.titleFr || titleEn };
     for (const key of LESSON_FIELDS) {
       if (req.body[key] !== undefined) vals[key] = req.body[key];
     }

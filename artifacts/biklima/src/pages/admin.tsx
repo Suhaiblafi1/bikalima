@@ -1208,7 +1208,7 @@ function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, set
     if (!newResTitle.trim() || !newResUrl.trim()) return;
     setResLoading(true);
     try {
-      const r = await fetch(`${apiBase}api/admin/lessons/${lesson.id}/resources`, {
+      const r = await fetch(`${apiBase}/admin/lessons/${lesson.id}/resources`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ titleAr: newResTitle, titleEn: newResTitle, url: newResUrl, type: newResType }),
@@ -1217,10 +1217,10 @@ function LessonRow({ lesson, idx, allLessons, sections, isEditing, editForm, set
     } finally { setResLoading(false); }
   };
 
-  const removeResource = async (idx: number) => {
+  const removeResource = async (resIdx: number) => {
     setResLoading(true);
     try {
-      const r = await fetch(`${apiBase}api/admin/lessons/${lesson.id}/resources/${idx}`, { method: "DELETE", credentials: "include" });
+      const r = await fetch(`${apiBase}/admin/lessons/${lesson.id}/resources/${resIdx}`, { method: "DELETE", credentials: "include" });
       if (r.ok) { const d = await r.json(); onLessonUpdated(d.lesson); }
     } finally { setResLoading(false); }
   };

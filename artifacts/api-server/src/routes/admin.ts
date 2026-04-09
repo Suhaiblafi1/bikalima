@@ -18,6 +18,35 @@ const router: IRouter = Router();
 
 const ADMIN_EMAILS = ["info@bikalima.com"];
 
+type CourseInsert = {
+  titleAr: string; titleEn: string; titleFr: string;
+  subtitleAr?: string; subtitleEn?: string;
+  descriptionAr?: string; descriptionEn?: string; descriptionFr?: string;
+  programId?: string; slug?: string; imageUrl?: string; trailerUrl?: string;
+  price?: number; discountPrice?: number; level?: string; language?: string;
+  category?: string; instructorId?: string;
+  whatYouLearnAr?: string[]; whatYouLearnEn?: string[];
+  requirementsAr?: string[]; requirementsEn?: string[];
+  targetAudienceAr?: string; targetAudienceEn?: string;
+  seoTitle?: string; seoDescription?: string;
+  isPublished?: boolean; isFeatured?: boolean;
+};
+
+type LessonUpdate = {
+  titleAr?: string; titleEn?: string; titleFr?: string;
+  descriptionAr?: string; descriptionEn?: string;
+  videoUrl?: string; videoType?: string; durationMinutes?: number;
+  sortOrder?: number; sectionId?: string | null;
+  isFreePreview?: boolean; isPublished?: boolean;
+  resources?: LessonResource[];
+};
+
+type LessonResource = { titleAr: string; titleEn: string; url: string; type: string };
+
+type SectionUpdate = { titleAr?: string; titleEn?: string; sortOrder?: number; isPublished?: boolean };
+
+type InstructorUpdate = { nameAr?: string; nameEn?: string; bioAr?: string; bioEn?: string; photoUrl?: string; email?: string };
+
 function isAdmin(req: Request): boolean {
   if (!req.isAuthenticated() || !req.user) return false;
   return ADMIN_EMAILS.includes(req.user.email.toLowerCase());
@@ -140,9 +169,10 @@ const COURSE_FIELDS = [
 router.post("/admin/courses", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const vals: any = { titleAr: req.body.titleAr, titleEn: req.body.titleEn, titleFr: req.body.titleFr || "" };
+    if (!req.body.titleAr || !req.body.titleEn) { res.status(400).json({ error: "titleAr and titleEn required" }); return; }
+    const vals: CourseInsert = { titleAr: req.body.titleAr, titleEn: req.body.titleEn, titleFr: req.body.titleFr || "" };
     for (const key of COURSE_FIELDS) {
-      if (req.body[key] !== undefined) vals[key] = req.body[key];
+      if (req.body[key] !== undefined) (vals as Record<string, unknown>)[key] = req.body[key];
     }
     if (!vals.isPublished) vals.isPublished = false;
     const [course] = await db.insert(coursesTable).values(vals).returning();
@@ -156,9 +186,9 @@ router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
     const { id } = req.params;
-    const updates: any = {};
+    const updates: Partial<CourseInsert> = {};
     for (const key of COURSE_FIELDS) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+      if (req.body[key] !== undefined) (updates as Record<string, unknown>)[key] = req.body[key];
     }
     if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [course] = await db.update(coursesTable).set(updates).where(eq(coursesTable.id, id)).returning();
@@ -199,9 +229,10 @@ router.post("/admin/courses/:courseId/lessons", async (req: Request, res: Respon
 router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const updates: any = {};
-    for (const key of ["titleAr", "titleEn", "titleFr", "videoUrl", "videoType", "durationMinutes", "sortOrder", "isPublished", "sectionId", "isFreePreview", "descriptionAr", "descriptionEn", "resources"]) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    const updates: LessonUpdate = {};
+    const allowedKeys: (keyof LessonUpdate)[] = ["titleAr", "titleEn", "titleFr", "videoUrl", "videoType", "durationMinutes", "sortOrder", "isPublished", "sectionId", "isFreePreview", "descriptionAr", "descriptionEn", "resources"];
+    for (const key of allowedKeys) {
+      if (req.body[key] !== undefined) (updates as Record<string, unknown>)[key] = req.body[key];
     }
     const [lesson] = await db.update(lessonsTable).set(updates).where(eq(lessonsTable.id, req.params.id)).returning();
     if (!lesson) { res.status(404).json({ error: "Not found" }); return; }
@@ -219,8 +250,8 @@ router.post("/admin/lessons/:id/resources", async (req: Request, res: Response) 
     if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
     const { titleAr, titleEn, url, type } = req.body;
     if (!titleAr || !url) { res.status(400).json({ error: "titleAr and url required" }); return; }
-    const existing = (lesson.resources as any[]) ?? [];
-    const updated = [...existing, { titleAr, titleEn: titleEn || titleAr, url, type: type || "link" }];
+    const existing = (lesson.resources as LessonResource[]) ?? [];
+    const updated: LessonResource[] = [...existing, { titleAr, titleEn: titleEn || titleAr, url, type: type || "link" }];
     const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, id)).returning();
     res.json({ lesson: updatedLesson });
   } catch (err) {
@@ -234,7 +265,7 @@ router.delete("/admin/lessons/:id/resources/:idx", async (req: Request, res: Res
     const { id, idx } = req.params;
     const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, id));
     if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
-    const existing = (lesson.resources as any[]) ?? [];
+    const existing = (lesson.resources as LessonResource[]) ?? [];
     const updated = existing.filter((_, i) => i !== parseInt(idx));
     const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, id)).returning();
     res.json({ lesson: updatedLesson });
@@ -261,9 +292,10 @@ router.post("/admin/courses/:courseId/sections", async (req: Request, res: Respo
 router.patch("/admin/sections/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const updates: any = {};
-    for (const key of ["titleAr", "titleEn", "sortOrder", "isPublished"]) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    const updates: SectionUpdate = {};
+    const allowedKeys: (keyof SectionUpdate)[] = ["titleAr", "titleEn", "sortOrder", "isPublished"];
+    for (const key of allowedKeys) {
+      if (req.body[key] !== undefined) (updates as Record<string, unknown>)[key] = req.body[key];
     }
     const [section] = await db.update(courseSectionsTable).set(updates).where(eq(courseSectionsTable.id, req.params.id)).returning();
     if (!section) { res.status(404).json({ error: "Not found" }); return; }
@@ -391,7 +423,7 @@ router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Respons
   if (!requireAdmin(req, res)) return;
   try {
     const { status, adminNotes } = req.body;
-    const updates: any = {};
+    const updates: { status?: string; adminNotes?: string } = {};
     if (status) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     const [updated] = await db.update(enrollmentRequestsTable).set(updates).where(eq(enrollmentRequestsTable.id, req.params.id)).returning();
@@ -416,7 +448,7 @@ router.patch("/admin/workbook-orders/:id", async (req: Request, res: Response) =
   if (!requireAdmin(req, res)) return;
   try {
     const { status, adminNotes } = req.body;
-    const updates: any = {};
+    const updates: { status?: string; adminNotes?: string } = {};
     if (status) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     const [updated] = await db.update(workbookOrdersTable).set(updates).where(eq(workbookOrdersTable.id, req.params.id)).returning();
@@ -450,8 +482,8 @@ router.get("/my/courses", async (req: Request, res: Response) => {
     .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.status, "active")));
 
     const courseIds = enrollments.map(e => e.courseId);
-    let lessons: any[] = [];
-    let progress: any[] = [];
+    let lessons: Record<string, unknown>[] = [];
+    let progress: Record<string, unknown>[] = [];
     if (courseIds.length > 0) {
       lessons = await db.select().from(lessonsTable)
         .where(inArray(lessonsTable.courseId, courseIds))
@@ -516,9 +548,10 @@ router.post("/admin/instructors", async (req: Request, res: Response) => {
 router.patch("/admin/instructors/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const updates: any = {};
-    for (const key of ["nameAr", "nameEn", "bioAr", "bioEn", "photoUrl", "email"]) {
-      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    const updates: InstructorUpdate = {};
+    const allowedKeys: (keyof InstructorUpdate)[] = ["nameAr", "nameEn", "bioAr", "bioEn", "photoUrl", "email"];
+    for (const key of allowedKeys) {
+      if (req.body[key] !== undefined) (updates as Record<string, unknown>)[key] = req.body[key];
     }
     const [instructor] = await db.update(instructorsTable).set(updates).where(eq(instructorsTable.id, req.params.id)).returning();
     if (!instructor) { res.status(404).json({ error: "Not found" }); return; }
