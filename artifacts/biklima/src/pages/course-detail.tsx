@@ -281,6 +281,7 @@ function OrderModal({
     try {
       const res = await fetch(`${baseUrl}/api/orders`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId: courseDbId,
@@ -290,6 +291,10 @@ function OrderModal({
           paymentNotes: form.notes.trim() || null,
         }),
       });
+      if (res.status === 401) {
+        setError(lang === "ar" ? "يجب تسجيل الدخول أولاً لإتمام الطلب." : "You must be logged in to submit a request.");
+        return;
+      }
       if (!res.ok) throw new Error("Failed");
       setSuccess(true);
     } catch {
@@ -730,8 +735,9 @@ export default function CourseDetailPage() {
                                 const globalIdx = si * SECTION_SIZE + li;
                                 const dbLesson = dbLessons[globalIdx];
                                 const isFreePreviewFromDb = dbLesson?.isFreePreview ?? false;
-                                const isFreePreviewFallback = globalIdx === 0;
-                                const isFreePreview = hasAccess || isFreePreviewFromDb || isFreePreviewFallback;
+                                const hasDbLessons = dbLessons.length > 0;
+                                const isFirstLessonFallback = !hasDbLessons && globalIdx === 0;
+                                const isFreePreview = hasAccess || isFreePreviewFromDb || isFirstLessonFallback;
                                 const canPlay = isFreePreview && previewVideoUrl;
                                 return (
                                   <div
@@ -746,7 +752,7 @@ export default function CourseDetailPage() {
                                       <Lock className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                                     )}
                                     <span className={`text-sm flex-1 ${isFreePreview ? "text-foreground font-medium" : "text-foreground/70"}`}>{lesson}</span>
-                                    {!hasAccess && (isFreePreviewFromDb || isFreePreviewFallback) && (
+                                    {!hasAccess && (isFreePreviewFromDb || isFirstLessonFallback) && (
                                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
                                         {t.freePreview}
                                       </span>

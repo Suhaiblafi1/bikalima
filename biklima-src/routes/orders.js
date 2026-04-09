@@ -21,6 +21,9 @@ function buildTransporter() {
 }
 
 router.post("/orders", async (req, res) => {
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "يجب تسجيل الدخول أولاً لإتمام الطلب" });
+  }
   try {
     const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = req.body;
     if (!courseId || !buyerName || !buyerEmail || !buyerPhone) {
@@ -36,7 +39,7 @@ router.post("/orders", async (req, res) => {
       return res.status(404).json({ error: "Course not found" });
     }
 
-    const userId = req.isAuthenticated() && req.user ? req.user.id : null;
+    const userId = req.user.id;
 
     const [order] = await db.insert(ordersTable).values({
       userId,

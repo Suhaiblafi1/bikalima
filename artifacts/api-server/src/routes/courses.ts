@@ -5,7 +5,7 @@ import {
   lessonsTable,
   enrollmentsTable,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -57,7 +57,8 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
     const lessons = await db
       .select()
       .from(lessonsTable)
-      .where(eq(lessonsTable.courseId, course.id));
+      .where(eq(lessonsTable.courseId, course.id))
+      .orderBy(asc(lessonsTable.sortOrder));
 
     res.json({ course: { ...course, lessons } });
   } catch (err) {

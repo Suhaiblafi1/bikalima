@@ -26,6 +26,10 @@ function buildTransporter() {
 }
 
 router.post("/orders", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "يجب تسجيل الدخول أولاً لإتمام الطلب" });
+    return;
+  }
   try {
     const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = req.body;
     if (!courseId || !buyerName || !buyerEmail || !buyerPhone) {
@@ -43,7 +47,7 @@ router.post("/orders", async (req: Request, res: Response) => {
       return;
     }
 
-    const userId = req.isAuthenticated() && req.user ? req.user.id : null;
+    const userId = req.user.id;
 
     const [order] = await db.insert(ordersTable).values({
       userId,

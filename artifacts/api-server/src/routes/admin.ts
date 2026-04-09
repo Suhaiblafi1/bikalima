@@ -391,7 +391,11 @@ router.get("/admin/lms-orders", async (req: Request, res: Response) => {
       .from(ordersTable)
       .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
       .orderBy(desc(ordersTable.createdAt));
-    res.json({ orders });
+    const result = orders.map(o => ({
+      ...o,
+      courseTitle: o.courseTitleAr ?? o.courseTitleEn ?? null,
+    }));
+    res.json({ orders: result });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch LMS orders" });
   }
