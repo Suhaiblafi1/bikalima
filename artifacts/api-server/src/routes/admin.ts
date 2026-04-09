@@ -416,24 +416,29 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     if (status === "paid" && req.user) updates.adminApprovedBy = req.user.id;
 
-    const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
-    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+    let order: typeof ordersTable.$inferSelect | undefined;
+    await db.transaction(async (tx) => {
+      const [updated] = await tx.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
+      if (!updated) return;
+      order = updated;
 
-    if (order.userId && order.courseId && (status === "paid" || status === "cancelled")) {
-      const existing = await db
-        .select()
-        .from(enrollmentsTable)
-        .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
-      if (status === "paid") {
-        if (existing.length === 0) {
-          await db.insert(enrollmentsTable).values({ userId: order.userId, courseId: order.courseId, status: "active", enrolledAt: new Date() });
-        } else if (existing[0].status !== "active") {
-          await db.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+      if (updated.userId && updated.courseId && (status === "paid" || status === "cancelled")) {
+        const existing = await tx
+          .select()
+          .from(enrollmentsTable)
+          .where(and(eq(enrollmentsTable.userId, updated.userId), eq(enrollmentsTable.courseId, updated.courseId)));
+        if (status === "paid") {
+          if (existing.length === 0) {
+            await tx.insert(enrollmentsTable).values({ userId: updated.userId, courseId: updated.courseId, status: "active", enrolledAt: new Date() });
+          } else if (existing[0].status !== "active") {
+            await tx.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
+          }
+        } else if (status === "cancelled" && existing.length > 0 && existing[0].status === "active") {
+          await tx.update(enrollmentsTable).set({ status: "cancelled" }).where(eq(enrollmentsTable.id, existing[0].id));
         }
-      } else if (status === "cancelled" && existing.length > 0 && existing[0].status === "active") {
-        await db.update(enrollmentsTable).set({ status: "cancelled" }).where(eq(enrollmentsTable.id, existing[0].id));
       }
-    }
+    });
+    if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json({ order });
   } catch {
     res.status(500).json({ error: "Failed to update LMS order" });

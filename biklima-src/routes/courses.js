@@ -115,15 +115,29 @@ router.get("/courses/:slug", async (req, res) => {
       .from(reviewsTable)
       .where(and(eq(reviewsTable.courseId, course.id), eq(reviewsTable.isApproved, true)));
 
-    const sectionsWithLessons = sections.map((section) => ({
-      ...section,
-      lessons: lessons.filter((l) => l.sectionId === section.id),
+    let hasAccess = false;
+    if (req.isAuthenticated && req.isAuthenticated() && req.user) {
+      const [enrollment] = await db
+        .select({ status: enrollmentsTable.status })
+        .from(enrollmentsTable)
+        .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.courseId, course.id)));
+      hasAccess = !!enrollment && enrollment.status === "active";
+    }
+
+    const redactedLessons = lessons.map(l => ({
+      ...l,
+      videoUrl: hasAccess || l.isFreePreview ? l.videoUrl : null,
     }));
 
-    const ungroupedLessons = lessons.filter((l) => !l.sectionId);
+    const sectionsWithLessons = sections.map((section) => ({
+      ...section,
+      lessons: redactedLessons.filter((l) => l.sectionId === section.id),
+    }));
+
+    const ungroupedLessons = redactedLessons.filter((l) => !l.sectionId);
 
     res.json({
-      course: { ...course, lessons },
+      course: { ...course, lessons: redactedLessons },
       sections: sectionsWithLessons,
       ungroupedLessons,
       instructor,

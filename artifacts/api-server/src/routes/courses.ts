@@ -17,6 +17,14 @@ async function getCourseBySlug(slug: string) {
   return course ?? null;
 }
 
+async function getEnrollmentStatus(userId: string, courseId: string) {
+  const [enrollment] = await db
+    .select({ status: enrollmentsTable.status })
+    .from(enrollmentsTable)
+    .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, courseId)));
+  return enrollment ?? null;
+}
+
 router.get("/courses", async (_req: Request, res: Response) => {
   try {
     const courses = await db
@@ -31,7 +39,7 @@ router.get("/courses", async (_req: Request, res: Response) => {
       .from(coursesTable)
       .orderBy(coursesTable.createdAt);
     res.json({ courses });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch courses" });
   }
 });
@@ -46,14 +54,25 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
       return;
     }
 
-    const lessons = await db
+    const rawLessons = await db
       .select()
       .from(lessonsTable)
       .where(eq(lessonsTable.courseId, course.id))
       .orderBy(asc(lessonsTable.sortOrder));
 
+    let hasAccess = false;
+    if (req.isAuthenticated() && req.user) {
+      const enrollment = await getEnrollmentStatus(req.user.id, course.id);
+      hasAccess = !!enrollment && enrollment.status === "active";
+    }
+
+    const lessons = rawLessons.map(l => ({
+      ...l,
+      videoUrl: hasAccess || l.isFreePreview ? l.videoUrl : null,
+    }));
+
     res.json({ course: { ...course, lessons } });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch course" });
   }
 });
@@ -73,18 +92,9 @@ router.get("/courses/:slug/access", async (req: Request, res: Response) => {
       return;
     }
 
-    const [enrollment] = await db
-      .select()
-      .from(enrollmentsTable)
-      .where(
-        and(
-          eq(enrollmentsTable.userId, req.user.id),
-          eq(enrollmentsTable.courseId, course.id),
-        ),
-      );
-
+    const enrollment = await getEnrollmentStatus(req.user.id, course.id);
     res.json({ hasAccess: !!enrollment && enrollment.status === "active", enrolled: !!enrollment });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to check access" });
   }
 });

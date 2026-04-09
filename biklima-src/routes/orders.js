@@ -26,8 +26,22 @@ router.post("/orders", async (req, res) => {
   }
   try {
     const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = req.body;
-    if (!courseId || !buyerName || !buyerEmail || !buyerPhone) {
-      return res.status(400).json({ error: "Missing required fields: courseId, buyerName, buyerEmail, buyerPhone" });
+    if (!courseId || !buyerName?.trim() || !buyerEmail?.trim() || !buyerPhone?.trim()) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    if (buyerName.trim().length > 120) {
+      return res.status(400).json({ error: "Name too long (max 120 characters)" });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(buyerEmail.trim())) {
+      return res.status(400).json({ error: "Invalid email address" });
+    }
+    const phoneClean = buyerPhone.trim().replace(/[\s\-().+]/g, "");
+    if (!/^\d{7,15}$/.test(phoneClean)) {
+      return res.status(400).json({ error: "Invalid phone number" });
+    }
+    if (paymentNotes && paymentNotes.length > 500) {
+      return res.status(400).json({ error: "Notes too long (max 500 characters)" });
     }
 
     const [course] = await db

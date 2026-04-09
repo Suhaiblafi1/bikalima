@@ -32,8 +32,26 @@ router.post("/orders", async (req: Request, res: Response) => {
   }
   try {
     const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = req.body;
-    if (!courseId || !buyerName || !buyerEmail || !buyerPhone) {
+    if (!courseId || !buyerName?.trim() || !buyerEmail?.trim() || !buyerPhone?.trim()) {
       res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+    if (buyerName.trim().length > 120) {
+      res.status(400).json({ error: "Name too long (max 120 characters)" });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(buyerEmail.trim())) {
+      res.status(400).json({ error: "Invalid email address" });
+      return;
+    }
+    const phoneClean = buyerPhone.trim().replace(/[\s\-().+]/g, "");
+    if (!/^\d{7,15}$/.test(phoneClean)) {
+      res.status(400).json({ error: "Invalid phone number" });
+      return;
+    }
+    if (paymentNotes && paymentNotes.length > 500) {
+      res.status(400).json({ error: "Notes too long (max 500 characters)" });
       return;
     }
 
