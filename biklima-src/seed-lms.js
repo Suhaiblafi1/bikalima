@@ -246,7 +246,7 @@ async function seed() {
         language, level
       ) VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
-        $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,
+        $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,
         TRUE,TRUE,'ar','all'
       )
       ON CONFLICT (slug) DO UPDATE SET
@@ -256,7 +256,7 @@ async function seed() {
         what_you_learn_ar=$16, what_you_learn_en=$17,
         requirements_ar=$18, requirements_en=$19,
         target_audience_ar=$20, target_audience_en=$21,
-        instructor_id=$22, category_id=$22,
+        instructor_id=$22, category_id=$23,
         is_published=TRUE, is_featured=TRUE, updated_at=NOW()
       RETURNING id
     `, [
