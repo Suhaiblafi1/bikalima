@@ -411,6 +411,14 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
       return;
     }
 
+    if (status === "pending") {
+      const [current] = await db.select({ status: ordersTable.status }).from(ordersTable).where(eq(ordersTable.id, id));
+      if (current && (current.status === "paid" || current.status === "cancelled")) {
+        res.status(400).json({ error: "Cannot revert a terminal order status back to pending." });
+        return;
+      }
+    }
+
     const updates: { updatedAt: Date; status?: string; adminNotes?: string; adminApprovedBy?: string } = { updatedAt: new Date() };
     if (status !== undefined) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
@@ -434,7 +442,7 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
             await tx.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
           }
         } else if (status === "cancelled" && existing.length > 0 && existing[0].status === "active") {
-          await tx.update(enrollmentsTable).set({ status: "cancelled" }).where(eq(enrollmentsTable.id, existing[0].id));
+          await tx.update(enrollmentsTable).set({ status: "suspended" }).where(eq(enrollmentsTable.id, existing[0].id));
         }
       }
     });
