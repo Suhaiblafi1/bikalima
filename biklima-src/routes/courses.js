@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, coursesTable, courseSectionsTable, lessonsTable, instructorsTable, reviewsTable, enrollmentsTable } from "../db.js";
+import { db, coursesTable, courseSectionsTable, lessonsTable, instructorsTable, reviewsTable, enrollmentsTable, lessonProgressTable } from "../db.js";
 import { eq, asc, and, sql } from "drizzle-orm";
 
 const router = Router();
@@ -182,6 +182,41 @@ router.get("/courses/:slug/access", async (req, res) => {
   } catch (err) {
     console.error("GET /courses/:slug/access error:", err);
     res.status(500).json({ error: "Failed to check access" });
+  }
+});
+
+router.get("/courses/:slug/learn", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const { slug } = req.params;
+    const [course] = await db.select().from(coursesTable).where(eq(coursesTable.slug, slug));
+    if (!course) return res.status(404).json({ error: "Course not found" });
+
+    const [enrollment] = await db.select().from(enrollmentsTable)
+      .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.courseId, course.id)));
+
+    if (!enrollment || enrollment.status !== "active") {
+      return res.status(403).json({ error: "Not enrolled in this course" });
+    }
+
+    const lessons = await db.select().from(lessonsTable)
+      .where(eq(lessonsTable.courseId, course.id))
+      .orderBy(asc(lessonsTable.sortOrder));
+
+    const progress = await db.select().from(lessonProgressTable)
+      .where(eq(lessonProgressTable.userId, req.user.id));
+
+    const progressMap = {};
+    for (const p of progress) {
+      if (p.completed) progressMap[p.lessonId] = true;
+    }
+
+    res.json({ course, lessons, progressMap });
+  } catch (err) {
+    console.error("GET /courses/:slug/learn error:", err);
+    res.status(500).json({ error: "Failed to load course" });
   }
 });
 

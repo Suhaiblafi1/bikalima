@@ -307,6 +307,7 @@ router.get("/my/courses", async (req: Request, res: Response) => {
       courseId: enrollmentsTable.courseId,
       status: enrollmentsTable.status,
       enrolledAt: enrollmentsTable.enrolledAt,
+      slug: coursesTable.slug,
       titleAr: coursesTable.titleAr,
       titleEn: coursesTable.titleEn,
       titleFr: coursesTable.titleFr,

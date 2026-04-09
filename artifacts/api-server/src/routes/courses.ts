@@ -4,6 +4,7 @@ import {
   coursesTable,
   lessonsTable,
   enrollmentsTable,
+  lessonProgressTable,
 } from "@workspace/db";
 import { eq, and, asc } from "drizzle-orm";
 
@@ -74,6 +75,44 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
     res.json({ course: { ...course, lessons } });
   } catch {
     res.status(500).json({ error: "Failed to fetch course" });
+  }
+});
+
+router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { slug } = req.params;
+    const course = await getCourseBySlug(slug);
+    if (!course) { res.status(404).json({ error: "Course not found" }); return; }
+
+    const enrollment = await getEnrollmentStatus(req.user.id, course.id);
+    if (!enrollment || enrollment.status !== "active") {
+      res.status(403).json({ error: "Not enrolled in this course" });
+      return;
+    }
+
+    const lessons = await db
+      .select()
+      .from(lessonsTable)
+      .where(eq(lessonsTable.courseId, course.id))
+      .orderBy(asc(lessonsTable.sortOrder));
+
+    const progress = await db
+      .select()
+      .from(lessonProgressTable)
+      .where(eq(lessonProgressTable.userId, req.user.id));
+
+    const progressMap: Record<string, boolean> = {};
+    for (const p of progress) {
+      if (p.completed) progressMap[p.lessonId] = true;
+    }
+
+    res.json({ course, lessons, progressMap });
+  } catch {
+    res.status(500).json({ error: "Failed to load course" });
   }
 });
 

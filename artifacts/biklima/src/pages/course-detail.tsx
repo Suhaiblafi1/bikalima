@@ -542,13 +542,22 @@ export default function CourseDetailPage() {
             <span className="text-muted-foreground font-medium">{t.priceUnit}</span>
           </div>
         )}
-        <Button
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-3 text-base font-bold mb-3"
-          onClick={() => setOrderModalOpen(true)}
-          disabled={!courseDbId}
-        >
-          {t.enroll}
-        </Button>
+        {hasAccess ? (
+          <Button
+            className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-3 text-base font-bold mb-3"
+            onClick={() => navigate(`${baseUrl}/courses/${slug}/learn`)}
+          >
+            {lang === "ar" ? "ادخل إلى الدورة" : "Continue Learning"}
+          </Button>
+        ) : (
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-3 text-base font-bold mb-3"
+            onClick={() => setOrderModalOpen(true)}
+            disabled={!courseDbId}
+          >
+            {t.enroll}
+          </Button>
+        )}
         <p className="text-xs text-muted-foreground text-center mb-5">{t.enrollCtaNote}</p>
         <div className="space-y-2 text-sm text-foreground/80">
           <p className="font-semibold text-foreground text-xs uppercase tracking-wide mb-3">{t.includes}</p>
@@ -862,13 +871,22 @@ export default function CourseDetailPage() {
 
             {/* Mobile CTA bottom */}
             <div className="lg:hidden mt-8 mb-4">
-              <Button
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-4 text-base font-bold"
-                onClick={() => setOrderModalOpen(true)}
-                disabled={!courseDbId}
-              >
-                {t.enroll} — {programId !== "children" ? `${price} ${t.priceUnit}` : t.free}
-              </Button>
+              {hasAccess ? (
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl py-4 text-base font-bold"
+                  onClick={() => navigate(`${baseUrl}/courses/${slug}/learn`)}
+                >
+                  {lang === "ar" ? "ادخل إلى الدورة" : "Continue Learning"}
+                </Button>
+              ) : (
+                <Button
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-4 text-base font-bold"
+                  onClick={() => setOrderModalOpen(true)}
+                  disabled={!courseDbId}
+                >
+                  {t.enroll} — {programId !== "children" ? `${price} ${t.priceUnit}` : t.free}
+                </Button>
+              )}
             </div>
           </div>
 

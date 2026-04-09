@@ -9,6 +9,7 @@ import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import CoursesPage from "@/pages/courses";
 import CourseDetailPage from "@/pages/course-detail";
+import LearnPage from "@/pages/learn";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/gallery" component={GalleryPage} />
       <Route path="/workbooks" component={WorkbooksPage} />
       <Route path="/courses" component={CoursesPage} />
+      <Route path="/courses/:slug/learn" component={LearnPage} />
       <Route path="/courses/:slug" component={CourseDetailPage} />
       <Route component={NotFound} />
     </Switch>

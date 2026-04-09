@@ -298,6 +298,7 @@ function VideoEmbed({ url }: { url: string }) {
 type CourseData = {
   enrollmentId: string;
   courseId: string;
+  slug: string | null;
   status: string;
   titleAr: string;
   titleEn: string;
@@ -675,19 +676,34 @@ export default function Dashboard() {
                         const totalLessons = course.lessons.length;
                         const pct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
                         return (
-                          <button key={course.courseId} onClick={() => setViewingCourse(course.courseId)} className="w-full flex items-center gap-4 bg-background border border-border rounded-xl p-4 hover:border-primary/40 transition-colors text-start">
+                          <div key={course.courseId} className="w-full flex items-center gap-4 bg-background border border-border rounded-xl p-4 hover:border-primary/40 transition-colors">
                             <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                               <BookOpen className="w-7 h-7 text-primary" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold">{getTitle(course)}</p>
-                              <p className="text-xs text-muted-foreground">{totalLessons} {isRtl ? "درس" : "lessons"} • {pct}% {t.courses.progress.toLowerCase()}</p>
+                              <p className="font-bold text-start">{getTitle(course)}</p>
+                              <p className="text-xs text-muted-foreground text-start">{totalLessons} {isRtl ? "درس" : "lessons"} • {pct}% {t.courses.progress.toLowerCase()}</p>
                               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                                <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                               </div>
                             </div>
-                            <ChevronRight className={`w-5 h-5 text-muted-foreground shrink-0 ${isRtl ? "rotate-180" : ""}`} />
-                          </button>
+                            <div className="flex flex-col gap-2 shrink-0">
+                              {course.slug && (
+                                <button
+                                  onClick={() => navigate(`/courses/${course.slug}/learn`)}
+                                  className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+                                >
+                                  {isRtl ? "ادخل" : "Learn"}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setViewingCourse(course.courseId)}
+                                className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground"
+                              >
+                                {isRtl ? "تفاصيل" : "Details"}
+                              </button>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
