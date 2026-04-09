@@ -3,14 +3,16 @@ import {
   db,
   usersTable,
   coursesTable,
+  courseSectionsTable,
   lessonsTable,
   enrollmentsTable,
   lessonProgressTable,
   enrollmentRequestsTable,
   workbookOrdersTable,
   ordersTable,
+  instructorsTable,
 } from "../db.js";
-import { eq, desc, sql, asc, inArray, and } from "drizzle-orm";
+import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 
 const router = Router();
 
@@ -448,5 +450,103 @@ router.get("/admin/lms-orders", adminGetLmsOrders);
 router.get("/admin/orders", adminGetLmsOrders);
 router.patch("/admin/lms-orders/:id", adminPatchLmsOrder);
 router.patch("/admin/orders/:id", adminPatchLmsOrder);
+
+// ── Instructors ────────────────────────────────────────────────────────────
+router.get("/admin/instructors", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const instructors = await db.select().from(instructorsTable).orderBy(asc(instructorsTable.nameAr));
+    res.json({ instructors });
+  } catch { res.status(500).json({ error: "Failed to fetch instructors" }); }
+});
+router.post("/admin/instructors", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { nameAr, nameEn, bioAr, bioEn, photoUrl, email } = req.body;
+    if (!nameAr || !nameEn) { res.status(400).json({ error: "nameAr and nameEn required" }); return; }
+    const [instructor] = await db.insert(instructorsTable).values({ nameAr, nameEn, bioAr, bioEn, photoUrl, email }).returning();
+    res.json({ instructor });
+  } catch { res.status(500).json({ error: "Failed to create instructor" }); }
+});
+router.patch("/admin/instructors/:id", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const updates = {};
+    for (const key of ["nameAr", "nameEn", "bioAr", "bioEn", "photoUrl", "email"]) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    const [instructor] = await db.update(instructorsTable).set(updates).where(eq(instructorsTable.id, req.params.id)).returning();
+    if (!instructor) { res.status(404).json({ error: "Not found" }); return; }
+    res.json({ instructor });
+  } catch { res.status(500).json({ error: "Failed to update instructor" }); }
+});
+router.delete("/admin/instructors/:id", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    await db.delete(instructorsTable).where(eq(instructorsTable.id, req.params.id));
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: "Failed to delete instructor" }); }
+});
+
+// ── Sections ───────────────────────────────────────────────────────────────
+router.post("/admin/courses/:courseId/sections", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { titleAr, titleEn, sortOrder } = req.body;
+    if (!titleAr || !titleEn) { res.status(400).json({ error: "titleAr and titleEn required" }); return; }
+    const [section] = await db.insert(courseSectionsTable).values({ courseId: req.params.courseId, titleAr, titleEn, sortOrder: sortOrder ?? 0 }).returning();
+    res.json({ section });
+  } catch { res.status(500).json({ error: "Failed to create section" }); }
+});
+router.patch("/admin/sections/:id", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const updates = {};
+    for (const key of ["titleAr", "titleEn", "sortOrder", "isPublished"]) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    const [section] = await db.update(courseSectionsTable).set(updates).where(eq(courseSectionsTable.id, req.params.id)).returning();
+    if (!section) { res.status(404).json({ error: "Not found" }); return; }
+    res.json({ section });
+  } catch { res.status(500).json({ error: "Failed to update section" }); }
+});
+router.delete("/admin/sections/:id", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    await db.delete(courseSectionsTable).where(eq(courseSectionsTable.id, req.params.id));
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: "Failed to delete section" }); }
+});
+
+// ── Revenue ────────────────────────────────────────────────────────────────
+router.get("/admin/revenue", async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [totalRow] = await db.select({ total: sql`COALESCE(SUM(${ordersTable.amount}), 0)::int` }).from(ordersTable).where(eq(ordersTable.status, "paid"));
+    const [pendingRow] = await db.select({ total: sql`COALESCE(SUM(${ordersTable.amount}), 0)::int`, count: sql`count(*)::int` }).from(ordersTable).where(eq(ordersTable.status, "pending"));
+    const [cancelledRow] = await db.select({ count: sql`count(*)::int` }).from(ordersTable).where(eq(ordersTable.status, "cancelled"));
+    const [paidCountRow] = await db.select({ count: sql`count(*)::int` }).from(ordersTable).where(eq(ordersTable.status, "paid"));
+    const byCourse = await db.select({
+      courseId: ordersTable.courseId,
+      courseTitleAr: coursesTable.titleAr,
+      courseTitleEn: coursesTable.titleEn,
+      revenue: sql`COALESCE(SUM(${ordersTable.amount}), 0)::int`,
+      orders: sql`count(*)::int`,
+    }).from(ordersTable).leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id)).where(eq(ordersTable.status, "paid")).groupBy(ordersTable.courseId, coursesTable.titleAr, coursesTable.titleEn).orderBy(desc(sql`SUM(${ordersTable.amount})`));
+    const last30Days = await db.select({
+      date: sql`DATE(${ordersTable.createdAt})::text`,
+      revenue: sql`COALESCE(SUM(${ordersTable.amount}), 0)::int`,
+      count: sql`count(*)::int`,
+    }).from(ordersTable).where(and(eq(ordersTable.status, "paid"), gte(ordersTable.createdAt, thirtyDaysAgo))).groupBy(sql`DATE(${ordersTable.createdAt})`).orderBy(asc(sql`DATE(${ordersTable.createdAt})`));
+    const topEnrolled = await db.select({
+      courseId: enrollmentsTable.courseId,
+      courseTitleAr: coursesTable.titleAr,
+      courseTitleEn: coursesTable.titleEn,
+      enrollments: sql`count(*)::int`,
+    }).from(enrollmentsTable).leftJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id)).groupBy(enrollmentsTable.courseId, coursesTable.titleAr, coursesTable.titleEn).orderBy(desc(sql`count(*)`)).limit(5);
+    res.json({ totalRevenue: totalRow.total, paidOrders: paidCountRow.count, pendingRevenue: pendingRow.total, pendingOrders: pendingRow.count, cancelledOrders: cancelledRow.count, byCourse, last30Days, topEnrolled });
+  } catch { res.status(500).json({ error: "Failed to fetch revenue" }); }
+});
 
 export default router;

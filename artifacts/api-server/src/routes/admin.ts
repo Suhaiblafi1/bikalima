@@ -3,14 +3,16 @@ import {
   db,
   usersTable,
   coursesTable,
+  courseSectionsTable,
   lessonsTable,
   enrollmentsTable,
   lessonProgressTable,
   enrollmentRequestsTable,
   workbookOrdersTable,
   ordersTable,
+  instructorsTable,
 } from "@workspace/db";
-import { eq, desc, sql, asc, inArray, and } from "drizzle-orm";
+import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -111,10 +113,12 @@ router.get("/admin/courses", async (req: Request, res: Response) => {
   try {
     const courses = await db.select().from(coursesTable).orderBy(desc(coursesTable.createdAt));
     const allLessons = await db.select().from(lessonsTable).orderBy(asc(lessonsTable.sortOrder));
+    const allSections = await db.select().from(courseSectionsTable).orderBy(asc(courseSectionsTable.sortOrder));
     const allEnrollments = await db.select().from(enrollmentsTable);
     const result = courses.map(c => ({
       ...c,
       lessons: allLessons.filter(l => l.courseId === c.id),
+      sections: allSections.filter(s => s.courseId === c.id),
       enrollmentCount: allEnrollments.filter(e => e.courseId === c.id).length,
     }));
     res.json({ courses: result });
@@ -123,13 +127,25 @@ router.get("/admin/courses", async (req: Request, res: Response) => {
   }
 });
 
+const COURSE_FIELDS = [
+  "titleAr", "titleEn", "titleFr", "subtitleAr", "subtitleEn",
+  "descriptionAr", "descriptionEn", "descriptionFr",
+  "programId", "slug", "imageUrl", "trailerUrl",
+  "price", "discountPrice", "level", "language", "category", "instructorId",
+  "whatYouLearnAr", "whatYouLearnEn", "requirementsAr", "requirementsEn",
+  "targetAudienceAr", "targetAudienceEn", "seoTitle", "seoDescription",
+  "isPublished", "isFeatured",
+];
+
 router.post("/admin/courses", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const { titleAr, titleEn, titleFr, descriptionAr, descriptionEn, descriptionFr, programId, imageUrl, isPublished } = req.body;
-    const [course] = await db.insert(coursesTable).values({
-      titleAr, titleEn, titleFr, descriptionAr, descriptionEn, descriptionFr, programId, imageUrl, isPublished: isPublished ?? false,
-    }).returning();
+    const vals: any = { titleAr: req.body.titleAr, titleEn: req.body.titleEn, titleFr: req.body.titleFr || "" };
+    for (const key of COURSE_FIELDS) {
+      if (req.body[key] !== undefined) vals[key] = req.body[key];
+    }
+    if (!vals.isPublished) vals.isPublished = false;
+    const [course] = await db.insert(coursesTable).values(vals).returning();
     res.json({ course });
   } catch (err) {
     res.status(500).json({ error: "Failed to create course" });
@@ -141,9 +157,10 @@ router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updates: any = {};
-    for (const key of ["titleAr", "titleEn", "titleFr", "descriptionAr", "descriptionEn", "descriptionFr", "programId", "imageUrl", "isPublished"]) {
+    for (const key of COURSE_FIELDS) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
+    if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [course] = await db.update(coursesTable).set(updates).where(eq(coursesTable.id, id)).returning();
     if (!course) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ course });
@@ -166,9 +183,12 @@ router.post("/admin/courses/:courseId/lessons", async (req: Request, res: Respon
   if (!requireAdmin(req, res)) return;
   try {
     const { courseId } = req.params;
-    const { titleAr, titleEn, titleFr, videoUrl, videoType, durationMinutes, sortOrder } = req.body;
+    const { titleAr, titleEn, titleFr, videoUrl, videoType, durationMinutes, sortOrder, sectionId, isFreePreview, isPublished, descriptionAr, descriptionEn, resources } = req.body;
     const [lesson] = await db.insert(lessonsTable).values({
-      courseId, titleAr, titleEn, titleFr, videoUrl, videoType: videoType || "youtube", durationMinutes, sortOrder: sortOrder ?? 0,
+      courseId, titleAr, titleEn, titleFr: titleFr || "", videoUrl, videoType: videoType || "youtube",
+      durationMinutes, sortOrder: sortOrder ?? 0, sectionId: sectionId || null,
+      isFreePreview: isFreePreview ?? false, isPublished: isPublished ?? true,
+      descriptionAr, descriptionEn, resources,
     }).returning();
     res.json({ lesson });
   } catch (err) {
@@ -180,7 +200,7 @@ router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
     const updates: any = {};
-    for (const key of ["titleAr", "titleEn", "titleFr", "videoUrl", "videoType", "durationMinutes", "sortOrder", "isPublished"]) {
+    for (const key of ["titleAr", "titleEn", "titleFr", "videoUrl", "videoType", "durationMinutes", "sortOrder", "isPublished", "sectionId", "isFreePreview", "descriptionAr", "descriptionEn", "resources"]) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
     const [lesson] = await db.update(lessonsTable).set(updates).where(eq(lessonsTable.id, req.params.id)).returning();
@@ -188,6 +208,82 @@ router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
     res.json({ lesson });
   } catch (err) {
     res.status(500).json({ error: "Failed to update lesson" });
+  }
+});
+
+router.post("/admin/courses/:courseId/sections", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { courseId } = req.params;
+    const { titleAr, titleEn, sortOrder } = req.body;
+    if (!titleAr || !titleEn) { res.status(400).json({ error: "titleAr and titleEn required" }); return; }
+    const [section] = await db.insert(courseSectionsTable).values({
+      courseId, titleAr, titleEn, sortOrder: sortOrder ?? 0,
+    }).returning();
+    res.json({ section });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create section" });
+  }
+});
+
+router.patch("/admin/sections/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const updates: any = {};
+    for (const key of ["titleAr", "titleEn", "sortOrder", "isPublished"]) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    const [section] = await db.update(courseSectionsTable).set(updates).where(eq(courseSectionsTable.id, req.params.id)).returning();
+    if (!section) { res.status(404).json({ error: "Not found" }); return; }
+    res.json({ section });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update section" });
+  }
+});
+
+router.delete("/admin/sections/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    await db.delete(courseSectionsTable).where(eq(courseSectionsTable.id, req.params.id));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete section" });
+  }
+});
+
+router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const [original] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
+    if (!original) { res.status(404).json({ error: "Not found" }); return; }
+    const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = original;
+    const [course] = await db.insert(coursesTable).values({
+      ...rest,
+      titleAr: `${rest.titleAr} (نسخة)`,
+      titleEn: `${rest.titleEn} (copy)`,
+      slug: rest.slug ? `${rest.slug}-copy` : null,
+      isPublished: false,
+    }).returning();
+    const origSections = await db.select().from(courseSectionsTable).where(eq(courseSectionsTable.courseId, id)).orderBy(asc(courseSectionsTable.sortOrder));
+    const origLessons = await db.select().from(lessonsTable).where(eq(lessonsTable.courseId, id)).orderBy(asc(lessonsTable.sortOrder));
+    const sectionIdMap: Record<string, string> = {};
+    for (const s of origSections) {
+      const { id: _sid, createdAt: _sc, courseId: _cid, ...sRest } = s;
+      const [ns] = await db.insert(courseSectionsTable).values({ ...sRest, courseId: course.id }).returning();
+      sectionIdMap[s.id] = ns.id;
+    }
+    for (const l of origLessons) {
+      const { id: _lid, createdAt: _lc, courseId: _lcid, ...lRest } = l;
+      await db.insert(lessonsTable).values({
+        ...lRest,
+        courseId: course.id,
+        sectionId: lRest.sectionId ? (sectionIdMap[lRest.sectionId] ?? null) : null,
+      });
+    }
+    res.json({ course });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to duplicate course" });
   }
 });
 
@@ -364,6 +460,111 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update progress" });
+  }
+});
+
+router.get("/admin/instructors", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const instructors = await db.select().from(instructorsTable).orderBy(asc(instructorsTable.nameAr));
+    res.json({ instructors });
+  } catch { res.status(500).json({ error: "Failed to fetch instructors" }); }
+});
+
+router.post("/admin/instructors", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { nameAr, nameEn, bioAr, bioEn, photoUrl, email } = req.body;
+    if (!nameAr || !nameEn) { res.status(400).json({ error: "nameAr and nameEn required" }); return; }
+    const [instructor] = await db.insert(instructorsTable).values({ nameAr, nameEn, bioAr, bioEn, photoUrl, email }).returning();
+    res.json({ instructor });
+  } catch { res.status(500).json({ error: "Failed to create instructor" }); }
+});
+
+router.patch("/admin/instructors/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const updates: any = {};
+    for (const key of ["nameAr", "nameEn", "bioAr", "bioEn", "photoUrl", "email"]) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    const [instructor] = await db.update(instructorsTable).set(updates).where(eq(instructorsTable.id, req.params.id)).returning();
+    if (!instructor) { res.status(404).json({ error: "Not found" }); return; }
+    res.json({ instructor });
+  } catch { res.status(500).json({ error: "Failed to update instructor" }); }
+});
+
+router.delete("/admin/instructors/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    await db.delete(instructorsTable).where(eq(instructorsTable.id, req.params.id));
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: "Failed to delete instructor" }); }
+});
+
+router.get("/admin/revenue", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [totalRow] = await db
+      .select({ total: sql<number>`COALESCE(SUM(${ordersTable.amount}), 0)::int` })
+      .from(ordersTable).where(eq(ordersTable.status, "paid"));
+    const [pendingRow] = await db
+      .select({ total: sql<number>`COALESCE(SUM(${ordersTable.amount}), 0)::int`, count: sql<number>`count(*)::int` })
+      .from(ordersTable).where(eq(ordersTable.status, "pending"));
+    const [cancelledRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(ordersTable).where(eq(ordersTable.status, "cancelled"));
+    const [paidCountRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(ordersTable).where(eq(ordersTable.status, "paid"));
+    const byCourse = await db
+      .select({
+        courseId: ordersTable.courseId,
+        courseTitleAr: coursesTable.titleAr,
+        courseTitleEn: coursesTable.titleEn,
+        revenue: sql<number>`COALESCE(SUM(${ordersTable.amount}), 0)::int`,
+        orders: sql<number>`count(*)::int`,
+      })
+      .from(ordersTable)
+      .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
+      .where(eq(ordersTable.status, "paid"))
+      .groupBy(ordersTable.courseId, coursesTable.titleAr, coursesTable.titleEn)
+      .orderBy(desc(sql`SUM(${ordersTable.amount})`));
+    const last30Days = await db
+      .select({
+        date: sql<string>`DATE(${ordersTable.createdAt})::text`,
+        revenue: sql<number>`COALESCE(SUM(${ordersTable.amount}), 0)::int`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(ordersTable)
+      .where(and(eq(ordersTable.status, "paid"), gte(ordersTable.createdAt, thirtyDaysAgo)))
+      .groupBy(sql`DATE(${ordersTable.createdAt})`)
+      .orderBy(asc(sql`DATE(${ordersTable.createdAt})`));
+    const topEnrolled = await db
+      .select({
+        courseId: enrollmentsTable.courseId,
+        courseTitleAr: coursesTable.titleAr,
+        courseTitleEn: coursesTable.titleEn,
+        enrollments: sql<number>`count(*)::int`,
+      })
+      .from(enrollmentsTable)
+      .leftJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
+      .groupBy(enrollmentsTable.courseId, coursesTable.titleAr, coursesTable.titleEn)
+      .orderBy(desc(sql`count(*)`))
+      .limit(5);
+    res.json({
+      totalRevenue: totalRow.total,
+      paidOrders: paidCountRow.count,
+      pendingRevenue: pendingRow.total,
+      pendingOrders: pendingRow.count,
+      cancelledOrders: cancelledRow.count,
+      byCourse,
+      last30Days,
+      topEnrolled,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch revenue" });
   }
 });
 

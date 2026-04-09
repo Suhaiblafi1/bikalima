@@ -2,6 +2,17 @@ import { sql } from "drizzle-orm";
 import { integer, jsonb, pgTable, timestamp, varchar, text, boolean } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
+export const instructorsTable = pgTable("instructors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nameAr: varchar("name_ar").notNull(),
+  nameEn: varchar("name_en").notNull(),
+  bioAr: text("bio_ar"),
+  bioEn: text("bio_en"),
+  photoUrl: varchar("photo_url"),
+  email: varchar("email"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const coursesTable = pgTable("courses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   programId: varchar("program_id"),
@@ -9,11 +20,28 @@ export const coursesTable = pgTable("courses", {
   titleAr: varchar("title_ar").notNull(),
   titleEn: varchar("title_en").notNull(),
   titleFr: varchar("title_fr").notNull(),
+  subtitleAr: varchar("subtitle_ar"),
+  subtitleEn: varchar("subtitle_en"),
   descriptionAr: text("description_ar"),
   descriptionEn: text("description_en"),
   descriptionFr: text("description_fr"),
   imageUrl: varchar("image_url"),
+  trailerUrl: varchar("trailer_url"),
   price: integer("price"),
+  discountPrice: integer("discount_price"),
+  level: varchar("level").$type<"beginner" | "intermediate" | "advanced">(),
+  language: varchar("language").default("ar"),
+  category: varchar("category"),
+  instructorId: varchar("instructor_id").references(() => instructorsTable.id, { onDelete: "set null" }),
+  whatYouLearnAr: jsonb("what_you_learn_ar").$type<string[]>(),
+  whatYouLearnEn: jsonb("what_you_learn_en").$type<string[]>(),
+  requirementsAr: jsonb("requirements_ar").$type<string[]>(),
+  requirementsEn: jsonb("requirements_en").$type<string[]>(),
+  targetAudienceAr: text("target_audience_ar"),
+  targetAudienceEn: text("target_audience_en"),
+  seoTitle: varchar("seo_title"),
+  seoDescription: text("seo_description"),
+  isFeatured: boolean("is_featured").notNull().default(false),
   isPublished: boolean("is_published").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -132,6 +160,7 @@ export const reviewsTable = pgTable("reviews", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export type Instructor = typeof instructorsTable.$inferSelect;
 export type Course = typeof coursesTable.$inferSelect;
 export type CourseSection = typeof courseSectionsTable.$inferSelect;
 export type Lesson = typeof lessonsTable.$inferSelect;
