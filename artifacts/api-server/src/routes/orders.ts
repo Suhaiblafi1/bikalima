@@ -102,7 +102,7 @@ router.post("/orders", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/my/lms-orders", async (req: Request, res: Response) => {
+async function handleMyOrders(req: Request, res: Response): Promise<void> {
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
@@ -130,37 +130,10 @@ router.get("/my/lms-orders", async (req: Request, res: Response) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch orders" });
   }
-});
+}
 
-router.get("/my/orders", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated() || !req.user) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
-  try {
-    const orders = await db
-      .select({
-        id: ordersTable.id,
-        courseId: ordersTable.courseId,
-        courseTitleAr: coursesTable.titleAr,
-        courseTitleEn: coursesTable.titleEn,
-        amount: ordersTable.amount,
-        currency: ordersTable.currency,
-        status: ordersTable.status,
-        paymentNotes: ordersTable.paymentNotes,
-        adminNotes: ordersTable.adminNotes,
-        createdAt: ordersTable.createdAt,
-      })
-      .from(ordersTable)
-      .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
-      .where(eq(ordersTable.userId, req.user.id))
-      .orderBy(desc(ordersTable.createdAt));
-
-    res.json({ orders });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch orders" });
-  }
-});
+router.get("/my/orders", handleMyOrders);
+router.get("/my/lms-orders", handleMyOrders);
 
 export { router as ordersRouter };
 export default router;

@@ -102,7 +102,7 @@ router.post("/orders", async (req, res) => {
   }
 });
 
-router.get("/my/lms-orders", async (req, res) => {
+async function fetchMyOrders(req, res) {
   if (!req.isAuthenticated() || !req.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
@@ -127,9 +127,12 @@ router.get("/my/lms-orders", async (req, res) => {
 
     res.json({ orders });
   } catch (err) {
-    console.error("GET /my/lms-orders error:", err);
+    console.error("GET /my/orders error:", err);
     res.status(500).json({ error: "Failed to fetch orders" });
   }
-});
+}
+
+router.get("/my/orders", fetchMyOrders);
+router.get("/my/lms-orders", fetchMyOrders);
 
 export default router;

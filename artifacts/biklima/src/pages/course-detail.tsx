@@ -424,13 +424,25 @@ export default function CourseDetailPage() {
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [courseDbId, setCourseDbId] = useState<string>("");
   const [hasAccess, setHasAccess] = useState(false);
+  const [dbLessons, setDbLessons] = useState<{ id: string; isFreePreview: boolean; sortOrder: number }[]>([]);
 
   useEffect(() => {
     if (!slug) return;
     const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
     fetch(`${base}/api/courses/${slug}`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.course?.id) setCourseDbId(data.course.id); })
+      .then(data => {
+        if (data?.course?.id) {
+          setCourseDbId(data.course.id);
+          if (Array.isArray(data.course.lessons)) {
+            setDbLessons(data.course.lessons.map((l: { id: string; isFreePreview?: boolean; sortOrder?: number }) => ({
+              id: l.id,
+              isFreePreview: l.isFreePreview ?? false,
+              sortOrder: l.sortOrder ?? 0,
+            })));
+          }
+        }
+      })
       .catch(() => {});
     fetch(`${base}/api/courses/${slug}/access`, { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
@@ -716,7 +728,10 @@ export default function CourseDetailPage() {
                             <div className="divide-y divide-border/50">
                               {section.map((lesson, li) => {
                                 const globalIdx = si * SECTION_SIZE + li;
-                                const isFreePreview = hasAccess || globalIdx === 0;
+                                const dbLesson = dbLessons[globalIdx];
+                                const isFreePreviewFromDb = dbLesson?.isFreePreview ?? false;
+                                const isFreePreviewFallback = globalIdx === 0;
+                                const isFreePreview = hasAccess || isFreePreviewFromDb || isFreePreviewFallback;
                                 const canPlay = isFreePreview && previewVideoUrl;
                                 return (
                                   <div
@@ -731,7 +746,7 @@ export default function CourseDetailPage() {
                                       <Lock className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                                     )}
                                     <span className={`text-sm flex-1 ${isFreePreview ? "text-foreground font-medium" : "text-foreground/70"}`}>{lesson}</span>
-                                    {globalIdx === 0 && !hasAccess && (
+                                    {!hasAccess && (isFreePreviewFromDb || isFreePreviewFallback) && (
                                       <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium shrink-0">
                                         {t.freePreview}
                                       </span>

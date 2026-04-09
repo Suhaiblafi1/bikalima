@@ -319,7 +319,7 @@ router.get("/my/courses", async (req, res) => {
     })
     .from(enrollmentsTable)
     .innerJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
-    .where(eq(enrollmentsTable.userId, req.user.id));
+    .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.status, "active")));
 
     const courseIds = enrollments.map((e) => e.courseId);
     let lessons = [];
