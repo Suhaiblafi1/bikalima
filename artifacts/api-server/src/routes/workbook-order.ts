@@ -416,7 +416,7 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
   }
 });
 
-workbookOrderRouter.get("/my/orders", async (req: Request, res: Response) => {
+workbookOrderRouter.get("/my/workbook-orders", async (req: Request, res: Response) => {
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Not authenticated" });
     return;

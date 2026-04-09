@@ -221,4 +221,21 @@ router.post("/workbook-order", async (req, res) => {
   }
 });
 
+router.get("/my/workbook-orders", async (req, res) => {
+  if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const { eq, desc } = await import("drizzle-orm");
+    const orders = await db
+      .select()
+      .from(workbookOrdersTable)
+      .where(eq(workbookOrdersTable.userId, req.user.id))
+      .orderBy(desc(workbookOrdersTable.createdAt));
+    res.json({ orders });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
 export default router;

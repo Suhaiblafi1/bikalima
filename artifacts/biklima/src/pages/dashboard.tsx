@@ -368,9 +368,9 @@ export default function Dashboard() {
     try {
       const [cRes, oRes, rRes, lmsRes] = await Promise.all([
         fetch(`${apiBase}/my/courses`, { credentials: "include" }),
-        fetch(`${apiBase}/my/orders`, { credentials: "include" }),
+        fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
         fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
-        fetch(`${apiBase}/my/lms-orders`, { credentials: "include" }),
+        fetch(`${apiBase}/my/orders`, { credentials: "include" }),
       ]);
       if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); }
       if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders || []); }

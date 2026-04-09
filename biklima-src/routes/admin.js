@@ -397,11 +397,16 @@ router.get("/admin/lms-orders", async (req, res) => {
   }
 });
 
+const VALID_LMS_STATUSES = ["pending", "paid", "cancelled"];
+
 router.patch("/admin/lms-orders/:id", async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
+    if (status && !VALID_LMS_STATUSES.includes(status)) {
+      return res.status(400).json({ error: "Invalid status value" });
+    }
     const updates = { updatedAt: new Date() };
     if (status) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
