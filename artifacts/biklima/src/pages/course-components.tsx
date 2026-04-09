@@ -346,16 +346,23 @@ interface CourseHeroProps {
   format: string;
   slug: string;
   heroGradient: string;
+  coverImage?: string;
   lang: Lang;
 }
 
-export function CourseHero({ title, tagline, role, sessions, hours, priceJod, format, slug, heroGradient, lang }: CourseHeroProps) {
+export function CourseHero({ title, tagline, role, sessions, hours, priceJod, format, slug, heroGradient, coverImage, lang }: CourseHeroProps) {
   const [, navigate] = useLocation();
   const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
   return (
-    <div className={`bg-gradient-to-br ${heroGradient} text-white`}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
+    <div className={`relative bg-gradient-to-br ${heroGradient} text-white overflow-hidden`}>
+      {coverImage && (
+        <div className="absolute inset-0">
+          <img src={coverImage} alt={title} className="w-full h-full object-cover opacity-25" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-80`} />
+        </div>
+      )}
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         <div className="flex flex-col gap-5 max-w-2xl">
           <span className="inline-block text-xs font-bold tracking-widest uppercase bg-white/20 px-3 py-1 rounded-full w-fit">
             {role}

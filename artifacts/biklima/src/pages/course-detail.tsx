@@ -125,11 +125,11 @@ export default function CourseDetailPage() {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between gap-4">
           <button
-            onClick={() => navigate(`${baseUrl}/courses`)}
+            onClick={() => navigate(`${baseUrl}/`)}
             className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm font-medium"
           >
             <ArrowStart className="w-4 h-4" />
-            {lang === "ar" ? "جميع الدورات" : "All Courses"}
+            {lang === "ar" ? "الرئيسية" : "Home"}
           </button>
 
           <button onClick={() => navigate(`${baseUrl}/`)} className="logo-biklima text-4xl text-primary leading-none">
@@ -163,6 +163,7 @@ export default function CourseDetailPage() {
         format={courseData?.format ?? ""}
         slug={slug}
         heroGradient={heroColor}
+        coverImage={program.image}
         lang={lang}
       />
 
