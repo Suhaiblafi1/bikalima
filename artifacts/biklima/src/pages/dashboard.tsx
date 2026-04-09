@@ -225,7 +225,7 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
       if (result.error) {
         setError(result.error);
       } else {
-        navigate("/");
+        navigate("/dashboard");
       }
     }
   };
