@@ -460,6 +460,14 @@ export default function Home() {
   const coreProgram = localizedPrograms.find((p) => p.id === "core")!;
   const branchPrograms = localizedPrograms.filter((p) => p.id !== "core");
 
+  const PROGRAM_SLUGS: Record<string, string> = {
+    core: "influential-speaker",
+    tot: "certified-trainer",
+    teachers: "educators-program",
+    children: "young-speaker",
+  };
+  const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+
   const prereqBadgeClass = (id: string) =>
     id === "tot" ? "bg-red-50 text-red-600 border border-red-200"
     : id === "teachers" ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -481,8 +489,7 @@ export default function Home() {
 
   type NavItem = { label: string; id?: string; href?: string };
   const navItems: NavItem[] = [
-    { label: t.nav.courses, href: "courses" },
-    { label: t.nav.structure, id: "structure" },
+    { label: t.nav.courses, id: "structure" },
     { label: t.nav.events, id: "events" },
     { label: t.nav.workbooks, href: "workbooks" },
     { label: t.nav.gallery, id: "gallery" },
@@ -791,23 +798,41 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center">
               <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="w-full max-w-2xl">
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-primary cursor-pointer group" onClick={() => setSelectedProgram(coreProgram)}>
-                  <div className="aspect-[21/8] relative">
-                    <img src={coreProgram.image} alt={coreProgram.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent" />
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold mb-3">
-                      <Star className="w-4 h-4 text-accent" />{t.structure.coreBadge}
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-primary group">
+                  <div className="relative cursor-pointer" onClick={() => setSelectedProgram(coreProgram)}>
+                    <div className="aspect-[21/8] relative">
+                      <img src={coreProgram.image} alt={coreProgram.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent" />
                     </div>
-                    <h3 className="font-serif text-2xl md:text-3xl font-bold mb-1">{coreProgram.shortTitle}</h3>
-                    <p className="text-white/80 text-sm italic mb-2">{coreProgram.subtitle ?? t.structure.coreSubtitle}</p>
-                    <div className="flex items-center gap-4 text-white/80 text-sm">
-                      <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{coreProgram.hours} {t.structure.hoursUnit}</span>
-                      <span>·</span>
-                      <span>{coreProgram.sessions} {t.structure.sessionsUnit}</span>
-                      <span>·</span>
-                      <span className="font-bold text-white">{formatPrice(Math.round(RECORDED_PRICES.core * 1.5))} <span className="font-normal text-white/60 text-xs">({t.enroll.modeCombined})</span></span>
+                    <div className="absolute top-4 start-4 flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 bg-amber-400/90 text-amber-900 px-2.5 py-1 rounded-full text-xs font-bold">
+                        <Star className="w-3.5 h-3.5 fill-current" />{t.structure.rating}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold mb-3">
+                        <Star className="w-4 h-4 text-accent" />{t.structure.coreBadge}
+                      </div>
+                      <h3 className="font-serif text-2xl md:text-3xl font-bold mb-1">{coreProgram.shortTitle}</h3>
+                      <p className="text-white/80 text-sm italic mb-2">{coreProgram.subtitle ?? t.structure.coreSubtitle}</p>
+                      <div className="flex items-center gap-4 text-white/80 text-sm">
+                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{coreProgram.hours} {t.structure.hoursUnit}</span>
+                        <span>·</span>
+                        <span>{coreProgram.sessions} {t.structure.sessionsUnit}</span>
+                        <span>·</span>
+                        <span className="font-bold text-white">{formatPrice(RECORDED_PRICES.core)} <span className="font-normal text-white/60 text-xs">{t.structure.priceUnit}</span></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-card px-6 py-4 flex items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1">{coreProgram.hook}</p>
+                    <div className="flex gap-2 shrink-0">
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => navigate(`${baseUrl}/courses/${PROGRAM_SLUGS.core}`)}>
+                        {t.structure.viewDetails}
+                      </Button>
+                      <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => scrollTo("enroll")}>
+                        {t.structure.enrollNow}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -825,10 +850,15 @@ export default function Home() {
                         <div className="w-px h-8 bg-border" />
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => setSelectedProgram(program)}>
-                        <div className="aspect-[4/3.2] relative overflow-hidden">
+                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1`}>
+                        <div className="aspect-[4/3.2] relative overflow-hidden cursor-pointer" onClick={() => setSelectedProgram(program)}>
                           <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
+                          <div className="absolute top-3 start-3">
+                            <span className="inline-flex items-center gap-1 bg-amber-400/90 text-amber-900 px-2 py-0.5 rounded-full text-[10px] font-bold">
+                              <Star className="w-3 h-3 fill-current" />{t.structure.rating}
+                            </span>
+                          </div>
                           <div className="absolute bottom-4 right-4 left-4">
                             <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-2 ${program.tagColor}`}>{program.role}</div>
                             <h3 className="font-serif text-lg font-bold text-white leading-tight">
@@ -839,13 +869,27 @@ export default function Home() {
                               <Clock className="w-3 h-3" />
                               <span>{program.hours} {t.structure.hoursUnit}</span>
                               <span>·</span>
-                              <span className="font-bold text-white">{formatPrice(Math.round(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES] * 1.5))} <span className="font-normal text-white/60 text-[10px]">({t.enroll.modeCombined})</span></span>
+                              <span>{program.sessions} {t.structure.sessionsUnit}</span>
+                              <span>·</span>
+                              {program.id === "children"
+                                ? <span className="font-bold text-white/80">{lang === "ar" ? "للمدارس فقط" : "Schools only"}</span>
+                                : <span className="font-bold text-white">{formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])} <span className="font-normal text-white/60 text-[10px]">{t.structure.priceUnit}</span></span>
+                              }
                             </div>
                           </div>
                         </div>
                         <CardContent className="p-5 flex flex-col flex-1">
                           <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
-                          <Button variant="outline" size="sm" className="w-full rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white mb-2">{t.structure.viewDetails}</Button>
+                          <div className="flex gap-2 mb-2">
+                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={() => navigate(`${baseUrl}/courses/${PROGRAM_SLUGS[program.id]}`)}>
+                              {t.structure.viewDetails}
+                            </Button>
+                            {program.id !== "children" && (
+                              <Button size="sm" className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => scrollTo("enroll")}>
+                                {t.structure.enrollNow}
+                              </Button>
+                            )}
+                          </div>
                           {program.prerequisiteLabel && (
                             <div className={`flex items-center justify-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full ${prereqBadgeClass(program.id)}`}>
                               {program.id === "tot" ? <Lock className="w-2.5 h-2.5" /> : program.id === "children" ? <School className="w-2.5 h-2.5" /> : <AlertCircle className="w-2.5 h-2.5" />}
@@ -859,6 +903,36 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ── START HELP ── */}
+        <section className="py-16 bg-primary/5 border-y border-border">
+          <div className="container mx-auto px-6 text-center max-w-2xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-5">
+                <MessageCircle className="w-7 h-7 text-primary" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">{t.structure.startHelpHeading}</h2>
+              <p className="text-muted-foreground mb-7 leading-relaxed">{t.structure.startHelpSub}</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  size="lg"
+                  className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8"
+                  onClick={() => window.open("https://scheduler.zoom.us/suhaib-ahmad-x9pyfc", "_blank")}
+                >
+                  {t.structure.startHelpBtn}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full px-8"
+                  onClick={() => window.open("mailto:info@bikalima.com", "_blank")}
+                >
+                  {t.structure.startHelpContact}
+                </Button>
+              </div>
+            </motion.div>
           </div>
         </section>
 

@@ -7,7 +7,6 @@ import Dashboard from "@/pages/dashboard";
 import AdminPanel from "@/pages/admin";
 import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
-import CoursesPage from "@/pages/courses";
 import CourseDetailPage from "@/pages/course-detail";
 import LearnPage from "@/pages/learn";
 import CheckoutPage from "@/pages/checkout";
@@ -24,7 +23,6 @@ function Router() {
       <Route path="/admin" component={AdminPanel} />
       <Route path="/gallery" component={GalleryPage} />
       <Route path="/workbooks" component={WorkbooksPage} />
-      <Route path="/courses" component={CoursesPage} />
       <Route path="/checkout" component={CheckoutPage} />
       <Route path="/confirmation" component={ConfirmationPage} />
       <Route path="/courses/:slug/learn" component={LearnPage} />
