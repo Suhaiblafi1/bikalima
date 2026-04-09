@@ -1,0 +1,365 @@
+Build my website into a full learning platform where each program/course is structured like this Udemy-style example page:
+https://www.udemy.com/course/sap-ai-masterclass/
+
+Main objective:
+Each training program must have:
+1. a public course sales page
+2. a protected student learning area
+3. a course structure with sections, lessons, and videos
+4. paid access control so only students who paid can watch locked videos
+
+Do not give me only ideas or mockups. Build the actual working platform with code, database schema, dashboards, access logic, seed data, and deployment setup.
+
+Platform standard:
+The course experience should be similar in structure to a modern Udemy course page, including:
+- course title
+- subtitle/value proposition
+- rating and student count placeholders or live values
+- instructor name/profile
+- category
+- last updated date
+- language
+- “what you will learn”
+- course content outline
+- number of sections
+- number of lectures
+- total video duration
+- requirements
+- full course description
+- target audience / who this course is for
+- preview lessons
+- CTA to enroll/buy
+This mirrors the public anatomy of the referenced course page, which shows a title, subtitle, ratings, student count, category tags, updated date, language, learning outcomes, section-by-section content outline, requirements, description, and target audience. :contentReference[oaicite:0]{index=0}
+
+Build these core modules:
+
+1) Public course landing page for each program
+For every training program, create a public-facing sales page with:
+- hero section
+- course title
+- course subtitle
+- course cover image
+- trailer / promo video
+- instructor block
+- rating and review count
+- number of enrolled students
+- category and tags
+- last updated date
+- language
+- price
+- discount price if any
+- buy/enroll CTA
+- wishlist/save placeholder if needed
+
+Sections on the public course page:
+- What you will learn
+- Course content
+- Requirements
+- Description
+- Who this course is for
+- Instructor bio
+- Reviews/testimonials
+- FAQ
+- Related courses
+
+2) Course content structure
+Each program must be built like this:
+- Program / Course
+  - Sections / Modules
+    - Lessons / Lectures
+      - Videos
+      - PDF/resources
+      - text notes
+      - quizzes placeholder for future
+
+Every course should show:
+- total number of sections
+- total number of lessons
+- total duration
+- lesson-by-lesson outline
+- lesson preview markers for free lessons
+This is aligned with the reference page, which displays section count, lecture count, total course length, and section-by-section lesson breakdown. :contentReference[oaicite:1]{index=1}
+
+3) Paid access logic
+This is non-negotiable.
+
+Only students who paid should access premium videos.
+
+Access rules:
+- public visitors can view the course landing page
+- public visitors can view only lessons marked as free preview
+- logged-in users without payment cannot access paid lessons
+- students with confirmed payment can access full course
+- admin can manually grant or revoke access
+- refunded or cancelled payments should remove access unless admin overrides
+
+4) Student dashboard
+Create a student dashboard where users can:
+- see enrolled programs
+- see progress per course
+- continue from last watched video
+- mark lessons complete
+- view locked vs unlocked content
+- see order/payment history
+- manage profile
+- see certificates placeholder for future
+
+5) Course learning player
+Inside the paid student area, build a modern learning interface:
+- video player area
+- lesson title and description
+- downloadable resources
+- sidebar with sections and lessons
+- previous / next lesson buttons
+- progress tracker
+- mark as complete
+- resume from where user stopped
+- locked lessons visibly disabled for non-entitled users
+
+6) Admin dashboard
+Build a business-grade admin dashboard with:
+- total users
+- total students
+- total paid enrollments
+- total courses
+- total orders
+- revenue dashboard
+- course performance
+- recent registrations
+- recent orders
+- course completion stats
+- recent admin activity
+- alerts and notifications
+
+7) Course management in admin
+Admin and instructors should be able to:
+- create/edit/delete courses
+- duplicate courses
+- create sections
+- create lessons inside sections
+- upload or embed video for each lesson
+- attach PDFs/resources
+- reorder sections and lessons with drag-and-drop
+- set lesson duration
+- mark lesson as free preview or paid-only
+- publish/unpublish courses
+- draft/review/publish workflow
+- set featured course
+- edit SEO fields
+- set instructor
+- set pricing
+
+8) Video management
+For each lesson, support:
+- secure video upload or protected embed
+- video title
+- description
+- duration
+- thumbnail
+- transcript placeholder
+- attachments/resources
+- notes
+- preview/free flag
+- active/inactive status
+
+Important:
+Premium videos must not be publicly accessible by direct URL if avoidable.
+Use protected routes and secure access handling.
+If possible, use signed URLs or protected storage logic.
+
+9) Orders and payments
+Build a payment and order system with:
+- orders table
+- user
+- course
+- amount
+- currency
+- payment method
+- payment status
+- transaction reference
+- invoice/reference placeholder
+- access granted yes/no
+- order date
+
+Payment statuses:
+- pending
+- paid
+- failed
+- refunded
+- cancelled
+
+Admin should be able to:
+- approve manual payments
+- confirm offline payment
+- revoke access
+- filter orders
+- export orders
+
+Support both:
+- manual admin-approved payments
+- future-ready online payment gateway integration
+
+10) Enrollment and entitlement system
+Create an enrollment system:
+- auto-enroll after successful payment
+- manual enroll by admin
+- revoke enrollment by admin
+- enrollment tied to a course
+- optional expiry date for course access
+- lifetime access option
+- feature flag / access override architecture
+
+11) Instructor module
+Support instructors with:
+- instructor profile
+- bio
+- profile photo
+- assigned courses
+- limited permissions
+- ability to manage own content only
+
+12) Ratings and reviews
+Create review architecture:
+- student ratings
+- written review
+- moderation by admin
+- average rating per course
+- review count
+The referenced Udemy course page prominently displays rating, rating count, and enrolled student count, so this should be part of the product design. :contentReference[oaicite:2]{index=2}
+
+13) Curriculum display logic
+Each course page must clearly show:
+- section names
+- number of lessons per section
+- duration per section
+- preview labels on selected lessons
+- total course duration
+The reference course page presents course content by named sections with lecture counts and durations, plus some preview-tagged lessons. :contentReference[oaicite:3]{index=3}
+
+14) Course marketing blocks
+For each program landing page, include:
+- strong course promise
+- learning outcomes bullets
+- practical value proposition
+- requirements
+- audience targeting
+- course description
+The example course page includes “What you’ll learn,” “Requirements,” “Description,” and “Who this course is for,” so replicate that commercial structure. :contentReference[oaicite:4]{index=4}
+
+15) CMS support
+Keep website CMS capability too:
+- homepage
+- about
+- contact
+- FAQ
+- blog/news
+- testimonials
+- footer
+- menu
+- banners/popups
+
+16) SEO and discoverability
+For each course page support:
+- SEO title
+- meta description
+- slug
+- canonical
+- open graph image
+- schema-ready course structure
+- sitemap-ready architecture
+
+17) Analytics and learning metrics
+Admin should see:
+- course sales
+- course enrollments
+- course completion rate
+- most watched lessons
+- active students
+- abandoned students
+- revenue by course
+- registrations over time
+- paid conversions over time
+
+18) Security
+Implement:
+- secure auth
+- password hashing
+- role-based access
+- validation
+- route protection
+- audit logs
+- file upload security
+- content access protection
+- rate limiting
+- secure environment variables
+
+19) Database schema
+Design schema for:
+- users
+- roles
+- permissions
+- instructors
+- courses
+- course_sections
+- lessons
+- videos
+- lesson_resources
+- reviews
+- enrollments
+- orders
+- payments
+- access_overrides
+- lesson_progress
+- course_progress
+- notifications
+- settings
+- media
+- audit_logs
+- cms_pages
+- categories
+- tags
+
+20) Technical stack
+Use a stable, scalable stack suitable for Replit:
+- Next.js
+- PostgreSQL
+- Prisma ORM
+- secure authentication
+- modern admin dashboard UI
+- sortable/filterable tables
+- protected lesson routes
+- responsive design
+
+21) Seed data
+Include:
+- sample admin
+- sample instructor
+- sample student
+- sample paid user
+- sample unpaid user
+- 3 sample programs
+- sample sections and lessons
+- some preview lessons
+- some premium locked lessons
+- sample orders and enrollments
+
+22) First output before coding
+Before building, generate:
+- platform sitemap
+- admin sidebar
+- student dashboard structure
+- course page template structure
+- database entities
+- role-permission matrix
+- access control logic
+- implementation roadmap
+
+23) Final business rule
+Every program must have two layers:
+A. Public course page that sells the program like Udemy
+B. Private learning area that unlocks the videos only after payment
+
+24) Final instruction
+Think like a product manager for a serious online academy.
+This must feel like a premium learning business, not a simple website with embedded videos.
+Build the real product.
