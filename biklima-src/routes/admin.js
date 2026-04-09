@@ -410,7 +410,7 @@ router.patch("/admin/lms-orders/:id", async (req, res) => {
     const updates = { updatedAt: new Date() };
     if (status) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
-    if (status === "paid") updates.adminApprovedBy = req.user.email;
+    if (status === "paid") updates.adminApprovedBy = req.user.id;
 
     const [order] = await db.update(ordersTable).set(updates).where(eq(ordersTable.id, id)).returning();
     if (!order) { res.status(404).json({ error: "Not found" }); return; }

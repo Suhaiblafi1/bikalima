@@ -9,12 +9,13 @@ import { eq, and, asc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const SLUG_TO_PROGRAM: Record<string, string> = {
-  "influential-speaker": "core",
-  "certified-trainer": "tot",
-  "educators-program": "teachers",
-  "young-speaker": "children",
-};
+async function getCourseBySlug(slug: string) {
+  const [course] = await db
+    .select()
+    .from(coursesTable)
+    .where(eq(coursesTable.slug, slug));
+  return course ?? null;
+}
 
 router.get("/courses", async (_req: Request, res: Response) => {
   try {
@@ -38,16 +39,7 @@ router.get("/courses", async (_req: Request, res: Response) => {
 router.get("/courses/:slug", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const programId = SLUG_TO_PROGRAM[slug] || null;
-
-    let course: typeof coursesTable.$inferSelect | undefined;
-    if (programId) {
-      const [row] = await db
-        .select()
-        .from(coursesTable)
-        .where(eq(coursesTable.programId, programId));
-      course = row;
-    }
+    const course = await getCourseBySlug(slug);
 
     if (!course) {
       res.status(404).json({ error: "Course not found" });
@@ -69,17 +61,7 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
 router.get("/courses/:slug/access", async (req: Request, res: Response) => {
   try {
     const { slug } = req.params;
-    const programId = SLUG_TO_PROGRAM[slug] || null;
-
-    if (!programId) {
-      res.status(404).json({ error: "Course not found" });
-      return;
-    }
-
-    const [course] = await db
-      .select({ id: coursesTable.id })
-      .from(coursesTable)
-      .where(eq(coursesTable.programId, programId));
+    const course = await getCourseBySlug(slug);
 
     if (!course) {
       res.status(404).json({ error: "Course not found" });
