@@ -7,6 +7,60 @@ import type { Lang } from "./translations";
 export const RECORDED_PRICES = { core: 70, tot: 110, teachers: 90, children: 50 };
 export const WORKBOOK_PRICES = { core: 23, tot: 37, teachers: 30, children: 17 };
 
+export type WorkbookFacts = {
+  sections: number;
+  pages?: number;
+  unitsLabel: { ar: string; en: string };
+  units: { ar: string; en: string }[];
+};
+
+export const WORKBOOK_FACTS: Record<string, WorkbookFacts> = {
+  core: {
+    sections: 86,
+    unitsLabel: { ar: "المناطق التدريبية", en: "Training Zones" },
+    units: [
+      { ar: "المنطقة الحفظية — الحضور والصوت والأداء", en: "The Performance Zone — Presence, Voice & Delivery" },
+      { ar: "المنطقة الذهنية — اللغة والمنطق والقصة", en: "The Cognitive Zone — Language, Logic & Story" },
+      { ar: "المنطقة الاجتماعية — التأثير والإقناع والتكيّف", en: "The Social Zone — Influence, Persuasion & Adaptation" },
+      { ar: "هندسة الخطاب — التطبيق والاحتراف", en: "Speech Engineering — Application & Mastery" },
+    ],
+  },
+  tot: {
+    sections: 82,
+    unitsLabel: { ar: "نطاقات التدريب الأربعة", en: "The Four Training Scopes" },
+    units: [
+      { ar: "النطاق العقلي — الفهم والمنهجية", en: "The Cognitive Scope — Understanding & Methodology" },
+      { ar: "النطاق التذكي — الإدراك والتفاعل", en: "The Mindful Scope — Awareness & Engagement" },
+      { ar: "النطاق الإقناعي — التأثير وقيادة المجموعة", en: "The Persuasive Scope — Influence & Group Leadership" },
+      { ar: "نطاق الخطابة — الإلقاء والاعتماد", en: "The Oratory Scope — Delivery & Certification" },
+    ],
+  },
+  teachers: {
+    sections: 76,
+    unitsLabel: { ar: "محاور التأهيل", en: "Qualification Tracks" },
+    units: [
+      { ar: "لماذا نُعلّم الأطفال الخطابة؟", en: "Why Teach Children Public Speaking?" },
+      { ar: "فهم الطفل — الفروق العمرية والنفسية", en: "Understanding the Child — Age & Psychological Differences" },
+      { ar: "تصميم الجلسة وإدارة التفاعل", en: "Session Design & Interaction Management" },
+      { ar: "التطبيق في الصف والبيت — التقييم والمتابعة", en: "Application in Class & at Home — Assessment & Follow-up" },
+    ],
+  },
+  children: {
+    sections: 27,
+    unitsLabel: { ar: "وحدات الكراسة الثماني", en: "The Eight Workbook Units" },
+    units: [
+      { ar: "من أنا · صوتي", en: "Who Am I · My Voice" },
+      { ar: "احكِ قصة", en: "Tell a Story" },
+      { ar: "تحدث بثقة", en: "Speak with Confidence" },
+      { ar: "اليد والجسد", en: "Hand & Body" },
+      { ar: "كلمات كأغاني", en: "Words Like Songs" },
+      { ar: "حكايا", en: "Tales" },
+      { ar: "أتخيل وأحكي", en: "I Imagine & I Speak" },
+      { ar: "أنا القائد", en: "I Am the Leader" },
+    ],
+  },
+};
+
 export type EventCountry = "uae" | "saudi" | "jordan" | "uk";
 
 export type UpcomingEvent = {

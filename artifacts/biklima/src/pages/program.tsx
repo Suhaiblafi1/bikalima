@@ -1,11 +1,12 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import {
   ArrowLeft, ArrowRight, Clock, Calendar, Users, Target,
   CheckCircle2, BookOpen, Sparkles, MessageSquare, Mail,
+  Share2, Check, Layers, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { programs, getLocalizedProgram, RECORDED_PRICES } from "@/programsData";
+import { programs, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_FACTS } from "@/programsData";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useCurrency, SLUG_TO_PROGRAM_ID } from "@/lib/site-config";
@@ -39,7 +40,13 @@ const T = {
     sectionOutcomes: "مخرجات البرنامج",
     sectionModules: "الجلسات والمحاور",
     sectionWorkbook: "الكراسة المرافقة",
+    sectionWorkbookStructure: "بنية الكراسة",
+    workbookSectionsLabel: "قسم تدريبي",
+    workbookUnitsLabel: "وحدة رئيسية",
+    workbookFactsIntro: "مبني على كراسة تدريبية مُحكمة، بهيكل واضح وتمارين مُتدرّجة:",
     sectionFaq: "أسئلة شائعة",
+    shareBtn: "مشاركة",
+    shareCopied: "تم نسخ الرابط",
     transformationLabel: "التحوّل",
     primaryCta: "سجّل اهتمامك",
     secondaryCta: "اطلب استشارة",
@@ -77,7 +84,13 @@ const T = {
     sectionOutcomes: "Program Outcomes",
     sectionModules: "Sessions & Modules",
     sectionWorkbook: "The Companion Workbook",
+    sectionWorkbookStructure: "Workbook Structure",
+    workbookSectionsLabel: "training sections",
+    workbookUnitsLabel: "core units",
+    workbookFactsIntro: "Built on a rigorously structured training workbook with progressive exercises:",
     sectionFaq: "Frequently Asked Questions",
+    shareBtn: "Share",
+    shareCopied: "Link copied",
     transformationLabel: "Transformation",
     primaryCta: "Register Your Interest",
     secondaryCta: "Request a Consultation",
@@ -119,7 +132,25 @@ export default function ProgramPage() {
   const programId = SLUG_TO_PROGRAM_ID[slug];
   const program = programs.find((p) => p.id === programId);
   const courseData = programId ? getCoursePageData(programId) : undefined;
+  const workbookFacts = programId ? WORKBOOK_FACTS[programId] : undefined;
   const dbLessons: DbLesson[] = useMemo(() => [], []);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = async () => {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+    const shareTitle = program ? getLocalizedProgram(program, lang).shortTitle + " — بكلمة" : "بكلمة";
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (data: ShareData) => Promise<void> }).share) {
+      try {
+        await (navigator as Navigator & { share: (data: ShareData) => Promise<void> }).share({ title: shareTitle, url: shareUrl });
+        return;
+      } catch { /* user cancelled — fall back to copy */ }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch { /* clipboard blocked */ }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -244,6 +275,17 @@ export default function ProgramPage() {
                   <MessageSquare className="w-4 h-4 me-2" />
                   {t.secondaryCta}
                 </a>
+              </Button>
+              <Button
+                onClick={handleShare}
+                size="lg"
+                variant="ghost"
+                className="bg-white/10 hover:bg-white/20 text-white font-bold rounded-full px-6"
+                data-testid="button-share-program"
+                aria-label={t.shareBtn}
+              >
+                {shareCopied ? <Check className="w-4 h-4 me-2" /> : <Share2 className="w-4 h-4 me-2" />}
+                {shareCopied ? t.shareCopied : t.shareBtn}
               </Button>
             </div>
           </div>
@@ -378,6 +420,52 @@ export default function ProgramPage() {
                   </p>
                 </div>
               </div>
+
+              {workbookFacts && (
+                <div className="mt-6 bg-card border border-border rounded-2xl p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Layers className="w-5 h-5 text-primary" />
+                    <h3 className="font-serif text-lg md:text-xl font-bold">{t.sectionWorkbookStructure}</h3>
+                  </div>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">
+                    {t.workbookFactsIntro}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 text-center">
+                      <div className="text-3xl md:text-4xl font-black text-primary leading-none mb-1">
+                        {workbookFacts.sections}
+                      </div>
+                      <div className="text-[11px] md:text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                        {t.workbookSectionsLabel}
+                      </div>
+                    </div>
+                    <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 text-center">
+                      <div className="text-3xl md:text-4xl font-black text-primary leading-none mb-1">
+                        {workbookFacts.units.length}
+                      </div>
+                      <div className="text-[11px] md:text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                        {t.workbookUnitsLabel}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5" />
+                    {workbookFacts.unitsLabel[lang === "ar" ? "ar" : "en"]}
+                  </div>
+                  <ol className="space-y-2">
+                    {workbookFacts.units.map((u, i) => (
+                      <li key={i} className="flex items-start gap-3 bg-background/60 border border-border rounded-xl p-3">
+                        <span className="shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center">
+                          {i + 1}
+                        </span>
+                        <span className="text-sm md:text-base font-semibold leading-relaxed pt-0.5">
+                          {u[lang === "ar" ? "ar" : "en"]}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
             </section>
 
             {/* 6. FAQ */}

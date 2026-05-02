@@ -35,7 +35,6 @@ import {
   Video,
   Linkedin,
   Instagram,
-  ShoppingCart,
   Mail,
   PlayCircle,
   ZoomIn,
@@ -56,7 +55,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
-import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
+import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
 import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
@@ -161,7 +160,6 @@ export default function Home() {
   const localizedPrograms = programs.map((p) => getLocalizedProgram(p, lang));
   const localizedTestimonials = testimonialsData[lang];
 
-  const [selectedProgram, setSelectedProgram] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
   const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
   const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
@@ -1483,129 +1481,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* ── PROGRAM DETAIL MODAL ── */}
-      <AnimatePresence>
-        {selectedProgram && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSelectedProgram(null)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-2xl relative z-10 border border-border">
-              <button aria-label="Close" onClick={() => setSelectedProgram(null)} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
-              <div className="relative aspect-[21/8] overflow-hidden rounded-t-[2rem]">
-                <img src={selectedProgram.image} alt={selectedProgram.shortTitle} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                <div className={`absolute inset-0 bg-gradient-to-br ${selectedProgram.accentColor} opacity-75 mix-blend-multiply`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
-                  <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full mb-3">{selectedProgram.role}</div>
-                  <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">
-                    {selectedProgram.shortTitle}
-                    {selectedProgram.badge && <span className="font-normal text-base text-white/65 ms-2">{selectedProgram.badge}</span>}
-                  </h2>
-                  {selectedProgram.subtitle && <p className="text-white/75 text-sm italic mt-1 mb-1">{selectedProgram.subtitle}</p>}
-                  <div className="flex flex-wrap gap-4 text-white/80 text-sm">
-                    <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{selectedProgram.hours} {t.modal.hoursUnit}</span>
-                    <span>·</span>
-                    <span>{selectedProgram.sessions} {t.structure.sessionsUnit}</span>
-                    <span>·</span>
-                    <span className="font-bold text-white text-base">{formatPrice(Math.round(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES] * 1.5))} <span className="font-normal text-white/60 text-xs">({t.enroll.modeCombined})</span></span>
-                  </div>
-                  {selectedProgram.prerequisite && (
-                    <div className={`mt-3 inline-flex items-center gap-2 text-[10px] font-medium px-3 py-1 rounded-full ${selectedProgram.id === "tot" ? "bg-red-100 text-red-700" : selectedProgram.id === "children" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"}`}>
-                      {selectedProgram.id === "tot" ? <Lock className="w-2.5 h-2.5" /> : selectedProgram.id === "children" ? <School className="w-2.5 h-2.5" /> : <AlertCircle className="w-2.5 h-2.5" />}
-                      {selectedProgram.prerequisite}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="p-8 md:p-12 grid md:grid-cols-3 gap-10">
-                <div className="md:col-span-2 space-y-8">
-                  <section>
-                    <div className="bg-secondary/30 p-5 rounded-2xl border border-border mb-6">
-                      <Quote className="w-5 h-5 text-primary mb-2 opacity-50" />
-                      <p className="font-serif text-sm font-medium italic">{selectedProgram.hook}</p>
-                    </div>
-                    <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4">{t.modal.aboutHeading}</h3>
-                    <p className="text-lg text-muted-foreground leading-relaxed">{selectedProgram.description}</p>
-                  </section>
-                  <section>
-                    <h3 className="font-bold text-xl mb-4 border-b border-border pb-4 flex items-center gap-2">
-                      <PlayCircle className="w-5 h-5 text-primary" />{t.modal.introVideoHeading}
-                    </h3>
-                    {selectedProgram.introVideo ? (
-                      <div className="aspect-video rounded-2xl overflow-hidden border border-border bg-foreground/5">
-                        <iframe
-                          src={selectedProgram.introVideo}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-video rounded-2xl border-2 border-dashed border-border bg-secondary/20 flex flex-col items-center justify-center gap-3">
-                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                          <PlayCircle className="w-8 h-8 text-primary/50" />
-                        </div>
-                        <p className="text-sm text-muted-foreground font-medium">{t.modal.introVideoSoon}</p>
-                      </div>
-                    )}
-                  </section>
-                  <section>
-                    <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4">{t.modal.transformHeading}</h3>
-                    <div className="bg-secondary/30 p-6 rounded-2xl border border-border flex items-center gap-4">
-                      <Star className="w-8 h-8 text-accent shrink-0" />
-                      <p className="font-serif text-sm font-medium">{selectedProgram.transformation}</p>
-                    </div>
-                  </section>
-                  <section>
-                    <h3 className="font-bold text-2xl mb-4 border-b border-border pb-4">{t.modal.sessionsHeading} ({selectedProgram.sessions} {t.structure.sessionsUnit})</h3>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {selectedProgram.modules.map((mod, idx) => (
-                        <div key={idx} className="flex items-start gap-3 bg-background p-4 rounded-xl border border-border">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">{idx + 1}</div>
-                          <span className="font-medium text-foreground text-sm">{mod}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-                <div className="space-y-6">
-                  <div className="bg-secondary/20 p-6 rounded-3xl border border-border">
-                    <h4 className="font-bold mb-4 text-muted-foreground text-sm uppercase tracking-wider">{t.modal.outcomesHeading}</h4>
-                    <ul className="space-y-3">
-                      {selectedProgram.outcomes.map((out, idx) => (
-                        <li key={idx} className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" /><span className="text-sm font-medium">{out}</span></li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-card p-5 rounded-3xl border border-primary/20 shadow-sm">
-                    <div className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider">{t.modal.workbookHeading}</div>
-                    <h4 className="font-serif font-bold text-lg mb-2">{selectedProgram.workbook.title}</h4>
-                    <p className="text-sm text-muted-foreground">{selectedProgram.workbook.description}</p>
-                    <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                      <span className="font-bold text-lg">{formatPrice(WORKBOOK_PRICES[selectedProgram.id as keyof typeof WORKBOOK_PRICES])}</span>
-                      <Button variant="outline" size="sm" className="rounded-full">{t.modal.orderWorkbook}</Button>
-                    </div>
-                  </div>
-                  <div className="bg-card p-5 rounded-3xl border border-border">
-                    <div className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider">{t.modal.audienceHeading}</div>
-                    <p className="text-sm font-medium">{selectedProgram.audience}</p>
-                    <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">{selectedProgram.delivery}</div>
-                  </div>
-                  <div className="space-y-3">
-                    <Button size="lg" className="w-full rounded-full h-14 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle, mode: "combined" })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
-                      <ShoppingCart className="w-5 h-5 me-2" />
-                      {t.modal.buyRecordedBtn} — {formatPrice(Math.round(RECORDED_PRICES[selectedProgram.id as keyof typeof RECORDED_PRICES] * 1.5))}
-                    </Button>
-                    <Button size="lg" variant="outline" className="w-full rounded-full h-12 font-bold border-primary/30 text-primary hover:bg-primary/5" onClick={() => { setFormData((prev) => ({ ...prev, program: selectedProgram.shortTitle })); setSelectedProgram(null); setTimeout(() => scrollTo("enroll"), 300); }}>
-                      {t.modal.registerInterestBtn}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-
-      </AnimatePresence>
 
       {/* ── ZOOM SCHEDULER MODAL ── */}
       <AnimatePresence>
