@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/app-shell";
+import { useLang } from "@/hooks/useLang";
 import {
   User,
   BookOpen,
@@ -448,11 +449,7 @@ type RequestData = {
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
-  const [lang, setLang] = useState<Lang>("ar");
-  const switchLang = (l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem("biklima-lang", l); } catch {}
-  };
+  const { lang } = useLang();
   const [activeTab, setActiveTab] = useState<Tab>("account");
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
@@ -463,11 +460,6 @@ export default function Dashboard() {
   const [dataLoading, setDataLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const apiBase = getApiBase();
-
-  useEffect(() => {
-    const saved = localStorage.getItem("biklima-lang");
-    if (saved === "ar" || saved === "en") setLang(saved as Lang);
-  }, []);
 
   const fetchData = useCallback(async () => {
     setDataLoading(true);
@@ -510,7 +502,7 @@ export default function Dashboard() {
 
   if (authLoading) {
     return (
-      <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
+      <AppShell containerClassName="flex-1 flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
       </AppShell>
     );
@@ -518,7 +510,7 @@ export default function Dashboard() {
 
   if (!isAuthenticated) {
     return (
-      <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+      <AppShell containerClassName="">
         <AuthForm lang={lang} t={t} />
       </AppShell>
     );
@@ -550,8 +542,6 @@ export default function Dashboard() {
 
     return (
       <AppShell
-        lang={lang}
-        onLangChange={switchLang}
         containerClassName=""
         breadcrumb={[
           { label: isRtl ? "منصتي" : "My Platform", href: "/dashboard" },
@@ -640,8 +630,6 @@ export default function Dashboard() {
 
     return (
       <AppShell
-        lang={lang}
-        onLangChange={switchLang}
         containerClassName=""
         breadcrumb={[
           { label: isRtl ? "منصتي" : "My Platform", href: "/dashboard" },
@@ -702,8 +690,6 @@ export default function Dashboard() {
 
   return (
     <AppShell
-      lang={lang}
-      onLangChange={switchLang}
       containerClassName=""
       breadcrumb={[{ label: lang === "ar" ? "منصتي" : "My Platform" }]}
     >

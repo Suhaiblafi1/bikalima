@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/app-shell";
+import { useLang } from "@/hooks/useLang";
 import {
   Users, Search, Trash2, Edit3, Save, X, Home, Shield, UserPlus,
   ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText,
@@ -12,8 +13,6 @@ import {
   BarChart3, DollarSign, TrendingUp, Copy,
   Star, UserCircle, Layers,
 } from "lucide-react";
-
-type Lang = "ar" | "en";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; createdAt: string };
@@ -128,13 +127,7 @@ export default function AdminPanel() {
   const [, navigate] = useLocation();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [tab, setTab] = useState<AdminTab>("users");
-  const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
-  });
-  const switchLang = (l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem("biklima-lang", l); } catch {}
-  };
+  const { lang } = useLang();
 
   // Data state
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -437,12 +430,12 @@ export default function AdminPanel() {
 
   // ── Guards ─────────────────────────────────────────────────────────────
   if (isLoading || loading) return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
+    <AppShell containerClassName="flex-1 flex items-center justify-center">
       <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
     </AppShell>
   );
   if (!isAuthenticated) return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center p-4">
+    <AppShell containerClassName="flex-1 flex items-center justify-center p-4">
       <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
         <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">Admin Access Required</h2>
@@ -451,7 +444,7 @@ export default function AdminPanel() {
     </AppShell>
   );
   if (isAdmin === false) return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center p-4">
+    <AppShell containerClassName="flex-1 flex items-center justify-center p-4">
       <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
         <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">Access Denied</h2>
@@ -486,8 +479,6 @@ export default function AdminPanel() {
   // ── Render ─────────────────────────────────────────────────────────────
   return (
     <AppShell
-      lang={lang}
-      onLangChange={switchLang}
       containerClassName="bg-muted/30 flex-1"
       breadcrumb={[{ label: lang === "ar" ? "لوحة الإدارة" : "Admin Panel" }]}
     >

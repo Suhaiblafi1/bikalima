@@ -448,7 +448,7 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
             <Button
               size="lg"
               className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-8 shadow-lg"
-              onClick={() => navigate(`${baseUrl}/checkout?slug=${slug}`)}
+              onClick={() => navigate(`/checkout?slug=${slug}`)}
             >
               {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
             </Button>
@@ -503,7 +503,7 @@ export function StickyPurchaseCard({ priceJod, sessions, startDate, format, slug
         <>
           <Button
             className="w-full rounded-xl font-bold py-6 text-base"
-            onClick={() => navigate(`${baseUrl}/checkout?slug=${slug}`)}
+            onClick={() => navigate(`/checkout?slug=${slug}`)}
           >
             {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
           </Button>
@@ -839,7 +839,7 @@ export function FinalCTA({ title, priceJod, slug, lang }: FinalCTAProps) {
         <Button
           size="lg"
           className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-10 shadow-lg"
-          onClick={() => navigate(`${baseUrl}/checkout?slug=${slug}`)}
+          onClick={() => navigate(`/checkout?slug=${slug}`)}
         >
           {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
         </Button>

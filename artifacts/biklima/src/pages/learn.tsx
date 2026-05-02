@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/app-shell";
+import { useLang } from "@/hooks/useLang";
 import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
@@ -201,12 +202,9 @@ export default function LearnPage() {
   const { slug } = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
 
-  const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
-  });
+  const { lang } = useLang();
   const t = T[lang];
   const isRtl = lang === "ar";
-  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
@@ -485,11 +483,6 @@ export default function LearnPage() {
 
   const sectionGroups = buildSectionGroups(sections, lessons);
 
-  const switchLang = (l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem("biklima-lang", l); } catch {}
-  };
-
   const lessonTitle = (l: Lesson) => lang === "ar" ? l.titleAr || l.titleEn : l.titleEn || l.titleAr;
   const lessonDesc = (l: Lesson) => lang === "ar" ? l.descriptionAr || l.descriptionEn || null : l.descriptionEn || l.descriptionAr || null;
   const sectionTitle = (g: SectionGroup) => lang === "ar" ? g.titleAr : g.titleEn;
@@ -498,7 +491,7 @@ export default function LearnPage() {
 
   if (loading) {
     return (
-      <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
+      <AppShell containerClassName="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">{t.loading}</p>
@@ -509,7 +502,7 @@ export default function LearnPage() {
 
   if (error) {
     return (
-      <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
+      <AppShell containerClassName="flex-1 flex items-center justify-center">
         <div className="text-center">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-xl font-bold mb-4">{t.notFound}</p>
@@ -616,8 +609,6 @@ export default function LearnPage() {
 
   return (
     <AppShell
-      lang={lang}
-      onLangChange={switchLang}
       containerClassName="flex flex-col"
       breadcrumb={[
         { label: lang === "ar" ? "البرامج" : "Programs", href: "/#structure" },

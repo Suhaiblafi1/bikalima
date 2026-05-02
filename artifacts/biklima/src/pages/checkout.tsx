@@ -6,10 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Mail, Phone, AlertCircle, ArrowRight, Home } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-
-type Lang = "ar" | "en";
-
-const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { useLang } from "@/hooks/useLang";
 
 function getApiBase() {
   const base = import.meta.env.BASE_URL || "/";
@@ -19,9 +16,7 @@ function getApiBase() {
 export default function CheckoutPage() {
   const [, navigate] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
-  const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
-  });
+  const { lang } = useLang();
   const isRtl = lang === "ar";
   const apiBase = getApiBase();
 
@@ -99,7 +94,7 @@ export default function CheckoutPage() {
         setError(data.error || (lang === "ar" ? "حدث خطأ — يرجى المحاولة مرة أخرى." : "An error occurred — please try again."));
         return;
       }
-      navigate(`${baseUrl}/confirmation`);
+      navigate(`/confirmation`);
     } catch {
       setError(lang === "ar" ? "حدث خطأ في الاتصال — يرجى المحاولة مرة أخرى." : "Connection error — please try again.");
     } finally {
@@ -131,13 +126,13 @@ export default function CheckoutPage() {
             </p>
             <Button
               className="w-full rounded-full font-bold"
-              onClick={() => navigate(`${baseUrl}/dashboard`)}
+              onClick={() => navigate(`/dashboard`)}
             >
               {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : "Sign In / Create Account"}
             </Button>
             <Button
               variant="ghost"
-              onClick={() => navigate(`${baseUrl}/`)}
+              onClick={() => navigate(`/`)}
               className="w-full"
             >
               <Home className="w-4 h-4 me-2" />
@@ -165,13 +160,13 @@ export default function CheckoutPage() {
             </p>
             <Button
               className="w-full rounded-full font-bold"
-              onClick={() => navigate(`${baseUrl}/courses`)}
+              onClick={() => navigate(`/courses`)}
             >
               {lang === "ar" ? "عرض الدورات" : "Browse Courses"}
             </Button>
             <Button
               variant="ghost"
-              onClick={() => navigate(`${baseUrl}/`)}
+              onClick={() => navigate(`/`)}
               className="w-full"
             >
               <Home className="w-4 h-4 me-2" />
@@ -187,19 +182,17 @@ export default function CheckoutPage() {
 
   return (
     <AppShell
-      lang={lang}
-      onLangChange={(l) => { setLang(l); try { localStorage.setItem("biklima-lang", l); } catch {} }}
       containerClassName=""
       breadcrumb={[
-        { label: lang === "ar" ? "البرامج" : "Programs", href: `${baseUrl}/#structure` },
-        { label: courseTitle, href: `${baseUrl}/courses/${slug}` },
+        { label: lang === "ar" ? "البرامج" : "Programs", href: `/#structure` },
+        { label: courseTitle, href: `/courses/${slug}` },
         { label: lang === "ar" ? "إتمام التسجيل" : "Checkout" },
       ]}
     >
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`${baseUrl}/courses/${slug}`)}
+            onClick={() => navigate(`/courses/${slug}`)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {isRtl ? <ArrowRight className="w-4 h-4" /> : null}
@@ -322,7 +315,7 @@ export default function CheckoutPage() {
 
         <Button
           variant="ghost"
-          onClick={() => navigate(`${baseUrl}/`)}
+          onClick={() => navigate(`/`)}
           className="w-full"
         >
           <Home className="w-4 h-4 me-2" />

@@ -3,8 +3,8 @@ import { useRoute, useLocation } from "wouter";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { programs, getLocalizedProgram, RECORDED_PRICES } from "@/programsData";
-import type { Lang } from "@/translations";
 import { AppShell } from "@/components/app-shell";
+import { useLang } from "@/hooks/useLang";
 import {
   CourseHero,
   StickyPurchaseCard,
@@ -44,21 +44,13 @@ export default function CourseDetailPage() {
   const [, params] = useRoute("/courses/:slug");
   const slug = params?.slug ?? "";
   const [, navigate] = useLocation();
-  const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
-  });
+  const { lang } = useLang();
 
   const [hasAccess, setHasAccess] = useState(false);
   const [dbLessons, setDbLessons] = useState<DbLesson[]>([]);
 
   const isRtl = lang === "ar";
-  const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
   const apiBase = getApiBase();
-
-  const switchLang = (l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem("biklima-lang", l); } catch {}
-  };
 
   const programId = SLUG_TO_ID[slug];
   const program = programs.find((p) => p.id === programId);
@@ -108,7 +100,7 @@ export default function CourseDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6" dir="rtl">
         <p className="text-muted-foreground text-lg">الدورة غير موجودة</p>
-        <Button onClick={() => navigate(`${baseUrl}/courses`)}>العودة للدورات</Button>
+        <Button onClick={() => navigate(`/courses`)}>العودة للدورات</Button>
       </div>
     );
   }
@@ -121,11 +113,9 @@ export default function CourseDetailPage() {
 
   return (
     <AppShell
-      lang={lang}
-      onLangChange={switchLang}
       containerClassName=""
       breadcrumb={[
-        { label: lang === "ar" ? "البرامج" : "Programs", href: `${baseUrl}/#structure` },
+        { label: lang === "ar" ? "البرامج" : "Programs", href: `/#structure` },
         { label: loc.shortTitle },
       ]}
     >
@@ -156,14 +146,14 @@ export default function CourseDetailPage() {
               {hasAccess ? (
                 <Button
                   className="w-full rounded-xl font-bold py-6 text-base bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => navigate(`${baseUrl}/courses/${slug}/learn`)}
+                  onClick={() => navigate(`/courses/${slug}/learn`)}
                 >
                   {lang === "ar" ? "ادخل إلى الدورة" : "Continue Learning"}
                 </Button>
               ) : (
                 <Button
                   className="w-full rounded-xl font-bold py-6 text-base"
-                  onClick={() => navigate(`${baseUrl}/checkout?slug=${slug}`)}
+                  onClick={() => navigate(`/checkout?slug=${slug}`)}
                 >
                   {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
                   {typeof priceJod === "number" && (
@@ -220,7 +210,7 @@ export default function CourseDetailPage() {
                 </p>
                 <Button
                   className="w-full rounded-xl font-bold py-5 bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => navigate(`${baseUrl}/courses/${slug}/learn`)}
+                  onClick={() => navigate(`/courses/${slug}/learn`)}
                 >
                   {lang === "ar" ? "ادخل إلى الدورة" : "Continue Learning"}
                 </Button>
@@ -241,7 +231,7 @@ export default function CourseDetailPage() {
                     <p className="text-3xl font-black text-primary">{priceJod} <span className="text-base font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span></p>
                     <Button
                       className="w-full rounded-xl font-bold py-5"
-                      onClick={() => navigate(`${baseUrl}/checkout?slug=${slug}`)}
+                      onClick={() => navigate(`/checkout?slug=${slug}`)}
                     >
                       {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
                     </Button>
@@ -253,14 +243,6 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      <footer className="py-8 border-t border-border bg-background">
-        <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
-          <span>© {new Date().getFullYear()} بكلمة — Bikalima</span>
-          <span className="mx-2">·</span>
-          <a href="mailto:info@bikalima.com" className="hover:text-primary transition-colors">info@bikalima.com</a>
-        </div>
-      </footer>
     </AppShell>
   );
 }

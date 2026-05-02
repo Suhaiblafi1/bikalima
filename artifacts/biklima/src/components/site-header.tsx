@@ -115,7 +115,7 @@ export function SiteHeader() {
       >
         <div className="container mx-auto px-4 md:px-6 flex items-center justify-between gap-4">
           <button
-            onClick={() => navigate(baseUrl ? `${baseUrl}/` : "/")}
+            onClick={() => navigate("/")}
             className="logo-biklima text-3xl md:text-4xl text-primary tracking-tight leading-none shrink-0"
             aria-label="بكلمة"
           >

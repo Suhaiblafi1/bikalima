@@ -1,22 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, LayoutDashboard } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-
-type Lang = "ar" | "en";
-
-const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+import { useLang } from "@/hooks/useLang";
 
 export default function ConfirmationPage() {
   const [, navigate] = useLocation();
-  const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
-  });
-  const switchLang = (l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem("biklima-lang", l); } catch {}
-  };
+  const { lang } = useLang();
 
   const steps = lang === "ar"
     ? [
@@ -32,8 +23,6 @@ export default function ConfirmationPage() {
 
   return (
     <AppShell
-      lang={lang}
-      onLangChange={switchLang}
       containerClassName="flex-1 flex items-center justify-center p-6"
       breadcrumb={[{ label: lang === "ar" ? "تأكيد الطلب" : "Confirmation" }]}
     >
@@ -73,14 +62,14 @@ export default function ConfirmationPage() {
         <div className="flex flex-col gap-3">
           <Button
             className="w-full rounded-full font-bold py-6 text-base gap-2"
-            onClick={() => navigate(`${baseUrl}/dashboard`)}
+            onClick={() => navigate(`/dashboard`)}
           >
             <LayoutDashboard className="w-4 h-4" />
             {lang === "ar" ? "الذهاب إلى لوحة التحكم" : "Go to Dashboard"}
           </Button>
           <Button
             variant="ghost"
-            onClick={() => navigate(`${baseUrl}/`)}
+            onClick={() => navigate(`/`)}
             className="w-full"
           >
             <Home className="w-4 h-4 me-2" />

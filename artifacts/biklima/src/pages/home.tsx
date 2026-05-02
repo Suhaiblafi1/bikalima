@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   BookOpen,
@@ -32,6 +33,8 @@ import {
   MapPin,
   Calendar,
   Video,
+  Linkedin,
+  Instagram,
   ShoppingCart,
   FileText,
   Printer,
@@ -592,7 +595,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center">
               <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="w-full max-w-2xl">
-                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-primary group cursor-pointer" onClick={() => navigate(`${baseUrl}/courses/${PROGRAM_SLUGS.core}`)}>
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-primary group cursor-pointer" onClick={() => navigate(`/courses/${PROGRAM_SLUGS.core}`)}>
                   <div className="relative">
                     <div className="aspect-[21/8] relative">
                       <img src={coreProgram.image} alt={coreProgram.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -616,7 +619,7 @@ export default function Home() {
                   <div className="bg-card px-6 py-4 flex items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1">{coreProgram.hook}</p>
                     <div className="flex gap-2 shrink-0">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`${baseUrl}/courses/${PROGRAM_SLUGS.core}`); }}>
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`/courses/${PROGRAM_SLUGS.core}`); }}>
                         {t.structure.viewDetails}
                       </Button>
                       <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); scrollTo("enroll"); }}>
@@ -639,7 +642,7 @@ export default function Home() {
                         <div className="w-px h-8 bg-border" />
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => navigate(`${baseUrl}/courses/${PROGRAM_SLUGS[program.id]}`)}>
+                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => navigate(`/courses/${PROGRAM_SLUGS[program.id]}`)}>
                         <div className="aspect-[4/3.2] relative overflow-hidden">
                           <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
@@ -665,7 +668,7 @@ export default function Home() {
                         <CardContent className="p-5 flex flex-col flex-1">
                           <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
                           <div className="flex gap-2 mb-2">
-                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); navigate(`${baseUrl}/courses/${PROGRAM_SLUGS[program.id]}`); }}>
+                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); navigate(`/courses/${PROGRAM_SLUGS[program.id]}`); }}>
                               {t.structure.viewDetails}
                             </Button>
                             {program.id !== "children" && (

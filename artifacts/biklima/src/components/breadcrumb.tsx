@@ -9,7 +9,7 @@ export type BreadcrumbItem = {
 };
 
 export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { lang } = useLang();
   const isRtl = lang === "ar";
   const Sep = isRtl ? ChevronLeft : ChevronRight;
@@ -17,6 +17,24 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
 
   const go = (href?: string) => {
     if (!href) return;
+    // Hash-only or path-with-hash links (e.g. "/#structure"): if already on
+    // that path, just scroll; otherwise hard-navigate so the home page can
+    // pick up the hash.
+    const hashIdx = href.indexOf("#");
+    if (hashIdx >= 0) {
+      const path = href.slice(0, hashIdx) || "/";
+      const id = href.slice(hashIdx + 1);
+      const onPath = location === path || (path === "/" && location === "");
+      if (onPath) {
+        const el = document.getElementById(id);
+        if (el) {
+          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+          return;
+        }
+      }
+      window.location.assign(`${baseUrl}${path === "/" ? "" : path}#${id}`);
+      return;
+    }
     navigate(href);
   };
 
@@ -29,7 +47,7 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
         <ol className="flex items-center gap-2 text-sm flex-wrap">
           <li>
             <button
-              onClick={() => navigate(baseUrl ? `${baseUrl}/` : "/")}
+              onClick={() => navigate("/")}
               className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
               aria-label={isRtl ? "الرئيسية" : "Home"}
             >
