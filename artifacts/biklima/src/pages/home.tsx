@@ -65,6 +65,11 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ProgramQuiz } from "@/components/program-quiz";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
+import { StatsSection } from "@/components/stats-section";
+import { TestimonialsSection } from "@/components/testimonials-section";
+import { BeforeAfterSection } from "@/components/before-after-section";
+import { JourneySection } from "@/components/journey-section";
+import { JourneyCta } from "@/components/journey-cta";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
@@ -529,6 +534,9 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── STATS ── */}
+        <StatsSection />
+
         {/* ── PROGRAM QUIZ ── */}
         <ProgramQuiz lang={lang} />
 
@@ -649,6 +657,18 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ── REPEATING CTA ── */}
+        <JourneyCta testIdSuffix="after-structure" />
+
+        {/* ── BEFORE / AFTER ── */}
+        <BeforeAfterSection />
+
+        {/* ── STUDENT JOURNEY ── */}
+        <JourneySection />
+
+        {/* ── REPEATING CTA (primary) ── */}
+        <JourneyCta variant="primary" testIdSuffix="after-journey" />
 
         {/* ── START HELP ── */}
         <section className="py-16 bg-primary/5 border-y border-border">
@@ -954,6 +974,12 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ── TESTIMONIALS ── */}
+        <TestimonialsSection />
+
+        {/* ── REPEATING CTA ── */}
+        <JourneyCta testIdSuffix="after-testimonials" />
 
         {/* ── FAQ ── */}
         <section className="py-24 bg-background">

@@ -10,6 +10,7 @@ import coursesRouter from "./courses";
 import ordersRouter from "./orders";
 import assignmentsRouter from "./assignments";
 import speechEvaluationRouter from "./speech-evaluation";
+import siteSettingsRouter from "./site-settings";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(coursesRouter);
 router.use(ordersRouter);
 router.use(assignmentsRouter);
 router.use(speechEvaluationRouter);
+router.use(siteSettingsRouter);
 
 export default router;

@@ -138,8 +138,30 @@ export function SiteFooter() {
         <div className="flex flex-col md:flex-row justify-between items-center text-background/50 text-xs gap-3">
           <p>{t.footer.copyright}</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition">{t.footer.terms}</a>
-            <a href="#" className="hover:text-white transition">{t.footer.privacy}</a>
+            <a
+              href={`${baseUrl}/terms`}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+                navigate("/terms");
+              }}
+              className="hover:text-white transition"
+              data-testid="footer-link-terms"
+            >
+              {t.footer.terms}
+            </a>
+            <a
+              href={`${baseUrl}/privacy`}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                e.preventDefault();
+                navigate("/privacy");
+              }}
+              className="hover:text-white transition"
+              data-testid="footer-link-privacy"
+            >
+              {t.footer.privacy}
+            </a>
           </div>
         </div>
       </div>

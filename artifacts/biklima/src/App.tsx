@@ -23,7 +23,10 @@ import ProgramPage from "@/pages/program";
 import LearnPage from "@/pages/learn";
 import CheckoutPage from "@/pages/checkout";
 import ConfirmationPage from "@/pages/confirmation";
+import PrivacyPage from "@/pages/privacy";
+import TermsPage from "@/pages/terms";
 import NotFound from "@/pages/not-found";
+import { FloatingWhatsapp } from "@/components/floating-whatsapp";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +84,8 @@ function AnimatedRouter() {
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
           </Route>
+          <Route path="/privacy" component={PrivacyPage} />
+          <Route path="/terms" component={TermsPage} />
           <Route path="/gallery" component={GalleryPage} />
           <Route path="/workbooks" component={WorkbooksPage} />
           <Route path="/checkout" component={CheckoutPage} />
@@ -108,6 +113,7 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <ScrollToTop />
           <AnimatedRouter />
+          <FloatingWhatsapp />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>
