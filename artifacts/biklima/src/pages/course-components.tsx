@@ -451,7 +451,7 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
               className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-6 sm:px-8 h-12 shadow-lg"
               onClick={() => navigate(`/checkout?slug=${slug}`)}
             >
-              {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
+              {lang === "ar" ? "احجز مقعدك" : "Reserve Your Spot"}
               {typeof priceJod === "number" && (
                 <span className="font-normal opacity-80 ms-2">— {priceJod} {lang === "ar" ? "د.أ" : "JOD"}</span>
               )}
@@ -509,7 +509,7 @@ export function StickyPurchaseCard({ priceJod, sessions, startDate, format, slug
             className="w-full rounded-xl font-bold py-6 text-base"
             onClick={() => navigate(`/checkout?slug=${slug}`)}
           >
-            {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
+            {lang === "ar" ? "احجز مقعدك" : "Reserve Your Spot"}
           </Button>
           <p className="text-center text-xs text-muted-foreground leading-relaxed">
             {lang === "ar"
@@ -845,7 +845,7 @@ export function FinalCTA({ title, priceJod, slug, lang }: FinalCTAProps) {
           className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-10 shadow-lg"
           onClick={() => navigate(`/checkout?slug=${slug}`)}
         >
-          {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
+          {lang === "ar" ? "احجز مقعدك" : "Reserve Your Spot"}
         </Button>
       </div>
     </section>

@@ -620,11 +620,8 @@ export default function Home() {
                   <div className="bg-card px-6 py-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1 min-w-[200px]">{coreProgram.hook}</p>
                     <div className="flex flex-wrap gap-2 shrink-0">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/courses/${PROGRAM_SLUGS.core}`); }}>
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
                         {t.structure.viewDetails}
-                      </Button>
-                      <Button variant="ghost" size="sm" className="rounded-full text-primary hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
-                        {t.structure.viewProgramPage}
                       </Button>
                       <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); scrollTo("enroll"); }}>
                         {t.structure.enrollNow}
@@ -672,7 +669,7 @@ export default function Home() {
                         <CardContent className="p-5 flex flex-col flex-1">
                           <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
                           <div className="flex gap-2 mb-2">
-                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/courses/${PROGRAM_SLUGS[program.id]}`); }}>
+                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
                               {t.structure.viewDetails}
                             </Button>
                             {program.id !== "children" && (
@@ -681,9 +678,6 @@ export default function Home() {
                               </Button>
                             )}
                           </div>
-                          <Button variant="ghost" size="sm" className="w-full rounded-full text-primary hover:bg-primary/10 mb-2 text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
-                            {t.structure.viewProgramPage}
-                          </Button>
                           {program.prerequisiteLabel && (
                             <div className={`flex items-center justify-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full ${prereqBadgeClass(program.id)}`}>
                               {program.id === "tot" ? <Lock className="w-2.5 h-2.5" /> : program.id === "children" ? <School className="w-2.5 h-2.5" /> : <AlertCircle className="w-2.5 h-2.5" />}

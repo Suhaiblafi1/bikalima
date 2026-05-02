@@ -226,7 +226,7 @@ export default function CourseDetailPage() {
                       className="w-full rounded-xl font-bold py-5"
                       onClick={() => navigate(`/checkout?slug=${slug}`)}
                     >
-                      {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
+                      {lang === "ar" ? "احجز مقعدك" : "Reserve Your Spot"}
                     </Button>
                   </>
                 )}
