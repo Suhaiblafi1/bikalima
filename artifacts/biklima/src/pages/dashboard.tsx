@@ -793,9 +793,14 @@ export default function Dashboard() {
                               {course.slug && (
                                 <button
                                   onClick={() => navigate(`/courses/${course.slug}/learn`)}
-                                  className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+                                  className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-bold flex items-center gap-1.5 whitespace-nowrap"
                                 >
-                                  {isRtl ? "ادخل" : "Learn"}
+                                  <Play className="w-3.5 h-3.5" />
+                                  {pct === 0
+                                    ? (isRtl ? "ابدأ التعلّم" : "Start Learning")
+                                    : pct === 100
+                                      ? (isRtl ? "مراجعة" : "Review")
+                                      : (isRtl ? "متابعة التعلّم" : "Continue Learning")}
                                 </button>
                               )}
                               <button

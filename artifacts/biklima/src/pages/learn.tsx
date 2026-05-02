@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
+  StickyNote, Save, Trash2,
 } from "lucide-react";
 
 type Lang = "ar" | "en";
@@ -73,6 +74,13 @@ const T = {
     enrollToWatch: "سجّل في الدورة لمشاهدة هذا الدرس",
     goToEnroll: "الاشتراك في الدورة",
     courseComplete: "اكتمل الكورس!",
+    notes: "ملاحظاتي",
+    notesPlaceholder: "اكتب ملاحظاتك على هذا الدرس...",
+    saveNote: "حفظ الملاحظة",
+    saving: "جارٍ الحفظ...",
+    saved: "تم الحفظ ✓",
+    deleteNote: "حذف",
+    notesPrivate: "ملاحظاتك خاصة وتظهر لك فقط.",
   },
   en: {
     back: "Back to Course",
@@ -99,6 +107,13 @@ const T = {
     enrollToWatch: "Enroll in this course to watch this lesson",
     goToEnroll: "Enroll Now",
     courseComplete: "Course Complete!",
+    notes: "My Notes",
+    notesPlaceholder: "Write your notes for this lesson...",
+    saveNote: "Save Note",
+    saving: "Saving...",
+    saved: "Saved ✓",
+    deleteNote: "Delete",
+    notesPrivate: "Your notes are private and only visible to you.",
   },
 };
 
@@ -182,6 +197,13 @@ export default function LearnPage() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [autoAdvance, setAutoAdvance] = useState(false);
 
+  // Notes state
+  const [noteContent, setNoteContent] = useState("");
+  const [noteSavedContent, setNoteSavedContent] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteJustSaved, setNoteJustSaved] = useState(false);
+  const [noteLoading, setNoteLoading] = useState(false);
+
   const lastKey = (s: string) => `bk_learn_${s}`;
 
   useEffect(() => {
@@ -252,6 +274,62 @@ export default function LearnPage() {
     } catch {}
     setCompleting(false);
   }, [currentLesson, completing, enrolled, base, currentIdx, lessons.length, slug]);
+
+  // Load note when current lesson changes
+  useEffect(() => {
+    if (!currentLesson || !enrolled) {
+      setNoteContent("");
+      setNoteSavedContent("");
+      return;
+    }
+    const lessonId = currentLesson.id;
+    setNoteLoading(true);
+    setNoteJustSaved(false);
+    fetch(`${base}/api/my/lessons/${lessonId}/note`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : { note: null }))
+      .then((data) => {
+        const content = data?.note?.content ?? "";
+        setNoteContent(content);
+        setNoteSavedContent(content);
+      })
+      .catch(() => {})
+      .finally(() => setNoteLoading(false));
+  }, [currentLesson, enrolled, base]);
+
+  const saveNote = useCallback(async () => {
+    if (!currentLesson || !enrolled || noteSaving) return;
+    setNoteSaving(true);
+    try {
+      const r = await fetch(`${base}/api/my/lessons/${currentLesson.id}/note`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: noteContent }),
+      });
+      if (r.ok) {
+        setNoteSavedContent(noteContent);
+        setNoteJustSaved(true);
+        setTimeout(() => setNoteJustSaved(false), 2000);
+      }
+    } catch {}
+    setNoteSaving(false);
+  }, [currentLesson, enrolled, noteSaving, noteContent, base]);
+
+  const deleteNote = useCallback(async () => {
+    if (!currentLesson || !enrolled) return;
+    setNoteSaving(true);
+    try {
+      const r = await fetch(`${base}/api/my/lessons/${currentLesson.id}/note`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (r.ok) {
+        setNoteContent("");
+        setNoteSavedContent("");
+      }
+    } catch {}
+    setNoteSaving(false);
+  }, [currentLesson, enrolled, base]);
 
   const goToLesson = useCallback((idx: number) => {
     if (idx < 0 || idx >= lessons.length) return;
@@ -633,6 +711,62 @@ export default function LearnPage() {
                         <Download className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                       </a>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes (enrolled users only) */}
+              {enrolled && !isLocked && (
+                <div className="rounded-xl border border-border p-4 mb-5 bg-amber-50/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <StickyNote className="w-4 h-4 text-amber-600" />
+                      {t.notes}
+                    </h2>
+                    {noteJustSaved && (
+                      <span className="text-xs text-green-600 font-medium">{t.saved}</span>
+                    )}
+                  </div>
+                  <textarea
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    placeholder={t.notesPlaceholder}
+                    disabled={noteLoading}
+                    rows={5}
+                    dir={isRtl ? "rtl" : "ltr"}
+                    className="w-full bg-background border border-border rounded-lg p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 disabled:opacity-60"
+                  />
+                  <div className="flex items-center justify-between gap-3 mt-3">
+                    <p className="text-[11px] text-muted-foreground">{t.notesPrivate}</p>
+                    <div className="flex items-center gap-2">
+                      {noteSavedContent && (
+                        <button
+                          onClick={deleteNote}
+                          disabled={noteSaving}
+                          className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          {t.deleteNote}
+                        </button>
+                      )}
+                      <button
+                        onClick={saveNote}
+                        disabled={noteSaving || noteContent === noteSavedContent}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {noteSaving ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            {t.saving}
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3.5 h-3.5" />
+                            {t.saveNote}
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

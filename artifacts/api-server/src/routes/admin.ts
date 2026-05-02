@@ -732,6 +732,79 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
 }
 
 router.get("/admin/lms-orders", adminGetLmsOrders);
+
+router.get("/admin/student-progress", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const enrollments = await db
+      .select({
+        enrollmentId: enrollmentsTable.id,
+        userId: enrollmentsTable.userId,
+        courseId: enrollmentsTable.courseId,
+        status: enrollmentsTable.status,
+        enrolledAt: enrollmentsTable.enrolledAt,
+        userEmail: usersTable.email,
+        userFirstName: usersTable.firstName,
+        userLastName: usersTable.lastName,
+        courseTitleAr: coursesTable.titleAr,
+        courseTitleEn: coursesTable.titleEn,
+        courseSlug: coursesTable.slug,
+      })
+      .from(enrollmentsTable)
+      .leftJoin(usersTable, eq(enrollmentsTable.userId, usersTable.id))
+      .leftJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
+      .orderBy(desc(enrollmentsTable.enrolledAt));
+
+    const allLessons = await db
+      .select({ id: lessonsTable.id, courseId: lessonsTable.courseId })
+      .from(lessonsTable);
+    const lessonsByCourse = new Map<string, Set<string>>();
+    for (const l of allLessons) {
+      if (!lessonsByCourse.has(l.courseId)) lessonsByCourse.set(l.courseId, new Set());
+      lessonsByCourse.get(l.courseId)!.add(l.id);
+    }
+
+    const allProgress = await db
+      .select({
+        userId: lessonProgressTable.userId,
+        lessonId: lessonProgressTable.lessonId,
+        completedAt: lessonProgressTable.completedAt,
+      })
+      .from(lessonProgressTable)
+      .where(eq(lessonProgressTable.completed, true));
+
+    const progressByUser = new Map<string, { lessonId: string; completedAt: Date | null }[]>();
+    for (const p of allProgress) {
+      if (!progressByUser.has(p.userId)) progressByUser.set(p.userId, []);
+      progressByUser.get(p.userId)!.push({ lessonId: p.lessonId, completedAt: p.completedAt });
+    }
+
+    const progress = enrollments.map((e) => {
+      const courseLessons = lessonsByCourse.get(e.courseId) ?? new Set();
+      const totalLessons = courseLessons.size;
+      const userProgress = progressByUser.get(e.userId) ?? [];
+      const matched = userProgress.filter((p) => courseLessons.has(p.lessonId));
+      const completedLessons = matched.length;
+      const lastActivityAt = matched.reduce<Date | null>((acc, p) => {
+        if (!p.completedAt) return acc;
+        if (!acc || p.completedAt > acc) return p.completedAt;
+        return acc;
+      }, null);
+      const progressPct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+      return {
+        ...e,
+        totalLessons,
+        completedLessons,
+        progressPct,
+        lastActivityAt,
+      };
+    });
+
+    res.json({ progress });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch student progress" });
+  }
+});
 router.get("/admin/orders", adminGetLmsOrders);
 router.patch("/admin/lms-orders/:id", adminPatchLmsOrder);
 router.patch("/admin/orders/:id", adminPatchLmsOrder);

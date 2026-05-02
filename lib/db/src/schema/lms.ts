@@ -92,6 +92,15 @@ export const lessonProgressTable = pgTable("lesson_progress", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
 
+export const lessonNotesTable = pgTable("lesson_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  lessonId: varchar("lesson_id").notNull().references(() => lessonsTable.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const enrollmentRequestsTable = pgTable("enrollment_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
@@ -166,6 +175,7 @@ export type CourseSection = typeof courseSectionsTable.$inferSelect;
 export type Lesson = typeof lessonsTable.$inferSelect;
 export type Enrollment = typeof enrollmentsTable.$inferSelect;
 export type LessonProgress = typeof lessonProgressTable.$inferSelect;
+export type LessonNote = typeof lessonNotesTable.$inferSelect;
 export type EnrollmentRequest = typeof enrollmentRequestsTable.$inferSelect;
 export type WorkbookOrder = typeof workbookOrdersTable.$inferSelect;
 export type Order = typeof ordersTable.$inferSelect;

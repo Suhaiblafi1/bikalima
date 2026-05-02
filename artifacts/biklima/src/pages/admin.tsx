@@ -62,7 +62,25 @@ type LessonEditForm = {
   isPublished: boolean; descriptionAr: string; descriptionEn: string;
 };
 
-type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors";
+type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors" | "student-progress";
+
+type StudentProgressRecord = {
+  enrollmentId: string;
+  userId: string;
+  courseId: string;
+  status: string;
+  enrolledAt: string;
+  userEmail: string | null;
+  userFirstName: string | null;
+  userLastName: string | null;
+  courseTitleAr: string | null;
+  courseTitleEn: string | null;
+  courseSlug: string | null;
+  totalLessons: number;
+  completedLessons: number;
+  progressPct: number;
+  lastActivityAt: string | null;
+};
 
 function getApiBase() {
   const base = import.meta.env.BASE_URL || "/";
@@ -118,6 +136,8 @@ export default function AdminPanel() {
   const [instructors, setInstructors] = useState<InstructorRecord[]>([]);
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [studentProgress, setStudentProgress] = useState<StudentProgressRecord[]>([]);
+  const [progressSearch, setProgressSearch] = useState("");
 
   // UI state
   const [search, setSearch] = useState("");
@@ -194,6 +214,14 @@ export default function AdminPanel() {
     if (res.ok) setRevenue(await res.json());
   }, [apiFetch]);
 
+  const fetchStudentProgress = useCallback(async () => {
+    const res = await apiFetch("/admin/student-progress");
+    if (res.ok) {
+      const data = await res.json();
+      setStudentProgress(data.progress ?? []);
+    }
+  }, [apiFetch]);
+
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       checkAdmin().then(() => { fetchAll(); setLoading(false); });
@@ -202,7 +230,8 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (tab === "revenue" && !revenue) fetchRevenue();
-  }, [tab, revenue, fetchRevenue]);
+    if (tab === "student-progress" && studentProgress.length === 0) fetchStudentProgress();
+  }, [tab, revenue, fetchRevenue, studentProgress.length, fetchStudentProgress]);
 
   // ── User handlers ──────────────────────────────────────────────────────
   const handleDeleteUser = async (id: string) => {
@@ -424,8 +453,21 @@ export default function AdminPanel() {
     { key: "requests", label: "طلبات التسجيل", icon: <FileText className="w-4 h-4" />, count: stats?.totalRequests },
     { key: "orders", label: "طلبات الكراسات", icon: <ShoppingCart className="w-4 h-4" />, count: stats?.totalOrders },
     { key: "lms-orders", label: "طلبات الدورات", icon: <GraduationCap className="w-4 h-4" />, count: stats?.totalLmsOrders },
+    { key: "student-progress", label: "تقدّم الطلاب", icon: <TrendingUp className="w-4 h-4" />, count: stats?.totalEnrollments },
     { key: "revenue", label: "الإيرادات", icon: <BarChart3 className="w-4 h-4" /> },
   ];
+
+  const filteredProgress = studentProgress.filter(p => {
+    if (!progressSearch) return true;
+    const q = progressSearch.toLowerCase();
+    return (
+      (p.userEmail || "").toLowerCase().includes(q) ||
+      (p.userFirstName || "").toLowerCase().includes(q) ||
+      (p.userLastName || "").toLowerCase().includes(q) ||
+      (p.courseTitleAr || "").toLowerCase().includes(q) ||
+      (p.courseTitleEn || "").toLowerCase().includes(q)
+    );
+  });
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
@@ -1070,6 +1112,104 @@ export default function AdminPanel() {
         )}
 
         {/* ── REVENUE TAB ── */}
+        {tab === "student-progress" && (
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-bold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    تقدّم الطلاب في الدورات
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    عرض نسبة إكمال كل طالب في كل دورة مسجل بها
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={progressSearch}
+                    onChange={(e) => setProgressSearch(e.target.value)}
+                    placeholder="بحث بالاسم/الإيميل/الدورة..."
+                    className="text-xs h-8 w-full sm:w-64"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={fetchStudentProgress}
+                    className="h-8 text-xs gap-1 shrink-0"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" /> تحديث
+                  </Button>
+                </div>
+              </div>
+
+              {filteredProgress.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  {studentProgress.length === 0 ? "لا توجد تسجيلات بعد." : "لا توجد نتائج مطابقة."}
+                </div>
+              ) : (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead className="bg-muted/40 text-right">
+                      <tr>
+                        <th className="px-3 py-2 font-semibold">الطالب</th>
+                        <th className="px-3 py-2 font-semibold">الدورة</th>
+                        <th className="px-3 py-2 font-semibold">التقدّم</th>
+                        <th className="px-3 py-2 font-semibold whitespace-nowrap">الدروس</th>
+                        <th className="px-3 py-2 font-semibold whitespace-nowrap">الحالة</th>
+                        <th className="px-3 py-2 font-semibold whitespace-nowrap">آخر نشاط</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProgress.map((p) => {
+                        const fullName = [p.userFirstName, p.userLastName].filter(Boolean).join(" ") || "—";
+                        const last = p.lastActivityAt ? new Date(p.lastActivityAt).toLocaleDateString("ar-EG") : "—";
+                        return (
+                          <tr key={p.enrollmentId} className="border-t border-border hover:bg-muted/20 transition-colors">
+                            <td className="px-3 py-2.5">
+                              <div className="font-medium">{fullName}</div>
+                              <div className="text-[11px] text-muted-foreground" dir="ltr">{p.userEmail || "—"}</div>
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <div className="font-medium">{p.courseTitleAr || p.courseTitleEn || "—"}</div>
+                            </td>
+                            <td className="px-3 py-2.5 min-w-[140px]">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                      p.progressPct === 100 ? "bg-green-600" : "bg-primary"
+                                    }`}
+                                    style={{ width: `${p.progressPct}%` }}
+                                  />
+                                </div>
+                                <span className="font-bold text-xs w-10 text-end">{p.progressPct}%</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground">
+                              {p.completedLessons} / {p.totalLessons}
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                p.status === "active" ? "bg-green-100 text-green-700" :
+                                p.status === "completed" ? "bg-blue-100 text-blue-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {p.status === "active" ? "نشط" : p.status === "completed" ? "مكتمل" : "معلّق"}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-[11px] text-muted-foreground">{last}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {tab === "revenue" && (
           <RevenueTab revenue={revenue} onRefresh={fetchRevenue} />
         )}

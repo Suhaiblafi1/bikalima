@@ -1,7 +1,9 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AdminRoute, ProtectedRoute } from "@/components/route-guards";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import AdminPanel from "@/pages/admin";
@@ -15,20 +17,43 @@ import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
-function Router() {
+function AnimatedRouter() {
+  const [location] = useLocation();
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin" component={AdminPanel} />
-      <Route path="/gallery" component={GalleryPage} />
-      <Route path="/workbooks" component={WorkbooksPage} />
-      <Route path="/checkout" component={CheckoutPage} />
-      <Route path="/confirmation" component={ConfirmationPage} />
-      <Route path="/courses/:slug/learn" component={LearnPage} />
-      <Route path="/courses/:slug" component={CourseDetailPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        <Switch location={location}>
+          <Route path="/" component={Home} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/admin">
+            {() => (
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            )}
+          </Route>
+          <Route path="/gallery" component={GalleryPage} />
+          <Route path="/workbooks" component={WorkbooksPage} />
+          <Route path="/checkout" component={CheckoutPage} />
+          <Route path="/confirmation" component={ConfirmationPage} />
+          <Route path="/courses/:slug/learn">
+            {() => (
+              <ProtectedRoute>
+                <LearnPage />
+              </ProtectedRoute>
+            )}
+          </Route>
+          <Route path="/courses/:slug" component={CourseDetailPage} />
+          <Route component={NotFound} />
+        </Switch>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -37,7 +62,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <AnimatedRouter />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

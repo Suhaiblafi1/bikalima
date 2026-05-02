@@ -6,6 +6,7 @@ import {
   lessonsTable,
   enrollmentsTable,
   lessonProgressTable,
+  lessonNotesTable,
 } from "@workspace/db";
 import { eq, and, asc } from "drizzle-orm";
 
@@ -149,6 +150,111 @@ router.get("/courses/:slug/access", async (req: Request, res: Response) => {
     res.json({ hasAccess: !!enrollment && enrollment.status === "active", enrolled: !!enrollment });
   } catch {
     res.status(500).json({ error: "Failed to check access" });
+  }
+});
+
+router.get("/my/lessons/:lessonId/note", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { lessonId } = req.params;
+    const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId));
+    if (!lesson) {
+      res.status(404).json({ error: "Lesson not found" });
+      return;
+    }
+    const enrollment = await getEnrollmentStatus(req.user.id, lesson.courseId);
+    if (!enrollment || enrollment.status !== "active") {
+      res.status(403).json({ error: "Not enrolled" });
+      return;
+    }
+    const [note] = await db
+      .select()
+      .from(lessonNotesTable)
+      .where(and(eq(lessonNotesTable.userId, req.user.id), eq(lessonNotesTable.lessonId, lessonId)));
+    res.json({ note: note ?? null });
+  } catch {
+    res.status(500).json({ error: "Failed to load note" });
+  }
+});
+
+router.put("/my/lessons/:lessonId/note", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { lessonId } = req.params;
+    const content = String(req.body?.content ?? "").trim();
+
+    const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId));
+    if (!lesson) {
+      res.status(404).json({ error: "Lesson not found" });
+      return;
+    }
+    const enrollment = await getEnrollmentStatus(req.user.id, lesson.courseId);
+    if (!enrollment || enrollment.status !== "active") {
+      res.status(403).json({ error: "Not enrolled" });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(lessonNotesTable)
+      .where(and(eq(lessonNotesTable.userId, req.user.id), eq(lessonNotesTable.lessonId, lessonId)));
+
+    if (!content) {
+      if (existing) {
+        await db.delete(lessonNotesTable).where(eq(lessonNotesTable.id, existing.id));
+      }
+      res.json({ note: null });
+      return;
+    }
+
+    if (existing) {
+      const [updated] = await db
+        .update(lessonNotesTable)
+        .set({ content, updatedAt: new Date() })
+        .where(eq(lessonNotesTable.id, existing.id))
+        .returning();
+      res.json({ note: updated });
+    } else {
+      const [created] = await db
+        .insert(lessonNotesTable)
+        .values({ userId: req.user.id, lessonId, content })
+        .returning();
+      res.json({ note: created });
+    }
+  } catch {
+    res.status(500).json({ error: "Failed to save note" });
+  }
+});
+
+router.delete("/my/lessons/:lessonId/note", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { lessonId } = req.params;
+    const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId));
+    if (!lesson) {
+      res.status(404).json({ error: "Lesson not found" });
+      return;
+    }
+    const enrollment = await getEnrollmentStatus(req.user.id, lesson.courseId);
+    if (!enrollment || enrollment.status !== "active") {
+      res.status(403).json({ error: "Not enrolled" });
+      return;
+    }
+    await db
+      .delete(lessonNotesTable)
+      .where(and(eq(lessonNotesTable.userId, req.user.id), eq(lessonNotesTable.lessonId, lessonId)));
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Failed to delete note" });
   }
 });
 
