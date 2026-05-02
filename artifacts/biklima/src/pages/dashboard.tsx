@@ -34,6 +34,10 @@ import {
   ExternalLink,
   ShieldCheck,
   Copy,
+  Sparkles,
+  Award,
+  Mic,
+  Users,
 } from "lucide-react";
 
 type Lang = "ar" | "en";
@@ -395,108 +399,259 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
     }
   };
 
+  const isAr = lang === "ar";
+  const isLogin = mode === "login";
+
+  const tagline = isAr
+    ? "كلمتك قادرة على تغيير الغرفة."
+    : "Your word can change the room.";
+  const heroHeadAuthed = isAr ? "أهلاً بعودتك" : "Welcome back";
+  const heroHeadGuest = isAr ? "ابدأ رحلتك معنا" : "Begin your journey with us";
+  const heroSubAuthed = isAr
+    ? "ادخل إلى منصّتك واستأنف تدريبك."
+    : "Sign in to your platform and continue your training.";
+  const heroSubGuest = isAr
+    ? "أنشئ حسابك للوصول إلى دوراتك ومسارك التدريبي."
+    : "Create your account to access your courses and learning path.";
+
+  const trustItems = [
+    {
+      icon: <Mic className="w-4 h-4" />,
+      label: isAr ? "تدريب احترافي مباشر" : "Live professional coaching",
+    },
+    {
+      icon: <Award className="w-4 h-4" />,
+      label: isAr ? "شهادة معتمدة عند الإتمام" : "Certified upon completion",
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      label: isAr ? "مجتمع متحدّثين عرب" : "Community of Arab speakers",
+    },
+  ];
+
   return (
-    <div className="flex items-center justify-center p-6 min-h-[calc(100vh-3.5rem)]">
-      <Card className="max-w-md w-full">
-        <CardContent className="p-8 space-y-6">
-          <div className="text-center space-y-3">
-            <div className="logo-biklima text-5xl text-primary">بكلمة</div>
-            <h1 className="text-2xl font-bold">
-              {mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}
-            </h1>
+    <div className="min-h-[calc(100vh-3.5rem)] bg-gradient-to-br from-secondary/15 via-background to-secondary/30 flex items-center justify-center p-4 md:p-8">
+      <div className="w-full max-w-5xl grid lg:grid-cols-5 gap-0 bg-card rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden border border-border/60">
+        {/* ── BRANDED PANEL ── */}
+        <div className="lg:col-span-2 relative bg-primary text-primary-foreground p-8 md:p-10 flex flex-col justify-between overflow-hidden order-2 lg:order-1 min-h-[260px] lg:min-h-[600px]">
+          {/* Decorative orbs */}
+          <div
+            className="absolute -top-24 -end-24 w-72 h-72 rounded-full blur-[100px] opacity-30"
+            style={{ backgroundColor: "hsl(var(--gold))" }}
+            aria-hidden
+          />
+          <div className="absolute -bottom-24 -start-24 w-64 h-64 rounded-full blur-[90px] opacity-20 bg-primary-foreground/30" aria-hidden />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="logo-biklima text-4xl leading-none">بكلمة</div>
+              <span
+                className="text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full text-primary"
+                style={{ backgroundColor: "hsl(var(--gold))" }}
+              >
+                {isAr ? "منصّتي" : "Platform"}
+              </span>
+            </div>
+
+            <h2 className="font-serif text-3xl md:text-4xl font-bold leading-tight mb-3">
+              {isLogin ? heroHeadAuthed : heroHeadGuest}
+            </h2>
+            <p className="text-primary-foreground/80 text-sm leading-relaxed mb-8 max-w-sm">
+              {isLogin ? heroSubAuthed : heroSubGuest}
+            </p>
+
+            <ul className="space-y-3 max-w-sm">
+              {trustItems.map((item, i) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-primary-foreground/90">
+                  <span
+                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: "hsl(var(--gold) / 0.15)", color: "hsl(var(--gold))" }}
+                  >
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {mode === "login" && (
-            <div className="bg-primary/8 border border-primary/20 rounded-xl px-4 py-3 text-center text-sm text-primary/80">
-              {credentialsNote}
+          <blockquote className="relative z-10 mt-8 hidden lg:block">
+            <Sparkles
+              className="w-5 h-5 mb-2"
+              style={{ color: "hsl(var(--gold))" }}
+              aria-hidden
+            />
+            <p className="font-serif italic text-base leading-relaxed text-primary-foreground/95">
+              "{tagline}"
+            </p>
+            <p className="text-xs text-primary-foreground/60 mt-2">— {isAr ? "بكلمة" : "Bikalima"}</p>
+          </blockquote>
+        </div>
+
+        {/* ── FORM PANEL ── */}
+        <div className="lg:col-span-3 p-6 md:p-10 lg:p-12 flex flex-col justify-center order-1 lg:order-2">
+          {/* Mode tabs */}
+          <div className="flex items-center gap-2 p-1 rounded-full bg-muted/40 border border-border/60 mb-6 w-full max-w-sm mx-auto" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isLogin}
+              onClick={() => switchMode("login")}
+              className={`flex-1 text-sm font-bold py-2 rounded-full transition-all ${
+                isLogin ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="auth-tab-login"
+            >
+              {t.auth.loginTitle}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isLogin}
+              onClick={() => switchMode("register")}
+              className={`flex-1 text-sm font-bold py-2 rounded-full transition-all ${
+                !isLogin ? "bg-card text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+              data-testid="auth-tab-register"
+            >
+              {t.auth.registerTitle}
+            </button>
+          </div>
+
+          <div className="text-center mb-6">
+            <h1 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-1">
+              {isLogin ? t.auth.loginTitle : t.auth.registerTitle}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isLogin
+                ? (isAr ? "أدخل بياناتك للوصول إلى منصّتك." : "Enter your details to access your platform.")
+                : (isAr ? "بضع لحظات لتجهيز حسابك." : "Just a few moments to set up your account.")}
+            </p>
+          </div>
+
+          {isLogin && (
+            <div
+              className="flex items-start gap-3 rounded-2xl border px-4 py-3 text-xs leading-relaxed mb-5"
+              style={{
+                backgroundColor: "hsl(var(--gold-soft) / 0.5)",
+                borderColor: "hsl(var(--gold) / 0.3)",
+              }}
+              data-testid="auth-credentials-note"
+            >
+              <ShieldCheck
+                className="w-4 h-4 mt-0.5 shrink-0"
+                style={{ color: "hsl(var(--gold))" }}
+                aria-hidden
+              />
+              <p className="text-foreground/80">{credentialsNote}</p>
             </div>
           )}
 
           {error && (
-            <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-xl px-4 py-3 text-center">
+            <div
+              className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-2xl px-4 py-3 mb-5 text-center"
+              role="alert"
+              data-testid="auth-error"
+            >
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "register" && (
+            {!isLogin && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">{t.auth.firstName}</label>
+                  <label htmlFor="auth-firstName" className="text-sm font-medium text-foreground">{t.auth.firstName}</label>
                   <Input
+                    id="auth-firstName"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="rounded-xl"
-                    placeholder={lang === "ar" ? "أحمد" : "John"}
+                    className="rounded-xl h-11"
+                    placeholder={isAr ? "أحمد" : "John"}
+                    autoComplete="given-name"
+                    data-testid="auth-input-firstName"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">{t.auth.lastName}</label>
+                  <label htmlFor="auth-lastName" className="text-sm font-medium text-foreground">{t.auth.lastName}</label>
                   <Input
+                    id="auth-lastName"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="rounded-xl"
-                    placeholder={lang === "ar" ? "علي" : "Doe"}
+                    className="rounded-xl h-11"
+                    placeholder={isAr ? "علي" : "Doe"}
+                    autoComplete="family-name"
+                    data-testid="auth-input-lastName"
                   />
                 </div>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium flex items-center gap-1.5">
-                <Mail className="w-4 h-4" />
+              <label htmlFor="auth-email" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                <Mail className="w-4 h-4 text-muted-foreground" />
                 {t.auth.email}
               </label>
               <Input
+                id="auth-email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-xl"
+                className="rounded-xl h-11"
                 dir="ltr"
                 placeholder="name@example.com"
+                autoComplete="email"
+                data-testid="auth-input-email"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium flex items-center gap-1.5">
-                <Lock className="w-4 h-4" />
+              <label htmlFor="auth-password" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                <Lock className="w-4 h-4 text-muted-foreground" />
                 {t.auth.password}
               </label>
               <div className="relative">
                 <Input
+                  id="auth-password"
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="rounded-xl pe-10"
+                  className="rounded-xl pe-10 h-11"
                   dir="ltr"
                   minLength={6}
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  data-testid="auth-input-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute top-1/2 -translate-y-1/2 end-3 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? (isAr ? "إخفاء كلمة المرور" : "Hide password") : (isAr ? "إظهار كلمة المرور" : "Show password")}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {mode === "register" && (
+            {!isLogin && (
               <div className="space-y-1.5">
-                <label className="text-sm font-medium flex items-center gap-1.5">
-                  <Lock className="w-4 h-4" />
+                <label htmlFor="auth-confirmPassword" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
                   {t.auth.confirmPassword}
                 </label>
                 <Input
+                  id="auth-confirmPassword"
                   type="password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="rounded-xl"
+                  className="rounded-xl h-11"
                   dir="ltr"
                   minLength={6}
+                  autoComplete="new-password"
+                  data-testid="auth-input-confirmPassword"
                 />
               </div>
             )}
@@ -504,33 +659,47 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-white rounded-full h-12 text-lg font-bold"
+              className="w-full bg-primary hover:bg-primary/90 text-white rounded-full h-12 text-base font-bold mt-2 shadow-lg shadow-primary/20"
+              data-testid="auth-btn-submit"
             >
               {loading ? (
                 <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-              ) : mode === "login" ? (
-                t.auth.loginBtn
               ) : (
-                t.auth.registerBtn
+                <>
+                  {isLogin ? t.auth.loginBtn : t.auth.registerBtn}
+                  {isAr ? <ArrowLeft className="w-4 h-4 ms-2" /> : <ArrowRight className="w-4 h-4 ms-2" />}
+                </>
               )}
             </Button>
           </form>
 
-          <div className="text-center">
+          <div className="text-center mt-5 text-sm text-muted-foreground">
+            {isLogin
+              ? (isAr ? "ليس لديك حساب؟ " : "Don't have an account? ")
+              : (isAr ? "لديك حساب بالفعل؟ " : "Already have an account? ")}
             <button
               type="button"
-              onClick={() => switchMode(mode === "login" ? "register" : "login")}
-              className="text-sm text-primary hover:underline"
+              onClick={() => switchMode(isLogin ? "register" : "login")}
+              className="text-primary font-bold hover:underline"
+              data-testid="auth-switch-mode"
             >
-              {mode === "login" ? t.auth.switchToRegister : t.auth.switchToLogin}
+              {isLogin
+                ? (isAr ? "أنشئ حسابًا" : "Sign up")
+                : (isAr ? "سجّل الدخول" : "Sign in")}
             </button>
           </div>
 
-          <Button variant="ghost" onClick={() => navigate("/")} className="w-full">
-            <Home className="w-4 h-4 me-2" />{t.backHome}
-          </Button>
-        </CardContent>
-      </Card>
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="mt-5 inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors mx-auto"
+            data-testid="auth-back-home"
+          >
+            <Home className="w-3.5 h-3.5" />
+            {t.backHome}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
