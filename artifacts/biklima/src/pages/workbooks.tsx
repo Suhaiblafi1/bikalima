@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Lightbulb, Mic2, Heart, Users, Star,
-  Feather, Sparkles, Globe, ShoppingCart, FileText, Download, Printer,
-  Package, Minus, Plus, X, AlertCircle, ChevronLeft, ChevronRight,
+  Feather, Sparkles, Globe, ShoppingCart, FileText,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { T, type Lang } from "../translations";
 import { useLang } from "../hooks/useLang";
 import { programs, getLocalizedProgram, WORKBOOK_PRICES, testimonials as testimonialsData } from "../programsData";
@@ -17,6 +13,7 @@ import { useCurrency } from "@/lib/site-config";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { WorkbookOrderModal } from "@/components/workbook-order-modal";
 
 type WisdomArticle = { source: string; category: string; icon: React.ReactNode; quote: string; body: string };
 
@@ -54,21 +51,12 @@ const wisdomArticles: Record<Lang, WisdomArticle[]> = {
 };
 
 export default function WorkbooksPage() {
-  const { toast } = useToast();
   const { lang, dir } = useLang();
   const t = T[lang];
-  const { format: formatPrice, currency } = useCurrency();
+  const { format: formatPrice } = useCurrency();
 
   const [wisdomIndex, setWisdomIndex] = useState(0);
   const [selectedWorkbook, setSelectedWorkbook] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
-  const [wbQuantity, setWbQuantity] = useState(1);
-  const [wbFormat, setWbFormat] = useState<"pdf" | "print">("pdf");
-  const [wbDeliveryAddress, setWbDeliveryAddress] = useState("");
-  const [wbBuyerName, setWbBuyerName] = useState("");
-  const [wbBuyerPhone, setWbBuyerPhone] = useState("");
-  const [wbBuyerEmail, setWbBuyerEmail] = useState("");
-  const [wbSubmitting, setWbSubmitting] = useState(false);
-  const [wbOrderSuccess, setWbOrderSuccess] = useState<{ name: string; title: string; format: string; qty: number; total: string } | null>(null);
 
   const articles = wisdomArticles[lang] ?? wisdomArticles.ar;
 
@@ -76,50 +64,6 @@ export default function WorkbooksPage() {
     const iv = setInterval(() => setWisdomIndex(i => (i + 1) % articles.length), 7000);
     return () => clearInterval(iv);
   }, [articles.length]);
-
-  const handleWorkbookOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setWbSubmitting(true);
-    try {
-      const base = import.meta.env.BASE_URL || "/";
-      const apiBase = base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
-      const res = await fetch(`${apiBase}/workbook-order`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workbookId: selectedWorkbook?.id,
-          workbookTitle: selectedWorkbook?.workbook.title,
-          quantity: wbQuantity,
-          format: wbFormat,
-          deliveryAddress: wbFormat === "print" ? wbDeliveryAddress : "",
-          buyerName: wbBuyerName,
-          buyerPhone: wbBuyerPhone,
-          buyerEmail: wbBuyerEmail,
-          unitPrice: WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES],
-          lang,
-          currencyCode: currency.code,
-          displayUnitPrice: formatPrice(WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES] ?? 0),
-          displayTotal: formatPrice((WORKBOOK_PRICES[selectedWorkbook?.id as keyof typeof WORKBOOK_PRICES] ?? 0) * wbQuantity),
-        }),
-      });
-      if (!res.ok) throw new Error("server_error");
-      const wb = selectedWorkbook;
-      const up = WORKBOOK_PRICES[wb?.id as keyof typeof WORKBOOK_PRICES] ?? 0;
-      setWbOrderSuccess({
-        name: wbBuyerName,
-        title: wb?.workbook.title ?? "",
-        format: wbFormat,
-        qty: wbQuantity,
-        total: formatPrice(up * wbQuantity),
-      });
-    } catch {
-      toast({ title: lang === "ar" ? "حدث خطأ" : "Something went wrong", description: lang === "ar" ? "يرجى المحاولة مرة أخرى" : "Please try again later", variant: "destructive" });
-    } finally {
-      setWbSubmitting(false);
-    }
-  };
-
-  const [, navigate] = useLocation();
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
@@ -230,7 +174,7 @@ export default function WorkbooksPage() {
                         <div className="text-2xl font-bold text-primary">{formatPrice(price ?? 0)}</div>
                       </div>
                       <Button
-                        onClick={() => { setSelectedWorkbook(lp); setWbQuantity(1); setWbFormat("pdf"); setWbDeliveryAddress(""); setWbBuyerName(""); setWbBuyerPhone(""); setWbBuyerEmail(""); setWbOrderSuccess(null); }}
+                        onClick={() => setSelectedWorkbook(lp)}
                         className="rounded-full px-6 gap-2"
                       >
                         <ShoppingCart className="w-4 h-4" />{t.workbooks.orderBtn}
@@ -295,136 +239,9 @@ export default function WorkbooksPage() {
 
       {/* ── WORKBOOK ORDER MODAL ── */}
       <AnimatePresence>
-        {selectedWorkbook && (() => {
-          const wb = selectedWorkbook;
-          const unitPrice = WORKBOOK_PRICES[wb.id as keyof typeof WORKBOOK_PRICES];
-          const totalPrice = (unitPrice ?? 0) * wbQuantity;
-          return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }} />
-              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-card w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-2xl relative z-10 border border-border">
-                <button aria-label="Close" onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
-
-                <div className="relative aspect-[21/6] overflow-hidden rounded-t-[2rem]">
-                  <img src={wb.image} alt={wb.workbook.title} className="w-full h-full object-cover" />
-                  <div className={`absolute inset-0 bg-gradient-to-br ${wb.accentColor} opacity-75 mix-blend-multiply`} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">
-                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full mb-3"><FileText className="w-3.5 h-3.5" />{wb.role}</div>
-                    <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">{wb.workbook.title}</h2>
-                    <p className="text-white/80 text-sm max-w-xl">{wb.workbook.description}</p>
-                  </div>
-                </div>
-
-                <div className="p-8 md:p-12">
-                  <AnimatePresence mode="wait">
-                    {wbOrderSuccess ? (
-                      <motion.div key="wb-success" initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.45, ease: "easeOut" }} className="flex flex-col items-center justify-center text-center py-6 gap-7 min-h-[420px]">
-                        <div className="relative">
-                          <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.1 }} className="relative w-32 h-32 flex items-center justify-center">
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 blur-xl animate-pulse" />
-                            <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-2xl"><span className="text-5xl">📚</span></div>
-                          </motion.div>
-                          {["-top-3 -start-3", "-top-2 end-0", "bottom-0 -start-4", "-bottom-2 end-2"].map((pos, i) => (
-                            <motion.div key={i} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3 + i * 0.1, type: "spring", stiffness: 260 }} className={`absolute ${pos} w-5 h-5 rounded-full bg-accent/70 flex items-center justify-center text-[10px]`}>✨</motion.div>
-                          ))}
-                        </div>
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-2">
-                          <h3 className="font-serif text-3xl md:text-4xl font-bold text-foreground">{lang === "ar" ? `أهلاً ${wbOrderSuccess.name}! 🎉` : `Thank you, ${wbOrderSuccess.name}! 🎉`}</h3>
-                          <p className="text-xl font-semibold text-primary">{lang === "ar" ? "طلبك في طريقه إليك ✨" : "Your order is on its way ✨"}</p>
-                        </motion.div>
-                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-primary/5 border border-primary/20 rounded-2xl px-7 py-5 text-sm w-full max-w-md">
-                          <p className="font-bold text-foreground mb-3 text-base flex items-center gap-2 justify-center"><span>🧾</span>{lang === "ar" ? "ملخص الطلب" : "Order Summary"}</p>
-                          <div className="space-y-2 text-muted-foreground text-start">
-                            <div className="flex justify-between"><span>{lang === "ar" ? "الكراسة" : "Workbook"}</span><span className="font-semibold text-foreground truncate max-w-[55%] text-end">{wbOrderSuccess.title}</span></div>
-                            <div className="flex justify-between"><span>{lang === "ar" ? "الصيغة" : "Format"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.format === "pdf" ? (lang === "ar" ? "PDF رقمي" : "Digital PDF") : (lang === "ar" ? "مطبوعة" : "Printed")}</span></div>
-                            <div className="flex justify-between"><span>{lang === "ar" ? "الكمية" : "Qty"}</span><span className="font-semibold text-foreground">{wbOrderSuccess.qty}</span></div>
-                            <div className="flex justify-between border-t border-primary/20 pt-2 mt-2"><span className="font-bold text-primary">{lang === "ar" ? "المجموع" : "Total"}</span><span className="font-bold text-primary text-lg">{wbOrderSuccess.total}</span></div>
-                          </div>
-                        </motion.div>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }} className="max-w-sm">
-                          <p className="text-muted-foreground leading-relaxed text-sm italic">{lang === "ar" ? "\"الكلمة الصادقة تصل أبعد من ألف خطاب مزخرف.\" — سنتواصل معك قريباً على بريدك الإلكتروني." : "\"An honest word travels farther than a thousand polished speeches.\" — We'll be in touch soon."}</p>
-                        </motion.div>
-                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }} className="flex flex-col sm:flex-row gap-3">
-                          <a href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${wbOrderSuccess.name} وأودّ الاستفسار عن طلب كراسة بكلمة.` : `Hello, I'm ${wbOrderSuccess.name} and I'd like to ask about my Bikalima workbook order.`)}`} target="_blank" className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white font-bold px-7 py-3 rounded-full text-sm transition-colors shadow-lg">
-                            <span>💬</span>{lang === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"}
-                          </a>
-                          <button onClick={() => { setSelectedWorkbook(null); setWbOrderSuccess(null); }} className="inline-flex items-center justify-center gap-2 border border-border rounded-full px-7 py-3 text-sm font-medium hover:bg-secondary/40 transition-colors">{lang === "ar" ? "إغلاق" : "Close"}</button>
-                        </motion.div>
-                      </motion.div>
-                    ) : (
-                      <motion.div key="wb-form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
-                        <div className="bg-gradient-to-br from-primary/5 to-secondary/20 rounded-2xl border border-border p-6 md:p-8 mb-8 flex flex-col sm:flex-row items-center gap-6">
-                          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${wb.accentColor} text-white flex items-center justify-center shadow-lg shrink-0`}><Download className="w-7 h-7" /></div>
-                          <div className="flex-1 text-center sm:text-start">
-                            <h3 className="font-bold text-lg mb-1">{t.workbooks.samplePdfBtn}</h3>
-                            <p className="text-sm text-muted-foreground">{t.workbooks.samplePdfNote}</p>
-                          </div>
-                          <Button className={`rounded-full px-8 text-white shadow-md ${wb.samplePdf ? `bg-gradient-to-r ${wb.accentColor} hover:opacity-90` : "bg-muted-foreground/40 cursor-not-allowed"}`} disabled={!wb.samplePdf} onClick={() => { if (wb.samplePdf) window.open(wb.samplePdf, "_blank"); }}>
-                            <Download className="w-4 h-4 me-2" />{wb.samplePdf ? t.workbooks.samplePdfBtn : (lang === "ar" ? "قريباً" : "Coming Soon")}
-                          </Button>
-                        </div>
-                        <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">
-                          <h3 className="font-bold text-xl mb-6 flex items-center gap-2"><ShoppingCart className="w-5 h-5 text-primary" />{t.workbooks.orderTitle}</h3>
-                          <form onSubmit={handleWorkbookOrder} className="space-y-6">
-                            <div className="grid md:grid-cols-3 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">{t.workbooks.nameLabel}</label>
-                                <Input value={wbBuyerName} onChange={(e) => setWbBuyerName(e.target.value)} placeholder={t.workbooks.namePlaceholder} required className="rounded-xl" />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">{t.workbooks.phoneLabel}</label>
-                                <Input type="tel" value={wbBuyerPhone} onChange={(e) => setWbBuyerPhone(e.target.value)} placeholder="+962..." required className="rounded-xl" />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">{t.workbooks.emailLabel}</label>
-                                <Input type="email" value={wbBuyerEmail} onChange={(e) => setWbBuyerEmail(e.target.value)} placeholder="email@example.com" required className="rounded-xl" />
-                              </div>
-                            </div>
-                            <div className="grid md:grid-cols-2 gap-6">
-                              <div>
-                                <label className="block text-sm font-medium mb-3">{t.workbooks.formatLabel}</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <button type="button" onClick={() => setWbFormat("pdf")} className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${wbFormat === "pdf" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/40"}`}><FileText className="w-6 h-6" /><span className="text-sm font-medium">{t.workbooks.formatPdf}</span></button>
-                                  <button type="button" onClick={() => setWbFormat("print")} className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${wbFormat === "print" ? "border-primary bg-primary/5 text-primary" : "border-border hover:border-primary/40"}`}><Printer className="w-6 h-6" /><span className="text-sm font-medium">{t.workbooks.formatPrint}</span></button>
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-3">{t.workbooks.quantityLabel}</label>
-                                <div className="flex items-center gap-3">
-                                  <button type="button" onClick={() => setWbQuantity(Math.max(1, wbQuantity - 1))} className="w-10 h-10 rounded-full border border-border bg-background hover:bg-secondary flex items-center justify-center transition-colors"><Minus className="w-4 h-4" /></button>
-                                  <span className="text-2xl font-bold w-12 text-center">{wbQuantity}</span>
-                                  <button type="button" onClick={() => setWbQuantity(wbQuantity + 1)} className="w-10 h-10 rounded-full border border-border bg-background hover:bg-secondary flex items-center justify-center transition-colors"><Plus className="w-4 h-4" /></button>
-                                </div>
-                              </div>
-                            </div>
-                            {wbFormat === "print" && (
-                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                                <label className="block text-sm font-medium mb-2 flex items-center gap-2"><Package className="w-4 h-4" />{t.workbooks.deliveryLabel}</label>
-                                <Textarea value={wbDeliveryAddress} onChange={(e) => setWbDeliveryAddress(e.target.value)} placeholder={t.workbooks.deliveryPlaceholder} required className="rounded-xl" rows={2} />
-                                <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 shrink-0" />{t.workbooks.deliveryNote}</p>
-                              </motion.div>
-                            )}
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-border">
-                              <div className="text-center sm:text-start">
-                                <div className="text-sm text-muted-foreground">{t.workbooks.totalLabel}</div>
-                                <div className="text-3xl font-bold text-primary">{formatPrice(totalPrice)}</div>
-                                {wbFormat === "print" && <p className="text-xs text-muted-foreground mt-1">+ {t.workbooks.deliveryNote.split("—")[0]}</p>}
-                              </div>
-                              <Button type="submit" size="lg" disabled={wbSubmitting} className="rounded-full h-14 px-10 text-lg font-bold shadow-lg bg-primary text-white hover:bg-primary/90">
-                                {wbSubmitting ? t.workbooks.submittingOrder : t.workbooks.submitOrder}
-                              </Button>
-                            </div>
-                          </form>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            </div>
-          );
-        })()}
+        {selectedWorkbook && (
+          <WorkbookOrderModal workbook={selectedWorkbook} onClose={() => setSelectedWorkbook(null)} />
+        )}
       </AnimatePresence>
     </div>
   );

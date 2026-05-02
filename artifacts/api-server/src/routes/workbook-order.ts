@@ -9,6 +9,15 @@ const ADMIN_EMAIL = "info@bikalima.com";
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 const WA_NUMBER = "97455377065";
 
+function escapeHtml(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildTransporter() {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
@@ -27,6 +36,8 @@ function buildWorkbookAdminHtml(p: {
   buyerName: string;
   buyerPhone: string;
   buyerEmail: string;
+  buyerCountry?: string;
+  notes?: string;
   quantity: number;
   format: string;
   deliveryAddress?: string;
@@ -74,7 +85,7 @@ function buildWorkbookAdminHtml(p: {
       <td bgcolor="#0d3d36" style="padding:20px 20px 20px 16px;vertical-align:top;text-align:left;">
         <div style="background:#1a5045;border:1px solid #2d7a6a;border-radius:12px;padding:14px 18px;min-width:140px;">
           <p style="margin:0 0 2px;font-size:12px;color:#c8e8e1;">المشتري</p>
-          <p style="margin:0;font-size:14px;color:#ffffff;">${p.buyerName}</p>
+          <p style="margin:0;font-size:14px;color:#ffffff;">${escapeHtml(p.buyerName)}</p>
           <p style="margin:4px 0 0;font-size:12px;color:#d4eee9;" dir="ltr">${p.buyerPhone}</p>
         </div>
       </td>
@@ -85,7 +96,7 @@ function buildWorkbookAdminHtml(p: {
       <td style="padding:20px 32px 20px 16px;width:50%;vertical-align:top;">
         <div style="background:#f0faf8;border-radius:10px;padding:14px 16px;border:1px solid #c7e8e1;">
           <p style="margin:0 0 3px;font-size:10px;color:#6b7280;letter-spacing:1px;text-transform:uppercase;">الكراسة</p>
-          <p style="margin:0;font-size:13px;color:#1a5c52;">${p.workbookTitle || p.workbookId}</p>
+          <p style="margin:0;font-size:13px;color:#1a5c52;">${escapeHtml(p.workbookTitle || p.workbookId)}</p>
         </div>
       </td>
       <td style="padding:20px 16px 20px 32px;width:50%;vertical-align:top;">
@@ -99,13 +110,15 @@ function buildWorkbookAdminHtml(p: {
   </table>
   <div style="background:#fff;padding:8px 32px 24px;">
     <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
-      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;width:42%;border-bottom:1px solid #f0f0f0;">الكراسة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.workbookTitle || p.workbookId}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;width:42%;border-bottom:1px solid #f0f0f0;">الكراسة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${escapeHtml(p.workbookTitle || p.workbookId)}</td></tr>
       <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">الصيغة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${formatLabel}</td></tr>
       <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">عدد النسخ</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.quantity} نسخة</td></tr>
       <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">سعر النسخة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.displayUnitPrice} (${p.currencyCode})</td></tr>
-      ${p.format === "print" && p.deliveryAddress ? `<tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">عنوان التوصيل</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.deliveryAddress}</td></tr>` : ""}
-      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">الاسم</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${p.buyerName}</td></tr>
-      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">البريد</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;" dir="ltr">${p.buyerEmail}</td></tr>
+      ${p.format === "print" && p.deliveryAddress ? `<tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">عنوان التوصيل</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${escapeHtml(p.deliveryAddress)}</td></tr>` : ""}
+      <tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">الاسم</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${escapeHtml(p.buyerName)}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">البريد</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;" dir="ltr">${escapeHtml(p.buyerEmail)}</td></tr>
+      ${p.buyerCountry ? `<tr><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">الدولة</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;">${escapeHtml(p.buyerCountry)}</td></tr>` : ""}
+      ${p.notes ? `<tr style="background:#f9fafb;"><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;vertical-align:top;">ملاحظات</td><td style="padding:10px 14px;color:#374151;border-bottom:1px solid #f0f0f0;white-space:pre-wrap;">${escapeHtml(p.notes)}</td></tr>` : ""}
       <tr><td style="padding:12px 14px;color:#0d3b32;font-size:14px;">المجموع الكلي</td><td style="padding:12px 14px;color:#1a5c52;font-size:15px;">${p.displayTotal}</td></tr>
     </table>
   </div>
@@ -120,9 +133,9 @@ function buildWorkbookAdminHtml(p: {
   <div style="padding:0 32px 36px;text-align:center;">
     <a href="https://wa.me/${toWaPhone(p.buyerPhone)}?text=${waText}" target="_blank"
        style="display:inline-block;background:#25D366;color:#fff;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
-      💬 تواصل الآن مع ${p.buyerName}
+      💬 تواصل الآن مع ${escapeHtml(p.buyerName)}
     </a>
-    <p style="margin:12px 0 0;color:#6b7280;font-size:12px;" dir="ltr">${p.buyerPhone} · ${p.buyerEmail}</p>
+    <p style="margin:12px 0 0;color:#6b7280;font-size:12px;" dir="ltr">${escapeHtml(p.buyerPhone)} · ${escapeHtml(p.buyerEmail)}</p>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
     <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.82);">معيار رضا العملاء: رد أولي خلال ٢٤ ساعة — متابعة كاملة خلال ٧٢ ساعة ✦ بكلمة</p>
@@ -168,9 +181,9 @@ function buildWorkbookApplicantConfirmationHtml(p: {
 
   const texts: Record<"ar" | "en" | "fr", Record<string, string>> = {
     ar: {
-      hero: `${p.buyerName}، طلبك وصلنا — المعرفة في طريقها إليك ✦`,
-      greeting: `${p.buyerName}،`,
-      body: `تلقّينا طلب شراء <strong>${p.workbookTitle}</strong> بنجاح تام. نحن سعداء بثقتك في مواد بكلمة التدريبية.`,
+      hero: `${escapeHtml(p.buyerName)}، طلبك وصلنا — المعرفة في طريقها إليك ✦`,
+      greeting: `${escapeHtml(p.buyerName)}،`,
+      body: `تلقّينا طلب شراء <strong>${escapeHtml(p.workbookTitle)}</strong> بنجاح تام. نحن سعداء بثقتك في مواد بكلمة التدريبية.`,
       note: p.format === "print"
         ? "سيتواصل معك أحد أعضاء فريقنا قريباً لتأكيد تفاصيل الشحن والتوصيل. السعر المذكور لا يشمل رسوم التوصيل."
         : "سيتم مراجعة طلبك وإرسال رابط التحميل إلى بريدك الإلكتروني في أقرب وقت.",
@@ -193,9 +206,9 @@ function buildWorkbookApplicantConfirmationHtml(p: {
       footer: "بكلمة ✦ صناعة الأثر وفن الإلقاء والخطابة",
     },
     en: {
-      hero: `${p.buyerName}, your order is in — knowledge is on its way ✦`,
-      greeting: `${p.buyerName},`,
-      body: `We've successfully received your order for <strong>${p.workbookTitle}</strong>. Thank you for choosing Bikalima's training materials.`,
+      hero: `${escapeHtml(p.buyerName)}, your order is in — knowledge is on its way ✦`,
+      greeting: `${escapeHtml(p.buyerName)},`,
+      body: `We've successfully received your order for <strong>${escapeHtml(p.workbookTitle)}</strong>. Thank you for choosing Bikalima's training materials.`,
       note: p.format === "print"
         ? "A member of our team will contact you soon to confirm shipping details. Price does not include delivery fees."
         : "Your order is being processed and a download link will be sent to your email shortly.",
@@ -218,9 +231,9 @@ function buildWorkbookApplicantConfirmationHtml(p: {
       footer: "Bikalima ✦ The Art of Impactful Speech",
     },
     fr: {
-      hero: `${p.buyerName}, votre commande est reçue — la connaissance arrive ✦`,
-      greeting: `${p.buyerName},`,
-      body: `Nous avons bien reçu votre commande pour <strong>${p.workbookTitle}</strong>. Merci de faire confiance aux supports Bikalima.`,
+      hero: `${escapeHtml(p.buyerName)}, votre commande est reçue — la connaissance arrive ✦`,
+      greeting: `${escapeHtml(p.buyerName)},`,
+      body: `Nous avons bien reçu votre commande pour <strong>${escapeHtml(p.workbookTitle)}</strong>. Merci de faire confiance aux supports Bikalima.`,
       note: p.format === "print"
         ? "Un membre de notre équipe vous contactera bientôt pour les détails de livraison. Le prix n'inclut pas les frais de port."
         : "Votre commande est en cours de traitement et un lien de téléchargement vous sera envoyé par e-mail.",
@@ -267,11 +280,11 @@ function buildWorkbookApplicantConfirmationHtml(p: {
     <div style="background:#f8faff;border:1px solid #c7d2fe;border-radius:10px;padding:20px 22px;margin-bottom:24px;">
       <p style="margin:0 0 12px;font-size:11px;letter-spacing:2px;color:#4338ca;text-transform:uppercase;">${t.summaryTitle}</p>
       <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:13px;">
-        <tr style="background:#f0f4ff;"><td style="padding:9px 12px;color:#374151;width:42%;border-bottom:1px solid #e0e7ff;">${t.workbookLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${p.workbookTitle}</td></tr>
+        <tr style="background:#f0f4ff;"><td style="padding:9px 12px;color:#374151;width:42%;border-bottom:1px solid #e0e7ff;">${t.workbookLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${escapeHtml(p.workbookTitle)}</td></tr>
         <tr><td style="padding:9px 12px;color:#374151;border-bottom:1px solid #e0e7ff;">${t.formatLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${formatLabel}</td></tr>
         <tr style="background:#f0f4ff;"><td style="padding:9px 12px;color:#374151;border-bottom:1px solid #e0e7ff;">${t.quantityLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${p.quantity} ${lang === "ar" ? "نسخة" : lang === "fr" ? "exemplaire(s)" : "copy/copies"}</td></tr>
         <tr><td style="padding:9px 12px;color:#374151;border-bottom:1px solid #e0e7ff;">${t.unitLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${p.displayUnitPrice}</td></tr>
-        ${p.format === "print" && p.deliveryAddress ? `<tr style="background:#f0f4ff;"><td style="padding:9px 12px;color:#374151;border-bottom:1px solid #e0e7ff;">${t.deliveryLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${p.deliveryAddress}</td></tr>` : ""}
+        ${p.format === "print" && p.deliveryAddress ? `<tr style="background:#f0f4ff;"><td style="padding:9px 12px;color:#374151;border-bottom:1px solid #e0e7ff;">${t.deliveryLabel}</td><td style="padding:9px 12px;color:#1e3a5f;border-bottom:1px solid #e0e7ff;">${escapeHtml(p.deliveryAddress)}</td></tr>` : ""}
         <tr style="background:#e8f0ff;"><td style="padding:11px 12px;color:#1e3a5f;font-size:14px;">${t.totalLabel}</td><td style="padding:11px 12px;font-size:18px;color:#1a5c52;">${p.displayTotal}</td></tr>
       </table>
       ${p.format === "print" ? `<p style="margin:10px 0 0;font-size:11px;color:#6b7280;">${t.shippingNote}</p>` : ""}
@@ -322,6 +335,8 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
       buyerName,
       buyerPhone,
       buyerEmail,
+      buyerCountry,
+      notes,
       unitPrice,
       lang,
       currencyCode,
@@ -354,6 +369,8 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
         buyerName: buyerName || "",
         buyerPhone: buyerPhone || "",
         buyerEmail: buyerEmail || "",
+        buyerCountry: buyerCountry || "",
+        notes: notes || "",
         quantity: quantity || 1,
         format: format || "pdf",
         deliveryAddress: format === "print" ? deliveryAddress : undefined,
