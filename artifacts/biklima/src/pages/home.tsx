@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   BookOpen,
@@ -12,7 +11,6 @@ import {
   Quote,
   Star,
   MessageCircle,
-  Menu,
   X,
   Lock,
   Sparkles,
@@ -34,8 +32,6 @@ import {
   MapPin,
   Calendar,
   Video,
-  Linkedin,
-  Instagram,
   ShoppingCart,
   FileText,
   Printer,
@@ -66,36 +62,14 @@ import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
 import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useLang } from "@/hooks/useLang";
+import { useCurrency, PROGRAM_SLUGS, getBaseUrl } from "@/lib/site-config";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
 import imgZoom from "@assets/image_1775134223693.png";
-
-function useLang() {
-  const [lang, setLang] = useState<Lang>(() => {
-    try {
-      const stored = localStorage.getItem("biklima-lang") as Lang | null;
-      if (stored && (["ar", "en"] as string[]).includes(stored)) return stored as Lang;
-    } catch {}
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-    const arabicTZ = new Set([
-      "Asia/Amman","Asia/Riyadh","Asia/Dubai","Asia/Kuwait","Asia/Qatar",
-      "Asia/Bahrain","Asia/Muscat","Africa/Cairo","Asia/Baghdad","Asia/Damascus",
-      "Asia/Beirut","Asia/Gaza","Asia/Hebron","Asia/Aden","Africa/Tripoli",
-      "Africa/Khartoum","Africa/Juba",
-    ]);
-    if (arabicTZ.has(tz)) return "ar";
-    return "en";
-  });
-
-  const switchLang = (l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem("biklima-lang", l); } catch {}
-  };
-
-  const dir: "rtl" | "ltr" = lang === "ar" ? "rtl" : "ltr";
-  return { lang, switchLang, dir };
-}
 
 type WisdomArticle = {
   source: string;
