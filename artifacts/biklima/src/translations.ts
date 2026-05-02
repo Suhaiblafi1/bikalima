@@ -104,7 +104,7 @@ export const T = {
       upcomingEventsSub: "دورات وجاهية جماعية — سجّل مكانك الآن",
       noUpcomingEvents: "لا توجد فعاليات قادمة حالياً — تابعنا للإعلان عن الجديد",
       countriesHeading: "الدول التي نقدّم فيها فعالياتنا",
-      countries: { uae: "الإمارات", saudi: "السعودية", jordan: "الأردن", uk: "بريطانيا" },
+      countries: { uae: "الإمارات", saudi: "السعودية", jordan: "الأردن", uk: "المملكة المتحدة" },
       registerNow: "سجّل الآن",
       spotsLeft: "مقعد متبقي",
       enrollNow: "سجّل وادفع الآن",
