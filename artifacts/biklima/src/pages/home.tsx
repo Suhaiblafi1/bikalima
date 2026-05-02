@@ -571,9 +571,6 @@ export default function Home() {
         {/* ── STATS ── */}
         <StatsSection />
 
-        {/* ── PROGRAM QUIZ ── */}
-        <ProgramQuiz lang={lang} />
-
         {/* ── 60-SECOND SPEECH EVALUATION ── */}
         <SpeechEvaluationForm lang={lang} />
 
@@ -692,6 +689,9 @@ export default function Home() {
           </div>
         </section>
 
+
+        {/* ── PROGRAM QUIZ ── */}
+        <ProgramQuiz lang={lang} />
 
         {/* ── PROGRAMS COMPARISON TABLE ── */}
         <section id="compare" className="py-12 md:py-20 bg-gradient-to-b from-background to-secondary/15 border-b border-border">
