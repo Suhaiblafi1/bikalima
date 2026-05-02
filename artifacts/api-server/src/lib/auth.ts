@@ -54,6 +54,16 @@ export async function deleteSession(sid: string): Promise<void> {
   await db.delete(sessionsTable).where(eq(sessionsTable.sid, sid));
 }
 
+export async function updateSessionUser(sid: string, patch: Partial<AuthUser>): Promise<void> {
+  const current = await getSession(sid);
+  if (!current) return;
+  const next: SessionData = { ...current, user: { ...current.user, ...patch } };
+  await db
+    .update(sessionsTable)
+    .set({ sess: next as unknown as Record<string, unknown> })
+    .where(eq(sessionsTable.sid, sid));
+}
+
 export async function clearSession(
   res: Response,
   sid?: string,

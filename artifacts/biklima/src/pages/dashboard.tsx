@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/app-shell";
 import StudentAssignmentsTab from "@/components/student-assignments-tab";
 import { useLang } from "@/hooks/useLang";
+import { upcomingEvents, programs, getLocalizedProgram } from "@/programsData";
+import { ExternalLinkDialog } from "@/components/external-link-dialog";
+import { Wifi, MapPin, UserCheck, Phone, Save, KeyRound } from "lucide-react";
 import {
   User,
   BookOpen,
@@ -60,6 +63,26 @@ const dashT = {
       email: "البريد الإلكتروني",
       memberSince: "عضو منذ",
       editProfile: "تعديل الملف الشخصي",
+      firstName: "الاسم الأول",
+      lastName: "الاسم الأخير",
+      phone: "رقم الهاتف",
+      bio: "نبذة شخصية",
+      bioPlaceholder: "اكتب نبذة قصيرة عنك (اختياري)…",
+      profileImageUrl: "رابط الصورة الشخصية",
+      profileImagePlaceholder: "https://...",
+      saveChanges: "حفظ التغييرات",
+      saved: "تم الحفظ ✓",
+      saveError: "تعذّر الحفظ",
+      emailReadonly: "لا يمكن تغيير البريد الإلكتروني",
+      passwordHeading: "تغيير كلمة المرور",
+      currentPassword: "كلمة المرور الحالية",
+      newPassword: "كلمة المرور الجديدة",
+      confirmNewPassword: "تأكيد كلمة المرور الجديدة",
+      changePassword: "تغيير كلمة المرور",
+      passwordChanged: "تم تغيير كلمة المرور ✓",
+      passwordError: "كلمة المرور الحالية غير صحيحة",
+      passwordMismatch: "كلمتا المرور غير متطابقتين",
+      passwordMinLen: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
     },
     courses: {
       heading: "الدورات المسجلة",
@@ -83,6 +106,7 @@ const dashT = {
       heading: "الجدول الزمني",
       noSchedule: "لا توجد جلسات مجدولة حالياً",
       upcoming: "الجلسات القادمة",
+      yourProgram: "برنامجك",
       joinZoom: "انضم عبر Zoom",
       date: "التاريخ",
       time: "الوقت",
@@ -126,6 +150,26 @@ const dashT = {
       email: "Email",
       memberSince: "Member since",
       editProfile: "Edit Profile",
+      firstName: "First Name",
+      lastName: "Last Name",
+      phone: "Phone Number",
+      bio: "Short Bio",
+      bioPlaceholder: "Write a short bio about yourself (optional)…",
+      profileImageUrl: "Profile Image URL",
+      profileImagePlaceholder: "https://...",
+      saveChanges: "Save Changes",
+      saved: "Saved ✓",
+      saveError: "Save failed",
+      emailReadonly: "Email cannot be changed",
+      passwordHeading: "Change Password",
+      currentPassword: "Current Password",
+      newPassword: "New Password",
+      confirmNewPassword: "Confirm New Password",
+      changePassword: "Change Password",
+      passwordChanged: "Password changed ✓",
+      passwordError: "Current password is incorrect",
+      passwordMismatch: "Passwords do not match",
+      passwordMinLen: "Password must be at least 6 characters",
     },
     courses: {
       heading: "Enrolled Courses",
@@ -149,6 +193,7 @@ const dashT = {
       heading: "Schedule",
       noSchedule: "No sessions currently scheduled",
       upcoming: "Upcoming Sessions",
+      yourProgram: "Your program",
       joinZoom: "Join via Zoom",
       date: "Date",
       time: "Time",
@@ -719,6 +764,298 @@ function getVimeoId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+function AccountTab({ apiBase, lang: _lang, t, user }: { apiBase: string; lang: Lang; t: typeof dashT.ar; user: { firstName?: string | null; lastName?: string | null; email?: string | null; profileImageUrl?: string | null } | null | undefined }) {
+  const [firstName, setFirstName] = useState(user?.firstName ?? "");
+  const [lastName, setLastName] = useState(user?.lastName ?? "");
+  const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
+  const [profileImageUrl, setProfileImageUrl] = useState(user?.profileImageUrl ?? "");
+  const [profileMsg, setProfileMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [pwMsg, setPwMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [pwSaving, setPwSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${apiBase}/me/profile`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d?.user) return;
+        setFirstName(d.user.firstName ?? "");
+        setLastName(d.user.lastName ?? "");
+        setPhone(d.user.phone ?? "");
+        setBio(d.user.bio ?? "");
+        setProfileImageUrl(d.user.profileImageUrl ?? "");
+      })
+      .catch(() => {});
+  }, [apiBase]);
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileMsg(null);
+    try {
+      const res = await fetch(`${apiBase}/auth/profile`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, phone, bio, profileImageUrl }),
+      });
+      if (res.ok) setProfileMsg({ type: "ok", text: t.account.saved });
+      else setProfileMsg({ type: "err", text: t.account.saveError });
+    } catch {
+      setProfileMsg({ type: "err", text: t.account.saveError });
+    }
+    setProfileSaving(false);
+    setTimeout(() => setProfileMsg(null), 3500);
+  };
+
+  const changePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwMsg(null);
+    if (newPassword.length < 6) {
+      setPwMsg({ type: "err", text: t.account.passwordMinLen });
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPwMsg({ type: "err", text: t.account.passwordMismatch });
+      return;
+    }
+    setPwSaving(true);
+    try {
+      const res = await fetch(`${apiBase}/auth/change-password`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (res.ok) {
+        setPwMsg({ type: "ok", text: t.account.passwordChanged });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+      } else if (res.status === 401) {
+        setPwMsg({ type: "err", text: t.account.passwordError });
+      } else {
+        const j = await res.json().catch(() => ({}));
+        setPwMsg({ type: "err", text: j.error || t.account.saveError });
+      }
+    } catch {
+      setPwMsg({ type: "err", text: t.account.saveError });
+    }
+    setPwSaving(false);
+    setTimeout(() => setPwMsg(null), 4500);
+  };
+
+  const initials = `${(firstName || "").charAt(0)}${(lastName || "").charAt(0)}`.toUpperCase() || (user?.email?.charAt(0).toUpperCase() ?? "?");
+
+  return (
+    <div className="space-y-6">
+      <Card className="rounded-2xl">
+        <CardContent className="p-6 md:p-8">
+          <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            {t.account.heading}
+          </h3>
+          <form onSubmit={saveProfile} className="space-y-5">
+            <div className="flex flex-col sm:flex-row gap-5 items-start">
+              <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-primary/20">
+                {profileImageUrl ? (
+                  <img src={profileImageUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <span className="text-2xl font-bold text-primary">{initials}</span>
+                )}
+              </div>
+              <div className="flex-1 w-full space-y-1">
+                <label htmlFor="profile-image-url" className="text-xs text-muted-foreground font-medium">{t.account.profileImageUrl}</label>
+                <Input id="profile-image-url" type="url" dir="ltr" placeholder={t.account.profileImagePlaceholder} value={profileImageUrl} onChange={(e) => setProfileImageUrl(e.target.value)} className="rounded-xl" data-testid="input-profile-image-url" />
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label htmlFor="first-name" className="text-xs text-muted-foreground font-medium">{t.account.firstName}</label>
+                <Input id="first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="rounded-xl" data-testid="input-first-name" />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="last-name" className="text-xs text-muted-foreground font-medium">{t.account.lastName}</label>
+                <Input id="last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className="rounded-xl" data-testid="input-last-name" />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="account-email" className="text-xs text-muted-foreground font-medium flex items-center gap-1"><Mail className="w-3 h-3" />{t.account.email}</label>
+                <Input id="account-email" type="email" dir="ltr" value={user?.email ?? ""} readOnly disabled className="rounded-xl bg-muted/40" />
+                <p className="text-[10px] text-muted-foreground">{t.account.emailReadonly}</p>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="phone" className="text-xs text-muted-foreground font-medium flex items-center gap-1"><Phone className="w-3 h-3" />{t.account.phone}</label>
+                <Input id="phone" type="tel" dir="ltr" placeholder="+962 7..." value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-xl" data-testid="input-phone" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="bio" className="text-xs text-muted-foreground font-medium">{t.account.bio}</label>
+              <textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value.slice(0, 500))}
+                placeholder={t.account.bioPlaceholder}
+                rows={3}
+                className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 resize-none"
+                data-testid="textarea-bio"
+              />
+              <p className="text-[10px] text-muted-foreground text-end">{bio.length}/500</p>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Button type="submit" disabled={profileSaving} className="rounded-full bg-primary text-white gap-2" data-testid="button-save-profile">
+                <Save className="w-4 h-4" />
+                {profileSaving ? "…" : t.account.saveChanges}
+              </Button>
+              {profileMsg && (
+                <span className={`text-sm font-medium ${profileMsg.type === "ok" ? "text-green-600" : "text-red-600"}`}>{profileMsg.text}</span>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl">
+        <CardContent className="p-6 md:p-8">
+          <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+            <KeyRound className="w-5 h-5 text-primary" />
+            {t.account.passwordHeading}
+          </h3>
+          <form onSubmit={changePassword} className="space-y-4 max-w-md">
+            <div className="space-y-1">
+              <label htmlFor="current-password" className="text-xs text-muted-foreground font-medium">{t.account.currentPassword}</label>
+              <Input id="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="rounded-xl" required data-testid="input-current-password" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="new-password" className="text-xs text-muted-foreground font-medium">{t.account.newPassword}</label>
+              <Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-xl" required minLength={6} data-testid="input-new-password" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="confirm-new-password" className="text-xs text-muted-foreground font-medium">{t.account.confirmNewPassword}</label>
+              <Input id="confirm-new-password" type="password" autoComplete="new-password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="rounded-xl" required minLength={6} data-testid="input-confirm-new-password" />
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <Button type="submit" disabled={pwSaving || !currentPassword || !newPassword} className="rounded-full bg-primary text-white gap-2" data-testid="button-change-password">
+                <KeyRound className="w-4 h-4" />
+                {pwSaving ? "…" : t.account.changePassword}
+              </Button>
+              {pwMsg && (
+                <span className={`text-sm font-medium ${pwMsg.type === "ok" ? "text-green-600" : "text-red-600"}`}>{pwMsg.text}</span>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ScheduleTab({ lang, t, courses }: { lang: Lang; t: typeof dashT.ar; courses: Array<{ programId: string | null }> }) {
+  const isRtl = lang === "ar";
+  const l = (lang === "ar" ? "ar" : "en") as "ar" | "en";
+  const enrolledProgramIds = new Set(courses.map(c => c.programId).filter((x): x is string => !!x));
+
+  const sorted = [...upcomingEvents].sort((a, b) => {
+    const aMine = enrolledProgramIds.has(a.programId) ? 0 : 1;
+    const bMine = enrolledProgramIds.has(b.programId) ? 0 : 1;
+    if (aMine !== bMine) return aMine - bMine;
+    const parse = (d: string) => {
+      const [dd, mm, yyyy] = d.split("/").map(Number);
+      return new Date(yyyy, (mm || 1) - 1, dd || 1).getTime();
+    };
+    return parse(a.startDate) - parse(b.startDate);
+  });
+
+  if (sorted.length === 0) {
+    return (
+      <Card className="rounded-2xl">
+        <CardContent className="p-6 md:p-8">
+          <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-primary" />
+            {t.schedule.heading}
+          </h3>
+          <div className="text-center py-16 space-y-4">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+              <Clock className="w-10 h-10 text-primary/50" />
+            </div>
+            <p className="text-muted-foreground text-lg">{t.schedule.noSchedule}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-6 md:p-8">
+        <h3 className="font-bold text-xl mb-2 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary" />
+          {t.schedule.heading}
+        </h3>
+        <p className="text-sm text-muted-foreground mb-6">{t.schedule.upcoming}</p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          {sorted.map(ev => {
+            const prog = programs.find(p => p.id === ev.programId);
+            const lp = prog ? getLocalizedProgram(prog, lang) : null;
+            const isOnline = ev.type === "online";
+            const isMine = enrolledProgramIds.has(ev.programId);
+            return (
+              <div key={ev.id} className={`relative border-2 rounded-2xl p-4 transition-all hover:shadow-md ${isOnline ? "border-blue-200 bg-blue-50/30" : "border-amber-200 bg-amber-50/30"} ${isMine ? "ring-2 ring-primary/30" : ""}`} data-testid={`schedule-event-${ev.id}`}>
+                {isMine && (
+                  <span className="absolute -top-2 start-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow">
+                    <Star className="w-3 h-3" />
+                    {t.schedule.yourProgram}
+                  </span>
+                )}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  {lp && <span className="text-xs font-bold text-primary uppercase tracking-wide truncate">{lp.shortTitle}</span>}
+                  <span className={`shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${isOnline ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-amber-100 text-amber-700 border border-amber-200"}`}>
+                    {isOnline ? <Wifi className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                    {isOnline ? t.schedule.online : t.schedule.inPerson}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">{ev.trainer[l] || ev.trainer.ar}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate">{ev.days[l] || ev.days.ar} · {ev.timeSlot[l] || ev.timeSlot.ar}</span>
+                  </div>
+                  <div className="flex items-center gap-2" dir="ltr">
+                    <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="font-semibold text-foreground">{ev.startDate} → {ev.endDate}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className="truncate">{ev.location[l] || ev.location.ar}</span>
+                  </div>
+                </div>
+                {!isMine && (
+                  <ExternalLinkDialog href={ev.registrationLink}>
+                    <Button size="sm" className="mt-3 w-full bg-primary hover:bg-primary/90 text-white rounded-full text-xs gap-1" data-testid={`schedule-register-${ev.id}`}>
+                      <ExternalLink className="w-3 h-3" />
+                      {isRtl ? "سجّل عبر الموقع الرسمي" : "Register at Official Site"}
+                    </Button>
+                  </ExternalLinkDialog>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function VideoEmbed({ url }: { url: string }) {
   const ytId = getYouTubeId(url);
   if (ytId) {
@@ -734,6 +1071,7 @@ function VideoEmbed({ url }: { url: string }) {
 type CourseData = {
   enrollmentId: string;
   courseId: string;
+  programId: string | null;
   slug: string | null;
   status: string;
   titleAr: string;
@@ -1069,31 +1407,7 @@ export default function Dashboard() {
 
           <main className="flex-1 min-w-0">
             {activeTab === "account" && (
-              <Card className="rounded-2xl">
-                <CardContent className="p-6 md:p-8">
-                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
-                    {t.account.heading}
-                  </h3>
-                  <div className="flex flex-col sm:flex-row gap-6 items-start">
-                    <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
-                      <User className="w-12 h-12 text-primary" />
-                    </div>
-                    <div className="space-y-4 flex-1">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground font-medium">{t.account.name}</label>
-                          <p className="font-medium">{user?.firstName} {user?.lastName || ""}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground font-medium flex items-center gap-1"><Mail className="w-3 h-3" />{t.account.email}</label>
-                          <p className="font-medium" dir="ltr">{user?.email || "—"}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AccountTab apiBase={apiBase} lang={lang} t={t} user={user} />
             )}
 
             {activeTab === "courses" && (
@@ -1287,20 +1601,7 @@ export default function Dashboard() {
             )}
 
             {activeTab === "schedule" && (
-              <Card className="rounded-2xl">
-                <CardContent className="p-6 md:p-8">
-                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    {t.schedule.heading}
-                  </h3>
-                  <div className="text-center py-16 space-y-4">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                      <Clock className="w-10 h-10 text-primary/50" />
-                    </div>
-                    <p className="text-muted-foreground text-lg">{t.schedule.noSchedule}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <ScheduleTab lang={lang} t={t} courses={courses} />
             )}
           </main>
         </div>

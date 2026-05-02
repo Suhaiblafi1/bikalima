@@ -9,6 +9,7 @@ import {
   createSession,
   hashPassword,
   verifyPassword,
+  updateSessionUser,
   SESSION_COOKIE,
   SESSION_TTL,
   type SessionData,
@@ -198,6 +199,135 @@ router.post("/auth/login", async (req: Request, res: Response) => {
   } catch (err) {
     req.log.error({ err }, "Login error");
     res.status(500).json({ error: "Login failed" });
+  }
+});
+
+router.patch("/auth/profile", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const str = (v: unknown) => (typeof v === "string" ? v.trim() : null);
+    const firstName = str(body.firstName);
+    const lastName = str(body.lastName);
+    const phone = str(body.phone);
+    const bio = str(body.bio);
+    const profileImageUrl = str(body.profileImageUrl);
+
+    if (bio && bio.length > 500) {
+      res.status(400).json({ error: "Bio must be 500 characters or less" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(usersTable)
+      .set({
+        firstName: firstName ?? null,
+        lastName: lastName ?? null,
+        phone: phone ?? null,
+        bio: bio ?? null,
+        profileImageUrl: profileImageUrl ?? null,
+      })
+      .where(eq(usersTable.id, req.user.id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Persist updated identity fields into the stored session so subsequent
+    // requests (and other tabs) see the new values without requiring re-login.
+    const sid = getSessionId(req);
+    if (sid) {
+      await updateSessionUser(sid, {
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        profileImageUrl: updated.profileImageUrl,
+      });
+    }
+
+    res.json({
+      user: {
+        id: updated.id,
+        email: updated.email,
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        profileImageUrl: updated.profileImageUrl,
+        phone: updated.phone,
+        bio: updated.bio,
+        role: updated.role,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "Profile update error");
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+router.post("/auth/change-password", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { currentPassword, newPassword } = req.body ?? {};
+    if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
+      res.status(400).json({ error: "Current and new password are required" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      res.status(400).json({ error: "New password must be at least 6 characters" });
+      return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.id));
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const valid = await verifyPassword(currentPassword, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+    const passwordHash = await hashPassword(newPassword);
+    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
+    res.json({ success: true });
+  } catch (err) {
+    req.log.error({ err }, "Password change error");
+    res.status(500).json({ error: "Failed to change password" });
+  }
+});
+
+router.get("/me/profile", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.id));
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        phone: user.phone,
+        bio: user.bio,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "Profile fetch error");
+    res.status(500).json({ error: "Failed to load profile" });
   }
 });
 
