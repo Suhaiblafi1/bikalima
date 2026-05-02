@@ -615,7 +615,16 @@ export default function LearnPage() {
   );
 
   return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex flex-col">
+    <AppShell
+      lang={lang}
+      onLangChange={switchLang}
+      containerClassName="flex flex-col"
+      breadcrumb={[
+        { label: lang === "ar" ? "البرامج" : "Programs", href: "/#structure" },
+        { label: courseTitle, href: `/courses/${slug}` },
+        { label: lang === "ar" ? "تعلم" : "Learn" },
+      ]}
+    >
       {/* Lesson sub-header */}
       <div className="sticky top-14 z-30 bg-card border-b border-border shadow-sm">
         <div className="flex items-center gap-3 px-4 h-14">

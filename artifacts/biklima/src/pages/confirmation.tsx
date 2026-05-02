@@ -31,7 +31,12 @@ export default function ConfirmationPage() {
       ];
 
   return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center p-6">
+    <AppShell
+      lang={lang}
+      onLangChange={switchLang}
+      containerClassName="flex-1 flex items-center justify-center p-6"
+      breadcrumb={[{ label: lang === "ar" ? "تأكيد الطلب" : "Confirmation" }]}
+    >
       <div className="max-w-lg w-full space-y-8 text-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">

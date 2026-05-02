@@ -120,7 +120,15 @@ export default function CourseDetailPage() {
   const priceJod: number | "free" = price ?? "free";
 
   return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+    <AppShell
+      lang={lang}
+      onLangChange={switchLang}
+      containerClassName=""
+      breadcrumb={[
+        { label: lang === "ar" ? "البرامج" : "Programs", href: `${baseUrl}/#structure` },
+        { label: loc.shortTitle },
+      ]}
+    >
       {/* ── Hero ── */}
       <CourseHero
         title={loc.shortTitle}

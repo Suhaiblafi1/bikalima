@@ -549,7 +549,16 @@ export default function Dashboard() {
     const nextLesson = lessonIdx < currentCourse.lessons.length - 1 ? currentCourse.lessons[lessonIdx + 1] : null;
 
     return (
-      <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+      <AppShell
+        lang={lang}
+        onLangChange={switchLang}
+        containerClassName=""
+        breadcrumb={[
+          { label: isRtl ? "منصتي" : "My Platform", href: "/dashboard" },
+          { label: getTitle(currentCourse) },
+          { label: getTitle(currentLesson) },
+        ]}
+      >
         <div className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-3 flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => setActiveLesson(null)} className="gap-1">
@@ -630,7 +639,16 @@ export default function Dashboard() {
     const progressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
     return (
-      <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+      <AppShell
+        lang={lang}
+        onLangChange={switchLang}
+        containerClassName=""
+        breadcrumb={[
+          { label: isRtl ? "منصتي" : "My Platform", href: "/dashboard" },
+          { label: isRtl ? "دوراتي" : "My Courses" },
+          { label: getTitle(currentCourse) },
+        ]}
+      >
         <div className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-3 flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => setViewingCourse(null)} className="gap-1">
@@ -683,7 +701,12 @@ export default function Dashboard() {
   }
 
   return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+    <AppShell
+      lang={lang}
+      onLangChange={switchLang}
+      containerClassName=""
+      breadcrumb={[{ label: lang === "ar" ? "منصتي" : "My Platform" }]}
+    >
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h2>

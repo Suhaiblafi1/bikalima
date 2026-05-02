@@ -186,7 +186,16 @@ export default function CheckoutPage() {
   const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
 
   return (
-    <AppShell lang={lang} onLangChange={(l) => { setLang(l); try { localStorage.setItem("biklima-lang", l); } catch {} }} containerClassName="">
+    <AppShell
+      lang={lang}
+      onLangChange={(l) => { setLang(l); try { localStorage.setItem("biklima-lang", l); } catch {} }}
+      containerClassName=""
+      breadcrumb={[
+        { label: lang === "ar" ? "البرامج" : "Programs", href: `${baseUrl}/#structure` },
+        { label: courseTitle, href: `${baseUrl}/courses/${slug}` },
+        { label: lang === "ar" ? "إتمام التسجيل" : "Checkout" },
+      ]}
+    >
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6">
         <div className="flex items-center gap-3">
           <button

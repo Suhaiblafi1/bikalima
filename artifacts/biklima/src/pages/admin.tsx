@@ -485,7 +485,12 @@ export default function AdminPanel() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <AppShell lang={lang} onLangChange={switchLang} containerClassName="bg-muted/30 flex-1">
+    <AppShell
+      lang={lang}
+      onLangChange={switchLang}
+      containerClassName="bg-muted/30 flex-1"
+      breadcrumb={[{ label: lang === "ar" ? "لوحة الإدارة" : "Admin Panel" }]}
+    >
       <div className="container mx-auto px-4 sm:px-6 py-6 space-y-5">
         <div className="flex items-center gap-3">
           <Shield className="w-5 h-5 text-primary" />
