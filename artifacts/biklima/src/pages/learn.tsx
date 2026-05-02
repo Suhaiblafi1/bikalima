@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/app-shell";
 import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
-  StickyNote, Save, Trash2,
+  StickyNote, Save, Trash2, Award, Sparkles,
 } from "lucide-react";
+import { Certificate } from "@/components/certificate";
 
 type Lang = "ar" | "en";
 
@@ -85,6 +86,14 @@ const T = {
     saved: "تم الحفظ ✓",
     deleteNote: "حذف",
     notesPrivate: "ملاحظاتك خاصة وتظهر لك فقط.",
+    congratsTitle: "تهانينا! لقد أتممت الدورة 🎉",
+    congratsBody: "أحسنت! لقد أكملت جميع الدروس. استلم شهادة الإتمام كتقدير لإنجازك.",
+    downloadCert: "تحميل الشهادة",
+    generatingCert: "جارٍ إعداد الشهادة...",
+    certError: "تعذّر إنشاء الشهادة. حاول مرة أخرى.",
+    backToCourse: "العودة إلى الدورة",
+    completedBadge: "مكتمل",
+    reviewLessons: "مراجعة الدروس",
   },
   en: {
     back: "Back to Course",
@@ -121,6 +130,14 @@ const T = {
     saved: "Saved ✓",
     deleteNote: "Delete",
     notesPrivate: "Your notes are private and only visible to you.",
+    congratsTitle: "Congratulations! You finished the course 🎉",
+    congratsBody: "Well done! You've completed every lesson. Download your certificate of completion as a recognition of your achievement.",
+    downloadCert: "Download Certificate",
+    generatingCert: "Preparing certificate...",
+    certError: "Could not generate the certificate. Please try again.",
+    backToCourse: "Back to Course",
+    completedBadge: "Completed",
+    reviewLessons: "Review Lessons",
   },
 };
 
@@ -211,6 +228,19 @@ export default function LearnPage() {
   const [noteJustSaved, setNoteJustSaved] = useState(false);
   const [noteLoading, setNoteLoading] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
+
+  // Certificate / congrats state
+  const [showCongrats, setShowCongrats] = useState(false);
+  const [congratsDismissed, setCongratsDismissed] = useState(false);
+  const [certData, setCertData] = useState<{
+    studentName: string;
+    completedAt: string | null;
+    courseTitleAr: string;
+    courseTitleEn: string;
+  } | null>(null);
+  const [downloadingCert, setDownloadingCert] = useState(false);
+  const [certError, setCertError] = useState<string | null>(null);
+  const certificateRef = useRef<HTMLDivElement>(null);
 
   const lastKey = (s: string) => `bk_learn_${s}`;
 
@@ -375,6 +405,83 @@ export default function LearnPage() {
   const completedCount = lessons.filter(l => progressMap[l.id]).length;
   const totalCount = lessons.length;
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isCourseComplete = enrolled && totalCount > 0 && completedCount === totalCount;
+
+  // Fetch certificate info once when the course becomes 100% complete and
+  // automatically reveal the congrats screen the first time it happens.
+  useEffect(() => {
+    if (!isCourseComplete || !slug) return;
+    let cancelled = false;
+    fetch(`${base}/api/my/courses/${slug}/certificate`, { credentials: "include" })
+      .then(async r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        if (cancelled) return;
+        if (data?.eligible) {
+          setCertData({
+            studentName: data.studentName || "",
+            completedAt: data.completedAt ?? null,
+            courseTitleAr: data.course?.titleAr ?? "",
+            courseTitleEn: data.course?.titleEn ?? "",
+          });
+          const seenKey = `bk_congrats_seen_${slug}`;
+          let seen = false;
+          try { seen = localStorage.getItem(seenKey) === "1"; } catch {}
+          if (!seen && !congratsDismissed) {
+            setShowCongrats(true);
+            try { localStorage.setItem(seenKey, "1"); } catch {}
+          }
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isCourseComplete, slug, base, congratsDismissed]);
+
+  const downloadCertificate = useCallback(async () => {
+    if (!certificateRef.current || downloadingCert) return;
+    setDownloadingCert(true);
+    setCertError(null);
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(certificateRef.current, {
+        scale: 2,
+        backgroundColor: "#fffaf3",
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      // Fit the image inside the page while preserving aspect ratio.
+      const imgRatio = canvas.width / canvas.height;
+      const pageRatio = pdfWidth / pdfHeight;
+      let renderWidth = pdfWidth;
+      let renderHeight = pdfHeight;
+      if (imgRatio > pageRatio) {
+        renderHeight = pdfWidth / imgRatio;
+      } else {
+        renderWidth = pdfHeight * imgRatio;
+      }
+      const offsetX = (pdfWidth - renderWidth) / 2;
+      const offsetY = (pdfHeight - renderHeight) / 2;
+      pdf.addImage(imgData, "PNG", offsetX, offsetY, renderWidth, renderHeight);
+      const safeTitle = (certData?.courseTitleEn || certData?.courseTitleAr || "course")
+        .replace(/[^\p{L}\p{N}\s_-]/gu, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .slice(0, 60) || "course";
+      pdf.save(`bikalima-certificate-${safeTitle}.pdf`);
+    } catch {
+      setCertError(t.certError);
+    }
+    setDownloadingCert(false);
+  }, [downloadingCert, certData, t]);
 
   const sectionGroups = buildSectionGroups(sections, lessons);
 
@@ -846,7 +953,11 @@ export default function LearnPage() {
               </button>
             ) : (
               <button
-                onClick={() => navigate(`/courses/${slug}`)}
+                onClick={async () => {
+                  if (enrolled && !isCompleted) await markComplete(false);
+                  setCongratsDismissed(false);
+                  setShowCongrats(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-green-600 text-white text-sm font-medium transition-colors hover:bg-green-700"
               >
                 <CheckCircle className="w-4 h-4" />
@@ -855,6 +966,161 @@ export default function LearnPage() {
             )}
           </div>
         </footer>
+      )}
+
+      {/* Congrats screen + downloadable certificate */}
+      <AnimatePresence>
+        {showCongrats && certData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => { setShowCongrats(false); setCongratsDismissed(true); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 30, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.96, y: 10, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 240, damping: 24 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              <button
+                onClick={() => { setShowCongrats(false); setCongratsDismissed(true); }}
+                className="absolute top-3 end-3 z-10 w-9 h-9 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                aria-label="close"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+
+              <div className="px-6 pt-10 pb-6 text-center">
+                <div className="relative inline-flex items-center justify-center mb-4">
+                  <div className="absolute inset-0 bg-amber-200/40 rounded-full blur-2xl" />
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg">
+                    <Award className="w-10 h-10 text-white" />
+                  </div>
+                  <Sparkles className="absolute -top-1 -end-2 w-5 h-5 text-amber-500" />
+                  <Sparkles className="absolute -bottom-1 -start-2 w-4 h-4 text-amber-400" />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                  {t.congratsTitle}
+                </h2>
+                <p className="text-sm md:text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  {t.congratsBody}
+                </p>
+
+                {certData.studentName && (
+                  <div className="mt-5 inline-flex flex-col items-center gap-1 px-5 py-3 rounded-xl bg-muted/40 border border-border/50">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                      {lang === "ar" ? "الطالب" : "Student"}
+                    </span>
+                    <span className="text-base font-semibold text-foreground">{certData.studentName}</span>
+                  </div>
+                )}
+
+                <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+                  <button
+                    onClick={downloadCertificate}
+                    disabled={downloadingCert}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+                  >
+                    {downloadingCert ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        {t.generatingCert}
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        {t.downloadCert}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => navigate(`/courses/${slug}`)}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    {t.backToCourse}
+                  </button>
+                </div>
+
+                {certError && (
+                  <p className="mt-3 text-xs text-destructive font-medium" role="alert">{certError}</p>
+                )}
+              </div>
+
+              {/* Preview of the certificate (scaled down) */}
+              <div className="border-t border-border/60 bg-muted/20 p-4 flex items-center justify-center">
+                <div
+                  className="origin-top"
+                  style={{
+                    width: "100%",
+                    maxWidth: 600,
+                    aspectRatio: "1100 / 780",
+                    overflow: "hidden",
+                    borderRadius: 8,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <div
+                    style={{
+                      transform: "scale(0.5)",
+                      transformOrigin: isRtl ? "top right" : "top left",
+                      width: 1100,
+                      height: 780,
+                    }}
+                  >
+                    <Certificate
+                      studentName={certData.studentName}
+                      courseTitle={lang === "ar"
+                        ? (certData.courseTitleAr || certData.courseTitleEn)
+                        : (certData.courseTitleEn || certData.courseTitleAr)}
+                      completedAt={certData.completedAt}
+                      lang={lang}
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating "View Certificate" button when course is complete */}
+      {isCourseComplete && certData && !showCongrats && (
+        <button
+          onClick={() => { setCongratsDismissed(false); setShowCongrats(true); }}
+          className="fixed bottom-20 end-4 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold shadow-lg transition-colors"
+        >
+          <Award className="w-4 h-4" />
+          <span>{t.completedBadge}</span>
+        </button>
+      )}
+
+      {/* Off-screen full-resolution certificate used for PDF capture */}
+      {certData && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: "-10000px",
+            pointerEvents: "none",
+            opacity: 0,
+          }}
+        >
+          <Certificate
+            ref={certificateRef}
+            studentName={certData.studentName}
+            courseTitle={lang === "ar"
+              ? (certData.courseTitleAr || certData.courseTitleEn)
+              : (certData.courseTitleEn || certData.courseTitleAr)}
+            completedAt={certData.completedAt}
+            lang={lang}
+          />
+        </div>
       )}
     </AppShell>
   );

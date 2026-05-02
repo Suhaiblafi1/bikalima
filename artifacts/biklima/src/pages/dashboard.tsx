@@ -769,28 +769,36 @@ export default function Dashboard() {
                         const totalLessons = course.lessons.length;
                         const pct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
                         return (
-                          <div key={course.courseId} className="w-full flex items-center gap-4 bg-background border border-border rounded-xl p-4 hover:border-primary/40 transition-colors">
-                            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                              <BookOpen className="w-7 h-7 text-primary" />
+                          <div key={course.courseId} className={`w-full flex items-center gap-4 bg-background border rounded-xl p-4 transition-colors ${pct === 100 ? "border-green-500/40" : "border-border hover:border-primary/40"}`}>
+                            <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${pct === 100 ? "bg-green-100" : "bg-primary/10"}`}>
+                              {pct === 100 ? <CheckCircle className="w-7 h-7 text-green-600" /> : <BookOpen className="w-7 h-7 text-primary" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold text-start">{getTitle(course)}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-start">{getTitle(course)}</p>
+                                {pct === 100 && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {isRtl ? "مكتمل" : "Completed"}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground text-start">{totalLessons} {isRtl ? "درس" : "lessons"} • {pct}% {t.courses.progress.toLowerCase()}</p>
                               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                                <div className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
                               </div>
                             </div>
                             <div className="flex flex-col gap-2 shrink-0">
                               {course.slug && (
                                 <button
                                   onClick={() => navigate(`/courses/${course.slug}/learn`)}
-                                  className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-bold flex items-center gap-1.5 whitespace-nowrap"
+                                  className={`text-xs px-3 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1.5 whitespace-nowrap ${pct === 100 ? "bg-green-600 text-white hover:bg-green-700" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                                 >
-                                  <Play className="w-3.5 h-3.5" />
+                                  {pct === 100 ? <CheckCircle className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                                   {pct === 0
                                     ? (isRtl ? "ابدأ التعلّم" : "Start Learning")
                                     : pct === 100
-                                      ? (isRtl ? "مراجعة" : "Review")
+                                      ? (isRtl ? "عرض الشهادة" : "View Certificate")
                                       : (isRtl ? "متابعة التعلّم" : "Continue Learning")}
                                 </button>
                               )}

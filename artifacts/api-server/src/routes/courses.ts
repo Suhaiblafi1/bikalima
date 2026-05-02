@@ -7,8 +7,9 @@ import {
   enrollmentsTable,
   lessonProgressTable,
   lessonNotesTable,
+  usersTable,
 } from "@workspace/db";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -229,6 +230,88 @@ router.put("/my/lessons/:lessonId/note", async (req: Request, res: Response) => 
     }
   } catch {
     res.status(500).json({ error: "Failed to save note" });
+  }
+});
+
+router.get("/my/courses/:slug/certificate", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { slug } = req.params;
+    const course = await getCourseBySlug(slug);
+    if (!course) {
+      res.status(404).json({ error: "Course not found" });
+      return;
+    }
+
+    const enrollment = await getEnrollmentStatus(req.user.id, course.id);
+    if (!enrollment || enrollment.status !== "active") {
+      res.status(403).json({ error: "Not enrolled" });
+      return;
+    }
+
+    const allLessons = await db
+      .select({ id: lessonsTable.id })
+      .from(lessonsTable)
+      .where(and(eq(lessonsTable.courseId, course.id), eq(lessonsTable.isPublished, true)));
+    const lessonIds = allLessons.map(l => l.id);
+
+    if (lessonIds.length === 0) {
+      res.status(400).json({ error: "Course has no lessons" });
+      return;
+    }
+
+    const completedRows = await db
+      .select({ lessonId: lessonProgressTable.lessonId, completedAt: lessonProgressTable.completedAt })
+      .from(lessonProgressTable)
+      .where(
+        and(
+          eq(lessonProgressTable.userId, req.user.id),
+          eq(lessonProgressTable.completed, true),
+          inArray(lessonProgressTable.lessonId, lessonIds),
+        ),
+      );
+
+    const completedCount = completedRows.length;
+    const isComplete = completedCount === lessonIds.length;
+
+    const completedAt = completedRows.reduce<Date | null>((acc, r) => {
+      if (!r.completedAt) return acc;
+      if (!acc || r.completedAt > acc) return r.completedAt;
+      return acc;
+    }, null);
+
+    const [user] = await db
+      .select({
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        email: usersTable.email,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.user.id));
+
+    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim()
+      || user?.email
+      || "";
+
+    res.json({
+      eligible: isComplete,
+      completedCount,
+      totalLessons: lessonIds.length,
+      completedAt: completedAt?.toISOString() ?? null,
+      studentName: fullName,
+      studentEmail: user?.email ?? "",
+      course: {
+        id: course.id,
+        slug: course.slug,
+        titleAr: course.titleAr,
+        titleEn: course.titleEn,
+      },
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to load certificate" });
   }
 });
 
