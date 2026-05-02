@@ -702,43 +702,6 @@ export default function Home() {
         {/* ── REPEATING CTA (primary) ── */}
         <JourneyCta variant="primary" testIdSuffix="after-journey" />
 
-        {/* ── START HELP ── */}
-        <section className="py-12 md:py-16 bg-primary/5 border-y border-border">
-          <div className="container mx-auto px-6 text-center max-w-2xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-5">
-                <MessageCircle className="w-7 h-7 text-primary" />
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">{t.structure.startHelpHeading}</h2>
-              <p className="text-muted-foreground mb-7 leading-relaxed">{t.structure.startHelpSub}</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a
-                  href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block"
-                >
-                  <Button
-                    size="lg"
-                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8"
-                  >
-                    {t.structure.startHelpBtn}
-                  </Button>
-                </a>
-                <a href="mailto:info@bikalima.com" className="inline-block">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full px-8"
-                  >
-                    {t.structure.startHelpContact}
-                  </Button>
-                </a>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
         {/* ── UPCOMING EVENTS ── */}
         <section id="events" className="py-10 bg-gradient-to-b from-primary/5 to-background border-b border-border">
           <div className="container mx-auto px-6">
@@ -837,22 +800,33 @@ export default function Home() {
                       <Calendar className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-serif text-xl font-bold mb-1">{lang === "ar" ? "احجز جلسة استشارية مجانية" : "Book a Free Consultation"}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
+                      <h3 className="font-serif text-xl md:text-2xl font-bold mb-2">{t.structure.startHelpHeading}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
+                        {t.structure.startHelpSub}
+                      </p>
+                      <p className="text-sm text-foreground/80 leading-relaxed max-w-md mx-auto">
                         {lang === "ar"
-                          ? "جلسة فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — اختر الموعد المناسب وسيصلك تأكيد فوري برابط Zoom ودعوة التقويم."
-                          : "A 20-minute one-on-one session with Suhaib. Pick your slot and you'll instantly receive a Zoom link and calendar invite."}
+                          ? "احجز جلسة استشارية مجانية فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — اختر الموعد المناسب وسيصلك تأكيد فوري برابط Zoom ودعوة التقويم."
+                          : "Book a free 20-minute one-on-one consultation with Suhaib. Pick your slot and you'll instantly receive a Zoom link and calendar invite."}
                       </p>
                     </div>
-                    <a
-                      href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-8 py-3.5 rounded-full text-base transition-colors shadow-lg shadow-blue-500/20 w-full max-w-xs"
-                    >
-                      <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
-                      {lang === "ar" ? "احجز موعدك الآن" : "Book Your Slot Now"}
-                    </a>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md">
+                      <a
+                        href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3.5 rounded-full text-base transition-colors shadow-lg shadow-blue-500/20 w-full sm:flex-1"
+                      >
+                        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
+                        {lang === "ar" ? "احجز موعدك الآن" : "Book Your Slot Now"}
+                      </a>
+                      <a
+                        href="mailto:info@bikalima.com"
+                        className="inline-flex items-center justify-center gap-2 border-2 border-primary/30 text-primary hover:bg-primary/5 font-bold px-6 py-3 rounded-full text-base transition-colors w-full sm:flex-1"
+                      >
+                        {t.structure.startHelpContact}
+                      </a>
+                    </div>
                     <p className="text-[11px] text-muted-foreground">
                       {lang === "ar" ? "ستصلك دعوة Zoom ودعوة التقويم تلقائياً فور الحجز" : "Zoom invite & calendar confirmation sent automatically on booking"}
                     </p>
