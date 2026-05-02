@@ -5,6 +5,7 @@ import {
   getSessionId,
   getSession,
 } from "../lib/auth";
+import { getUserRole, type Role } from "../lib/admin";
 
 declare global {
   namespace Express {
@@ -43,6 +44,16 @@ export async function authMiddleware(
     return;
   }
 
-  req.user = session.user;
+  // Always re-read role from the DB so promotions/demotions take effect
+  // immediately without forcing the user to re-login. Also bootstraps admin
+  // for any email in ADMIN_EMAILS.
+  let role: Role = "student";
+  try {
+    role = await getUserRole(session.user.id);
+  } catch {
+    role = "student";
+  }
+
+  req.user = { ...session.user, role };
   next();
 }

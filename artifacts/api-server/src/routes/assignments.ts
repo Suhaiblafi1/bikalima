@@ -5,10 +5,31 @@ import {
   assignmentSubmissionsTable,
   enrollmentsTable,
   coursesTable,
+  courseTrainersTable,
   usersTable,
 } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { requireAdmin } from "../lib/admin.js";
+import { requireRole, isAdmin } from "../lib/admin.js";
+
+// Returns the set of courseIds this user can administer assignments for.
+// Admins get null (= unrestricted). Trainers get their assigned course list.
+// Returns an empty array for anyone else (effectively blocks them).
+async function getAdminScopeCourseIds(req: Request): Promise<string[] | null> {
+  if (isAdmin(req)) return null;
+  if (!req.user) return [];
+  if (req.user.role !== "trainer") return [];
+  const rows = await db
+    .select({ courseId: courseTrainersTable.courseId })
+    .from(courseTrainersTable)
+    .where(eq(courseTrainersTable.userId, req.user.id));
+  return rows.map((r) => r.courseId);
+}
+
+function trainerCanTouchCourse(scope: string[] | null, courseId: string | null): boolean {
+  if (scope === null) return true; // admin
+  if (!courseId) return false; // unattached assignments belong to admins only
+  return scope.includes(courseId);
+}
 
 const router: IRouter = Router();
 
@@ -278,9 +299,16 @@ router.get("/my/assignments/progress", async (req: Request, res: Response) => {
 // ────────────────────────────────────────────────────────────────────────────
 
 router.get("/admin/assignments", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
-    const assignments = await db
+    const scope = await getAdminScopeCourseIds(req);
+    // Trainer with no assigned courses sees nothing rather than 403'ing.
+    if (scope !== null && scope.length === 0) {
+      res.json({ assignments: [] });
+      return;
+    }
+
+    const baseQuery = db
       .select({
         id: assignmentsTable.id,
         courseId: assignmentsTable.courseId,
@@ -295,8 +323,13 @@ router.get("/admin/assignments", async (req: Request, res: Response) => {
         courseTitleEn: coursesTable.titleEn,
       })
       .from(assignmentsTable)
-      .leftJoin(coursesTable, eq(assignmentsTable.courseId, coursesTable.id))
-      .orderBy(desc(assignmentsTable.createdAt));
+      .leftJoin(coursesTable, eq(assignmentsTable.courseId, coursesTable.id));
+
+    const assignments = scope === null
+      ? await baseQuery.orderBy(desc(assignmentsTable.createdAt))
+      : await baseQuery
+          .where(inArray(assignmentsTable.courseId, scope))
+          .orderBy(desc(assignmentsTable.createdAt));
 
     const ids = assignments.map((a) => a.id);
     const counts = ids.length
@@ -331,12 +364,17 @@ router.get("/admin/assignments", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/assignments", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
     const { courseId, titleAr, titleEn, descriptionAr, descriptionEn, dueAt, isPublished } =
       req.body ?? {};
     if (!titleAr || typeof titleAr !== "string") {
       res.status(400).json({ error: "titleAr is required" });
+      return;
+    }
+    const scope = await getAdminScopeCourseIds(req);
+    if (!trainerCanTouchCourse(scope, courseId ?? null)) {
+      res.status(403).json({ error: "Cannot create an assignment for this course" });
       return;
     }
 
@@ -361,11 +399,23 @@ router.post("/admin/assignments", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/assignments/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
     const { id } = req.params;
     const { courseId, titleAr, titleEn, descriptionAr, descriptionEn, dueAt, isPublished } =
       req.body ?? {};
+    const scope = await getAdminScopeCourseIds(req);
+    const [current] = await db.select({ courseId: assignmentsTable.courseId })
+      .from(assignmentsTable).where(eq(assignmentsTable.id, id));
+    if (!current) { res.status(404).json({ error: "Not found" }); return; }
+    if (!trainerCanTouchCourse(scope, current.courseId)) {
+      res.status(403).json({ error: "Not your course" });
+      return;
+    }
+    if (courseId !== undefined && !trainerCanTouchCourse(scope, courseId ?? null)) {
+      res.status(403).json({ error: "Cannot reassign to that course" });
+      return;
+    }
     const updates: Record<string, unknown> = {};
     if (courseId !== undefined) updates.courseId = courseId || null;
     if (titleAr !== undefined) updates.titleAr = String(titleAr).trim();
@@ -399,9 +449,17 @@ router.patch("/admin/assignments/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/assignments/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
     const { id } = req.params;
+    const scope = await getAdminScopeCourseIds(req);
+    const [current] = await db.select({ courseId: assignmentsTable.courseId })
+      .from(assignmentsTable).where(eq(assignmentsTable.id, id));
+    if (!current) { res.status(404).json({ error: "Not found" }); return; }
+    if (!trainerCanTouchCourse(scope, current.courseId)) {
+      res.status(403).json({ error: "Not your course" });
+      return;
+    }
     await db.delete(assignmentsTable).where(eq(assignmentsTable.id, id));
     res.json({ success: true });
   } catch (err) {
@@ -411,9 +469,10 @@ router.delete("/admin/assignments/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/assignments/:id/submissions", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
     const { id } = req.params;
+    const scope = await getAdminScopeCourseIds(req);
 
     const [assignment] = await db
       .select({
@@ -431,6 +490,10 @@ router.get("/admin/assignments/:id/submissions", async (req: Request, res: Respo
       .where(eq(assignmentsTable.id, id));
     if (!assignment) {
       res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (!trainerCanTouchCourse(scope, assignment.courseId)) {
+      res.status(403).json({ error: "Not your course" });
       return;
     }
 
@@ -470,10 +533,24 @@ router.get("/admin/assignments/:id/submissions", async (req: Request, res: Respo
 });
 
 router.post("/admin/submissions/:id/evaluate", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
     const { id } = req.params;
     const body = req.body ?? {};
+
+    // Verify the trainer owns the course this submission belongs to.
+    const scope = await getAdminScopeCourseIds(req);
+    if (scope !== null) {
+      const [link] = await db.select({ courseId: assignmentsTable.courseId })
+        .from(assignmentSubmissionsTable)
+        .innerJoin(assignmentsTable, eq(assignmentSubmissionsTable.assignmentId, assignmentsTable.id))
+        .where(eq(assignmentSubmissionsTable.id, id));
+      if (!link) { res.status(404).json({ error: "Submission not found" }); return; }
+      if (!trainerCanTouchCourse(scope, link.courseId)) {
+        res.status(403).json({ error: "Not your course" });
+        return;
+      }
+    }
 
     const scores: Record<ScoreField, number | null> = {
       clarityScore: clamp10(body.clarityScore),

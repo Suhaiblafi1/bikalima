@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/app-shell";
 import AdminAssignmentsTab from "@/components/admin-assignments-tab";
 import { useLang } from "@/hooks/useLang";
+import { useMe, type Role } from "@/hooks/use-me";
 import {
   Users, Search, Trash2, Edit3, Save, X, Home, Shield, UserPlus,
   ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText, ClipboardList,
@@ -16,7 +17,9 @@ import {
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
-type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; createdAt: string };
+type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; role: Role; createdAt: string };
+
+type CourseTrainerRecord = { id: string; userId: string; courseId: string; assignedAt: string; email: string; firstName: string | null; lastName: string | null; role: Role };
 
 type SectionRecord = { id: string; courseId: string; titleAr: string; titleEn: string; sortOrder: number; isPublished: boolean };
 
@@ -65,7 +68,34 @@ type LessonEditForm = {
   isPublished: boolean; descriptionAr: string; descriptionEn: string;
 };
 
-type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors" | "student-progress" | "assignments";
+type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors" | "student-progress" | "assignments" | "trainers";
+
+// Which roles can see each tab. Admin sees all by default.
+const TAB_VISIBILITY: Record<AdminTab, Role[]> = {
+  users: ["admin"],
+  courses: ["admin", "trainer"],
+  trainers: ["admin"],
+  instructors: ["admin"],
+  requests: ["admin", "sales"],
+  orders: ["admin", "sales"],
+  "lms-orders": ["admin", "sales"],
+  "student-progress": ["admin", "trainer"],
+  assignments: ["admin", "trainer"],
+  revenue: ["admin"],
+};
+
+const ROLE_LABELS_AR: Record<Role, string> = {
+  admin: "مدير", trainer: "مدرّب", student: "طالب", sales: "مبيعات/دعم",
+};
+
+// Standardized order/request status set going forward.
+const ORDER_STATUS_OPTIONS: { value: string; labelAr: string }[] = [
+  { value: "new", labelAr: "جديد" },
+  { value: "contacted", labelAr: "تم التواصل" },
+  { value: "paid", labelAr: "مدفوع" },
+  { value: "completed", labelAr: "مكتمل" },
+  { value: "cancelled", labelAr: "ملغى" },
+];
 
 type StudentProgressRecord = {
   enrollmentId: string;
@@ -127,8 +157,15 @@ export default function AdminPanel() {
   const { isAuthenticated, isLoading } = useAuth();
   const [, navigate] = useLocation();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { user: me, role: myRole, refresh: refreshMe } = useMe();
   const [tab, setTab] = useState<AdminTab>("users");
   const { lang } = useLang();
+  const isAdminRole = myRole === "admin";
+
+  // Trainer assignment state (admin-only "trainers" tab)
+  const [trainerAssignCourseId, setTrainerAssignCourseId] = useState("");
+  const [trainerAssignUserId, setTrainerAssignUserId] = useState("");
+  const [courseTrainersByCourse, setCourseTrainersByCourse] = useState<Record<string, CourseTrainerRecord[]>>({});
 
   // Data state
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -193,7 +230,9 @@ export default function AdminPanel() {
     try {
       const res = await apiFetch("/admin/check");
       const data = await res.json();
-      setIsAdmin(data.isAdmin);
+      // Allow trainer/sales staff into the page; the per-tab role filter
+      // (TAB_VISIBILITY) handles what each role can actually see.
+      setIsAdmin(!!(data.canAccessAdminArea ?? data.isAdmin));
     } catch { setIsAdmin(false); }
   }, [apiFetch]);
 
@@ -454,9 +493,10 @@ export default function AdminPanel() {
     </AppShell>
   );
 
-  const tabs: { key: AdminTab; label: string; icon: React.ReactNode; count?: number }[] = [
+  const allTabs: { key: AdminTab; label: string; icon: React.ReactNode; count?: number }[] = [
     { key: "users", label: "المستخدمون", icon: <Users className="w-4 h-4" />, count: stats?.totalUsers },
     { key: "courses", label: "الدورات", icon: <BookOpen className="w-4 h-4" />, count: stats?.totalCourses },
+    { key: "trainers", label: "تعيين المدرّبين", icon: <Shield className="w-4 h-4" /> },
     { key: "instructors", label: "المدربون", icon: <UserCircle className="w-4 h-4" />, count: instructors.length },
     { key: "requests", label: "طلبات التسجيل", icon: <FileText className="w-4 h-4" />, count: stats?.totalRequests },
     { key: "orders", label: "طلبات الكراسات", icon: <ShoppingCart className="w-4 h-4" />, count: stats?.totalOrders },
@@ -465,6 +505,83 @@ export default function AdminPanel() {
     { key: "assignments", label: "الواجبات والتقييم", icon: <ClipboardList className="w-4 h-4" /> },
     { key: "revenue", label: "الإيرادات", icon: <BarChart3 className="w-4 h-4" /> },
   ];
+
+  // Filter tabs by the current user's role. Admin sees everything; otherwise
+  // we only show tabs whose visibility list includes their role.
+  const tabs = allTabs.filter((t) => {
+    if (!myRole) return false;
+    if (myRole === "admin") return true;
+    return TAB_VISIBILITY[t.key]?.includes(myRole);
+  });
+
+  // If the current tab is no longer visible to this role, snap to the first
+  // visible one. Done in an effect so we don't mutate state during render.
+  useEffect(() => {
+    if (!myRole || tabs.length === 0) return;
+    if (!tabs.some((t) => t.key === tab)) {
+      setTab(tabs[0].key);
+    }
+  }, [myRole, tab, tabs]);
+
+  // ── Role + trainer-assignment actions (admin only) ─────────────────────
+  const updateUserRole = useCallback(async (userId: string, newRole: Role) => {
+    try {
+      const res = await apiFetch(`/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "تعذّر تحديث الدور");
+        return;
+      }
+      const data = await res.json();
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: data.user.role } : u)));
+      // If the admin changed their own role, reflect it immediately.
+      if (me?.id === userId) refreshMe();
+    } catch {
+      alert("تعذّر تحديث الدور");
+    }
+  }, [apiFetch, me?.id, refreshMe]);
+
+  const fetchCourseTrainers = useCallback(async (courseId: string) => {
+    const res = await apiFetch(`/admin/courses/${courseId}/trainers`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setCourseTrainersByCourse((prev) => ({ ...prev, [courseId]: data.trainers ?? [] }));
+  }, [apiFetch]);
+
+  const assignTrainer = useCallback(async () => {
+    if (!trainerAssignCourseId || !trainerAssignUserId) return;
+    const res = await apiFetch(`/admin/courses/${trainerAssignCourseId}/trainers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: trainerAssignUserId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "تعذّر التعيين");
+      return;
+    }
+    // Refresh list + users (assignment may have auto-promoted to trainer).
+    await fetchCourseTrainers(trainerAssignCourseId);
+    const usersRes = await apiFetch("/admin/users");
+    if (usersRes.ok) setUsers((await usersRes.json()).users);
+    setTrainerAssignUserId("");
+  }, [apiFetch, fetchCourseTrainers, trainerAssignCourseId, trainerAssignUserId]);
+
+  const removeTrainer = useCallback(async (courseId: string, userId: string) => {
+    const res = await apiFetch(`/admin/courses/${courseId}/trainers/${userId}`, { method: "DELETE" });
+    if (res.ok) await fetchCourseTrainers(courseId);
+  }, [apiFetch, fetchCourseTrainers]);
+
+  // Auto-load the assigned trainers for the selected course.
+  useEffect(() => {
+    if (tab === "trainers" && trainerAssignCourseId && !courseTrainersByCourse[trainerAssignCourseId]) {
+      fetchCourseTrainers(trainerAssignCourseId);
+    }
+  }, [tab, trainerAssignCourseId, courseTrainersByCourse, fetchCourseTrainers]);
 
   const filteredProgress = studentProgress.filter(p => {
     if (!progressSearch) return true;
@@ -533,6 +650,7 @@ export default function AdminPanel() {
                 <thead><tr className="border-b text-muted-foreground">
                   <th className="text-start py-2 px-3 font-medium">الاسم</th>
                   <th className="text-start py-2 px-3 font-medium">البريد</th>
+                  <th className="text-start py-2 px-3 font-medium">الدور</th>
                   <th className="text-start py-2 px-3 font-medium">التسجيل</th>
                   <th className="text-end py-2 px-3 font-medium">إجراءات</th>
                 </tr></thead>
@@ -546,6 +664,18 @@ export default function AdminPanel() {
                         </div>
                       ) : <span className="font-medium">{u.firstName || u.lastName ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "—"}</span>}</td>
                       <td className="py-2 px-3 text-muted-foreground">{editingId === u.id ? <Input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="h-7 text-xs w-40" /> : u.email}</td>
+                      <td className="py-2 px-3">
+                        <select
+                          value={u.role}
+                          onChange={(e) => updateUserRole(u.id, e.target.value as Role)}
+                          className="text-xs border rounded p-1 bg-background"
+                          aria-label="الدور"
+                        >
+                          {(Object.keys(ROLE_LABELS_AR) as Role[]).map((r) => (
+                            <option key={r} value={r}>{ROLE_LABELS_AR[r]}</option>
+                          ))}
+                        </select>
+                      </td>
                       <td className="py-2 px-3 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString("ar-SA")}</td>
                       <td className="py-2 px-3 text-end">
                         {editingId === u.id ? (
@@ -558,7 +688,7 @@ export default function AdminPanel() {
                       </td>
                     </tr>
                   ))}
-                  {filteredUsers.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-muted-foreground">لا يوجد مستخدمون</td></tr>}
+                  {filteredUsers.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">لا يوجد مستخدمون</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -1018,10 +1148,9 @@ export default function AdminPanel() {
                       <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString("ar-SA")}</td>
                       <td className="py-2 px-3 text-end">
                         <select value={o.status} onChange={e => updateOrderStatus(o.id, e.target.value)} className="text-xs border rounded p-1 bg-background">
-                          <option value="pending">قيد المراجعة</option>
-                          <option value="confirmed">مؤكد</option>
-                          <option value="shipped">تم الشحن</option>
-                          <option value="delivered">تم التوصيل</option>
+                          {ORDER_STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.labelAr}</option>)}
+                          {/* Show legacy values inline if the row was created before standardization. */}
+                          {!ORDER_STATUS_OPTIONS.some(s => s.value === o.status) && <option value={o.status}>{o.status}</option>}
                         </select>
                       </td>
                     </tr>
@@ -1111,6 +1240,87 @@ export default function AdminPanel() {
                 </tbody>
               </table>
             </div>
+          </CardContent></Card>
+        )}
+
+        {/* ── TRAINERS TAB (admin only) ── */}
+        {tab === "trainers" && isAdminRole && (
+          <Card><CardContent className="p-5 space-y-5">
+            <h2 className="font-bold flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" /> تعيين المدرّبين للدورات
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              عيّن المستخدمين كمدرّبين لدورات محدّدة. سيتم ترقية الدور تلقائياً عند التعيين، ويمكن للمدرّب إدارة الواجبات والتقييمات لدوراته فقط.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end p-3 border rounded-lg bg-muted/30">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">الدورة</label>
+                <select
+                  value={trainerAssignCourseId}
+                  onChange={(e) => setTrainerAssignCourseId(e.target.value)}
+                  className="w-full border rounded-lg p-2 text-sm bg-background"
+                >
+                  <option value="">اختر الدورة...</option>
+                  {courses.map(c => <option key={c.id} value={c.id}>{c.titleAr}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">المستخدم</label>
+                <select
+                  value={trainerAssignUserId}
+                  onChange={(e) => setTrainerAssignUserId(e.target.value)}
+                  className="w-full border rounded-lg p-2 text-sm bg-background"
+                >
+                  <option value="">اختر المستخدم...</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.email} — {ROLE_LABELS_AR[u.role]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                onClick={assignTrainer}
+                disabled={!trainerAssignCourseId || !trainerAssignUserId}
+                className="bg-primary text-white gap-1"
+              >
+                <Plus className="w-4 h-4" /> تعيين كمدرّب
+              </Button>
+            </div>
+
+            {trainerAssignCourseId && (
+              <div>
+                <h3 className="text-sm font-bold mb-2">المدرّبون المعيّنون</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b text-muted-foreground">
+                      <th className="text-start py-2 px-3 font-medium">الاسم</th>
+                      <th className="text-start py-2 px-3 font-medium">البريد</th>
+                      <th className="text-start py-2 px-3 font-medium">التعيين</th>
+                      <th className="text-end py-2 px-3 font-medium">إجراءات</th>
+                    </tr></thead>
+                    <tbody>
+                      {(courseTrainersByCourse[trainerAssignCourseId] ?? []).map(t => (
+                        <tr key={t.id} className="border-b border-border/30">
+                          <td className="py-2 px-3 font-medium">{`${t.firstName || ""} ${t.lastName || ""}`.trim() || "—"}</td>
+                          <td className="py-2 px-3 text-muted-foreground" dir="ltr">{t.email}</td>
+                          <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(t.assignedAt).toLocaleDateString("ar-SA")}</td>
+                          <td className="py-2 px-3 text-end">
+                            <Button variant="ghost" size="sm" onClick={() => removeTrainer(trainerAssignCourseId, t.userId)} className="h-7 w-7 p-0 text-destructive">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {(courseTrainersByCourse[trainerAssignCourseId] ?? []).length === 0 && (
+                        <tr><td colSpan={4} className="py-6 text-center text-muted-foreground text-xs">لا يوجد مدرّبون معيّنون لهذه الدورة</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </CardContent></Card>
         )}
 

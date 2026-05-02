@@ -79,6 +79,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 export function AdminRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const [, navigate] = useLocation();
+  // canEnter covers any non-student staff role (admin / trainer / sales).
+  // We keep the variable name `isAdmin` for backward-compat below.
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [lang] = useState<Lang>(getLangFromStorage);
   const isRtl = lang === "ar";
@@ -93,7 +95,9 @@ export function AdminRoute({ children }: { children: ReactNode }) {
     fetch(`${getApiBase()}/admin/check`, { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
-        if (!cancelled) setIsAdmin(!!d.isAdmin);
+        // Allow trainers and sales/support into the area too — the admin
+        // page itself filters tabs based on the role returned in /api/me.
+        if (!cancelled) setIsAdmin(!!(d.canAccessAdminArea ?? d.isAdmin));
       })
       .catch(() => {
         if (!cancelled) setIsAdmin(false);

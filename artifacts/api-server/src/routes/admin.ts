@@ -12,8 +12,17 @@ import {
   ordersTable,
   instructorsTable,
 } from "@workspace/db";
+import { db as _db, courseTrainersTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
-import { ADMIN_EMAILS, isAdmin, requireAdmin } from "../lib/admin.js";
+import {
+  ADMIN_EMAILS,
+  isAdmin,
+  requireAdmin,
+  requireRole,
+  isValidRole,
+  countAdmins,
+  type Role,
+} from "../lib/admin.js";
 
 const router: IRouter = Router();
 
@@ -47,7 +56,17 @@ type SectionUpdate = { titleAr?: string; titleEn?: string; sortOrder?: number; i
 type InstructorUpdate = { nameAr?: string; nameEn?: string; bioAr?: string; bioEn?: string; photoUrl?: string; email?: string };
 
 router.get("/admin/check", (req: Request, res: Response) => {
-  res.json({ isAdmin: isAdmin(req) });
+  const role: Role = (req.user?.role as Role) ?? "student";
+  // "Admin area" includes any non-student staff role so the route guard can
+  // allow trainers and sales/support in too. The `role` field tells the
+  // frontend which tabs to render.
+  const canAccessAdminArea =
+    isAdmin(req) || role === "trainer" || role === "sales";
+  res.json({
+    isAdmin: isAdmin(req),
+    canAccessAdminArea,
+    role: req.isAuthenticated() ? role : null,
+  });
 });
 
 router.get("/admin/stats", async (req: Request, res: Response) => {
@@ -83,11 +102,172 @@ router.get("/admin/users", async (req: Request, res: Response) => {
   try {
     const users = await db.select({
       id: usersTable.id, email: usersTable.email, firstName: usersTable.firstName,
-      lastName: usersTable.lastName, createdAt: usersTable.createdAt, updatedAt: usersTable.updatedAt,
+      lastName: usersTable.lastName, role: usersTable.role,
+      createdAt: usersTable.createdAt, updatedAt: usersTable.updatedAt,
     }).from(usersTable).orderBy(desc(usersTable.createdAt));
     res.json({ users });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Update a user's role. Admin only. Cannot demote the last remaining admin.
+//
+// We do the count + update inside a SERIALIZABLE transaction with explicit
+// row locking (`FOR UPDATE`) so concurrent demotions cannot both pass the
+// "more than one admin" check and leave the system without an admin.
+router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const { role } = req.body ?? {};
+    if (!isValidRole(role)) {
+      res.status(400).json({ error: "Invalid role", allowed: ["admin", "trainer", "student", "sales"] });
+      return;
+    }
+
+    type UpdateOutcome =
+      | { ok: true; user: { id: string; email: string; role: string; firstName: string | null; lastName: string | null } }
+      | { ok: false; status: number; error: string };
+
+    const outcome: UpdateOutcome = await db.transaction(async (tx) => {
+      // Lock the target row first to serialize against any other writer
+      // touching the same user. This blocks a parallel demotion attempt
+      // until we either commit or roll back.
+      const lockedTargets = await tx.execute(sql`
+        SELECT id, email, role
+        FROM ${usersTable}
+        WHERE id = ${id}
+        FOR UPDATE
+      `);
+      const targetRow = (lockedTargets as { rows?: Array<{ id: string; email: string; role: string }> }).rows?.[0]
+        ?? (lockedTargets as unknown as Array<{ id: string; email: string; role: string }>)[0];
+      if (!targetRow) return { ok: false, status: 404, error: "Not found" };
+
+      if (targetRow.role === "admin" && role !== "admin") {
+        if (ADMIN_EMAILS.includes(targetRow.email.toLowerCase())) {
+          return { ok: false, status: 403, error: "Cannot demote a bootstrap admin" };
+        }
+        // Count *other* admins (not counting this row, which is being demoted),
+        // also under a row-share lock so a concurrent demotion of a different
+        // admin row is forced to serialize behind us.
+        const otherAdmins = await tx.execute(sql`
+          SELECT 1
+          FROM ${usersTable}
+          WHERE role = 'admin' AND id <> ${id}
+          FOR SHARE
+        `);
+        const others = (otherAdmins as { rows?: unknown[] }).rows
+          ?? (otherAdmins as unknown as unknown[]);
+        if (!others || others.length === 0) {
+          return { ok: false, status: 409, error: "Cannot demote the last admin" };
+        }
+      }
+
+      const [updated] = await tx.update(usersTable)
+        .set({ role })
+        .where(eq(usersTable.id, id))
+        .returning({
+          id: usersTable.id, email: usersTable.email, role: usersTable.role,
+          firstName: usersTable.firstName, lastName: usersTable.lastName,
+        });
+      return { ok: true, user: updated };
+    });
+
+    if (!outcome.ok) {
+      res.status(outcome.status).json({ error: outcome.error });
+      return;
+    }
+    res.json({ user: outcome.user });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update role");
+    res.status(500).json({ error: "Failed to update role" });
+  }
+});
+
+// ---- Course trainers (many-to-many between courses and trainer users) ----
+
+router.get("/admin/courses/:id/trainers", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "trainer")) return;
+  try {
+    // A trainer may only inspect the trainer roster of a course they're
+    // assigned to. Admins are unrestricted. We treat a non-membership lookup
+    // as 404 to avoid leaking which course IDs exist.
+    if (!isAdmin(req)) {
+      const userId = req.user?.id;
+      if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+      const [own] = await db.select({ id: courseTrainersTable.id })
+        .from(courseTrainersTable)
+        .where(and(
+          eq(courseTrainersTable.courseId, req.params.id),
+          eq(courseTrainersTable.userId, userId),
+        ));
+      if (!own) { res.status(404).json({ error: "Not found" }); return; }
+    }
+    const rows = await db.select({
+      id: courseTrainersTable.id,
+      userId: courseTrainersTable.userId,
+      courseId: courseTrainersTable.courseId,
+      assignedAt: courseTrainersTable.assignedAt,
+      email: usersTable.email,
+      firstName: usersTable.firstName,
+      lastName: usersTable.lastName,
+      role: usersTable.role,
+    })
+    .from(courseTrainersTable)
+    .innerJoin(usersTable, eq(courseTrainersTable.userId, usersTable.id))
+    .where(eq(courseTrainersTable.courseId, req.params.id));
+    res.json({ trainers: rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list course trainers");
+    res.status(500).json({ error: "Failed to list trainers" });
+  }
+});
+
+router.post("/admin/courses/:id/trainers", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const courseId = req.params.id;
+    const { userId } = req.body ?? {};
+    if (!userId || typeof userId !== "string") {
+      res.status(400).json({ error: "userId required" });
+      return;
+    }
+    const [course] = await db.select({ id: coursesTable.id }).from(coursesTable).where(eq(coursesTable.id, courseId));
+    if (!course) { res.status(404).json({ error: "Course not found" }); return; }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    // Auto-promote a plain student to trainer when assigned to a course.
+    if (user.role !== "trainer" && user.role !== "admin") {
+      await db.update(usersTable).set({ role: "trainer" }).where(eq(usersTable.id, userId));
+    }
+    try {
+      const [row] = await db.insert(courseTrainersTable).values({ courseId, userId }).returning();
+      res.json({ assignment: row });
+    } catch (e) {
+      // Unique violation -> already assigned, return the existing row instead of erroring.
+      const [existing] = await db.select().from(courseTrainersTable)
+        .where(and(eq(courseTrainersTable.courseId, courseId), eq(courseTrainersTable.userId, userId)));
+      if (existing) { res.json({ assignment: existing, alreadyAssigned: true }); return; }
+      throw e;
+    }
+  } catch (err) {
+    req.log.error({ err }, "Failed to assign trainer");
+    res.status(500).json({ error: "Failed to assign trainer" });
+  }
+});
+
+router.delete("/admin/courses/:id/trainers/:userId", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    await db.delete(courseTrainersTable)
+      .where(and(
+        eq(courseTrainersTable.courseId, req.params.id),
+        eq(courseTrainersTable.userId, req.params.userId),
+      ));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to remove trainer" });
   }
 });
 
@@ -407,7 +587,7 @@ router.get("/admin/enrollments", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/enrollment-requests", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "sales")) return;
   try {
     const requests = await db.select().from(enrollmentRequestsTable).orderBy(desc(enrollmentRequestsTable.createdAt));
     res.json({ requests });
@@ -417,12 +597,19 @@ router.get("/admin/enrollment-requests", async (req: Request, res: Response) => 
 });
 
 router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "sales")) return;
   try {
     const { status, adminNotes } = req.body;
     const updates: { status?: string; adminNotes?: string } = {};
-    if (status) updates.status = status;
+    if (status !== undefined) {
+      if (!ORDER_STATUSES.includes(status) && !["approved", "rejected"].includes(status)) {
+        res.status(400).json({ error: "Invalid status" });
+        return;
+      }
+      updates.status = status;
+    }
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+    if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [updated] = await db.update(enrollmentRequestsTable).set(updates).where(eq(enrollmentRequestsTable.id, req.params.id)).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ request: updated });
@@ -431,8 +618,13 @@ router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Respons
   }
 });
 
+// Sales/support staff need read access + status updates for the order pipeline.
+const ORDER_STATUSES = ["new", "contacted", "paid", "completed", "cancelled",
+  // Legacy values kept for backward compatibility with rows already in the DB.
+  "pending", "confirmed", "shipped", "delivered"] as const;
+
 router.get("/admin/workbook-orders", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "sales")) return;
   try {
     const orders = await db.select().from(workbookOrdersTable).orderBy(desc(workbookOrdersTable.createdAt));
     res.json({ orders });
@@ -442,12 +634,20 @@ router.get("/admin/workbook-orders", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/workbook-orders/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "sales")) return;
   try {
     const { status, adminNotes } = req.body;
     const updates: { status?: string; adminNotes?: string } = {};
-    if (status) updates.status = status;
+    if (status !== undefined) {
+      if (!ORDER_STATUSES.includes(status)) {
+        res.status(400).json({ error: "Invalid status", allowed: ORDER_STATUSES });
+        return;
+      }
+      updates.status = status;
+    }
+    // Sales role is restricted to status + notes, never the order contents.
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
+    if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [updated] = await db.update(workbookOrdersTable).set(updates).where(eq(workbookOrdersTable.id, req.params.id)).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ order: updated });
@@ -634,7 +834,7 @@ const VALID_ORDER_STATUSES = ["pending", "paid", "cancelled"] as const;
 type OrderStatus = typeof VALID_ORDER_STATUSES[number];
 
 async function adminGetLmsOrders(req: Request, res: Response) {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "sales")) return;
   try {
     const orders = await db
       .select({
@@ -665,7 +865,7 @@ async function adminGetLmsOrders(req: Request, res: Response) {
 }
 
 async function adminPatchLmsOrder(req: Request, res: Response) {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "sales")) return;
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body as { status?: string; adminNotes?: string };

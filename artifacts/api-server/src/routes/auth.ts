@@ -79,6 +79,26 @@ router.get("/auth/user", (req: Request, res: Response) => {
   );
 });
 
+// Role-aware "me" endpoint. Returns the same identity as /auth/user but also
+// includes the resolved role (admin|trainer|student|sales) so the frontend
+// can gate the admin UI by role without parsing it out of /auth/user.
+router.get("/me", (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  res.json({
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      firstName: req.user.firstName ?? null,
+      lastName: req.user.lastName ?? null,
+      profileImageUrl: req.user.profileImageUrl ?? null,
+      role: req.user.role ?? "student",
+    },
+  });
+});
+
 router.post("/auth/register", async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName } = req.body;

@@ -105,8 +105,8 @@ Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client insta
 
 - `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
 - `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/auth.ts` — users and sessions tables
-- `src/schema/lms.ts` — courses, lessons, enrollments, lesson_progress, enrollment_requests, workbook_orders, speech_evaluations tables. `enrollment_requests`, `workbook_orders`, and `speech_evaluations` carry integration columns (`externalCrmId`, `aiAnalysisStatus`, `aiAnalysisResult`, `assignedTrainerId` → `instructors.id`, `leadSource`, `syncStatus`, `lastSyncedAt`) so future Odoo/AI/payment sync can run without further schema work.
+- `src/schema/auth.ts` — users and sessions tables. `users.role` is one of `admin|trainer|student|sales` (default `student`) and drives the 4-role RBAC layer. The `course_trainers` join table (in `lms.ts`) wires individual trainer users to specific courses.
+- `src/schema/lms.ts` — courses, lessons, enrollments, lesson_progress, enrollment_requests, workbook_orders, speech_evaluations, **course_trainers** (links a trainer-role user to a course) tables. `enrollment_requests`, `workbook_orders`, and `speech_evaluations` carry integration columns (`externalCrmId`, `aiAnalysisStatus`, `aiAnalysisResult`, `assignedTrainerId` → `instructors.id`, `leadSource`, `syncStatus`, `lastSyncedAt`) so future Odoo/AI/payment sync can run without further schema work.
 - `src/schema/integrations.ts` — `integration_sync_events` table that logs every sync attempt (provider, entity_type, entity_id, action, status, externalId, errorMessage, payload, response, timestamps).
 - `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
 - Exports: `.` (pool, db, schema), `./schema` (schema only)

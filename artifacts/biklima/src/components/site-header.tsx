@@ -47,9 +47,11 @@ export function SiteHeader() {
   useEffect(() => {
     if (!isAuthenticated) { setIsAdmin(false); return; }
     let cancelled = false;
+    // The header "Admin Panel" link should appear for any non-student staff
+    // role (admin, trainer, sales) so the role-aware page can take over.
     fetch(`${getApiBase()}/admin/check`, { credentials: "include" })
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setIsAdmin(!!d.isAdmin); })
+      .then((d) => { if (!cancelled) setIsAdmin(!!(d.canAccessAdminArea ?? d.isAdmin)); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [isAuthenticated]);

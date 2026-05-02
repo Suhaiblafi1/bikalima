@@ -249,6 +249,18 @@ export const assignmentSubmissionsTable = pgTable("assignment_submissions", {
   uniqueIndex("UQ_submission_assignment_user").on(t.assignmentId, t.userId),
 ]);
 
+export const courseTrainersTable = pgTable("course_trainers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").notNull().references(() => coursesTable.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("IDX_course_trainers_course").on(t.courseId),
+  index("IDX_course_trainers_user").on(t.userId),
+  uniqueIndex("UQ_course_trainers_course_user").on(t.courseId, t.userId),
+]);
+
+export type CourseTrainer = typeof courseTrainersTable.$inferSelect;
 export type Instructor = typeof instructorsTable.$inferSelect;
 export type Course = typeof coursesTable.$inferSelect;
 export type CourseSection = typeof courseSectionsTable.$inferSelect;
