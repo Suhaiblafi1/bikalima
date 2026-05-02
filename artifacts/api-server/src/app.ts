@@ -12,6 +12,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
+// We sit behind Replit's proxy + (optionally) a CDN, so trust the
+// inner-most proxy for `req.ip` / `req.ips`. Do NOT use `true` (any-hop
+// trust enables IP spoofing via X-Forwarded-For).
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

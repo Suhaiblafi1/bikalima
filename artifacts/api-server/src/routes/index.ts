@@ -13,6 +13,7 @@ import speechEvaluationRouter from "./speech-evaluation";
 import siteSettingsRouter from "./site-settings";
 import cmsRouter from "./cms";
 import certificatesRouter from "./certificates";
+import chatRouter from "./chat";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(speechEvaluationRouter);
 router.use(siteSettingsRouter);
 router.use(cmsRouter);
 router.use(certificatesRouter);
+router.use(chatRouter);
 
 export default router;

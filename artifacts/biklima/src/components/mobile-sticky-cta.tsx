@@ -2,23 +2,19 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { MessageCircle, Sparkles, CalendarClock } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
-import { useSiteSettings } from "@/hooks/use-site-settings";
 import { trackWhatsappClick, trackZoomBookingClick } from "@/lib/analytics";
-
-const DEFAULT_WHATSAPP = "97455377065";
+import { OPEN_CHAT_EVENT } from "@/components/live-chat-widget";
 
 const TEXT = {
   ar: {
     register: "سجّل اهتمامك",
     consult: "احجز جلسة",
-    chat: "واتساب",
-    waMsg: "السلام عليكم، أودّ الاستفسار عن برامج بكلمة.",
+    chat: "محادثة",
   },
   en: {
     register: "Register interest",
     consult: "Book a call",
-    chat: "WhatsApp",
-    waMsg: "Hello, I'd like to know more about Bikalima programs.",
+    chat: "Chat",
   },
 } as const;
 
@@ -26,11 +22,7 @@ export function MobileStickyCta() {
   const { lang } = useLang();
   const t = TEXT[lang];
   const [location, navigate] = useLocation();
-  const { data } = useSiteSettings();
   const [visible, setVisible] = useState(false);
-
-  const number = (data?.settings?.whatsappNumber || DEFAULT_WHATSAPP).replace(/\D/g, "");
-  const waHref = `https://wa.me/${number}?text=${encodeURIComponent(t.waMsg)}`;
 
   // Show after the user has scrolled past the hero (~400px) so it doesn't
   // compete with first impressions. Hide on admin / dashboard routes.
@@ -85,17 +77,18 @@ export function MobileStickyCta() {
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0px)" }}
     >
       <div className="grid grid-cols-3 gap-1.5 px-2 py-2">
-        <a
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackWhatsappClick("mobile_sticky_cta")}
+        <button
+          type="button"
+          onClick={() => {
+            trackWhatsappClick("mobile_sticky_cta");
+            window.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT));
+          }}
           className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-[#25D366] text-white py-2 font-bold text-[11px] active:scale-95 transition-transform"
           data-testid="mobile-sticky-whatsapp"
         >
           <MessageCircle className="w-4 h-4" />
           <span>{t.chat}</span>
-        </a>
+        </button>
         <button
           type="button"
           onClick={goEnroll}

@@ -33,8 +33,9 @@ import ConfirmationPage from "@/pages/confirmation";
 import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
 import NotFound from "@/pages/not-found";
-import { FloatingWhatsapp } from "@/components/floating-whatsapp";
+import { LiveChatWidget } from "@/components/live-chat-widget";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
+import AdminChatPage from "@/pages/admin/chat";
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,9 @@ function AnimatedRouter() {
           <Route path="/admin/certificates">
             {() => (<AdminRoute><AdminCertificates /></AdminRoute>)}
           </Route>
+          <Route path="/admin/chat">
+            {() => (<AdminRoute><AdminChatPage /></AdminRoute>)}
+          </Route>
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
           </Route>
@@ -136,7 +140,7 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <ScrollToTop />
           <AnimatedRouter />
-          <FloatingWhatsapp />
+          <LiveChatWidget />
           <MobileStickyCta />
         </WouterRouter>
         <Toaster />

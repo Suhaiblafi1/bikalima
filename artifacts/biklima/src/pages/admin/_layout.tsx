@@ -6,7 +6,7 @@ import { PAGE_VISIBILITY, type AdminPageKey } from "./_shared";
 import {
   BarChart3, Users, BookOpen, GraduationCap, ShoppingCart,
   ClipboardList, Star, Mic2, Settings as SettingsIcon,
-  Layout as LayoutIcon, FileText, Film, ShieldCheck,
+  Layout as LayoutIcon, FileText, Film, ShieldCheck, MessageCircle,
 } from "lucide-react";
 
 type NavItem = {
@@ -29,6 +29,7 @@ const NAV: NavItem[] = [
   { key: "assignments",     label: "الواجبات والتقييم", href: "/admin/assignments", icon: <ClipboardList className="w-4 h-4" /> },
   { key: "reviews",         label: "التقييمات",    href: "/admin/reviews",         icon: <Star className="w-4 h-4" /> },
   { key: "certificates",    label: "الشهادات والاعتمادات", href: "/admin/certificates", icon: <ShieldCheck className="w-4 h-4" /> },
+  { key: "chat",            label: "الشات المباشر", href: "/admin/chat",            icon: <MessageCircle className="w-4 h-4" /> },
   { key: "settings",        label: "الإعدادات",    href: "/admin/settings",        icon: <SettingsIcon className="w-4 h-4" /> },
 ];
 
