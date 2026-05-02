@@ -56,7 +56,7 @@ export function StatsSection() {
     <section
       ref={ref}
       id="stats"
-      className="py-20 bg-gradient-to-b from-primary to-primary/90 text-primary-foreground relative overflow-hidden"
+      className="py-12 md:py-20 bg-gradient-to-b from-primary to-primary/90 text-primary-foreground relative overflow-hidden"
       data-testid="section-stats"
     >
       <div aria-hidden className="absolute inset-0 opacity-10">

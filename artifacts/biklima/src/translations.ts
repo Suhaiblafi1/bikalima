@@ -27,6 +27,10 @@ export const T = {
         rating: "تقييم ٤٫٩ / ٥",
         years: "خبرة +٦ سنوات",
       },
+      institutions: {
+        label: "شارك بكلمة أو مؤسسها في برامج مع",
+        list: "Qatar Foundation · UAE Ministry of Economy · Aston University · Breakthrough T1D · TEDx",
+      },
       compare: {
         heading: "قارن بين البرامج",
         sub: "أربعة برامج · مسار واحد · اختر ما يناسبك ومسارك.",
@@ -422,6 +426,10 @@ export const T = {
         countries: "7 countries",
         rating: "4.9 / 5 rating",
         years: "6+ years of practice",
+      },
+      institutions: {
+        label: "Bikalima or its founder has worked with",
+        list: "Qatar Foundation · UAE Ministry of Economy · Aston University · Breakthrough T1D · TEDx",
       },
       compare: {
         heading: "Compare the programs",

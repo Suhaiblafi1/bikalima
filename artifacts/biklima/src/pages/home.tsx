@@ -452,6 +452,19 @@ export default function Home() {
                 {(t.hero as any).trustStrip?.years}
               </span>
             </div>
+            {(t.hero as any).institutions && (
+              <div
+                className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] md:text-xs text-muted-foreground/80"
+                data-testid="institutions-strip"
+              >
+                <span className="uppercase tracking-wider font-bold text-foreground/55">
+                  {(t.hero as any).institutions.label}
+                </span>
+                <span className="font-medium text-foreground/70" dir="ltr">
+                  {(t.hero as any).institutions.list}
+                </span>
+              </div>
+            )}
           </div>
         </section>
 
@@ -689,6 +702,163 @@ export default function Home() {
           </div>
         </section>
 
+
+        {/* ── PROGRAMS COMPARISON ── */}
+        <section
+          id="compare"
+          className="py-12 md:py-20 bg-background border-y border-border"
+          data-testid="section-compare"
+          aria-labelledby="compare-heading"
+        >
+          <div className="container mx-auto px-3 md:px-6">
+            <div className="text-center mb-8 md:mb-10">
+              <h2
+                id="compare-heading"
+                className="font-serif text-2xl md:text-4xl font-bold heading-accent-underline"
+              >
+                {(t.hero as any).compare?.heading}
+              </h2>
+              <p className="text-muted-foreground text-sm md:text-base mt-3 max-w-xl mx-auto">
+                {(t.hero as any).compare?.sub}
+              </p>
+            </div>
+            {(() => {
+              const c = (t.hero as any).compare;
+              const localized = programs.map((p) => getLocalizedProgram(p, lang as Lang));
+              const rows = localized.map((lp) => {
+                const isCore = lp.id === "core";
+                const isChildren = lp.id === "children";
+                const price = isChildren
+                  ? c.priceSchools
+                  : `${formatPrice(RECORDED_PRICES[lp.id as keyof typeof RECORDED_PRICES])} ${t.structure.priceUnit}`;
+                return {
+                  id: lp.id,
+                  isCore,
+                  title: lp.shortTitle,
+                  audience: lp.audience,
+                  duration: `${lp.hours} ${t.structure.hoursUnit} · ${lp.sessions} ${t.structure.sessionsUnit}`,
+                  price,
+                  outcome: lp.transformation,
+                  prereq: lp.prerequisiteLabel || c.none,
+                };
+              });
+              return (
+                <div className="max-w-6xl mx-auto">
+                  {/* Mobile: stacked cards */}
+                  <div className="md:hidden space-y-3">
+                    {rows.map((r) => (
+                      <div
+                        key={r.id}
+                        className={`rounded-2xl border bg-card p-4 ${r.isCore ? "border-accent/50 ring-gold" : "border-border"}`}
+                        data-testid={`compare-card-${r.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <h3 className="font-bold text-base leading-snug">{r.title}</h3>
+                          {r.isCore && (
+                            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent/15 text-accent border border-accent/30">
+                              <Star className="w-3 h-3" />
+                              {c.bestPick}
+                            </span>
+                          )}
+                        </div>
+                        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
+                          <dt className="text-muted-foreground">{c.colAudience}</dt>
+                          <dd className="text-foreground">{r.audience}</dd>
+                          <dt className="text-muted-foreground">{c.colDuration}</dt>
+                          <dd className="text-foreground">{r.duration}</dd>
+                          <dt className="text-muted-foreground">{c.colPrice}</dt>
+                          <dd className="font-bold text-foreground">{r.price}</dd>
+                          <dt className="text-muted-foreground">{c.colOutcome}</dt>
+                          <dd className="text-foreground/85">{r.outcome}</dd>
+                          <dt className="text-muted-foreground">{c.colPrereq}</dt>
+                          <dd className="text-foreground/85">{r.prereq}</dd>
+                        </dl>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-3 rounded-full"
+                          onClick={() => {
+                            trackProgramDetailsClick(r.id, "compare_table_mobile");
+                            navigate(`/courses/${PROGRAM_SLUGS[r.id as keyof typeof PROGRAM_SLUGS]}`);
+                          }}
+                          data-testid={`compare-cta-${r.id}`}
+                        >
+                          {c.viewDetails}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop: table */}
+                  <div className="hidden md:block overflow-x-auto rounded-2xl border border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-secondary/50 text-foreground/70">
+                        <tr>
+                          <th scope="col" className="text-start font-bold px-4 py-3">{c.colProgram}</th>
+                          <th scope="col" className="text-start font-bold px-4 py-3">{c.colAudience}</th>
+                          <th scope="col" className="text-start font-bold px-4 py-3">{c.colDuration}</th>
+                          <th scope="col" className="text-start font-bold px-4 py-3">{c.colPrice}</th>
+                          <th scope="col" className="text-start font-bold px-4 py-3">{c.colOutcome}</th>
+                          <th scope="col" className="text-start font-bold px-4 py-3">{c.colPrereq}</th>
+                          <th scope="col" className="px-4 py-3" aria-label="action" />
+                        </tr>
+                      </thead>
+                      <tbody className="bg-card">
+                        {rows.map((r) => (
+                          <tr
+                            key={r.id}
+                            className={`border-t border-border align-top ${r.isCore ? "bg-accent/5" : ""}`}
+                            data-testid={`compare-row-${r.id}`}
+                          >
+                            <th scope="row" className="text-start px-4 py-4 font-bold text-foreground">
+                              <div className="flex flex-col gap-1">
+                                <span>{r.title}</span>
+                                {r.isCore && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent/15 text-accent border border-accent/30 w-fit">
+                                    <Star className="w-3 h-3" />
+                                    {c.bestPick}
+                                  </span>
+                                )}
+                              </div>
+                            </th>
+                            <td className="px-4 py-4 text-foreground/85">{r.audience}</td>
+                            <td className="px-4 py-4 text-foreground/85 whitespace-nowrap">{r.duration}</td>
+                            <td className="px-4 py-4 font-bold text-foreground whitespace-nowrap">{r.price}</td>
+                            <td className="px-4 py-4 text-foreground/85">{r.outcome}</td>
+                            <td className="px-4 py-4 text-foreground/85">{r.prereq}</td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full"
+                                onClick={() => {
+                                  trackProgramDetailsClick(r.id, "compare_table_desktop");
+                                  navigate(`/courses/${PROGRAM_SLUGS[r.id as keyof typeof PROGRAM_SLUGS]}`);
+                                }}
+                                data-testid={`compare-cta-${r.id}-desktop`}
+                              >
+                                {c.viewDetails}
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-center mt-6">
+                    <Button
+                      variant="ghost"
+                      className="rounded-full text-primary hover:bg-primary/10"
+                      onClick={() => scrollTo("structure")}
+                      data-testid="compare-view-all"
+                    >
+                      {c.viewAll}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
 
         {/* ── PROGRAM QUIZ ── */}
         <ProgramQuiz lang={lang} />
