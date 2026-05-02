@@ -387,6 +387,22 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
     const userId = req.isAuthenticated() ? req.user?.id : null;
     const isInstitution = payload.type === "institution";
 
+    // Prefer the human-readable goal label (`goalText`) for the message body;
+    // fall back to the raw goal field (legacy) when the wizard didn't send it.
+    const goalDisplay = payload.goalText || payload.goal || "";
+    const reasonText = payload.reason || payload.orgMessage || payload.message || "";
+    const combinedMessage = [
+      goalDisplay && `🎯 ${goalDisplay}`,
+      reasonText,
+    ].filter(Boolean).join("\n\n") || null;
+
+    // Normalize "recommended" to a real boolean before persisting so admin can
+    // trust strict equality checks.
+    const normalizedFormData: Record<string, unknown> = { ...payload };
+    if (typeof payload.recommended === "string") {
+      normalizedFormData.recommended = payload.recommended === "true";
+    }
+
     await db.insert(enrollmentRequestsTable).values({
       userId: userId || null,
       applicantType: isInstitution ? "institution" : "individual",
@@ -402,9 +418,10 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       studentCount: payload.studentCount ? parseInt(payload.studentCount) : null,
       teacherCount: payload.teacherCount ? parseInt(payload.teacherCount) : null,
       workbooksNeeded: payload.workbookCount ? parseInt(payload.workbookCount) : null,
-      message: payload.reason || payload.orgMessage || null,
-      formData: payload,
-      leadSource: "website",
+      message: combinedMessage,
+      status: "new",
+      formData: normalizedFormData,
+      leadSource: payload.leadSource || "website",
       syncStatus: "pending",
       aiAnalysisStatus: "none",
     });

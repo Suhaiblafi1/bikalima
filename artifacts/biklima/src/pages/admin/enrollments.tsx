@@ -145,32 +145,60 @@ export default function AdminEnrollmentsPage() {
               <thead><tr className="border-b text-muted-foreground">
                 <th className="text-start py-2 px-3 font-medium">الاسم</th>
                 <th className="text-start py-2 px-3 font-medium">البريد</th>
-                <th className="text-start py-2 px-3 font-medium">النوع</th>
+                <th className="text-start py-2 px-3 font-medium">الفئة</th>
+                <th className="text-start py-2 px-3 font-medium">الهدف</th>
                 <th className="text-start py-2 px-3 font-medium">البرنامج</th>
                 <th className="text-start py-2 px-3 font-medium">الحالة</th>
                 <th className="text-start py-2 px-3 font-medium">التاريخ</th>
                 <th className="text-end py-2 px-3 font-medium">إجراءات</th>
               </tr></thead>
               <tbody>
-                {requests.map((r) => (
-                  <tr key={r.id} className="border-b border-border/30 hover:bg-muted/20">
-                    <td className="py-2 px-3 font-medium">{r.fullName}</td>
-                    <td className="py-2 px-3 text-muted-foreground">{r.email}</td>
-                    <td className="py-2 px-3">{r.applicantType === "institution" ? "مؤسسة" : "فرد"}</td>
-                    <td className="py-2 px-3">{r.programId}</td>
-                    <td className="py-2 px-3"><StatusBadge status={r.status} /></td>
-                    <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString("ar-SA")}</td>
-                    <td className="py-2 px-3 text-end">
-                      {(r.status === "pending" || r.status === "new") && (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => updateRequestStatus(r.id, "approved")} className="h-7 w-7 p-0 text-green-600"><CheckCircle className="w-3.5 h-3.5" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => updateRequestStatus(r.id, "rejected")} className="h-7 w-7 p-0 text-destructive"><XCircle className="w-3.5 h-3.5" /></Button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {requests.length === 0 && <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">لا توجد طلبات</td></tr>}
+                {requests.map((r) => {
+                  const fd = (r.formData ?? {}) as Record<string, unknown>;
+                  const audience = typeof fd.audience === "string" ? fd.audience : null;
+                  const goal = typeof fd.goal === "string" ? fd.goal : null;
+                  const goalText = typeof fd.goalText === "string" ? fd.goalText : null;
+                  // Accept boolean (normalized server-side) OR legacy "true" string for backward compatibility
+                  const recommended = fd.recommended === true || fd.recommended === "true";
+                  const audienceLabel = audience === "teacher" ? "معلّم"
+                    : audience === "parent" ? "ولي أمر"
+                    : audience === "institution" ? "مؤسسة"
+                    : audience === "individual" ? "فرد"
+                    : (r.applicantType === "institution" ? "مؤسسة" : "فرد");
+                  // Map canonical wizard enum keys; fallback to the human label
+                  // (goalText) if present; otherwise dash.
+                  const goalLabel = goal === "goalConfidence" ? "بناء الثقة"
+                    : goal === "goalSpeak" ? "تحدّث بثقة"
+                    : goal === "goalCareer" ? "تطوير المسيرة"
+                    : goal === "goalTrain" ? "تدريب الآخرين"
+                    : goal === "goalTeach" ? "تعليم اللغة"
+                    : goal === "goalChild" ? "تنمية ابني"
+                    : goal === "goalOther" ? (goalText || "أخرى")
+                    : (goalText || "—");
+                  return (
+                    <tr key={r.id} className="border-b border-border/30 hover:bg-muted/20">
+                      <td className="py-2 px-3 font-medium">{r.fullName}</td>
+                      <td className="py-2 px-3 text-muted-foreground">{r.email}</td>
+                      <td className="py-2 px-3 text-xs">{audienceLabel}</td>
+                      <td className="py-2 px-3 text-xs">{goalLabel}</td>
+                      <td className="py-2 px-3 text-xs">
+                        {r.programId}
+                        {recommended && <span className="ms-1 inline-block bg-accent/20 text-accent-foreground text-[10px] px-1.5 py-0.5 rounded-full">مُقترح</span>}
+                      </td>
+                      <td className="py-2 px-3"><StatusBadge status={r.status} /></td>
+                      <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString("ar-SA")}</td>
+                      <td className="py-2 px-3 text-end">
+                        {(r.status === "pending" || r.status === "new") && (
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => updateRequestStatus(r.id, "approved")} className="h-7 w-7 p-0 text-green-600"><CheckCircle className="w-3.5 h-3.5" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => updateRequestStatus(r.id, "rejected")} className="h-7 w-7 p-0 text-destructive"><XCircle className="w-3.5 h-3.5" /></Button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {requests.length === 0 && <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">لا توجد طلبات</td></tr>}
               </tbody>
             </table>
           </div>

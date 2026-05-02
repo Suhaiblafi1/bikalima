@@ -70,6 +70,7 @@ import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
 import { JourneySection } from "@/components/journey-section";
 import { JourneyCta } from "@/components/journey-cta";
+import { EnrollmentWizard } from "@/components/enrollment-wizard";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
@@ -1118,188 +1119,16 @@ export default function Home() {
                     </motion.div>
                   ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-2">{t.enroll.heading}</h2>
-                <p className="text-muted-foreground mb-6">{t.enroll.sub}</p>
-
-                {/* Applicant type toggle */}
-                <div className="mb-6">
-                  <Label className="mb-3 block font-bold">{t.enroll.applicantTypeLabel}</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => setApplicantType("individual")} className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${applicantType === "individual" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                      <User className="w-5 h-5 shrink-0" />
-                      <span className="font-bold text-sm">{t.enroll.applicantIndividual}</span>
-                    </button>
-                    <button type="button" onClick={() => setApplicantType("institution")} className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${applicantType === "institution" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                      <Building2 className="w-5 h-5 shrink-0" />
-                      <span className="font-bold text-sm">{t.enroll.applicantInstitution}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {applicantType === "individual" ? (
-                  <>
-                    {/* Training mode toggle */}
-                    <div className="mb-6">
-                      <Label className="mb-3 block font-bold">{t.enroll.modeLabel}</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        <button type="button" onClick={() => { setTrainingMode("combined"); setFormData(p => ({ ...p, mode: "combined" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "combined" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <span className="flex items-center gap-0.5"><span className="text-sm">🎬</span><img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" /></span>
-                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeCombined}</span>
-                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeCombinedSub}</span>
-                        </button>
-                        <button type="button" onClick={() => { setTrainingMode("group-inperson"); setFormData(p => ({ ...p, mode: "group-inperson" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "group-inperson" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <span className="text-base">📍</span>
-                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modeGroupInPerson}</span>
-                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modeGroupInPersonSub}</span>
-                        </button>
-                        <button type="button" onClick={() => { setTrainingMode("private"); setFormData(p => ({ ...p, mode: "private" })); }} className={`flex flex-col items-center gap-1 p-2.5 rounded-2xl border-2 transition-all text-center ${trainingMode === "private" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-primary/30"}`}>
-                          <span className="text-base">👤</span>
-                          <span className="font-bold text-[11px] leading-tight">{t.enroll.modePrivate}</span>
-                          <span className="text-[9px] opacity-70 leading-tight">{t.enroll.modePrivateSub}</span>
-                        </button>
-                      </div>
-                      {/* Dynamic price badge */}
-                      {(() => {
-                        const progId = localizedPrograms.find(p => p.shortTitle === formData.program)?.id ?? "";
-                        const price = getEnrollPrice(progId, trainingMode);
-                        if (!progId) return null;
-                        if (trainingMode === "group-inperson") {
-                          return (
-                            <div className="mt-3 flex items-center gap-2 justify-center">
-                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold">
-                                📅 {lang === "ar" ? "السعر يُحدد بحسب جدول الفعاليات" : "Price set per event schedule"}
-                              </span>
-                            </div>
-                          );
-                        }
-                        if (trainingMode === "private") {
-                          return (
-                            <div className="mt-3 flex items-center gap-2 justify-center">
-                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-sm font-bold">
-                                👤 {formatPrice(Number(price))} — {lang === "ar" ? "١:١ حصري" : "Exclusive 1:1"}
-                              </span>
-                            </div>
-                          );
-                        }
-                        if (price) {
-                          return (
-                            <div className="mt-3 flex items-center gap-2 justify-center">
-                              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border bg-teal-50 border-teal-200 text-teal-700 text-sm font-bold">
-                                <span className="flex items-center gap-0.5"><span>🎬</span><img src={imgZoom} alt="Zoom" className="w-4 h-4 rounded-sm object-contain" /></span>
-                                {formatPrice(Number(price))}
-                              </span>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-
-                    <form onSubmit={handleEnrollSubmit} className="space-y-5">
-                      <div className="grid md:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">{t.enroll.nameLabel}</Label>
-                          <Input id="name" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.namePlaceholder} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">{t.enroll.phoneLabel}</Label>
-                          <Input id="phone" required dir="ltr" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="+962 7X XXX XXXX" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">{t.enroll.emailLabel}</Label>
-                        <Input id="email" type="email" required dir="ltr" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="email@example.com" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t.enroll.programLabel}</Label>
-                        <Select value={formData.program} onValueChange={(val) => setFormData({ ...formData, program: val })}>
-                          <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
-                          <SelectContent>
-                            {localizedPrograms.map((p) => {
-                              const price = getEnrollPrice(p.id, trainingMode);
-                              const priceTag = trainingMode === "group-inperson"
-                                ? (lang === "ar" ? "حسب الجدول" : "per schedule")
-                                : price ? `${formatPrice(Number(price))}` : "";
-                              return (
-                                <SelectItem key={p.id} value={p.shortTitle}>
-                                  <span className="flex items-center gap-2">
-                                    <span>{p.shortTitle}</span>
-                                    {priceTag && <span className="text-[11px] font-bold text-primary/70 bg-primary/8 px-1.5 py-0.5 rounded-md">{priceTag}</span>}
-                                  </span>
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="youtube" className="flex items-center gap-2"><Youtube className="w-4 h-4 text-red-500" />{t.enroll.youtubeLabel}</Label>
-                        <Input id="youtube" dir="ltr" value={formData.youtube} onChange={(e) => setFormData({ ...formData, youtube: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.youtubePlaceholder} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="reason">{t.enroll.reasonLabel}</Label>
-                        <Input id="reason" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.reasonPlaceholder} />
-                      </div>
-                      <Button type="submit" disabled={isSubmitting} className="w-full h-13 text-lg rounded-xl bg-primary hover:bg-primary/90 text-white font-bold">
-                        {isSubmitting ? t.enroll.submitting : t.enroll.submitBtn}
-                      </Button>
-                    </form>
-                  </>
-                ) : (
-                  <form onSubmit={handleEnrollSubmit} className="space-y-5">
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <Label>{t.enroll.orgNameLabel}</Label>
-                        <Input required value={orgFormData.orgName} onChange={(e) => setOrgFormData({ ...orgFormData, orgName: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.orgNamePlaceholder} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t.enroll.contactPersonLabel}</Label>
-                        <Input required value={orgFormData.contactPerson} onChange={(e) => setOrgFormData({ ...orgFormData, contactPerson: e.target.value })} className="h-11 rounded-xl bg-background" placeholder={t.enroll.contactPersonPlaceholder} />
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <Label>{t.enroll.phoneLabel}</Label>
-                        <Input required dir="ltr" value={orgFormData.phone} onChange={(e) => setOrgFormData({ ...orgFormData, phone: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="+962 7X XXX XXXX" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t.enroll.emailLabel}</Label>
-                        <Input type="email" required dir="ltr" value={orgFormData.email} onChange={(e) => setOrgFormData({ ...orgFormData, email: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="info@school.edu" />
-                      </div>
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <Label>{t.enroll.studentCountLabel}</Label>
-                        <Input type="number" required value={orgFormData.studentCount} onChange={(e) => setOrgFormData({ ...orgFormData, studentCount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="50" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{t.enroll.teacherCountLabel}</Label>
-                        <Input type="number" required value={orgFormData.teacherCount} onChange={(e) => setOrgFormData({ ...orgFormData, teacherCount: e.target.value })} className="h-11 rounded-xl bg-background" placeholder="5" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t.enroll.programLabel}</Label>
-                      <Select value={orgFormData.program} onValueChange={(val) => setOrgFormData({ ...orgFormData, program: val })}>
-                        <SelectTrigger className="h-11 rounded-xl bg-background"><SelectValue placeholder={t.enroll.programPlaceholder} /></SelectTrigger>
-                        <SelectContent>
-                          {localizedPrograms.filter((p) => p.id === "teachers" || p.id === "children").map((p) => (<SelectItem key={p.id} value={p.shortTitle}>{p.shortTitle}</SelectItem>))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t.enroll.orgMessageLabel}</Label>
-                      <Textarea value={orgFormData.message} onChange={(e) => setOrgFormData({ ...orgFormData, message: e.target.value })} className="min-h-[100px] rounded-xl bg-background resize-none" placeholder={t.enroll.orgMessagePlaceholder} />
-                    </div>
-                    <Button type="submit" disabled={isSubmitting} className="w-full h-13 text-lg rounded-xl bg-primary hover:bg-primary/90 text-white font-bold">
-                      {isSubmitting ? t.enroll.submitting : t.enroll.submitBtn}
-                    </Button>
-                  </form>
-                )}
+                <EnrollmentWizard
+                  lang={lang}
+                  onSuccess={(info) => setEnrollSuccess(info)}
+                />
                 </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
+              {/* Legacy form removed — replaced by EnrollmentWizard above */}
               <div className="lg:col-span-2 bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-accent rounded-full blur-[100px] opacity-20 -mr-20 -mt-20" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-foreground/5 rounded-full blur-[80px] -ml-16 -mb-16" />

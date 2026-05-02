@@ -118,7 +118,7 @@ export const enrollmentRequestsTable = pgTable("enrollment_requests", {
   teacherCount: integer("teacher_count"),
   workbooksNeeded: integer("workbooks_needed"),
   message: text("message"),
-  status: varchar("status").$type<"pending" | "approved" | "rejected">().notNull().default("pending"),
+  status: varchar("status").$type<"new" | "pending" | "contacted" | "approved" | "rejected">().notNull().default("pending"),
   adminNotes: text("admin_notes"),
   formData: jsonb("form_data"),
   externalCrmId: varchar("external_crm_id"),

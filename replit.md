@@ -37,7 +37,8 @@ The project is structured as a pnpm monorepo with separate packages for deployab
 - **Purpose:** Arabic RTL landing page and LMS for "بكلمة" (Biklima) public speaking program.
 - **Design:** Teal primary (#25786A), warm ivory background, Tajawal + Noto Naskh Arabic fonts, Almarai Bold for logo.
 - **Key Features:**
-    - **Dynamic Landing Page:** Includes hero, trainer bio, program quiz, program structure, wisdom carousel, workbooks store, testimonials, photo gallery (masonry + lightbox), video library (YouTube embed), FAQ, and enrollment form.
+    - **Dynamic Landing Page:** Includes hero, trainer bio, program quiz, program structure, wisdom carousel, workbooks store, testimonials, photo gallery (masonry + lightbox), video library (YouTube embed), FAQ, and a 4-step enrollment wizard (audience → goal → program/recommend → contact) with personalized success page.
+    - **Enrollment Wizard (`enrollment-wizard.tsx`):** Replaces the old single-page form. Step 1 captures audience (individual / teacher / parent / institution), step 2 the goal (speak / train / teach / child / other), step 3 lets the visitor pick a program or use auto-recommendation (`recommendProgram(audience, goal)`), step 4 collects contact info (with extra org fields for institutions). Submits to existing `POST /api/enroll`; backend persists with `status: "new"` (badge "جديد") and stores `audience`, `goal`, `recommended` flags under `formData`. Admin enrollments table surfaces audience + goal columns.
     - **Program Quiz:** Bilingual (AR/EN), 6-question quiz with weighted scoring to recommend programs.
     - **Speech Evaluation Form:** Lead-gen form for "تقييم خطابك خلال 60 ثانية" (text/video URL submission) with WhatsApp integration.
     - **Trust Sections:** Animated stats, testimonials, before/after comparisons, and student journey stepper.
