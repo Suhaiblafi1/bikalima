@@ -59,6 +59,7 @@ type SectionUpdate = { titleAr?: string; titleEn?: string; sortOrder?: number; i
 type InstructorUpdate = { nameAr?: string; nameEn?: string; bioAr?: string; bioEn?: string; photoUrl?: string; email?: string };
 
 router.get("/admin/check", (req: Request, res: Response) => {
+  res.set("Cache-Control", "no-store");
   const role: Role = (req.user?.role as Role) ?? "student";
   // "Admin area" includes any non-student staff role so the route guard can
   // allow trainers and sales/support in too. The `role` field tells the

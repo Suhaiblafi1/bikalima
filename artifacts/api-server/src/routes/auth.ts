@@ -73,6 +73,7 @@ function setSessionCookie(res: Response, sid: string) {
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
+  res.set("Cache-Control", "no-store");
   res.json(
     GetCurrentAuthUserResponse.parse({
       user: req.isAuthenticated() ? req.user : null,
@@ -84,6 +85,7 @@ router.get("/auth/user", (req: Request, res: Response) => {
 // includes the resolved role (admin|trainer|student|sales) so the frontend
 // can gate the admin UI by role without parsing it out of /auth/user.
 router.get("/me", (req: Request, res: Response) => {
+  res.set("Cache-Control", "no-store");
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
