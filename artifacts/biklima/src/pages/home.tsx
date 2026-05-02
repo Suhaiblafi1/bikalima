@@ -63,6 +63,7 @@ import { useLang } from "@/hooks/useLang";
 import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { ProgramQuiz } from "@/components/program-quiz";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
@@ -526,6 +527,9 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ── PROGRAM QUIZ ── */}
+        <ProgramQuiz lang={lang} />
 
         {/* ── BRANCHING DIAGRAM ── */}
         <section id="structure" className="py-24 bg-background relative overflow-hidden">
