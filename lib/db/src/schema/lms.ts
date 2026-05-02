@@ -165,7 +165,7 @@ export const speechEvaluationsTable = pgTable("speech_evaluations", {
   speechTopic: varchar("speech_topic"),
   speechLanguage: varchar("speech_language"),
   notes: text("notes"),
-  status: varchar("status").$type<"pending" | "in_review" | "completed" | "cancelled">().notNull().default("pending"),
+  status: varchar("status").$type<"pending" | "in_review" | "completed" | "converted" | "cancelled">().notNull().default("pending"),
   externalCrmId: varchar("external_crm_id"),
   aiAnalysisStatus: varchar("ai_analysis_status").$type<"none" | "pending" | "running" | "done" | "error">().default("none"),
   aiAnalysisResult: jsonb("ai_analysis_result"),

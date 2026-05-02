@@ -5,7 +5,7 @@ import { useMe, type Role } from "@/hooks/use-me";
 import { PAGE_VISIBILITY, type AdminPageKey } from "./_shared";
 import {
   BarChart3, Users, BookOpen, GraduationCap, ShoppingCart,
-  ClipboardList, Star, Settings as SettingsIcon,
+  ClipboardList, Star, Mic2, Settings as SettingsIcon,
 } from "lucide-react";
 
 type NavItem = {
@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { key: "workbook-orders", label: "طلبات الكراسات", href: "/admin/workbook-orders", icon: <ShoppingCart className="w-4 h-4" /> },
   { key: "assignments",     label: "الواجبات والتقييم", href: "/admin/assignments", icon: <ClipboardList className="w-4 h-4" /> },
   { key: "reviews",         label: "التقييمات",    href: "/admin/reviews",         icon: <Star className="w-4 h-4" /> },
+  { key: "speech-evaluations", label: "طلبات تقييم الخطاب", href: "/admin/speech-evaluations", icon: <Mic2 className="w-4 h-4" /> },
   { key: "settings",        label: "الإعدادات",    href: "/admin/settings",        icon: <SettingsIcon className="w-4 h-4" /> },
 ];
 

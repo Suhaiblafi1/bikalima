@@ -9,6 +9,7 @@ import consultationRouter from "./consultation";
 import coursesRouter from "./courses";
 import ordersRouter from "./orders";
 import assignmentsRouter from "./assignments";
+import speechEvaluationRouter from "./speech-evaluation";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(consultationRouter);
 router.use(coursesRouter);
 router.use(ordersRouter);
 router.use(assignmentsRouter);
+router.use(speechEvaluationRouter);
 
 export default router;

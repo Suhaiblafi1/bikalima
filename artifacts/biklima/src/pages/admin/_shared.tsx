@@ -76,7 +76,8 @@ export type SiteSettingsRecord = {
 
 export type AdminPageKey =
   | "overview" | "users" | "courses" | "enrollments"
-  | "workbook-orders" | "assignments" | "reviews" | "settings";
+  | "workbook-orders" | "assignments" | "reviews"
+  | "speech-evaluations" | "settings";
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
@@ -87,8 +88,37 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   "workbook-orders": ["admin", "sales"],
   assignments: ["admin", "trainer"],
   reviews: ["admin", "trainer"],
+  "speech-evaluations": ["admin", "sales", "trainer"],
   settings: ["admin"],
 };
+
+export type SpeechEvaluationRecord = {
+  id: string;
+  userId: string | null;
+  fullName: string;
+  email: string;
+  phone: string;
+  videoUrl: string | null;
+  audioUrl: string | null;
+  speechTopic: string | null;
+  speechLanguage: string | null;
+  notes: string | null;
+  transcriptText: string | null;
+  trainerScore: number | null;
+  trainerFeedback: string | null;
+  status: "pending" | "in_review" | "completed" | "converted" | "cancelled";
+  leadSource: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const SPEECH_EVAL_STATUS_OPTIONS: { value: SpeechEvaluationRecord["status"]; labelAr: string }[] = [
+  { value: "pending",   labelAr: "جديد" },
+  { value: "in_review", labelAr: "قيد التقييم" },
+  { value: "completed", labelAr: "تم الإرسال" },
+  { value: "converted", labelAr: "تحوّل إلى طالب" },
+  { value: "cancelled", labelAr: "ملغى" },
+];
 
 export const ROLE_LABELS_AR: Record<Role, string> = {
   admin: "مدير", trainer: "مدرّب", student: "طالب", sales: "مبيعات/دعم",

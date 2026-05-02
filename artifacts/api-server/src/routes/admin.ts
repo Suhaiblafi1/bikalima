@@ -13,6 +13,7 @@ import {
   instructorsTable,
   reviewsTable,
   siteSettingsTable,
+  speechEvaluationsTable,
 } from "@workspace/db";
 import { db as _db, courseTrainersTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
@@ -1095,6 +1096,61 @@ router.patch("/admin/settings", async (req: Request, res: Response) => {
   } catch (err) {
     req.log.error({ err }, "Failed to update settings");
     res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
+// ===== Speech Evaluations (lead-gen) =====
+const SPEECH_EVAL_STATUSES = ["pending", "in_review", "completed", "converted", "cancelled"] as const;
+type SpeechEvalStatus = (typeof SPEECH_EVAL_STATUSES)[number];
+
+router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const rows = await db
+      .select()
+      .from(speechEvaluationsTable)
+      .orderBy(desc(speechEvaluationsTable.createdAt));
+    res.json({ evaluations: rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list speech evaluations");
+    res.status(500).json({ error: "Failed to fetch speech evaluations" });
+  }
+});
+
+router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const body = (req.body ?? {}) as {
+      status?: unknown;
+      trainerFeedback?: unknown;
+      trainerScore?: unknown;
+    };
+    const update: Record<string, unknown> = {};
+    if (typeof body.status === "string") {
+      if (!SPEECH_EVAL_STATUSES.includes(body.status as SpeechEvalStatus)) {
+        return res.status(400).json({ error: `Invalid status. Allowed: ${SPEECH_EVAL_STATUSES.join(", ")}` });
+      }
+      update.status = body.status;
+    }
+    if (typeof body.trainerFeedback === "string") {
+      update.trainerFeedback = body.trainerFeedback;
+    }
+    if (typeof body.trainerScore === "number" && Number.isFinite(body.trainerScore)) {
+      update.trainerScore = body.trainerScore;
+    }
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+    const [updated] = await db
+      .update(speechEvaluationsTable)
+      .set(update)
+      .where(eq(speechEvaluationsTable.id, req.params.id))
+      .returning();
+    if (!updated) return res.status(404).json({ error: "Not found" });
+    res.json({ evaluation: updated });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update speech evaluation");
+    res.status(500).json({ error: "Failed to update speech evaluation" });
   }
 });
 
