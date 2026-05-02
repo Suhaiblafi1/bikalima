@@ -70,7 +70,6 @@ import { trackProgramDetailsClick } from "@/lib/analytics";
 import { Star as StarIcon } from "lucide-react";
 import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
-import { JourneySection } from "@/components/journey-section";
 import { JourneyCta } from "@/components/journey-cta";
 import { EnrollmentWizard } from "@/components/enrollment-wizard";
 import { ExternalLinkDialog } from "@/components/external-link-dialog";
@@ -699,9 +698,6 @@ export default function Home() {
 
         {/* ── BEFORE / AFTER ── */}
         <BeforeAfterSection />
-
-        {/* ── STUDENT JOURNEY ── */}
-        <JourneySection />
 
         {/* ── REPEATING CTA (primary) ── */}
         <JourneyCta variant="primary" testIdSuffix="after-journey" />
