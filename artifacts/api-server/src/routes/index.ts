@@ -8,6 +8,7 @@ import adminIntegrationsRouter from "./admin-integrations";
 import consultationRouter from "./consultation";
 import coursesRouter from "./courses";
 import ordersRouter from "./orders";
+import assignmentsRouter from "./assignments";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(adminIntegrationsRouter);
 router.use(consultationRouter);
 router.use(coursesRouter);
 router.use(ordersRouter);
+router.use(assignmentsRouter);
 
 export default router;

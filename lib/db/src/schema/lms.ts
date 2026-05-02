@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, jsonb, pgTable, timestamp, varchar, text, boolean } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, timestamp, uniqueIndex, varchar, text, boolean } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
 
 export const instructorsTable = pgTable("instructors", {
@@ -208,6 +208,47 @@ export const reviewsTable = pgTable("reviews", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const assignmentsTable = pgTable("assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").references(() => coursesTable.id, { onDelete: "cascade" }),
+  titleAr: varchar("title_ar").notNull(),
+  titleEn: varchar("title_en"),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  isPublished: boolean("is_published").notNull().default(true),
+  createdById: varchar("created_by_id").references(() => usersTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const assignmentSubmissionsTable = pgTable("assignment_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  assignmentId: varchar("assignment_id").notNull().references(() => assignmentsTable.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  submissionType: varchar("submission_type").$type<"youtube" | "video_url" | "text">().notNull(),
+  submissionUrl: varchar("submission_url"),
+  submissionText: text("submission_text"),
+  status: varchar("status").$type<"submitted" | "reviewed">().notNull().default("submitted"),
+  clarityScore: integer("clarity_score"),
+  structureScore: integer("structure_score"),
+  openingScore: integer("opening_score"),
+  voiceScore: integer("voice_score"),
+  bodyLanguageScore: integer("body_language_score"),
+  conclusionScore: integer("conclusion_score"),
+  impactScore: integer("impact_score"),
+  totalScore: integer("total_score"),
+  trainerFeedback: text("trainer_feedback"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewedById: varchar("reviewed_by_id").references(() => usersTable.id, { onDelete: "set null" }),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  index("IDX_submission_user").on(t.userId),
+  index("IDX_submission_assignment").on(t.assignmentId),
+  uniqueIndex("UQ_submission_assignment_user").on(t.assignmentId, t.userId),
+]);
+
 export type Instructor = typeof instructorsTable.$inferSelect;
 export type Course = typeof coursesTable.$inferSelect;
 export type CourseSection = typeof courseSectionsTable.$inferSelect;
@@ -220,3 +261,5 @@ export type WorkbookOrder = typeof workbookOrdersTable.$inferSelect;
 export type SpeechEvaluation = typeof speechEvaluationsTable.$inferSelect;
 export type Order = typeof ordersTable.$inferSelect;
 export type Review = typeof reviewsTable.$inferSelect;
+export type Assignment = typeof assignmentsTable.$inferSelect;
+export type AssignmentSubmission = typeof assignmentSubmissionsTable.$inferSelect;

@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/app-shell";
+import AdminAssignmentsTab from "@/components/admin-assignments-tab";
 import { useLang } from "@/hooks/useLang";
 import {
   Users, Search, Trash2, Edit3, Save, X, Home, Shield, UserPlus,
-  ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText,
+  ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText, ClipboardList,
   ShoppingCart, CheckCircle, Clock, XCircle, GraduationCap,
   BarChart3, DollarSign, TrendingUp, Copy,
   Star, UserCircle, Layers,
@@ -64,7 +65,7 @@ type LessonEditForm = {
   isPublished: boolean; descriptionAr: string; descriptionEn: string;
 };
 
-type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors" | "student-progress";
+type AdminTab = "users" | "courses" | "requests" | "orders" | "lms-orders" | "revenue" | "instructors" | "student-progress" | "assignments";
 
 type StudentProgressRecord = {
   enrollmentId: string;
@@ -461,6 +462,7 @@ export default function AdminPanel() {
     { key: "orders", label: "طلبات الكراسات", icon: <ShoppingCart className="w-4 h-4" />, count: stats?.totalOrders },
     { key: "lms-orders", label: "طلبات الدورات", icon: <GraduationCap className="w-4 h-4" />, count: stats?.totalLmsOrders },
     { key: "student-progress", label: "تقدّم الطلاب", icon: <TrendingUp className="w-4 h-4" />, count: stats?.totalEnrollments },
+    { key: "assignments", label: "الواجبات والتقييم", icon: <ClipboardList className="w-4 h-4" /> },
     { key: "revenue", label: "الإيرادات", icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
@@ -1209,6 +1211,13 @@ export default function AdminPanel() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {tab === "assignments" && (
+          <AdminAssignmentsTab
+            apiFetch={apiFetch}
+            courses={courses.map(c => ({ id: c.id, titleAr: c.titleAr, titleEn: c.titleEn }))}
+          />
         )}
 
         {tab === "revenue" && (

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/app-shell";
+import StudentAssignmentsTab from "@/components/student-assignments-tab";
 import { useLang } from "@/hooks/useLang";
 import {
   User,
@@ -26,6 +27,11 @@ import {
   ArrowLeft,
   FileText,
   Video,
+  ClipboardList,
+  Youtube,
+  Star,
+  Send,
+  ExternalLink,
 } from "lucide-react";
 
 type Lang = "ar" | "en";
@@ -39,6 +45,7 @@ const dashT = {
       courses: "دوراتي",
       orders: "طلباتي",
       schedule: "الجدول الزمني",
+      assignments: "الواجبات",
     },
     account: {
       heading: "معلومات الحساب",
@@ -103,6 +110,7 @@ const dashT = {
       courses: "My Courses",
       orders: "My Orders",
       schedule: "Schedule",
+      assignments: "Assignments",
     },
     account: {
       heading: "Account Information",
@@ -166,9 +174,10 @@ const tabIcons = {
   courses: BookOpen,
   orders: ShoppingCart,
   schedule: Calendar,
+  assignments: ClipboardList,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule";
+type Tab = "account" | "courses" | "orders" | "schedule" | "assignments";
 
 function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
   const { login, register } = useAuth();
@@ -516,7 +525,7 @@ export default function Dashboard() {
     );
   }
 
-  const tabs: Tab[] = ["account", "courses", "orders", "schedule"];
+  const tabs: Tab[] = ["account", "courses", "assignments", "orders", "schedule"];
 
   const currentCourse = viewingCourse ? courses.find(c => c.courseId === viewingCourse) : null;
   const currentLesson = currentCourse && activeLesson ? currentCourse.lessons.find(l => l.id === activeLesson) : null;
@@ -942,6 +951,10 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </div>
+            )}
+
+            {activeTab === "assignments" && (
+              <StudentAssignmentsTab apiBase={apiBase} lang={lang} />
             )}
 
             {activeTab === "schedule" && (
