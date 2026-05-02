@@ -46,20 +46,21 @@ const AUDIENCE_DEFS: { key: Audience; icon: React.ComponentType<{ className?: st
   { key: "institution", icon: Building2 },
 ];
 
-function recommendProgram(audience: Audience, goal: GoalKey | "", goalText: string): ProgramId {
+function recommendProgram(audience: Audience, goals: GoalKey[], goalText: string): ProgramId {
+  const has = (g: GoalKey) => goals.includes(g);
   if (audience === "parent") {
-    return goal === "goalChild" ? "children" : "teachers";
+    return has("goalChild") ? "children" : "teachers";
   }
   if (audience === "teacher") {
-    return goal === "goalTeach" ? "teachers" : "tot";
+    return has("goalTeach") ? "teachers" : "tot";
   }
   if (audience === "institution") {
-    return goal === "goalChild" ? "children" : "teachers";
+    return has("goalChild") ? "children" : "teachers";
   }
-  // individual
-  if (goal === "goalTrain") return "tot";
-  if (goal === "goalTeach") return "teachers";
-  if (goal === "goalChild") return "children";
+  // individual — most specific goal wins
+  if (has("goalTrain")) return "tot";
+  if (has("goalTeach")) return "teachers";
+  if (has("goalChild")) return "children";
   // weak hint from free text
   const txt = goalText.toLowerCase();
   if (/طفل|اطفال|أطفال|child|kid/i.test(txt)) return "children";
@@ -87,8 +88,12 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [audience, setAudience] = useState<Audience | "">("");
-  const [goal, setGoal] = useState<GoalKey | "">("");
+  const [goals, setGoals] = useState<GoalKey[]>([]);
   const [goalText, setGoalText] = useState("");
+
+  const toggleGoal = (g: GoalKey) => {
+    setGoals((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
+  };
   const [programChoice, setProgramChoice] = useState<ProgramChoice | "">("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -106,10 +111,10 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
     if (!programChoice) return null;
     if (programChoice === "recommend") {
       if (!audience) return null;
-      return recommendProgram(audience, goal, goalText);
+      return recommendProgram(audience, goals, goalText);
     }
     return programChoice;
-  }, [programChoice, audience, goal, goalText]);
+  }, [programChoice, audience, goals, goalText]);
 
   const effectiveProgram = useMemo(
     () => effectiveProgramId ? localizedPrograms.find((p) => p.id === effectiveProgramId) ?? null : null,
@@ -122,14 +127,16 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
     return w[k];
   };
 
+  const goalsLabel = (): string => goals.map((g) => goalLabel(g)).filter(Boolean).join("، ");
+
   // Step navigation with validation
   const goNext = () => {
     if (step === 1) {
       if (!audience) { toast({ title: w.errPickAudience, variant: "destructive" }); return; }
     }
     if (step === 2) {
-      if (!goal) { toast({ title: w.errPickGoal, variant: "destructive" }); return; }
-      if (goal === "goalOther" && !goalText.trim()) { toast({ title: w.errPickGoal, variant: "destructive" }); return; }
+      if (goals.length === 0) { toast({ title: w.errPickGoal, variant: "destructive" }); return; }
+      if (goals.includes("goalOther") && !goalText.trim()) { toast({ title: w.errPickGoal, variant: "destructive" }); return; }
     }
     if (step === 3) {
       if (!programChoice) { toast({ title: w.errPickProgram, variant: "destructive" }); return; }
@@ -171,8 +178,8 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
       // goal: send canonical enum key + display text separately so admin can
       // map by key and emails can show the label. `reason` carries the user's
       // free-form extra message (NOT the goal label), avoiding duplication.
-      goal: goal || "",
-      goalText: goalLabel(goal),
+      goal: goals.join(","),
+      goalText: goalsLabel(),
       reason: extraMessage,
       orgMessage: extraMessage,
       message: extraMessage,
@@ -309,17 +316,21 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                 <Target className="w-5 h-5 text-primary" /> {w.step2Title}
               </h3>
               <p className="text-sm text-muted-foreground mb-5">{w.step2Sub}</p>
+              <p className="text-[11px] text-muted-foreground mb-3">
+                {lang === "ar" ? "يمكنك اختيار أكثر من هدف" : "You can choose more than one goal"}
+              </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 {ALL_GOALS.map((g) => {
                   const Icon = GOAL_ICONS[g];
-                  const selected = goal === g;
+                  const selected = goals.includes(g);
                   return (
                     <button
                       key={g}
                       type="button"
-                      onClick={() => setGoal(g)}
+                      onClick={() => toggleGoal(g)}
+                      aria-pressed={selected}
                       data-testid={`wizard-goal-${g}`}
-                      className={`flex items-center gap-3 p-4 rounded-2xl border-2 text-start transition-all ${
+                      className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 text-start transition-all ${
                         selected
                           ? "border-primary bg-primary/5 shadow-sm"
                           : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"
@@ -330,12 +341,17 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                       }`}>
                         <Icon className="w-4 h-4" />
                       </div>
-                      <span className="font-semibold text-sm">{w[g]}</span>
+                      <span className="font-semibold text-sm flex-1">{w[g]}</span>
+                      {selected && (
+                        <span className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center shrink-0">
+                          <Check className="w-3 h-3" />
+                        </span>
+                      )}
                     </button>
                   );
                 })}
               </div>
-              {goal === "goalOther" && (
+              {goals.includes("goalOther") && (
                 <div className="mt-4">
                   <Input
                     autoFocus
@@ -419,10 +435,10 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                     </span>
                   </span>
                 )}
-                {goal && (
+                {goals.length > 0 && (
                   <span className="inline-flex items-center gap-1.5 text-xs bg-background border border-border px-2.5 py-1 rounded-full">
                     <span className="text-muted-foreground">{w.summaryGoal}:</span>
-                    <span className="font-bold">{goalLabel(goal)}</span>
+                    <span className="font-bold">{goalsLabel()}</span>
                   </span>
                 )}
                 {effectiveProgram && (
