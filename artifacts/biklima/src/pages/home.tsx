@@ -102,59 +102,6 @@ const wisdomArticles: Record<Lang, WisdomArticle[]> = {
   ],
 };
 
-type CurrencyConfig = { code: string; symbol: string; name: string; nameEn: string; rate: number };
-
-const CURRENCIES: Record<string, CurrencyConfig> = {
-  DEFAULT: { code: "USD", symbol: "$",   name: "دولار أمريكي", nameEn: "USD $", rate: 1.41 },
-  JO:      { code: "JOD", symbol: "د.أ", name: "دينار أردني",  nameEn: "JOD د.أ", rate: 1 },
-  SA:      { code: "SAR", symbol: "ر.س", name: "ريال سعودي",  nameEn: "SAR ر.س", rate: 7.92 },
-  AE:      { code: "AED", symbol: "د.إ", name: "درهم إماراتي", nameEn: "AED د.إ", rate: 7.77 },
-  KW:      { code: "KWD", symbol: "د.ك", name: "دينار كويتي", nameEn: "KWD د.ك", rate: 0.69 },
-  QA:      { code: "QAR", symbol: "ر.ق", name: "ريال قطري",  nameEn: "QAR ر.ق", rate: 7.73 },
-  BH:      { code: "BHD", symbol: "د.ب", name: "دينار بحريني", nameEn: "BHD د.ب", rate: 0.80 },
-  OM:      { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", nameEn: "OMR ر.ع", rate: 0.81 },
-  EG:      { code: "EGP", symbol: "ج.م", name: "جنيه مصري",  nameEn: "EGP ج.م", rate: 47.0 },
-  MA:      { code: "MAD", symbol: "د.م", name: "درهم مغربي",  nameEn: "MAD د.م", rate: 10.2 },
-  TN:      { code: "TND", symbol: "د.ت", name: "دينار تونسي", nameEn: "TND د.ت", rate: 4.5 },
-  DZ:      { code: "DZD", symbol: "د.ج", name: "دينار جزائري", nameEn: "DZD د.ج", rate: 190 },
-};
-
-const CURRENCY_ORDER = ["DEFAULT","JO","SA","AE","KW","QA","BH","OM","EG","MA","TN","DZ"];
-
-function detectCurrencyKey(): string {
-  try {
-    const stored = localStorage.getItem("biklima-currency");
-    if (stored && CURRENCIES[stored]) return stored;
-  } catch {}
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  const tzMap: Record<string, string> = {
-    "Asia/Amman": "JO", "Asia/Riyadh": "SA", "Asia/Dubai": "AE",
-    "Asia/Kuwait": "KW", "Asia/Qatar": "QA", "Asia/Bahrain": "BH",
-    "Asia/Muscat": "OM", "Africa/Cairo": "EG",
-    "Africa/Casablanca": "MA", "Africa/Tunis": "TN", "Africa/Algiers": "DZ",
-  };
-  return tzMap[tz] || "DEFAULT";
-}
-
-function useCurrency() {
-  const [currencyKey, setCurrencyKeyState] = useState<string>(detectCurrencyKey);
-  const currency = CURRENCIES[currencyKey] ?? CURRENCIES.DEFAULT;
-
-  const setCurrencyKey = useCallback((key: string) => {
-    setCurrencyKeyState(key);
-    try { localStorage.setItem("biklima-currency", key); } catch {}
-  }, []);
-
-  const format = useCallback(
-    (jodPrice: number) => {
-      const converted = Math.round(jodPrice * currency.rate);
-      return `${converted} ${currency.symbol}`;
-    },
-    [currency],
-  );
-  return { currency, currencyKey, setCurrencyKey, format };
-}
-
 const AR_DAYS = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 const EN_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -200,15 +147,13 @@ export default function Home() {
   const { format: formatPrice, currency, currencyKey, setCurrencyKey } = useCurrency();
   const { lang, switchLang, dir } = useLang();
   const t = T[lang];
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const { user: _user, isLoading: _authLoading, isAuthenticated: _isAuthenticated, logout: _logout } = useAuth();
   const [, navigate] = useLocation();
   const articles = wisdomArticles[lang];
   const faqItems = t.faq.items;
   const localizedPrograms = programs.map((p) => getLocalizedProgram(p, lang));
   const localizedTestimonials = testimonialsData[lang];
 
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
   const [selectedWorkbook, setSelectedWorkbook] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
   const [wbQuantity, setWbQuantity] = useState(1);
@@ -219,13 +164,11 @@ export default function Home() {
   const [wbBuyerEmail, setWbBuyerEmail] = useState("");
   const [wbSubmitting, setWbSubmitting] = useState(false);
   const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
-  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const [wbOrderSuccess, setWbOrderSuccess] = useState<{ name: string; title: string; format: string; qty: number; total: string } | null>(null);
   const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
-  const [fontSize, setFontSize] = useState(16);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [consultDate, setConsultDate] = useState<string | null>(null);
@@ -257,16 +200,6 @@ export default function Home() {
     document.documentElement.dir = dir;
     document.documentElement.lang = lang;
   }, [dir, lang]);
-
-  useEffect(() => {
-    document.documentElement.style.fontSize = `${fontSize}px`;
-  }, [fontSize]);
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const total = t.hero.imageQuotes.length;
@@ -452,13 +385,7 @@ export default function Home() {
   const coreProgram = localizedPrograms.find((p) => p.id === "core")!;
   const branchPrograms = localizedPrograms.filter((p) => p.id !== "core");
 
-  const PROGRAM_SLUGS: Record<string, string> = {
-    core: "influential-speaker",
-    tot: "certified-trainer",
-    teachers: "educators-program",
-    children: "young-speaker",
-  };
-  const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
+  const baseUrl = getBaseUrl();
 
   const prereqBadgeClass = (id: string) =>
     id === "tot" ? "bg-red-50 text-red-600 border border-red-200"
@@ -479,134 +406,9 @@ export default function Home() {
     return null;
   };
 
-  type NavItem = { label: string; id?: string; href?: string };
-  const navItems: NavItem[] = [
-    { label: t.nav.courses, id: "structure" },
-    { label: t.nav.events, id: "events" },
-    { label: t.nav.workbooks, href: "workbooks" },
-    { label: t.nav.gallery, id: "gallery" },
-    { label: t.nav.videos, id: "videos" },
-  ];
-
-  const langButtons: { key: Lang; label: string }[] = [
-    { key: "ar", label: "ع" },
-    { key: "en", label: "EN" },
-  ];
-
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden relative">
-      {/* ── NAVBAR ── */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? "bg-background/90 backdrop-blur-md border-b border-border py-4 shadow-sm" : "bg-transparent py-6"
-        }`}
-      >
-        <div className="container mx-auto px-6 flex items-center justify-between gap-4">
-          <div className="logo-biklima text-5xl text-primary tracking-tight leading-none">بكلمة</div>
-          <nav className="hidden md:flex items-center gap-6 font-medium">
-            {navItems.map((item) => (
-              item.href
-                ? <button key={item.href} onClick={() => navigate(`${import.meta.env.BASE_URL}${item.href}`)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
-                : <button key={item.id} onClick={() => scrollTo(item.id!)} className="text-foreground/80 hover:text-primary transition-colors">{item.label}</button>
-            ))}
-            <Button onClick={() => scrollTo("enroll")} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-6 rounded-full">{t.nav.cta}</Button>
-            {!authLoading && (
-              isAuthenticated ? (
-                <div className="flex items-center gap-2">
-                  <button onClick={() => navigate(`${import.meta.env.BASE_URL}dashboard`)} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
-                    {lang === "ar" ? "منصتي" : "My Platform"}
-                  </button>
-                  <button onClick={logout} className="text-xs text-muted-foreground hover:text-destructive transition-colors border border-border/50 px-2.5 py-1 rounded-full">
-                    {lang === "ar" ? "تسجيل الخروج" : "Log out"}
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => navigate(`${import.meta.env.BASE_URL}dashboard`)} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors border border-primary/30 px-4 py-1.5 rounded-full hover:bg-primary/5">
-                  {lang === "ar" ? "تسجيل الدخول" : "Log in"}
-                </button>
-              )
-            )}
-            <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
-              {langButtons.map(({ key, label }) => (
-                <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
-              <button onClick={() => setFontSize(s => Math.max(13, s - 1))} className="px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors" title="تصغير الخط">A-</button>
-              <button onClick={() => setFontSize(s => Math.min(20, s + 1))} className="px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors" title="تكبير الخط">A+</button>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setCurrencyMenuOpen((o) => !o)}
-                onBlur={(e) => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) setCurrencyMenuOpen(false); }}
-                aria-haspopup="listbox"
-                aria-expanded={currencyMenuOpen}
-                className="flex items-center gap-1 border border-border rounded-full px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors bg-transparent"
-              >
-                <span>{currency.symbol}</span>
-                <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${currencyMenuOpen ? "rotate-180" : ""}`} />
-              </button>
-              {currencyMenuOpen && (
-                <div className="absolute end-0 top-full mt-1 w-36 bg-background border border-border rounded-xl shadow-lg z-50 py-1">
-                  {CURRENCY_ORDER.map((key) => (
-                    <button key={key} onMouseDown={(e) => { e.preventDefault(); setCurrencyKey(key); setCurrencyMenuOpen(false); }} className={`w-full text-start px-3 py-1.5 text-xs font-medium transition-colors hover:bg-secondary/50 ${currencyKey === key ? "text-primary font-bold" : "text-foreground/80"}`}>
-                      {CURRENCIES[key].code} {CURRENCIES[key].symbol}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </nav>
-          <button className="md:hidden text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
-        </div>
-      </header>
-
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="fixed inset-0 z-40 bg-background flex flex-col pt-24 px-8 gap-6">
-            <button className="absolute top-6 left-6 text-foreground" onClick={() => setMobileMenuOpen(false)}><X size={28} /></button>
-            {navItems.map((item) => (
-              item.href
-                ? <button key={item.href} onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}${item.href}`); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
-                : <button key={item.id} onClick={() => { scrollTo(item.id!); setMobileMenuOpen(false); }} className="text-2xl font-serif text-start text-foreground/90 border-b border-border pb-4">{item.label}</button>
-            ))}
-            <Button size="lg" onClick={() => scrollTo("enroll")} className="w-full mt-4 text-lg bg-primary rounded-full">{t.nav.mobileCta}</Button>
-            {!authLoading && (
-              isAuthenticated ? (
-                <div className="space-y-3">
-                  <button onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}dashboard`); }} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
-                    {lang === "ar" ? "منصتي" : "My Platform"}
-                  </button>
-                  <button onClick={logout} className="w-full text-center py-2.5 text-sm text-muted-foreground hover:text-destructive transition-colors border border-border rounded-2xl">
-                    {lang === "ar" ? "تسجيل الخروج" : "Log out"}
-                  </button>
-                </div>
-              ) : (
-                <button onClick={() => { setMobileMenuOpen(false); navigate(`${import.meta.env.BASE_URL}dashboard`); }} className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors">
-                  {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : "Log in / Sign up"}
-                </button>
-              )
-            )}
-            <div className="flex items-center justify-center gap-2 mt-2">
-              {langButtons.map(({ key, label }) => (
-                <button key={key} onClick={() => switchLang(key)} className={`px-4 py-2 text-sm font-bold rounded-full border transition-colors ${lang === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>{label}</button>
-              ))}
-            </div>
-            <div className="mt-3">
-              <div className="text-xs text-muted-foreground text-center mb-2 font-medium">{lang === "ar" ? "العملة" : "Currency"}</div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {CURRENCY_ORDER.map((key) => (
-                  <button key={key} onClick={() => { setCurrencyKey(key); setMobileMenuOpen(false); }} className={`py-1.5 px-1 text-[11px] font-bold rounded-lg border transition-colors text-center ${currencyKey === key ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
-                    {CURRENCIES[key].code}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden relative" dir={dir}>
+      <SiteHeader />
 
       <main>
         {/* ── HERO ── */}
@@ -1567,73 +1369,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* ── FOOTER ── */}
-      <footer className="bg-foreground text-background py-16">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-5 gap-12 mb-12 border-b border-background/10 pb-12">
-            <div className="col-span-2 md:col-span-1">
-              <div className="logo-biklima text-5xl text-accent mb-6 leading-none">بكلمة</div>
-              <p className="text-background/60 leading-relaxed max-w-sm">{t.footer.about}</p>
-            </div>
-            <div>
-              <h4 className="font-bold text-lg mb-6">{t.footer.programsHeading}</h4>
-              <ul className="space-y-4 text-background/70">
-                {localizedPrograms.map((p) => (
-                  <li key={p.id}><button onClick={() => setSelectedProgram(p)} className="hover:text-accent transition text-start">{p.shortTitle}</button></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-lg mb-6">{t.footer.linksHeading}</h4>
-              <ul className="space-y-4 text-background/70">
-                {[
-                  { label: t.footer.linkLabels.structure, id: "structure" },
-                  { label: t.footer.linkLabels.wisdom, id: "wisdom" },
-                  { label: t.footer.linkLabels.workbooks, id: "workbooks" },
-                ].map((item) => (
-                  <li key={item.id}><button onClick={() => scrollTo(item.id)} className="hover:text-accent transition text-start">{item.label}</button></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-lg mb-6">{t.footer.contactHeading}</h4>
-              <ul className="space-y-4 text-background/70">
-                <li>
-                  <a href="https://wa.me/97455377065" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-accent transition">
-                    <MessageCircle className="w-5 h-5" />
-                    {t.footer.whatsappLabel}
-                  </a>
-                </li>
-                <li>
-                  <a href="mailto:info@bikalima.com" className="flex items-center gap-2 hover:text-accent transition" dir="ltr">
-                    <Mail className="w-4 h-4" />
-                    info@bikalima.com
-                  </a>
-                </li>
-                <li>
-                  <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-accent transition">
-                    <Linkedin className="w-5 h-5" />
-                    LinkedIn
-                  </a>
-                </li>
-                <li>
-                  <a href="https://www.instagram.com/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-accent transition">
-                    <Instagram className="w-5 h-5" />
-                    Instagram
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row justify-between items-center text-background/50 text-sm gap-4">
-            <p>{t.footer.copyright}</p>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition">{t.footer.terms}</a>
-              <a href="#" className="hover:text-white transition">{t.footer.privacy}</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* ── PHOTO LIGHTBOX ── */}
       <AnimatePresence>

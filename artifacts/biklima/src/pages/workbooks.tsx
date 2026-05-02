@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft, ArrowRight, BookOpen, Lightbulb, Mic2, Heart, Users, Star,
+  BookOpen, Lightbulb, Mic2, Heart, Users, Star,
   Feather, Sparkles, Globe, ShoppingCart, FileText, Download, Printer,
   Package, Minus, Plus, X, AlertCircle, ChevronLeft, ChevronRight,
 } from "lucide-react";
@@ -13,6 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import { T, type Lang } from "../translations";
 import { useLang } from "../hooks/useLang";
 import { programs, getLocalizedProgram, WORKBOOK_PRICES, testimonials as testimonialsData } from "../programsData";
+import { useCurrency } from "@/lib/site-config";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Breadcrumb } from "@/components/breadcrumb";
 
 type WisdomArticle = { source: string; category: string; icon: React.ReactNode; quote: string; body: string };
 
@@ -49,58 +53,13 @@ const wisdomArticles: Record<Lang, WisdomArticle[]> = {
   ],
 };
 
-type CurrencyConfig = { code: string; symbol: string; name: string; nameEn: string; rate: number };
-const CURRENCIES: Record<string, CurrencyConfig> = {
-  DEFAULT: { code: "USD", symbol: "$",   name: "دولار أمريكي", nameEn: "USD $", rate: 1.41 },
-  JO:      { code: "JOD", symbol: "د.أ", name: "دينار أردني",  nameEn: "JOD د.أ", rate: 1 },
-  SA:      { code: "SAR", symbol: "ر.س", name: "ريال سعودي",  nameEn: "SAR ر.س", rate: 7.92 },
-  AE:      { code: "AED", symbol: "د.إ", name: "درهم إماراتي", nameEn: "AED د.إ", rate: 7.77 },
-  KW:      { code: "KWD", symbol: "د.ك", name: "دينار كويتي", nameEn: "KWD د.ك", rate: 0.69 },
-  QA:      { code: "QAR", symbol: "ر.ق", name: "ريال قطري",  nameEn: "QAR ر.ق", rate: 7.73 },
-  EG:      { code: "EGP", symbol: "ج.م", name: "جنيه مصري",  nameEn: "EGP ج.م", rate: 47.0 },
-  MA:      { code: "MAD", symbol: "د.م", name: "درهم مغربي",  nameEn: "MAD د.م", rate: 10.2 },
-};
-const CURRENCY_ORDER = ["DEFAULT","JO","SA","AE","KW","QA","EG","MA"];
-
-function detectCurrencyKey(): string {
-  try {
-    const stored = localStorage.getItem("biklima-currency");
-    if (stored && CURRENCIES[stored]) return stored;
-  } catch {}
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-  const tzMap: Record<string, string> = {
-    "Asia/Amman": "JO", "Asia/Riyadh": "SA", "Asia/Dubai": "AE",
-    "Asia/Kuwait": "KW", "Asia/Qatar": "QA", "Africa/Cairo": "EG",
-    "Africa/Casablanca": "MA",
-  };
-  return tzMap[tz] || "DEFAULT";
-}
-
-function useCurrency() {
-  const [currencyKey, setCurrencyKeyState] = useState<string>(detectCurrencyKey);
-  const currency = CURRENCIES[currencyKey] ?? CURRENCIES.DEFAULT;
-  const setCurrencyKey = useCallback((key: string) => {
-    setCurrencyKeyState(key);
-    try { localStorage.setItem("biklima-currency", key); } catch {}
-  }, []);
-  const format = useCallback(
-    (jodPrice: number) => {
-      const converted = Math.round(jodPrice * currency.rate);
-      return `${converted} ${currency.symbol}`;
-    },
-    [currency],
-  );
-  return { currency, currencyKey, setCurrencyKey, format };
-}
-
 export default function WorkbooksPage() {
   const { toast } = useToast();
-  const { lang, switchLang, dir } = useLang();
+  const { lang, dir } = useLang();
   const t = T[lang];
-  const { format: formatPrice, currency, currencyKey, setCurrencyKey } = useCurrency();
+  const { format: formatPrice, currency } = useCurrency();
 
   const [wisdomIndex, setWisdomIndex] = useState(0);
-  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
   const [selectedWorkbook, setSelectedWorkbook] = useState<ReturnType<typeof getLocalizedProgram> | null>(null);
   const [wbQuantity, setWbQuantity] = useState(1);
   const [wbFormat, setWbFormat] = useState<"pdf" | "print">("pdf");
@@ -112,16 +71,6 @@ export default function WorkbooksPage() {
   const [wbOrderSuccess, setWbOrderSuccess] = useState<{ name: string; title: string; format: string; qty: number; total: string } | null>(null);
 
   const articles = wisdomArticles[lang] ?? wisdomArticles.ar;
-
-  const langButtons: { key: Lang; label: string }[] = [
-    { key: "ar", label: "ع" },
-    { key: "en", label: "EN" },
-  ];
-
-  useEffect(() => {
-    document.documentElement.dir = dir;
-    document.documentElement.lang = lang;
-  }, [dir, lang]);
 
   useEffect(() => {
     const iv = setInterval(() => setWisdomIndex(i => (i + 1) % articles.length), 7000);
@@ -170,87 +119,13 @@ export default function WorkbooksPage() {
     }
   };
 
-  const base = import.meta.env.BASE_URL || "/";
-  const baseClean = base.replace(/\/$/, "");
   const [, navigate] = useLocation();
-
-  type NavItem = { label: string; id?: string; href?: string };
-  const navItems: NavItem[] = [
-    { label: t.nav.courses, id: "structure" },
-    { label: t.nav.events, id: "events" },
-    { label: t.nav.workbooks, href: "workbooks" },
-    { label: t.nav.gallery, id: "gallery" },
-    { label: t.nav.videos, id: "videos" },
-  ];
-
-  const goToSection = (item: NavItem) => {
-    if (item.href) {
-      navigate(`${base}${item.href}`);
-    } else if (item.id) {
-      // Navigate to home with hash; home page handles scroll on mount
-      window.location.href = `${baseClean}/#${item.id}`;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
-      {/* ── NAVBAR ── */}
-      <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-3 shadow-sm">
-        <div className="container mx-auto px-6 flex items-center justify-between gap-4">
-          {/* Back button + Logo */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(base)}
-              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors group"
-            >
-              {dir === "rtl"
-                ? <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                : <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />}
-              {lang === "ar" ? "الرئيسية" : "Home"}
-            </button>
-            <span className="text-border hidden md:inline">|</span>
-            <span className="logo-biklima text-3xl text-primary tracking-tight leading-none hidden md:inline">بكلمة</span>
-          </div>
-
-          {/* Main nav */}
-          <nav className="hidden lg:flex items-center gap-5 font-medium">
-            {navItems.map((item, idx) => (
-              <button
-                key={item.href || item.id || idx}
-                onClick={() => goToSection(item)}
-                className={`text-sm transition-colors ${item.href === "workbooks" ? "text-primary font-bold" : "text-foreground/80 hover:text-primary"}`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          {/* Controls */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-px border border-border rounded-full overflow-hidden">
-              {langButtons.map(({ key, label }) => (
-                <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
-              ))}
-            </div>
-            <div className="relative">
-              <button onClick={() => setCurrencyMenuOpen(!currencyMenuOpen)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border text-xs font-bold hover:bg-secondary/40 transition-colors">
-                <span>{currency.symbol}</span>
-                <span className="text-muted-foreground">{currency.code}</span>
-              </button>
-              {currencyMenuOpen && (
-                <div className="absolute top-full mt-1 end-0 bg-card border border-border rounded-xl shadow-xl z-50 min-w-[130px] py-1 overflow-hidden">
-                  {CURRENCY_ORDER.map(key => (
-                    <button key={key} onClick={() => { setCurrencyKey(key); setCurrencyMenuOpen(false); }} className={`w-full px-4 py-2 text-xs text-start hover:bg-secondary/50 flex items-center justify-between gap-2 ${key === currencyKey ? "font-bold text-primary bg-primary/5" : ""}`}>
-                      <span>{CURRENCIES[key].symbol}</span>
-                      <span>{CURRENCIES[key].code}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
+      <div aria-hidden className="h-16 md:h-20 shrink-0" />
+      <Breadcrumb items={[{ label: lang === "ar" ? "الكراسات" : "Workbooks" }]} />
 
       {/* ── WISDOM CAROUSEL ── */}
       <section className="py-16 bg-secondary/10 border-y border-border overflow-hidden">
@@ -416,17 +291,7 @@ export default function WorkbooksPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="bg-foreground text-background py-10 text-center">
-        <div className="container mx-auto px-6">
-          <div className="logo-biklima text-4xl text-primary mb-2">بكلمة</div>
-          <p className="text-background/50 text-sm">{t.footer.copyright}</p>
-          <a href={base} className="inline-flex items-center gap-2 mt-4 text-sm text-background/60 hover:text-background transition-colors">
-            {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
-          </a>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* ── WORKBOOK ORDER MODAL ── */}
       <AnimatePresence>

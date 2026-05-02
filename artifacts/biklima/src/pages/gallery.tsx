@@ -2,15 +2,16 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, ChevronLeft, ChevronRight, ZoomIn, PlayCircle, Lightbulb,
-  ArrowLeft, ArrowRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { T, type Lang } from "../translations";
+import { T } from "../translations";
 import { useLang } from "../hooks/useLang";
 import { galleryPhotos, speechPhotos, videoLibrary, type VideoCategory } from "../galleryData";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Breadcrumb } from "@/components/breadcrumb";
 
 export default function GalleryPage() {
-  const { lang, switchLang, dir } = useLang();
+  const { lang, dir } = useLang();
   const t = T[lang];
 
   const [galleryTab, setGalleryTab] = useState<"cohorts" | "speeches">("cohorts");
@@ -19,16 +20,6 @@ export default function GalleryPage() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [videoTab, setVideoTab] = useState<VideoCategory | "all">("opening");
   const [videoModalId, setVideoModalId] = useState<string | null>(null);
-
-  const langButtons: { key: Lang; label: string }[] = [
-    { key: "ar", label: "ع" },
-    { key: "en", label: "EN" },
-  ];
-
-  useEffect(() => {
-    document.documentElement.dir = dir;
-    document.documentElement.lang = lang;
-  }, [dir, lang]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -44,58 +35,12 @@ export default function GalleryPage() {
   }, [lightboxOpen, lightboxSource]);
 
   const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
-  const base = import.meta.env.BASE_URL || "/";
-  const baseClean = base.replace(/\/$/, "");
-
-  type NavItem = { label: string; id?: string; href?: string };
-  const navItems: NavItem[] = [
-    { label: t.nav.courses, id: "structure" },
-    { label: t.nav.events, id: "events" },
-    { label: t.nav.workbooks, href: "workbooks" },
-    { label: t.nav.gallery, id: "gallery" },
-    { label: t.nav.videos, id: "videos" },
-  ];
-
-  const goToSection = (item: NavItem) => {
-    if (item.href) {
-      window.location.href = `${baseClean}/${item.href}`;
-    } else if (item.id) {
-      window.location.href = `${baseClean}/#${item.id}`;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
-      {/* ── NAVBAR ── */}
-      <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md border-b border-border py-4 shadow-sm">
-        <div className="container mx-auto px-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <a href={base} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary/50 transition-colors">
-              {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            </a>
-            <a href={base} className="logo-biklima text-4xl text-primary tracking-tight leading-none hidden md:inline">بكلمة</a>
-          </div>
-
-          {/* Main nav */}
-          <nav className="hidden lg:flex items-center gap-5 font-medium">
-            {navItems.map((item, idx) => (
-              <button
-                key={item.href || item.id || idx}
-                onClick={() => goToSection(item)}
-                className={`text-sm transition-colors ${item.id === "gallery" ? "text-primary font-bold" : "text-foreground/80 hover:text-primary"}`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
-            {langButtons.map(({ key, label }) => (
-              <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>
-            ))}
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
+      <div aria-hidden className="h-16 md:h-20 shrink-0" />
+      <Breadcrumb items={[{ label: lang === "ar" ? "المعرض" : "Gallery" }]} />
 
       {/* ── PAGE HERO ── */}
       <div className="py-16 bg-gradient-to-b from-primary/5 to-background text-center border-b border-border">
@@ -292,17 +237,7 @@ export default function GalleryPage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      <footer className="bg-foreground text-background py-10 text-center">
-        <div className="container mx-auto px-6">
-          <div className="logo-biklima text-4xl text-primary mb-2">بكلمة</div>
-          <p className="text-background/50 text-sm">{t.footer.copyright}</p>
-          <a href={base} className="inline-flex items-center gap-2 mt-4 text-sm text-background/60 hover:text-background transition-colors">
-            {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-            {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
-          </a>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* ── LIGHTBOX ── */}
       <AnimatePresence>
