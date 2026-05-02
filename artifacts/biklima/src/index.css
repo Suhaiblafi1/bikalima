@@ -134,6 +134,10 @@
   --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Warm gold accent — used sparingly for "best pick" highlights and section heading underlines */
+  --gold: 40 78% 52%;
+  --gold-soft: 40 80% 90%;
 }
 
 .dark {
@@ -174,6 +178,8 @@
   --sidebar-accent: 220 20% 15%;
   --sidebar-accent-foreground: 43 33% 97%;
   --sidebar-ring: 174 55% 45%;
+  --gold: 40 78% 60%;
+  --gold-soft: 40 50% 22%;
   --chart-1: 174 55% 45%;
   --chart-2: 38 80% 55%;
   --chart-3: 220 20% 65%;

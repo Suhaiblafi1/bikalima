@@ -693,6 +693,104 @@ export default function Home() {
         </section>
 
 
+        {/* ── PROGRAMS COMPARISON TABLE ── */}
+        <section id="compare" className="py-12 md:py-20 bg-gradient-to-b from-background to-secondary/15 border-b border-border">
+          <div className="container mx-auto px-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-2xl mx-auto mb-10">
+              <span
+                className="inline-block text-xs font-bold uppercase tracking-widest mb-3 pb-1 border-b-2"
+                style={{ color: "hsl(var(--gold))", borderColor: "hsl(var(--gold))" }}
+              >
+                {t.hero.compare.heading}
+              </span>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-3">{t.hero.compare.heading}</h2>
+              <p className="text-muted-foreground">{t.hero.compare.sub}</p>
+            </motion.div>
+
+            <div className="max-w-5xl mx-auto overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+              <table className="w-full text-sm" data-testid="programs-compare-table">
+                <caption className="sr-only">{t.hero.compare.heading} — {t.hero.compare.sub}</caption>
+                <thead>
+                  <tr className="bg-muted/40 text-foreground">
+                    <th className="text-start font-bold px-4 py-3 whitespace-nowrap">{t.hero.compare.colProgram}</th>
+                    <th className="text-start font-bold px-4 py-3 whitespace-nowrap">{t.hero.compare.colAudience}</th>
+                    <th className="text-start font-bold px-4 py-3 whitespace-nowrap">{t.hero.compare.colDuration}</th>
+                    <th className="text-start font-bold px-4 py-3 whitespace-nowrap">{t.hero.compare.colPrice}</th>
+                    <th className="text-start font-bold px-4 py-3 whitespace-nowrap">{t.hero.compare.colOutcome}</th>
+                    <th className="text-start font-bold px-4 py-3 whitespace-nowrap">{t.hero.compare.colPrereq}</th>
+                    <th className="px-4 py-3" aria-hidden="true" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {programs.map((p) => {
+                    const lp = getLocalizedProgram(p, lang);
+                    const isBest = p.id === "core";
+                    const price = p.id === "children"
+                      ? t.hero.compare.priceSchools
+                      : `${formatPrice(RECORDED_PRICES[p.id as keyof typeof RECORDED_PRICES])} ${t.structure.priceUnit}`;
+                    return (
+                      <tr
+                        key={p.id}
+                        className={`border-t border-border align-top ${isBest ? "relative" : "hover:bg-muted/20"}`}
+                        style={isBest ? { backgroundColor: "hsl(var(--gold-soft) / 0.45)" } : undefined}
+                        data-testid={`compare-row-${p.id}`}
+                      >
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col gap-1.5">
+                            {isBest && (
+                              <span
+                                className="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white"
+                                style={{ backgroundColor: "hsl(var(--gold))" }}
+                              >
+                                <Star className="w-3 h-3" />
+                                {t.hero.compare.bestPick}
+                              </span>
+                            )}
+                            <span className="font-bold text-foreground leading-tight">{lp.shortTitle}</span>
+                            <span className="text-[11px] text-muted-foreground">{lp.role}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-muted-foreground">{lp.audience}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-muted-foreground">
+                          {p.hours} {t.structure.hoursUnit} · {p.sessions} {t.structure.sessionsUnit}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap font-bold text-primary">{price}</td>
+                        <td className="px-4 py-4 text-muted-foreground max-w-[260px]">{lp.transformation}</td>
+                        <td className="px-4 py-4 text-muted-foreground">
+                          {lp.prerequisite || t.hero.compare.none}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant={isBest ? "default" : "outline"}
+                            className="rounded-full"
+                            onClick={() => { trackProgramDetailsClick(p.id, "compare_table"); navigate(`/courses/${PROGRAM_SLUGS[p.id as keyof typeof PROGRAM_SLUGS]}`); }}
+                            data-testid={`compare-cta-${p.id}`}
+                          >
+                            {t.hero.compare.viewDetails}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="text-center mt-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-primary hover:bg-primary/5"
+                onClick={() => scrollTo("structure")}
+                data-testid="compare-view-all"
+              >
+                {t.hero.compare.viewAll} ↓
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* ── REPEATING CTA ── */}
         <JourneyCta testIdSuffix="after-structure" />
 
@@ -703,207 +801,99 @@ export default function Home() {
         <JourneyCta variant="primary" testIdSuffix="after-journey" />
 
         {/* ── UPCOMING EVENTS ── */}
-        <section id="events" className="py-16 md:py-20 relative overflow-hidden border-b border-border bg-gradient-to-b from-background via-primary/[0.03] to-background">
-          {/* Decorative blurred orbs */}
-          <div className="pointer-events-none absolute -top-24 start-[-6rem] w-72 h-72 rounded-full bg-primary/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 end-[-6rem] w-72 h-72 rounded-full bg-accent/10 blur-3xl" />
-
-          <div className="container mx-auto px-6 relative">
-            {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center max-w-3xl mx-auto mb-10"
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-bold mb-4 text-xs uppercase tracking-wider border border-primary/20">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                </span>
-                {lang === "ar" ? "الجدول الزمني للفعاليات" : "Live event schedule"}
+        <section id="events" className="py-10 bg-gradient-to-b from-primary/5 to-background border-b border-border">
+          <div className="container mx-auto px-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
+                <Calendar className="w-4 h-4" />{t.structure.upcomingEventsHeading}
               </div>
-              <h2 className="font-serif text-3xl md:text-5xl font-bold mb-3">
-                {t.structure.upcomingEventsHeading}
-              </h2>
-              <p className="text-muted-foreground text-base md:text-lg">{t.structure.upcomingEventsSub}</p>
+              <p className="text-muted-foreground">{t.structure.upcomingEventsSub}</p>
             </motion.div>
 
-            {/* Country pills — horizontal row of "passport stamps" */}
-            <div className="flex flex-wrap justify-center gap-3 mb-12 max-w-3xl mx-auto" data-testid="event-countries">
-              {EVENT_COUNTRIES.map((c, i) => {
-                const count = upcomingEvents.filter(ev => ev.country === c.key).length;
-                const hasEvent = count > 0;
-                return (
-                  <motion.div
-                    key={c.key}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05 }}
-                    whileHover={hasEvent ? { y: -3 } : {}}
-                    className={`group relative flex items-center gap-3 ps-2 pe-4 py-2 rounded-2xl border-2 transition-all duration-300 ${
-                      hasEvent
-                        ? "border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent shadow-md shadow-primary/10 hover:shadow-lg hover:border-primary"
-                        : "border-dashed border-border/70 bg-muted/20 opacity-50"
-                    }`}
-                  >
-                    <span className={`flex items-center justify-center w-9 h-9 rounded-xl text-2xl ${hasEvent ? "bg-white shadow-sm" : "bg-transparent grayscale"}`}>
-                      {c.flag}
-                    </span>
-                    <span className={`text-sm font-bold ${hasEvent ? "text-foreground" : "text-muted-foreground"}`}>
-                      {t.structure.countries[c.key]}
-                    </span>
-                    {hasEvent && (
-                      <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-                        {count}
-                      </span>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </div>
+            {/* Collaboration strip */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="max-w-3xl mx-auto mb-8"
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 px-5 py-3 rounded-2xl bg-white border border-primary/20 shadow-sm">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {lang === "ar" ? "بالتعاون مع" : "In collaboration with"}
+                </span>
+                <span className="hidden sm:inline-block w-px h-5 bg-border" />
+                <span className="text-base font-bold text-foreground">
+                  {lang === "ar" ? "شركة الحياة الحسية للتعليم" : "Sensorial Life Education"}
+                </span>
+              </div>
+            </motion.div>
 
             {upcomingEvents.length > 0 ? (
-              <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                {upcomingEvents.map((ev, i) => {
+              <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+                {upcomingEvents.map((ev) => {
                   const prog = programs.find(p => p.id === ev.programId);
                   const lp = prog ? getLocalizedProgram(prog, lang) : null;
                   const isOnline = ev.type === "online";
                   const l = lang as "ar" | "en";
-                  const countryMeta = EVENT_COUNTRIES.find(cc => cc.key === ev.country);
-                  // Try to extract day/month from startDate (e.g. "15 Mar 2025" or "2025-03-15")
-                  const parsed = (() => {
-                    const d = new Date(ev.startDate);
-                    if (!Number.isNaN(d.valueOf())) {
-                      return {
-                        day: String(d.getDate()),
-                        month: d.toLocaleString(lang === "ar" ? "ar" : "en", { month: "short" }),
-                      };
-                    }
-                    return null;
-                  })();
                   return (
-                    <motion.div
-                      key={ev.id}
-                      initial={{ opacity: 0, y: 24 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.5, delay: i * 0.08 }}
-                      whileHover={{ y: -4 }}
-                      className="group relative"
-                    >
-                      <Card className={`relative overflow-hidden border-2 transition-all duration-300 group-hover:shadow-2xl ${isOnline ? "border-blue-200 group-hover:border-blue-400" : "border-primary/20 group-hover:border-primary/50"}`}>
-                        {/* Top color strip */}
-                        <div className={`h-1.5 w-full ${isOnline ? "bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-400" : "bg-gradient-to-r from-primary via-primary/80 to-accent"}`} />
-
-                        {/* Country flag corner sticker */}
-                        {countryMeta && (
-                          <div className="absolute top-3 end-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border/50">
-                            <span className="text-base leading-none">{countryMeta.flag}</span>
-                            <span className="text-[10px] font-bold text-foreground/80">{t.structure.countries[ev.country]}</span>
+                    <Card key={ev.id} className={`border-2 hover:shadow-lg transition-all duration-300 overflow-hidden ${isOnline ? "border-blue-200 hover:border-blue-400" : "border-primary/20 hover:border-primary/40"}`}>
+                      <CardContent className="p-5 flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          {lp && <span className="text-xs font-bold text-primary uppercase tracking-wide">{lp.shortTitle}</span>}
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${isOnline ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                            {isOnline ? <Wifi className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                            {isOnline ? (lang === "ar" ? "أونلاين" : "Online") : (lang === "ar" ? "وجاهي" : "In-person")}
+                          </span>
+                        </div>
+                        <div className="text-sm font-bold text-foreground">{ev.organization[l] || ev.organization.ar}</div>
+                        <div className="space-y-1.5 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>{ev.trainer[l] || ev.trainer.ar}</span>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span>{ev.days[l] || ev.days.ar} · {ev.timeSlot[l] || ev.timeSlot.ar}</span>
+                          </div>
+                          <div className="flex items-center gap-2" dir="ltr">
+                            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="font-semibold text-foreground">{ev.startDate} → {ev.endDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                            <span>{ev.location[l] || ev.location.ar}</span>
+                          </div>
+                        </div>
+                        {ev.spotsLeft && ev.spotsLeft <= 15 && (
+                          <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                            {ev.spotsLeft} {t.structure.spotsLeft}
+                          </span>
                         )}
-
-                        <CardContent className="p-5 flex gap-4">
-                          {/* Date "ribbon" */}
-                          {parsed && (
-                            <div className={`flex flex-col items-center justify-center shrink-0 w-16 h-20 rounded-xl text-center shadow-sm ${isOnline ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200" : "bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20"}`}>
-                              <span className={`text-2xl font-black leading-none ${isOnline ? "text-blue-700" : "text-primary"}`}>{parsed.day}</span>
-                              <span className={`text-[10px] font-bold uppercase mt-1 tracking-wider ${isOnline ? "text-blue-600/80" : "text-primary/80"}`}>{parsed.month}</span>
-                            </div>
-                          )}
-
-                          <div className="flex-1 min-w-0 flex flex-col gap-2.5">
-                            {/* Mode badge */}
-                            <span className={`self-start inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isOnline ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                              {isOnline ? <Wifi className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                              {isOnline ? (lang === "ar" ? "أونلاين" : "Online") : (lang === "ar" ? "وجاهي" : "In-person")}
-                            </span>
-
-                            {/* Program label */}
-                            {lp && (
-                              <div className="text-xs font-bold text-primary uppercase tracking-wide">
-                                {lp.shortTitle}
-                              </div>
-                            )}
-
-                            {/* Organization */}
-                            <div className="text-base font-bold text-foreground leading-tight">
-                              {ev.organization[l] || ev.organization.ar}
-                            </div>
-
-                            {/* Meta rows */}
-                            <div className="space-y-1.5 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span className="truncate">{ev.trainer[l] || ev.trainer.ar}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span className="truncate">{ev.days[l] || ev.days.ar} · {ev.timeSlot[l] || ev.timeSlot.ar}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span className="font-semibold text-foreground/90 truncate">{ev.startDate} ← {ev.endDate}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                <span className="truncate">{ev.location[l] || ev.location.ar}</span>
-                              </div>
-                            </div>
-
-                            {ev.spotsLeft && ev.spotsLeft <= 15 && (
-                              <span className="self-start inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-orange-50 border border-orange-200 text-xs text-orange-700 font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                                {ev.spotsLeft} {t.structure.spotsLeft}
-                              </span>
-                            )}
-
-                            <ExternalLinkDialog href={ev.registrationLink}>
-                              <Button
-                                size="sm"
-                                className={`mt-2 w-full rounded-full font-bold shadow-md transition-all ${isOnline ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-blue-500/20" : "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white shadow-primary/20"}`}
-                                data-testid={`event-register-${ev.id}`}
-                              >
-                                {lang === "ar" ? "سجّل عبر الموقع الرسمي ↗" : "Register at Official Site ↗"}
-                              </Button>
-                            </ExternalLinkDialog>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                        <ExternalLinkDialog href={ev.registrationLink}>
+                          <Button
+                            size="sm"
+                            className="mt-1 w-full bg-primary hover:bg-primary/90 text-white rounded-full"
+                            data-testid={`event-register-${ev.id}`}
+                          >
+                            {lang === "ar" ? "سجّل عبر الموقع الرسمي" : "Register at Official Site"} ↗
+                          </Button>
+                        </ExternalLinkDialog>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
             ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="max-w-xl mx-auto"
-              >
-                <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-dashed border-primary/30 rounded-3xl p-8 md:p-10 text-center overflow-hidden">
-                  <div className="absolute top-0 end-0 w-40 h-40 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl" />
-                  <div className="relative z-10">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-5">
-                      <Calendar className="w-8 h-8 text-primary" />
-                    </div>
-                    <h3 className="font-serif text-xl md:text-2xl font-bold mb-2">
-                      {lang === "ar" ? "نُحضّر فعاليات جديدة" : "New events on the way"}
-                    </h3>
-                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-5">
-                      {t.structure.noUpcomingEvents}
-                    </p>
-                    <a
-                      href="mailto:info@bikalima.com"
-                      className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
-                    >
-                      {lang === "ar" ? "أبلغني عند الإعلان عن الفعالية القادمة ←" : "Notify me about the next event →"}
-                    </a>
+              <div className="max-w-lg mx-auto relative">
+                <MiniCalendar lang={lang} />
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
+                  <div className="text-center px-6">
+                    <Calendar className="w-8 h-8 text-primary/40 mx-auto mb-3" />
+                    <p className="text-sm font-semibold text-foreground/70">{t.structure.noUpcomingEvents}</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
             {/* ── FREE CONSULTATION BOOKING ── */}
             <div className="mt-12 max-w-2xl mx-auto">
@@ -1114,7 +1104,7 @@ export default function Home() {
         <JourneyCta testIdSuffix="after-testimonials" />
 
         {/* ── FAQ ── */}
-        <section className="py-24 bg-background">
+        <section className="py-14 md:py-24 bg-background">
           <div className="container mx-auto px-6 max-w-4xl">
             <div className="text-center mb-16">
               <h2 className="font-serif text-4xl font-bold mb-4">{t.faq.heading}</h2>
