@@ -364,6 +364,48 @@ export const fieldMediaTable = pgTable("field_media", {
   index("IDX_field_media_status").on(t.status),
 ]);
 
+// ── Certificates Registry ("سجل بكلمة للاعتماد والشهادات") ─────────────
+// Stores trainee/trainer/teacher/etc. certificates issued by Bikalima with
+// public verification (by code) and optional public graduate listing.
+export const certificatesTable = pgTable("certificates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Public-facing verification code, e.g. "BK-CERT-2026-0001". Must be unique
+  // and is what the visitor types into the /verify page.
+  code: varchar("code").notNull(),
+  fullName: varchar("full_name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone"),
+  country: varchar("country"),
+  // Type of accreditation: trainee | trainer | teacher | child-facilitator
+  // | ambassador | partner-institution.
+  certType: varchar("cert_type").notNull(),
+  // Linked Bikalima program/course (loose ref — can be a course id or a
+  // freeform program identifier).
+  programId: varchar("program_id"),
+  programName: varchar("program_name"),
+  issueDate: timestamp("issue_date", { withTimezone: true }).notNull().defaultNow(),
+  expiryDate: timestamp("expiry_date", { withTimezone: true }),
+  status: varchar("status").$type<"active" | "expired" | "under-review" | "suspended" | "revoked">().notNull().default("active"),
+  // The trainer/evaluator who signed off (freeform name + optional FK).
+  assessorName: varchar("assessor_name"),
+  assessorUserId: varchar("assessor_user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  internalNotes: text("internal_notes"),
+  // PDF/image of the certificate (URL to object storage or external).
+  certificateFileUrl: varchar("certificate_file_url"),
+  graduateImageUrl: varchar("graduate_image_url"),
+  // Whether to surface this graduate in the public /graduates registry.
+  showInRegistry: boolean("show_in_registry").notNull().default(false),
+  // Optional link to the platform user (so /me/certificates can list it).
+  userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  createdBy: varchar("created_by").references(() => usersTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  uniqueIndex("UQ_certificates_code").on(t.code),
+  index("IDX_certificates_status").on(t.status),
+  index("IDX_certificates_user").on(t.userId),
+]);
+
 // ── Admin Activity Log (for Overview "Recent Activities") ───────────────
 export const adminActivitiesTable = pgTable("admin_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -388,3 +430,4 @@ export type HomePageSection = typeof homePageSectionsTable.$inferSelect;
 export type Workbook = typeof workbooksTable.$inferSelect;
 export type FieldMedia = typeof fieldMediaTable.$inferSelect;
 export type AdminActivity = typeof adminActivitiesTable.$inferSelect;
+export type Certificate = typeof certificatesTable.$inferSelect;

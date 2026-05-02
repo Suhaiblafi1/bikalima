@@ -19,6 +19,10 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminHomePage from "@/pages/admin/home-page";
 import AdminWorkbooksCms from "@/pages/admin/workbooks";
 import AdminFieldMedia from "@/pages/admin/field-media";
+import AdminCertificates from "@/pages/admin/certificates";
+import VerifyPage from "@/pages/verify";
+import CertificateDetailPage from "@/pages/certificate-detail";
+import GraduatesPage from "@/pages/graduates";
 import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import CourseDetailPage from "@/pages/course-detail";
@@ -93,6 +97,9 @@ function AnimatedRouter() {
           <Route path="/admin/field-media">
             {() => (<AdminRoute><AdminFieldMedia /></AdminRoute>)}
           </Route>
+          <Route path="/admin/certificates">
+            {() => (<AdminRoute><AdminCertificates /></AdminRoute>)}
+          </Route>
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
           </Route>
@@ -100,6 +107,9 @@ function AnimatedRouter() {
           <Route path="/terms" component={TermsPage} />
           <Route path="/gallery" component={GalleryPage} />
           <Route path="/workbooks" component={WorkbooksPage} />
+          <Route path="/verify" component={VerifyPage} />
+          <Route path="/certificates/:code" component={CertificateDetailPage} />
+          <Route path="/graduates" component={GraduatesPage} />
           <Route path="/checkout" component={CheckoutPage} />
           <Route path="/confirmation" component={ConfirmationPage} />
           <Route path="/courses/:slug/learn" component={LearnPage} />

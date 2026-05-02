@@ -132,7 +132,7 @@ export type AdminPageKey =
   | "overview" | "users" | "courses" | "enrollments"
   | "workbook-orders" | "assignments" | "reviews"
   | "speech-evaluations" | "home-page" | "workbooks" | "field-media"
-  | "settings";
+  | "certificates" | "settings";
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
@@ -147,6 +147,9 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   "home-page": ["admin"],
   workbooks: ["admin"],
   "field-media": ["admin", "trainer"],
+  // Trainers see only their own students' certs (API-side scoped); sales/support
+  // can search but cannot create/edit. Admin/super-admin see and manage everything.
+  certificates: ["admin", "trainer", "sales"],
   settings: ["admin"],
 };
 

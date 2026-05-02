@@ -82,6 +82,16 @@ export function SiteFooter() {
                   {t.nav.gallery}
                 </button>
               </li>
+              <li>
+                <button onClick={() => navigate("/verify")} className="hover:text-accent transition text-start" data-testid="footer-link-verify">
+                  {lang === "ar" ? "تحقق من شهادة" : "Verify certificate"}
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate("/graduates")} className="hover:text-accent transition text-start" data-testid="footer-link-graduates">
+                  {lang === "ar" ? "سجل الخريجين" : "Graduates registry"}
+                </button>
+              </li>
             </ul>
           </div>
 

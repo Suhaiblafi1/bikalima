@@ -12,6 +12,7 @@ import assignmentsRouter from "./assignments";
 import speechEvaluationRouter from "./speech-evaluation";
 import siteSettingsRouter from "./site-settings";
 import cmsRouter from "./cms";
+import certificatesRouter from "./certificates";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(assignmentsRouter);
 router.use(speechEvaluationRouter);
 router.use(siteSettingsRouter);
 router.use(cmsRouter);
+router.use(certificatesRouter);
 
 export default router;

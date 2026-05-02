@@ -71,6 +71,7 @@ export function SiteHeader() {
     { kind: "route",   path: "/gallery",   label: t.nav.gallery },
     { kind: "section", id: "videos",      label: t.nav.videos },
     { kind: "section", id: "events",      label: t.nav.events },
+    { kind: "route",   path: "/verify",    label: lang === "ar" ? "تحقق من شهادة" : "Verify certificate" },
   ];
 
   const isHome = location === "/" || location === "";
