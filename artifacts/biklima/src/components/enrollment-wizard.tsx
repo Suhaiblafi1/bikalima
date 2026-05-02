@@ -535,7 +535,7 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
             variant="outline"
             onClick={goBack}
             disabled={submitting}
-            className="rounded-full px-5 h-11"
+            className="rounded-full px-5 sm:px-5 h-12"
             data-testid="wizard-btn-back"
           >
             <BackIcon className="w-4 h-4 me-1" />
@@ -547,7 +547,7 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
           <Button
             type="button"
             onClick={goNext}
-            className="rounded-full px-7 h-11 bg-primary hover:bg-primary/90 text-white font-bold"
+            className="rounded-full px-7 h-12 bg-primary hover:bg-primary/90 text-white font-bold"
             data-testid="wizard-btn-next"
           >
             {w.next}

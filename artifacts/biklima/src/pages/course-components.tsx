@@ -444,13 +444,17 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
             )}
           </div>
 
+          {/* Single primary CTA — kept inside the hero so it's always above the fold on mobile. */}
           <div className="flex flex-wrap gap-3 mt-2">
             <Button
               size="lg"
-              className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-8 shadow-lg"
+              className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-6 sm:px-8 h-12 shadow-lg"
               onClick={() => navigate(`/checkout?slug=${slug}`)}
             >
               {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
+              {typeof priceJod === "number" && (
+                <span className="font-normal opacity-80 ms-2">— {priceJod} {lang === "ar" ? "د.أ" : "JOD"}</span>
+              )}
             </Button>
           </div>
         </div>

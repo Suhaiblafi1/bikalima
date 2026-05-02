@@ -141,27 +141,20 @@ export default function CourseDetailPage() {
           {/* ── Main content column ── */}
           <div className="flex-1 min-w-0">
 
-            {/* Mobile CTA */}
-            <div className="lg:hidden mb-6">
-              {hasAccess ? (
+            {/* Mobile "Continue Learning" shortcut for users who already own the course.
+                The standard "Register & Pay Now" CTA lives inside the hero so it's
+                always above the fold; only the post-purchase access shortcut is rendered
+                here on mobile. */}
+            {hasAccess && (
+              <div className="lg:hidden mb-6">
                 <Button
                   className="w-full rounded-xl font-bold py-6 text-base bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => navigate(`/courses/${slug}/learn`)}
                 >
                   {lang === "ar" ? "ادخل إلى الدورة" : "Continue Learning"}
                 </Button>
-              ) : (
-                <Button
-                  className="w-full rounded-xl font-bold py-6 text-base"
-                  onClick={() => navigate(`/checkout?slug=${slug}`)}
-                >
-                  {lang === "ar" ? "سجّل وادفع الآن" : "Register & Pay Now"}
-                  {typeof priceJod === "number" && (
-                    <span className="font-normal opacity-80 ms-1">— {priceJod} {lang === "ar" ? "د.أ" : "JOD"}</span>
-                  )}
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             {courseData ? (
               <>

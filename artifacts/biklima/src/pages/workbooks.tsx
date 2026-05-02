@@ -71,69 +71,14 @@ export default function WorkbooksPage() {
       <div aria-hidden className="h-16 md:h-20 shrink-0" />
       <Breadcrumb items={[{ label: lang === "ar" ? "الكراسات" : "Workbooks" }]} />
 
-      {/* ── WISDOM CAROUSEL ── */}
-      <section className="py-16 bg-secondary/10 border-y border-border overflow-hidden">
-        <div className="container mx-auto px-6 mb-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-6 text-sm">
-              <BookOpen className="w-4 h-4" />{t.wisdom.badge}
-            </div>
-            <h2 className="font-serif text-4xl font-bold mb-6">{t.wisdom.heading}</h2>
-            <p className="text-xl text-muted-foreground">{t.wisdom.sub}</p>
+      {/* ── WORKBOOKS STORE (products first on mobile) ── */}
+      <section className="py-10 md:py-16 bg-background">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-8 md:mb-14">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold mb-3 md:mb-6">{t.workbooks.heading}</h2>
+            <p className="text-base md:text-xl text-muted-foreground">{t.workbooks.sub}</p>
           </div>
-        </div>
-        <div className="relative max-w-4xl mx-auto px-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={wisdomIndex}
-              initial={{ opacity: 0, x: dir === "rtl" ? -40 : 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: dir === "rtl" ? 40 : -40 }}
-              transition={{ duration: 0.5 }}
-              className="bg-card border border-border/60 rounded-3xl p-8 md:p-12 shadow-xl relative overflow-hidden"
-            >
-              <div className="absolute top-0 start-0 w-64 h-64 bg-primary/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    {articles[wisdomIndex]?.icon}
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground font-medium">{articles[wisdomIndex]?.source}</div>
-                    <div className="text-sm font-bold text-primary">{articles[wisdomIndex]?.category}</div>
-                  </div>
-                </div>
-                <blockquote className="font-serif text-xl md:text-2xl font-bold text-foreground mb-6 leading-relaxed border-s-4 border-primary ps-5">
-                  {articles[wisdomIndex]?.quote}
-                </blockquote>
-                <p className="text-muted-foreground leading-relaxed">{articles[wisdomIndex]?.body}</p>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <button onClick={() => setWisdomIndex(i => (i - 1 + articles.length) % articles.length)} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">
-              {dir === "rtl" ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </button>
-            <div className="flex gap-1.5">
-              {articles.map((_, i) => (
-                <button key={i} onClick={() => setWisdomIndex(i)} className={`rounded-full transition-all duration-300 ${i === wisdomIndex ? "w-5 h-2 bg-primary" : "w-2 h-2 bg-border hover:bg-primary/40"}`} />
-              ))}
-            </div>
-            <button onClick={() => setWisdomIndex(i => (i + 1) % articles.length)} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors">
-              {dir === "rtl" ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── WORKBOOKS STORE ── */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <h2 className="font-serif text-4xl font-bold mb-6">{t.workbooks.heading}</h2>
-            <p className="text-xl text-muted-foreground">{t.workbooks.sub}</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
             {programs.map((prog, i) => {
               const lp = getLocalizedProgram(prog, lang);
               const price = WORKBOOK_PRICES[prog.id as keyof typeof WORKBOOK_PRICES];
@@ -159,7 +104,7 @@ export default function WorkbooksPage() {
                       <h3 className="font-serif text-xl font-bold text-white">{lp.workbook.title}</h3>
                     </div>
                   </div>
-                  <div className="p-6">
+                  <div className="p-5 md:p-6">
                     <p className="text-muted-foreground text-sm mb-4 leading-relaxed">{lp.workbook.description}</p>
                     <div className="flex flex-wrap gap-1.5 mb-5">
                       {lp.modules.slice(0, 4).map((mod, mi) => (
@@ -168,14 +113,14 @@ export default function WorkbooksPage() {
                         </span>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
                       <div>
                         <div className="text-xs text-muted-foreground">{t.workbooks.priceLabel}</div>
                         <div className="text-2xl font-bold text-primary">{formatPrice(price ?? 0)}</div>
                       </div>
                       <Button
                         onClick={() => setSelectedWorkbook(lp)}
-                        className="rounded-full px-6 gap-2"
+                        className="rounded-full px-4 sm:px-6 h-12 gap-2 shrink-0"
                       >
                         <ShoppingCart className="w-4 h-4" />{t.workbooks.orderBtn}
                       </Button>
@@ -184,6 +129,61 @@ export default function WorkbooksPage() {
                 </motion.div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── WISDOM CAROUSEL (educational context, after products) ── */}
+      <section className="py-12 md:py-16 bg-secondary/10 border-y border-border overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 mb-8 md:mb-10">
+          <div className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 md:mb-6 text-sm">
+              <BookOpen className="w-4 h-4" />{t.wisdom.badge}
+            </div>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold mb-3 md:mb-6">{t.wisdom.heading}</h2>
+            <p className="text-base md:text-xl text-muted-foreground">{t.wisdom.sub}</p>
+          </div>
+        </div>
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={wisdomIndex}
+              initial={{ opacity: 0, x: dir === "rtl" ? -40 : 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: dir === "rtl" ? 40 : -40 }}
+              transition={{ duration: 0.5 }}
+              className="bg-card border border-border/60 rounded-3xl p-6 sm:p-8 md:p-12 shadow-xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 start-0 w-64 h-64 bg-primary/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-5 md:mb-6">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    {articles[wisdomIndex]?.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground font-medium truncate">{articles[wisdomIndex]?.source}</div>
+                    <div className="text-sm font-bold text-primary truncate">{articles[wisdomIndex]?.category}</div>
+                  </div>
+                </div>
+                <blockquote className="font-serif text-lg md:text-2xl font-bold text-foreground mb-5 md:mb-6 leading-relaxed border-s-4 border-primary ps-4 md:ps-5">
+                  {articles[wisdomIndex]?.quote}
+                </blockquote>
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{articles[wisdomIndex]?.body}</p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button onClick={() => setWisdomIndex(i => (i - 1 + articles.length) % articles.length)} className="w-11 h-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors" aria-label={lang === "ar" ? "السابق" : "Previous"}>
+              {dir === "rtl" ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            <div className="flex gap-1.5">
+              {articles.map((_, i) => (
+                <button key={i} onClick={() => setWisdomIndex(i)} className={`rounded-full transition-all duration-300 ${i === wisdomIndex ? "w-5 h-2 bg-primary" : "w-2 h-2 bg-border hover:bg-primary/40"}`} aria-label={`${i + 1}`} />
+              ))}
+            </div>
+            <button onClick={() => setWisdomIndex(i => (i + 1) % articles.length)} className="w-11 h-11 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors" aria-label={lang === "ar" ? "التالي" : "Next"}>
+              {dir === "rtl" ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </section>
