@@ -358,7 +358,7 @@ export function WorkbookOrderModal({ workbook, onClose }: Props) {
                   <Button
                     className={`rounded-full px-8 text-white shadow-md ${wb.samplePdf ? `bg-gradient-to-r ${wb.accentColor} hover:opacity-90` : "bg-muted-foreground/40 cursor-not-allowed"}`}
                     disabled={!wb.samplePdf}
-                    onClick={() => { if (wb.samplePdf) window.open(wb.samplePdf, "_blank"); }}
+                    onClick={() => { if (wb.samplePdf) window.open(wb.samplePdf, "_blank", "noopener,noreferrer"); }}
                   >
                     <Download className="w-4 h-4 me-2" />
                     {wb.samplePdf ? wm.samplePdfBtn : (lang === "ar" ? "قريباً" : "Coming Soon")}

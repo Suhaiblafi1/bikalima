@@ -356,7 +356,7 @@ export function ProgramQuiz({ lang }: { lang: Lang }) {
                         <Button
                           size="lg"
                           variant="outline"
-                          onClick={() => window.open(CONSULT_URL, "_blank")}
+                          onClick={() => window.open(CONSULT_URL, "_blank", "noopener,noreferrer")}
                           className="flex-1 rounded-full border-2"
                           data-testid="button-quiz-consult"
                         >

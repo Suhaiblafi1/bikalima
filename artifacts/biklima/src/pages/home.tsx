@@ -71,6 +71,7 @@ import { BeforeAfterSection } from "@/components/before-after-section";
 import { JourneySection } from "@/components/journey-section";
 import { JourneyCta } from "@/components/journey-cta";
 import { EnrollmentWizard } from "@/components/enrollment-wizard";
+import { ExternalLinkDialog } from "@/components/external-link-dialog";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
@@ -681,21 +682,28 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">{t.structure.startHelpHeading}</h2>
               <p className="text-muted-foreground mb-7 leading-relaxed">{t.structure.startHelpSub}</p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Button
-                  size="lg"
-                  className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8"
-                  onClick={() => window.open("https://scheduler.zoom.us/suhaib-ahmad-x9pyfc", "_blank")}
+                <a
+                  href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
                 >
-                  {t.structure.startHelpBtn}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="rounded-full px-8"
-                  onClick={() => window.open("mailto:info@bikalima.com", "_blank")}
-                >
-                  {t.structure.startHelpContact}
-                </Button>
+                  <Button
+                    size="lg"
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8"
+                  >
+                    {t.structure.startHelpBtn}
+                  </Button>
+                </a>
+                <a href="mailto:info@bikalima.com" className="inline-block">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="rounded-full px-8"
+                  >
+                    {t.structure.startHelpContact}
+                  </Button>
+                </a>
               </div>
             </motion.div>
           </div>
@@ -764,11 +772,15 @@ export default function Home() {
                             {ev.spotsLeft} {t.structure.spotsLeft}
                           </span>
                         )}
-                        <a href={ev.registrationLink} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" className="mt-1 w-full bg-primary hover:bg-primary/90 text-white rounded-full">
+                        <ExternalLinkDialog href={ev.registrationLink}>
+                          <Button
+                            size="sm"
+                            className="mt-1 w-full bg-primary hover:bg-primary/90 text-white rounded-full"
+                            data-testid={`event-register-${ev.id}`}
+                          >
                             {lang === "ar" ? "سجّل عبر الموقع الرسمي" : "Register at Official Site"} ↗
                           </Button>
-                        </a>
+                        </ExternalLinkDialog>
                       </CardContent>
                     </Card>
                   );
@@ -1107,6 +1119,7 @@ export default function Home() {
                         <a
                           href={`https://wa.me/97455377065?text=${encodeURIComponent(lang === "ar" ? `السلام عليكم، أنا ${enrollSuccess.name} وقدمت طلب تسجيل في برنامج ${enrollSuccess.program || "بكلمة"}. أودّ الاستفسار عن التفاصيل.` : `Hello, I'm ${enrollSuccess.name} and I submitted an enrollment request for ${enrollSuccess.program || "Bikalima"}. I'd like to know more.`)}`}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white font-bold px-7 py-3 rounded-full text-sm transition-colors shadow-lg"
                         >
                           <span>💬</span>
