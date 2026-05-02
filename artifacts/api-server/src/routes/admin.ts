@@ -1069,7 +1069,7 @@ router.patch("/admin/settings", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
     const allowed = [
-      "siteNameAr", "siteNameEn", "defaultLang", "defaultCurrency",
+      "siteNameAr", "siteNameEn", "logoUrl", "defaultLang", "defaultCurrency",
       "contactEmail", "contactPhone", "whatsappNumber",
       "facebookUrl", "instagramUrl", "youtubeUrl", "twitterUrl",
       "privacyPolicyAr", "privacyPolicyEn", "termsAr", "termsEn",

@@ -16,6 +16,9 @@ import AdminAssignments from "@/pages/admin/assignments";
 import AdminReviews from "@/pages/admin/reviews";
 import AdminSpeechEvaluations from "@/pages/admin/speech-evaluations";
 import AdminSettings from "@/pages/admin/settings";
+import AdminHomePage from "@/pages/admin/home-page";
+import AdminWorkbooksCms from "@/pages/admin/workbooks";
+import AdminFieldMedia from "@/pages/admin/field-media";
 import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import CourseDetailPage from "@/pages/course-detail";
@@ -80,6 +83,15 @@ function AnimatedRouter() {
           </Route>
           <Route path="/admin/speech-evaluations">
             {() => (<AdminRoute><AdminSpeechEvaluations /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/home-page">
+            {() => (<AdminRoute><AdminHomePage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/workbooks">
+            {() => (<AdminRoute><AdminWorkbooksCms /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/field-media">
+            {() => (<AdminRoute><AdminFieldMedia /></AdminRoute>)}
           </Route>
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}

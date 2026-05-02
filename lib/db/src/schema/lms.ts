@@ -274,6 +274,7 @@ export const siteSettingsTable = pgTable("site_settings", {
   id: varchar("id").primaryKey().default("default"),
   siteNameAr: varchar("site_name_ar"),
   siteNameEn: varchar("site_name_en"),
+  logoUrl: varchar("logo_url"),
   defaultLang: varchar("default_lang").$type<"ar" | "en">().default("ar"),
   defaultCurrency: varchar("default_currency").default("USD"),
   contactEmail: varchar("contact_email"),
@@ -290,9 +291,100 @@ export const siteSettingsTable = pgTable("site_settings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+// ── CMS: Home Page Sections ─────────────────────────────────────────────
+// Editable overrides per section of the public home page. The runtime
+// fallback (when no row exists) is the static translation copy.
+export const homePageSectionsTable = pgTable("home_page_sections", {
+  sectionKey: varchar("section_key").primaryKey(),
+  contentAr: jsonb("content_ar").$type<Record<string, unknown>>(),
+  contentEn: jsonb("content_en").$type<Record<string, unknown>>(),
+  visible: boolean("visible").notNull().default(true),
+  orderIndex: integer("order_index").notNull().default(0),
+  status: varchar("status").$type<"draft" | "published">().notNull().default("published"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+// ── CMS: Workbooks (DB-backed catalog) ──────────────────────────────────
+export const workbooksTable = pgTable("workbooks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar("slug").notNull(),
+  titleAr: varchar("title_ar").notNull(),
+  titleEn: varchar("title_en"),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
+  priceJod: integer("price_jod"),
+  coverImageUrl: varchar("cover_image_url"),
+  samplePdfUrl: varchar("sample_pdf_url"),
+  topicsAr: jsonb("topics_ar").$type<string[]>(),
+  topicsEn: jsonb("topics_en").$type<string[]>(),
+  format: varchar("format").$type<"digital" | "printed" | "both">().notNull().default("both"),
+  linkedCourseId: varchar("linked_course_id").references(() => coursesTable.id, { onDelete: "set null" }),
+  linkedProgramId: varchar("linked_program_id"),
+  status: varchar("status").$type<"draft" | "published" | "hidden">().notNull().default("draft"),
+  orderIndex: integer("order_index").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  uniqueIndex("UQ_workbooks_slug").on(t.slug),
+]);
+
+// ── CMS: Field Media + embedded Media Analysis ──────────────────────────
+// "من الميدان" library. Each row carries the media metadata AND optional
+// training analysis (skill, what to observe, why it matters, etc).
+export const fieldMediaTable = pgTable("field_media", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  mediaType: varchar("media_type").$type<"youtube" | "upload" | "image" | "instagram" | "tiktok">().notNull(),
+  mediaUrl: text("media_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  titleAr: varchar("title_ar").notNull(),
+  titleEn: varchar("title_en"),
+  speakerName: varchar("speaker_name"),
+  category: varchar("category"),
+  targetSkill: varchar("target_skill"),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
+  linkedProgramId: varchar("linked_program_id"),
+  linkedWorkbookId: varchar("linked_workbook_id").references(() => workbooksTable.id, { onDelete: "set null" }),
+  placement: jsonb("placement").$type<string[]>(),
+  status: varchar("status").$type<"draft" | "published" | "hidden">().notNull().default("draft"),
+  orderIndex: integer("order_index").notNull().default(0),
+  analysisSkill: varchar("analysis_skill"),
+  analysisObserveAr: text("analysis_observe_ar"),
+  analysisWhyAr: text("analysis_why_ar"),
+  analysisLearnAr: text("analysis_learn_ar"),
+  analysisMistakesAr: text("analysis_mistakes_ar"),
+  analysisExerciseAr: text("analysis_exercise_ar"),
+  analysisDifficulty: varchar("analysis_difficulty").$type<"beginner" | "intermediate" | "advanced">(),
+  analysisLinkedTopic: varchar("analysis_linked_topic"),
+  hasAnalysis: boolean("has_analysis").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (t) => [
+  index("IDX_field_media_status").on(t.status),
+]);
+
+// ── Admin Activity Log (for Overview "Recent Activities") ───────────────
+export const adminActivitiesTable = pgTable("admin_activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  actorUserId: varchar("actor_user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  actorEmail: varchar("actor_email"),
+  action: varchar("action").notNull(),
+  entityType: varchar("entity_type").notNull(),
+  entityId: varchar("entity_id"),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("IDX_admin_activities_created").on(t.createdAt),
+]);
+
 export type SpeechEvaluation = typeof speechEvaluationsTable.$inferSelect;
 export type Order = typeof ordersTable.$inferSelect;
 export type Review = typeof reviewsTable.$inferSelect;
 export type Assignment = typeof assignmentsTable.$inferSelect;
 export type AssignmentSubmission = typeof assignmentSubmissionsTable.$inferSelect;
 export type SiteSettings = typeof siteSettingsTable.$inferSelect;
+export type HomePageSection = typeof homePageSectionsTable.$inferSelect;
+export type Workbook = typeof workbooksTable.$inferSelect;
+export type FieldMedia = typeof fieldMediaTable.$inferSelect;
+export type AdminActivity = typeof adminActivitiesTable.$inferSelect;

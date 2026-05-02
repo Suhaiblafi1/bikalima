@@ -47,7 +47,14 @@ The project is structured as a pnpm monorepo with separate packages for deployab
     - **LMS:** Course catalog (`/courses`), Udemy-style course detail pages (`/courses/:slug`), student dashboard (`/dashboard`) with account info, enrolled courses, orders, and schedule.
     - **Multi-language Support:** Arabic/English only, with RTL auto-switching.
     - **Authentication:** Email/password registration and login with scrypt hashing and session cookies.
-    - **Admin Panel:** Comprehensive `/admin/*` section with 8 sub-pages (Overview, Users, Courses, Enrollments, Workbook Orders, Assignments, Reviews, Settings) and role-based access control (Admin, Trainer, Sales). Includes CRUD for courses, lessons, instructors, enrollment management, workbook order status, student progress tracking, review moderation, and site-wide settings.
+    - **Admin Panel:** Comprehensive `/admin/*` control center with 12 sub-pages: Overview, Home Page Manager, Courses, Workbooks (CMS), Field Media + Analysis, Enrollments, Workbook Orders, Speech Evaluations, Users, Assignments, Reviews, Settings. Role-based access via `PAGE_VISIBILITY` map in `_shared.tsx` (admin/trainer/sales/student). Includes CRUD for courses, lessons, instructors, enrollment management, workbook order status, student progress tracking, review moderation, and site-wide settings.
+    - **Admin Control Center (CMS):** Three new admin sections back the public site with database-driven content:
+        - **Home Page Manager (`/admin/home-page`):** Per-section JSON content editor (AR + EN) with visibility toggle, draft/published status, and reorder controls (chevron up/down + numeric index). Canonical sections: hero, about-trainer, why-bikalima, programs, events, gallery-preview, field-videos, testimonials, faq, enrollment-form, footer. Empty rows fall back to static translation copy at runtime — admins can override one section at a time without breaking the rest.
+        - **Workbooks CMS (`/admin/workbooks`):** Full CRUD over `workbooks` table (slug, AR/EN title + description, JOD price, cover image, sample PDF, topic lists, format digital/printed/both, linked program/course, status draft/published/hidden, order index).
+        - **Field Media + Media Analysis (`/admin/field-media`):** "من الميدان" library for trainer reference clips. Each row stores media metadata (type youtube/upload/image/instagram/tiktok, URL, thumbnail, speaker, category, target skill, placement tags) AND embedded training analysis (skill, what-to-observe, why-it-matters, what-students-learn, common-mistakes, exercise, difficulty, linked topic). The two-tab form ("المادة والعرض" / "التحليل التدريبي") includes a "إنشاء تحليل أولي" button that fills a template the trainer can refine.
+    - **Activity Audit Log:** Every CMS write (create/update/delete on home sections, workbooks, field media, analysis) is logged to `admin_activities` with actor email and human-readable description. Surfaced on the Overview dashboard as "أحدث النشاطات".
+    - **Top Programs Widget:** Overview dashboard aggregates `enrollment_requests` by `program_id` and renders the top 6 with horizontal bar chart sorted by request count.
+    - **Site Settings — Logo:** `site_settings.logo_url` exposed in the admin Settings page under "الهوية واللغة" for site-wide logo override.
 
 **Backend (`artifacts/api-server`):**
 - **Purpose:** Express 5 API server handling business logic and data persistence.
@@ -58,7 +65,7 @@ The project is structured as a pnpm monorepo with separate packages for deployab
 
 **Database (`lib/db`):**
 - **ORM:** Drizzle ORM with PostgreSQL.
-- **Schema:** Defined in `src/schema/` with models for authentication (users, sessions), LMS (courses, lessons, enrollments, requests, orders, evaluations, trainers, site settings), and integrations (sync events).
+- **Schema:** Defined in `src/schema/` with models for authentication (users, sessions), LMS (courses, lessons, enrollments, requests, orders, evaluations, trainers, site settings), CMS (home_page_sections, workbooks, field_media with embedded media analysis, admin_activities audit log), and integrations (sync events).
 - **Role-Based Access Control (RBAC):** `users.role` (admin|trainer|student|sales) drives RBAC.
 - **Integration Columns:** `enrollment_requests`, `workbook_orders`, and `speech_evaluations` tables include fields for CRM, AI analysis, trainer assignment, lead source, and sync status to facilitate future integrations.
 

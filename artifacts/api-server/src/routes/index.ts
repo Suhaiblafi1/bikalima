@@ -11,6 +11,7 @@ import ordersRouter from "./orders";
 import assignmentsRouter from "./assignments";
 import speechEvaluationRouter from "./speech-evaluation";
 import siteSettingsRouter from "./site-settings";
+import cmsRouter from "./cms";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(ordersRouter);
 router.use(assignmentsRouter);
 router.use(speechEvaluationRouter);
 router.use(siteSettingsRouter);
+router.use(cmsRouter);
 
 export default router;

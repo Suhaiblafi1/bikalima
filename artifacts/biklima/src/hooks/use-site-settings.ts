@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 export type PublicSiteSettings = {
   siteNameAr: string | null;
   siteNameEn: string | null;
+  logoUrl: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
   whatsappNumber: string | null;

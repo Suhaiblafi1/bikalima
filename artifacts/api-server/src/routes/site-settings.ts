@@ -10,6 +10,7 @@ router.get("/site-settings", async (req: Request, res: Response) => {
       .select({
         siteNameAr: siteSettingsTable.siteNameAr,
         siteNameEn: siteSettingsTable.siteNameEn,
+        logoUrl: siteSettingsTable.logoUrl,
         contactEmail: siteSettingsTable.contactEmail,
         contactPhone: siteSettingsTable.contactPhone,
         whatsappNumber: siteSettingsTable.whatsappNumber,

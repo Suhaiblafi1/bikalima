@@ -19,6 +19,7 @@ const SECTIONS: {
     fields: [
       { key: "siteNameAr", label: "اسم الموقع (عربي)", placeholder: "بكلمة" },
       { key: "siteNameEn", label: "اسم الموقع (إنجليزي)", placeholder: "Bikalima", dir: "ltr" },
+      { key: "logoUrl", label: "رابط الشعار", placeholder: "https://...", dir: "ltr" },
       { key: "defaultLang", label: "اللغة الافتراضية", type: "select", options: [
         { value: "ar", label: "العربية" }, { value: "en", label: "English" },
       ] },

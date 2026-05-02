@@ -6,6 +6,7 @@ import { PAGE_VISIBILITY, type AdminPageKey } from "./_shared";
 import {
   BarChart3, Users, BookOpen, GraduationCap, ShoppingCart,
   ClipboardList, Star, Mic2, Settings as SettingsIcon,
+  Layout as LayoutIcon, FileText, Film,
 } from "lucide-react";
 
 type NavItem = {
@@ -17,13 +18,16 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { key: "overview",        label: "نظرة عامة",    href: "/admin/overview",        icon: <BarChart3 className="w-4 h-4" /> },
-  { key: "users",           label: "المستخدمون",   href: "/admin/users",           icon: <Users className="w-4 h-4" /> },
+  { key: "home-page",       label: "الصفحة الرئيسية", href: "/admin/home-page",    icon: <LayoutIcon className="w-4 h-4" /> },
   { key: "courses",         label: "الدورات",      href: "/admin/courses",         icon: <BookOpen className="w-4 h-4" /> },
+  { key: "workbooks",       label: "الكراسات",     href: "/admin/workbooks",       icon: <FileText className="w-4 h-4" /> },
+  { key: "field-media",     label: "من الميدان",   href: "/admin/field-media",     icon: <Film className="w-4 h-4" /> },
   { key: "enrollments",     label: "التسجيلات",    href: "/admin/enrollments",     icon: <GraduationCap className="w-4 h-4" /> },
   { key: "workbook-orders", label: "طلبات الكراسات", href: "/admin/workbook-orders", icon: <ShoppingCart className="w-4 h-4" /> },
+  { key: "speech-evaluations", label: "طلبات تقييم الخطاب", href: "/admin/speech-evaluations", icon: <Mic2 className="w-4 h-4" /> },
+  { key: "users",           label: "المستخدمون",   href: "/admin/users",           icon: <Users className="w-4 h-4" /> },
   { key: "assignments",     label: "الواجبات والتقييم", href: "/admin/assignments", icon: <ClipboardList className="w-4 h-4" /> },
   { key: "reviews",         label: "التقييمات",    href: "/admin/reviews",         icon: <Star className="w-4 h-4" /> },
-  { key: "speech-evaluations", label: "طلبات تقييم الخطاب", href: "/admin/speech-evaluations", icon: <Mic2 className="w-4 h-4" /> },
   { key: "settings",        label: "الإعدادات",    href: "/admin/settings",        icon: <SettingsIcon className="w-4 h-4" /> },
 ];
 

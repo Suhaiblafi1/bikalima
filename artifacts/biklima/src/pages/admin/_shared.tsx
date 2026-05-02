@@ -66,6 +66,7 @@ export type ReviewRecord = {
 export type SiteSettingsRecord = {
   id: string;
   siteNameAr: string | null; siteNameEn: string | null;
+  logoUrl: string | null;
   defaultLang: "ar" | "en" | null; defaultCurrency: string | null;
   contactEmail: string | null; contactPhone: string | null; whatsappNumber: string | null;
   facebookUrl: string | null; instagramUrl: string | null; youtubeUrl: string | null; twitterUrl: string | null;
@@ -74,10 +75,64 @@ export type SiteSettingsRecord = {
   updatedAt: string;
 };
 
+// CMS records (Home Page Manager / Workbooks / Field Media)
+export type HomeSectionRecord = {
+  sectionKey: string;
+  contentAr: Record<string, unknown> | null;
+  contentEn: Record<string, unknown> | null;
+  visible: boolean;
+  orderIndex: number;
+  status: "draft" | "published";
+  publishedAt: string | null;
+  updatedAt: string;
+};
+export type WorkbookRecord = {
+  id: string; slug: string;
+  titleAr: string; titleEn: string | null;
+  descriptionAr: string | null; descriptionEn: string | null;
+  priceJod: number | null;
+  coverImageUrl: string | null; samplePdfUrl: string | null;
+  topicsAr: string[] | null; topicsEn: string[] | null;
+  format: "digital" | "printed" | "both";
+  linkedCourseId: string | null; linkedProgramId: string | null;
+  status: "draft" | "published" | "hidden";
+  orderIndex: number;
+  createdAt: string; updatedAt: string;
+};
+export type FieldMediaRecord = {
+  id: string;
+  mediaType: "youtube" | "upload" | "image" | "instagram" | "tiktok";
+  mediaUrl: string; thumbnailUrl: string | null;
+  titleAr: string; titleEn: string | null;
+  speakerName: string | null; category: string | null; targetSkill: string | null;
+  descriptionAr: string | null; descriptionEn: string | null;
+  linkedProgramId: string | null; linkedWorkbookId: string | null;
+  placement: string[] | null;
+  status: "draft" | "published" | "hidden";
+  orderIndex: number;
+  analysisSkill: string | null;
+  analysisObserveAr: string | null; analysisWhyAr: string | null;
+  analysisLearnAr: string | null; analysisMistakesAr: string | null;
+  analysisExerciseAr: string | null;
+  analysisDifficulty: "beginner" | "intermediate" | "advanced" | null;
+  analysisLinkedTopic: string | null;
+  hasAnalysis: boolean;
+  createdAt: string; updatedAt: string;
+};
+export type AdminActivityRecord = {
+  id: string;
+  actorUserId: string | null; actorEmail: string | null;
+  action: string; entityType: string; entityId: string | null;
+  description: string | null;
+  createdAt: string;
+};
+export type TopProgramRecord = { programId: string; requestCount: number };
+
 export type AdminPageKey =
   | "overview" | "users" | "courses" | "enrollments"
   | "workbook-orders" | "assignments" | "reviews"
-  | "speech-evaluations" | "settings";
+  | "speech-evaluations" | "home-page" | "workbooks" | "field-media"
+  | "settings";
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
@@ -89,7 +144,43 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   assignments: ["admin", "trainer"],
   reviews: ["admin", "trainer"],
   "speech-evaluations": ["admin", "sales", "trainer"],
+  "home-page": ["admin"],
+  workbooks: ["admin"],
+  "field-media": ["admin", "trainer"],
   settings: ["admin"],
+};
+
+// Display metadata for the categories used in Field Media (من الميدان).
+export const FIELD_MEDIA_CATEGORIES = [
+  { value: "opening",  labelAr: "البداية" },
+  { value: "closing",  labelAr: "الخاتمة" },
+  { value: "voice",    labelAr: "الصوت" },
+  { value: "body",     labelAr: "لغة الجسد" },
+  { value: "story",    labelAr: "القصة" },
+  { value: "humor",    labelAr: "الفكاهة" },
+  { value: "presence", labelAr: "الحضور" },
+] as const;
+
+export const FIELD_MEDIA_PLACEMENTS = [
+  { value: "home",     labelAr: "الصفحة الرئيسية" },
+  { value: "gallery",  labelAr: "المعرض" },
+  { value: "program",  labelAr: "صفحة برنامج" },
+  { value: "workbook", labelAr: "صفحة كراسة" },
+] as const;
+
+// Display labels for the home page sections in the admin UI (Arabic).
+export const HOME_SECTION_LABELS: Record<string, string> = {
+  hero: "الهيرو",
+  "about-trainer": "نبذة عن المدرب",
+  "why-bikalima": "لماذا بكلمة",
+  programs: "البرامج",
+  events: "الفعاليات",
+  "gallery-preview": "معاينة المعرض",
+  "field-videos": "من الميدان",
+  testimonials: "آراء الطلاب",
+  faq: "الأسئلة الشائعة",
+  "enrollment-form": "نموذج التسجيل",
+  footer: "التذييل",
 };
 
 export type SpeechEvaluationRecord = {
