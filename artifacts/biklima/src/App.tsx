@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AdminRoute, ProtectedRoute } from "@/components/route-guards";
+import { AdminRoute } from "@/components/route-guards";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import AdminPanel from "@/pages/admin";
@@ -42,13 +42,7 @@ function AnimatedRouter() {
           <Route path="/workbooks" component={WorkbooksPage} />
           <Route path="/checkout" component={CheckoutPage} />
           <Route path="/confirmation" component={ConfirmationPage} />
-          <Route path="/courses/:slug/learn">
-            {() => (
-              <ProtectedRoute>
-                <LearnPage />
-              </ProtectedRoute>
-            )}
-          </Route>
+          <Route path="/courses/:slug/learn" component={LearnPage} />
           <Route path="/courses/:slug" component={CourseDetailPage} />
           <Route component={NotFound} />
         </Switch>

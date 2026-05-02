@@ -78,6 +78,9 @@ const T = {
     notesPlaceholder: "اكتب ملاحظاتك على هذا الدرس...",
     saveNote: "حفظ الملاحظة",
     saving: "جارٍ الحفظ...",
+    noteSaveError: "تعذّر حفظ الملاحظة. حاول مرة أخرى.",
+    noteDeleteError: "تعذّر حذف الملاحظة. حاول مرة أخرى.",
+    noteLoadError: "تعذّر تحميل الملاحظة.",
     saved: "تم الحفظ ✓",
     deleteNote: "حذف",
     notesPrivate: "ملاحظاتك خاصة وتظهر لك فقط.",
@@ -111,6 +114,9 @@ const T = {
     notesPlaceholder: "Write your notes for this lesson...",
     saveNote: "Save Note",
     saving: "Saving...",
+    noteSaveError: "Could not save note. Please try again.",
+    noteDeleteError: "Could not delete note. Please try again.",
+    noteLoadError: "Could not load note.",
     saved: "Saved ✓",
     deleteNote: "Delete",
     notesPrivate: "Your notes are private and only visible to you.",
@@ -203,6 +209,7 @@ export default function LearnPage() {
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteJustSaved, setNoteJustSaved] = useState(false);
   const [noteLoading, setNoteLoading] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const lastKey = (s: string) => `bk_learn_${s}`;
 
@@ -285,20 +292,27 @@ export default function LearnPage() {
     const lessonId = currentLesson.id;
     setNoteLoading(true);
     setNoteJustSaved(false);
+    setNoteError(null);
     fetch(`${base}/api/my/lessons/${lessonId}/note`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : { note: null }))
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         const content = data?.note?.content ?? "";
         setNoteContent(content);
         setNoteSavedContent(content);
       })
-      .catch(() => {})
+      .catch(() => {
+        setNoteError(t.noteLoadError);
+      })
       .finally(() => setNoteLoading(false));
-  }, [currentLesson, enrolled, base]);
+  }, [currentLesson, enrolled, base, t]);
 
   const saveNote = useCallback(async () => {
     if (!currentLesson || !enrolled || noteSaving) return;
     setNoteSaving(true);
+    setNoteError(null);
     try {
       const r = await fetch(`${base}/api/my/lessons/${currentLesson.id}/note`, {
         method: "PUT",
@@ -310,14 +324,19 @@ export default function LearnPage() {
         setNoteSavedContent(noteContent);
         setNoteJustSaved(true);
         setTimeout(() => setNoteJustSaved(false), 2000);
+      } else {
+        setNoteError(t.noteSaveError);
       }
-    } catch {}
+    } catch {
+      setNoteError(t.noteSaveError);
+    }
     setNoteSaving(false);
-  }, [currentLesson, enrolled, noteSaving, noteContent, base]);
+  }, [currentLesson, enrolled, noteSaving, noteContent, base, t]);
 
   const deleteNote = useCallback(async () => {
     if (!currentLesson || !enrolled) return;
     setNoteSaving(true);
+    setNoteError(null);
     try {
       const r = await fetch(`${base}/api/my/lessons/${currentLesson.id}/note`, {
         method: "DELETE",
@@ -326,10 +345,14 @@ export default function LearnPage() {
       if (r.ok) {
         setNoteContent("");
         setNoteSavedContent("");
+      } else {
+        setNoteError(t.noteDeleteError);
       }
-    } catch {}
+    } catch {
+      setNoteError(t.noteDeleteError);
+    }
     setNoteSaving(false);
-  }, [currentLesson, enrolled, base]);
+  }, [currentLesson, enrolled, base, t]);
 
   const goToLesson = useCallback((idx: number) => {
     if (idx < 0 || idx >= lessons.length) return;
@@ -736,6 +759,11 @@ export default function LearnPage() {
                     dir={isRtl ? "rtl" : "ltr"}
                     className="w-full bg-background border border-border rounded-lg p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 disabled:opacity-60"
                   />
+                  {noteError && (
+                    <p className="mt-2 text-xs text-destructive font-medium" role="alert">
+                      {noteError}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between gap-3 mt-3">
                     <p className="text-[11px] text-muted-foreground">{t.notesPrivate}</p>
                     <div className="flex items-center gap-2">
