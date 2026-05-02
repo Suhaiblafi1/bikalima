@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const [, navigate] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
+    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
   });
   const isRtl = lang === "ar";
   const apiBase = getApiBase();
@@ -186,7 +186,7 @@ export default function CheckoutPage() {
   const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
 
   return (
-    <AppShell lang={lang} onLangChange={(l) => { setLang(l); try { localStorage.setItem("bk_lang", l); } catch {} }} containerClassName="">
+    <AppShell lang={lang} onLangChange={(l) => { setLang(l); try { localStorage.setItem("biklima-lang", l); } catch {} }} containerClassName="">
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6">
         <div className="flex items-center gap-3">
           <button

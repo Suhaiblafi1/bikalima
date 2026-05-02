@@ -45,7 +45,7 @@ export default function CourseDetailPage() {
   const slug = params?.slug ?? "";
   const [, navigate] = useLocation();
   const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
+    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
   });
 
   const [hasAccess, setHasAccess] = useState(false);
@@ -57,7 +57,7 @@ export default function CourseDetailPage() {
 
   const switchLang = (l: Lang) => {
     setLang(l);
-    try { localStorage.setItem("bk_lang", l); } catch {}
+    try { localStorage.setItem("biklima-lang", l); } catch {}
   };
 
   const programId = SLUG_TO_ID[slug];

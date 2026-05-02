@@ -4,12 +4,12 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { AppShell } from "@/components/app-shell";
 import {
   User,
   BookOpen,
   ShoppingCart,
   Calendar,
-  LogOut,
   ChevronRight,
   Clock,
   Mail,
@@ -172,7 +172,6 @@ type Tab = "account" | "courses" | "orders" | "schedule";
 function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
   const { login, register } = useAuth();
   const [, navigate] = useLocation();
-  const isRtl = lang === "ar";
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -231,7 +230,7 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="flex items-center justify-center p-6 min-h-[calc(100vh-3.5rem)]">
       <Card className="max-w-md w-full">
         <CardContent className="p-8 space-y-6">
           <div className="text-center space-y-3">
@@ -447,9 +446,13 @@ type RequestData = {
 };
 
 export default function Dashboard() {
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [lang, setLang] = useState<Lang>("ar");
+  const switchLang = (l: Lang) => {
+    setLang(l);
+    try { localStorage.setItem("biklima-lang", l); } catch {}
+  };
   const [activeTab, setActiveTab] = useState<Tab>("account");
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
@@ -507,14 +510,18 @@ export default function Dashboard() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background" dir={isRtl ? "rtl" : "ltr"}>
+      <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
+      </AppShell>
     );
   }
 
   if (!isAuthenticated) {
-    return <AuthForm lang={lang} t={t} />;
+    return (
+      <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+        <AuthForm lang={lang} t={t} />
+      </AppShell>
+    );
   }
 
   const tabs: Tab[] = ["account", "courses", "orders", "schedule"];
@@ -542,8 +549,8 @@ export default function Dashboard() {
     const nextLesson = lessonIdx < currentCourse.lessons.length - 1 ? currentCourse.lessons[lessonIdx + 1] : null;
 
     return (
-      <div className="min-h-screen bg-background" dir={isRtl ? "rtl" : "ltr"}>
-        <header className="bg-card border-b border-border sticky top-0 z-50">
+      <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+        <div className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-3 flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => setActiveLesson(null)} className="gap-1">
               {isRtl ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
@@ -554,7 +561,7 @@ export default function Dashboard() {
               <p className="font-bold truncate">{getTitle(currentLesson)}</p>
             </div>
           </div>
-        </header>
+        </div>
 
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col lg:flex-row gap-6">
@@ -613,7 +620,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -623,15 +630,15 @@ export default function Dashboard() {
     const progressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
     return (
-      <div className="min-h-screen bg-background" dir={isRtl ? "rtl" : "ltr"}>
-        <header className="bg-card border-b border-border sticky top-0 z-50">
+      <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
+        <div className="bg-card border-b border-border">
           <div className="container mx-auto px-4 py-3 flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => setViewingCourse(null)} className="gap-1">
               {isRtl ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
               {isRtl ? "دوراتي" : "My Courses"}
             </Button>
           </div>
-        </header>
+        </div>
 
         <div className="container mx-auto px-4 py-6 space-y-6">
           <div>
@@ -671,28 +678,12 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background" dir={isRtl ? "rtl" : "ltr"}>
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate("/")} className="logo-biklima text-3xl text-primary">بكلمة</button>
-            <span className="text-muted-foreground hidden sm:inline">|</span>
-            <h1 className="font-bold text-lg hidden sm:inline">{t.title}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium hidden sm:inline">{user?.firstName || user?.email}</span>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground hover:text-destructive">
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h2>
@@ -955,6 +946,6 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

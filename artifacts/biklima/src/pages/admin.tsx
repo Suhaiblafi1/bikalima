@@ -4,13 +4,16 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { AppShell } from "@/components/app-shell";
 import {
   Users, Search, Trash2, Edit3, Save, X, Home, Shield, UserPlus,
-  LogOut, ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText,
+  ChevronDown, ChevronUp, BookOpen, Plus, Video, FileText,
   ShoppingCart, CheckCircle, Clock, XCircle, GraduationCap,
   BarChart3, DollarSign, TrendingUp, Copy,
   Star, UserCircle, Layers,
 } from "lucide-react";
+
+type Lang = "ar" | "en";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; createdAt: string };
@@ -121,10 +124,17 @@ function BulletEditor({ value, onChange, placeholder }: { value: string[]; onCha
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function AdminPanel() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [, navigate] = useLocation();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [tab, setTab] = useState<AdminTab>("users");
+  const [lang, setLang] = useState<Lang>(() => {
+    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
+  });
+  const switchLang = (l: Lang) => {
+    setLang(l);
+    try { localStorage.setItem("biklima-lang", l); } catch {}
+  };
 
   // Data state
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -426,24 +436,28 @@ export default function AdminPanel() {
   const filteredLmsOrders = lmsOrders.filter(o => lmsOrderStatusFilter === "all" || o.status === lmsOrderStatusFilter);
 
   // ── Guards ─────────────────────────────────────────────────────────────
-  if (isLoading || loading) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
+  if (isLoading || loading) return (
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
+      <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+    </AppShell>
+  );
   if (!isAuthenticated) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="max-w-md w-full mx-4"><CardContent className="p-8 text-center">
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
         <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">Admin Access Required</h2>
         <Button onClick={() => navigate("/dashboard")} className="bg-primary hover:bg-primary/90 text-white">تسجيل الدخول</Button>
       </CardContent></Card>
-    </div>
+    </AppShell>
   );
   if (isAdmin === false) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="max-w-md w-full mx-4"><CardContent className="p-8 text-center">
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
         <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
         <h2 className="text-xl font-bold mb-2">Access Denied</h2>
         <Button variant="outline" onClick={() => navigate("/")} className="gap-2"><Home className="w-4 h-4" /> Back to Home</Button>
       </CardContent></Card>
-    </div>
+    </AppShell>
   );
 
   const tabs: { key: AdminTab; label: string; icon: React.ReactNode; count?: number }[] = [
@@ -471,22 +485,13 @@ export default function AdminPanel() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-muted/30" dir="rtl">
-      <header className="bg-background border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-primary" />
-            <h1 className="font-serif text-lg font-bold">لوحة الإدارة — بكلمة</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground hidden sm:inline">{user?.email}</span>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}><Home className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={logout} className="text-destructive"><LogOut className="w-4 h-4" /></Button>
-          </div>
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="bg-muted/30 flex-1">
+      <div className="container mx-auto px-4 sm:px-6 py-6 space-y-5">
+        <div className="flex items-center gap-3">
+          <Shield className="w-5 h-5 text-primary" />
+          <h1 className="font-serif text-lg font-bold">{lang === "ar" ? "لوحة الإدارة" : "Admin Panel"}</h1>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -1213,8 +1218,8 @@ export default function AdminPanel() {
         {tab === "revenue" && (
           <RevenueTab revenue={revenue} onRefresh={fetchRevenue} />
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }
 

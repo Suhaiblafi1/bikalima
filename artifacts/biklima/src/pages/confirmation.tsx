@@ -11,11 +11,11 @@ const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 export default function ConfirmationPage() {
   const [, navigate] = useLocation();
   const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
+    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
   });
   const switchLang = (l: Lang) => {
     setLang(l);
-    try { localStorage.setItem("bk_lang", l); } catch {}
+    try { localStorage.setItem("biklima-lang", l); } catch {}
   };
 
   const steps = lang === "ar"

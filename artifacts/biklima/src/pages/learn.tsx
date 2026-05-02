@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
+import { AppShell } from "@/components/app-shell";
 import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
@@ -184,7 +185,7 @@ export default function LearnPage() {
   const [, navigate] = useLocation();
 
   const [lang, setLang] = useState<Lang>(() => {
-    try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
+    try { return (localStorage.getItem("biklima-lang") as Lang) || "ar"; } catch { return "ar"; }
   });
   const t = T[lang];
   const isRtl = lang === "ar";
@@ -379,7 +380,7 @@ export default function LearnPage() {
 
   const switchLang = (l: Lang) => {
     setLang(l);
-    try { localStorage.setItem("bk_lang", l); } catch {}
+    try { localStorage.setItem("biklima-lang", l); } catch {}
   };
 
   const lessonTitle = (l: Lesson) => lang === "ar" ? l.titleAr || l.titleEn : l.titleEn || l.titleAr;
@@ -390,24 +391,24 @@ export default function LearnPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" dir={isRtl ? "rtl" : "ltr"}>
+      <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">{t.loading}</p>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center" dir={isRtl ? "rtl" : "ltr"}>
+      <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center">
         <div className="text-center">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-xl font-bold mb-4">{t.notFound}</p>
           <button onClick={() => navigate(`/courses/${slug}`)} className="text-primary underline">{t.back}</button>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -507,9 +508,9 @@ export default function LearnPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir={isRtl ? "rtl" : "ltr"}>
-      {/* Top header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border shadow-sm">
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex flex-col">
+      {/* Lesson sub-header */}
+      <div className="sticky top-14 z-30 bg-card border-b border-border shadow-sm">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
             onClick={() => navigate(`/courses/${slug}`)}
@@ -545,12 +546,6 @@ export default function LearnPage() {
               </button>
             )}
             <button
-              onClick={() => switchLang(lang === "ar" ? "en" : "ar")}
-              className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:bg-muted transition-colors"
-            >
-              {lang === "ar" ? "EN" : "AR"}
-            </button>
-            <button
               className="p-1.5 rounded hover:bg-muted transition-colors"
               onClick={() => setSidebarOpen(o => !o)}
             >
@@ -558,10 +553,10 @@ export default function LearnPage() {
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Body: sidebar + main */}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 relative">
         {/* Desktop sidebar */}
         <AnimatePresence initial={false}>
           {sidebarOpen && (
@@ -570,9 +565,9 @@ export default function LearnPage() {
               animate={{ width: 288, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="hidden lg:block shrink-0 overflow-hidden border-e border-border"
+              className="hidden lg:block shrink-0 overflow-hidden border-e border-border self-stretch"
             >
-              <div className="w-72 h-full overflow-y-auto">{SidebarContent}</div>
+              <div className="w-72 sticky top-28 max-h-[calc(100vh-7rem)] overflow-y-auto">{SidebarContent}</div>
             </motion.aside>
           )}
         </AnimatePresence>
@@ -591,7 +586,7 @@ export default function LearnPage() {
                 animate={{ x: 0 }}
                 exit={{ x: isRtl ? "100%" : "-100%" }}
                 transition={{ duration: 0.25 }}
-                className={`lg:hidden fixed top-14 bottom-0 ${isRtl ? "right-0" : "left-0"} w-72 z-40 shadow-xl overflow-hidden`}
+                className={`lg:hidden fixed top-28 bottom-0 ${isRtl ? "right-0" : "left-0"} w-72 z-40 shadow-xl overflow-hidden`}
               >
                 <div className="h-full overflow-y-auto">{SidebarContent}</div>
               </motion.aside>
@@ -861,6 +856,6 @@ export default function LearnPage() {
           </div>
         </footer>
       )}
-    </div>
+    </AppShell>
   );
 }
