@@ -384,7 +384,7 @@ function StudentCertificatesTab({ apiBase, lang }: { apiBase: string; lang: Lang
   );
 }
 
-function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
+function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar; onAuthenticated: () => void }) {
   const { login, register } = useAuth();
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -430,6 +430,7 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
       if (result.error) {
         setError(result.error);
       } else {
+        onAuthenticated();
         navigate("/dashboard");
       }
     } else {
@@ -439,6 +440,7 @@ function AuthForm({ lang, t }: { lang: Lang; t: typeof dashT.ar }) {
       if (result.error) {
         setError(result.error);
       } else {
+        onAuthenticated();
         navigate("/dashboard");
       }
     }
@@ -1119,7 +1121,7 @@ type RequestData = {
 };
 
 export default function Dashboard() {
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth();
   const [, navigate] = useLocation();
   const { lang } = useLang();
   const [activeTab, setActiveTab] = useState<Tab>("account");
@@ -1183,7 +1185,7 @@ export default function Dashboard() {
   if (!isAuthenticated) {
     return (
       <AppShell containerClassName="">
-        <AuthForm lang={lang} t={t} />
+        <AuthForm lang={lang} t={t} onAuthenticated={refreshUser} />
       </AppShell>
     );
   }
