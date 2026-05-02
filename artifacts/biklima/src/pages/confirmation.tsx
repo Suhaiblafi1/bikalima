@@ -12,13 +12,13 @@ export default function ConfirmationPage() {
   const steps = lang === "ar"
     ? [
         { num: "1", text: "ستصلك رسالة تأكيد على بريدك الإلكتروني" },
-        { num: "2", text: "سيراجع فريقنا طلبك ويتواصل معك لتأكيد الدفع" },
-        { num: "3", text: "بعد تأكيد الدفع ستصلك بيانات الدخول للبرنامج" },
+        { num: "2", text: "أكّد بريدك من الرابط في الرسالة لتفعيل حسابك" },
+        { num: "3", text: "سيتواصل معك فريقنا لترتيب التفاصيل وتأكيد المقعد" },
       ]
     : [
         { num: "1", text: "A confirmation email will be sent to your inbox" },
-        { num: "2", text: "Our team will review your request and contact you to confirm payment" },
-        { num: "3", text: "After payment confirmation, your program login credentials will be sent" },
+        { num: "2", text: "Verify your email via the link to activate your account" },
+        { num: "3", text: "Our team will reach out to finalize details and confirm your spot" },
       ];
 
   return (

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -488,20 +489,14 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="wiz-phone">{t.enroll.phoneLabel}</Label>
-                    <Input
+                    <PhoneInput
                       id="wiz-phone"
                       required
-                      type="tel"
-                      autoComplete="tel"
-                      inputMode="tel"
-                      aria-label={w.ariaPhone}
-                      aria-required="true"
-                      dir="ltr"
+                      lang={lang}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="h-11 rounded-xl bg-background"
-                      placeholder="+962 7X XXX XXXX"
-                      data-testid="wizard-input-phone"
+                      onChange={setPhone}
+                      ariaLabel={w.ariaPhone}
+                      testId="wizard-input-phone"
                     />
                   </div>
                 </div>

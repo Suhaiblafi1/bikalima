@@ -1,8 +1,9 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { randomBytes } from "node:crypto";
 import { GetCurrentAuthUserResponse } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import {
   clearSession,
   getSessionId,
@@ -26,39 +27,64 @@ function buildTransporter() {
   return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
 
-async function sendWelcomeEmail(email: string, firstName: string | null) {
+function appOrigin(req: Request): string {
+  const envDomains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (envDomains.length > 0) return `https://${envDomains[0]}`;
+  const host = req.get("host") ?? "localhost";
+  const proto = (req.get("x-forwarded-proto") ?? req.protocol ?? "https").split(",")[0].trim();
+  return `${proto}://${host}`;
+}
+
+function generateVerificationToken(): { token: string; expiresAt: Date } {
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+  return { token, expiresAt };
+}
+
+async function sendVerificationEmail(req: Request, email: string, firstName: string | null, token: string) {
   const transporter = buildTransporter();
-  if (!transporter) return;
+  if (!transporter) {
+    req.log.warn({ email }, "SMTP not configured — verification email not sent");
+    return;
+  }
 
   const name = firstName || email.split("@")[0];
+  const link = `${appOrigin(req)}/verify-email?token=${encodeURIComponent(token)}`;
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`,
       to: email,
-      subject: "مرحباً بك في بكلمة — Welcome to Bikalima",
+      subject: "أكّد بريدك الإلكتروني — Verify your Bikalima email",
       html: `
         <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #25786A; font-size: 36px; margin: 0;">بكلمة</h1>
           </div>
-          <h2 style="color: #333; margin-bottom: 10px;">مرحباً ${name}! 👋</h2>
+          <h2 style="color: #333; margin-bottom: 10px;">مرحباً ${name} 👋</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.8;">
-            شكراً لتسجيلك في منصة <strong>بكلمة</strong>. حسابك جاهز الآن!
+            شكراً لإنشائك حساباً في منصة <strong>بكلمة</strong>. لتفعيل حسابك بالكامل، رجاءً اضغط على الزر أدناه لتأكيد بريدك الإلكتروني.
           </p>
-          <p style="color: #555; font-size: 16px; line-height: 1.8;">
-            يمكنك الآن تصفح برامجنا التدريبية والتسجيل فيها، وطلب الكراسات التدريبية، ومتابعة جدولك الزمني من لوحة التحكم الخاصة بك.
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="color: #999; font-size: 14px;">للتواصل المباشر عبر واتساب: <a href="https://wa.me/97455377065" style="color: #25786A;">+974 5537 7065</a></p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${link}" style="display: inline-block; background: #25786A; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 999px; font-weight: bold; font-size: 16px;">
+              تأكيد البريد الإلكتروني · Verify Email
+            </a>
           </div>
+          <p style="color: #888; font-size: 13px; line-height: 1.7; text-align: center;">
+            أو انسخ هذا الرابط في متصفحك:<br />
+            <span dir="ltr" style="word-break: break-all;">${link}</span>
+          </p>
+          <p style="color: #aaa; font-size: 12px; line-height: 1.6; text-align: center; margin-top: 24px;">
+            هذا الرابط صالح لمدة 24 ساعة. إذا لم تنشئ هذا الحساب، يمكنك تجاهل هذه الرسالة.<br />
+            This link is valid for 24 hours. If you didn't create an account, please ignore this email.
+          </p>
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
           <p style="color: #aaa; font-size: 12px; text-align: center;">© ${new Date().getFullYear()} بكلمة — Bikalima</p>
         </div>
       `,
     });
   } catch (err) {
-    console.error("Failed to send welcome email:", err);
+    req.log.error({ err, email }, "Failed to send verification email");
   }
 }
 
@@ -84,12 +110,17 @@ router.get("/auth/user", (req: Request, res: Response) => {
 // Role-aware "me" endpoint. Returns the same identity as /auth/user but also
 // includes the resolved role (admin|trainer|student|sales) so the frontend
 // can gate the admin UI by role without parsing it out of /auth/user.
-router.get("/me", (req: Request, res: Response) => {
+router.get("/me", async (req: Request, res: Response) => {
   res.set("Cache-Control", "no-store");
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
+  // Look up emailVerified directly so it stays current without re-login.
+  const [fresh] = await db
+    .select({ emailVerified: usersTable.emailVerified })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.user.id));
   res.json({
     user: {
       id: req.user.id,
@@ -98,6 +129,7 @@ router.get("/me", (req: Request, res: Response) => {
       lastName: req.user.lastName ?? null,
       profileImageUrl: req.user.profileImageUrl ?? null,
       role: req.user.role ?? "student",
+      emailVerified: fresh?.emailVerified ?? false,
     },
   });
 });
@@ -127,6 +159,7 @@ router.post("/auth/register", async (req: Request, res: Response) => {
     }
 
     const passwordHash = await hashPassword(password);
+    const { token, expiresAt } = generateVerificationToken();
 
     const [user] = await db
       .insert(usersTable)
@@ -135,6 +168,9 @@ router.post("/auth/register", async (req: Request, res: Response) => {
         passwordHash,
         firstName: firstName || null,
         lastName: lastName || null,
+        emailVerified: false,
+        emailVerificationToken: token,
+        emailVerificationExpiresAt: expiresAt,
       })
       .returning();
 
@@ -151,12 +187,81 @@ router.post("/auth/register", async (req: Request, res: Response) => {
     const sid = await createSession(sessionData);
     setSessionCookie(res, sid);
 
-    sendWelcomeEmail(user.email, user.firstName);
+    sendVerificationEmail(req, user.email, user.firstName, token);
 
-    res.json({ user: sessionData.user });
+    res.json({ user: sessionData.user, emailVerified: false });
   } catch (err) {
     req.log.error({ err }, "Registration error");
     res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+// ── Email verification: confirm token ─────────────────────────────────────
+router.post("/auth/verify-email", async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body ?? {};
+    if (!token || typeof token !== "string") {
+      res.status(400).json({ error: "Token is required" });
+      return;
+    }
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.emailVerificationToken, token),
+          gt(usersTable.emailVerificationExpiresAt, new Date()),
+        ),
+      );
+
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired token" });
+      return;
+    }
+
+    await db
+      .update(usersTable)
+      .set({
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null,
+      })
+      .where(eq(usersTable.id, user.id));
+
+    res.json({ ok: true, email: user.email });
+  } catch (err) {
+    req.log.error({ err }, "Email verification failed");
+    res.status(500).json({ error: "Verification failed" });
+  }
+});
+
+// ── Email verification: resend link to currently logged-in user ──────────
+router.post("/auth/resend-verification", async (req: Request, res: Response) => {
+  try {
+    if (!req.isAuthenticated() || !req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.id));
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    if (user.emailVerified) {
+      res.json({ ok: true, alreadyVerified: true });
+      return;
+    }
+    const { token, expiresAt } = generateVerificationToken();
+    await db
+      .update(usersTable)
+      .set({ emailVerificationToken: token, emailVerificationExpiresAt: expiresAt })
+      .where(eq(usersTable.id, user.id));
+    sendVerificationEmail(req, user.email, user.firstName, token);
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Resend verification failed");
+    res.status(500).json({ error: "Could not resend verification" });
   }
 });
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mic2, Video, FileText, CheckCircle2, Send, Clock, Loader2 } from "lucide-react";
@@ -362,20 +363,14 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="speech-whatsapp" className="text-sm font-medium">{t.whatsappLabel}</Label>
-                  <Input
+                  <PhoneInput
                     id="speech-whatsapp"
-                    type="tel"
+                    lang={lang}
                     value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value.slice(0, 40))}
-                    placeholder="962790000000"
-                    className="rounded-xl"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    dir="ltr"
-                    aria-label={t.whatsappLabel}
-                    aria-required="true"
+                    onChange={setWhatsapp}
+                    ariaLabel={t.whatsappLabel}
                     required
-                    data-testid="speech-eval-whatsapp"
+                    testId="speech-eval-whatsapp"
                   />
                   <p className="text-xs text-muted-foreground">{t.whatsappHint}</p>
                 </div>

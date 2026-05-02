@@ -42,6 +42,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -1613,10 +1614,11 @@ export default function Home() {
                             value={consultEmail} onChange={(e) => setConsultEmail(e.target.value)}
                             className="rounded-xl h-11"
                           />
-                          <Input
-                            placeholder={lang === "ar" ? "رقم الجوال (اختياري)" : "Phone number (optional)"}
-                            value={consultPhone} onChange={(e) => setConsultPhone(e.target.value)}
-                            className="rounded-xl h-11"
+                          <PhoneInput
+                            lang={lang}
+                            value={consultPhone}
+                            onChange={setConsultPhone}
+                            ariaLabel={lang === "ar" ? "رقم الجوال (اختياري)" : "Phone number (optional)"}
                           />
                           <Textarea
                             placeholder={lang === "ar" ? "ماذا تريد أن تناقش؟ (اختياري)" : "What would you like to discuss? (optional)"}

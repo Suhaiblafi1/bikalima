@@ -21,6 +21,7 @@ import AdminWorkbooksCms from "@/pages/admin/workbooks";
 import AdminFieldMedia from "@/pages/admin/field-media";
 import AdminCertificates from "@/pages/admin/certificates";
 import VerifyPage from "@/pages/verify";
+import VerifyEmailPage from "@/pages/verify-email";
 import CertificateDetailPage from "@/pages/certificate-detail";
 import GraduatesPage from "@/pages/graduates";
 import GalleryPage from "@/pages/gallery";
@@ -113,6 +114,7 @@ function AnimatedRouter() {
           <Route path="/gallery" component={GalleryPage} />
           <Route path="/workbooks" component={WorkbooksPage} />
           <Route path="/verify" component={VerifyPage} />
+          <Route path="/verify-email" component={VerifyEmailPage} />
           <Route path="/certificates/:code" component={CertificateDetailPage} />
           <Route path="/graduates" component={GraduatesPage} />
           <Route path="/checkout" component={CheckoutPage} />

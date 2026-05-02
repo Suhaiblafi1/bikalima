@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Loader2, Check, CheckCheck, Minus } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
+import { PhoneInput } from "@/components/phone-input";
 import { trackWhatsappClick } from "@/lib/analytics";
 
 const STORAGE_KEY = "bikalima_chat_v1";
@@ -532,16 +533,11 @@ export function LiveChatWidget() {
                   <label className="block text-xs font-semibold text-foreground mb-1">
                     {t.whatsapp}
                   </label>
-                  <input
-                    type="tel"
-                    inputMode="tel"
+                  <PhoneInput
+                    lang={lang}
                     value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    autoComplete="tel"
-                    placeholder={t.whatsappPh}
-                    dir="ltr"
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    data-testid="live-chat-whatsapp"
+                    onChange={setWhatsapp}
+                    testId="live-chat-whatsapp"
                   />
                 </div>
 

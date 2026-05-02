@@ -103,9 +103,9 @@ export const COURSE_PAGE_DATA: Record<string, CoursePageData> = {
       "تمارين الإقناع والتأثير العملية",
     ],
     accessSteps: [
-      "أرسل طلبك وادفع الرسوم",
-      "يُفعّل حسابك خلال 24 ساعة",
-      "تصلك بيانات الدخول عبر البريد",
+      "أنشئ حسابك على المنصة",
+      "أكّد بريدك الإلكتروني عبر الرابط الذي يصلك",
+      "احجز مقعدك في الدورة",
       "انضم للجلسات المباشرة وابدأ رحلتك",
     ],
     faqItems: [
@@ -188,8 +188,8 @@ export const COURSE_PAGE_DATA: Record<string, CoursePageData> = {
     ],
     accessSteps: [
       "تحقق من إتمامك لدورة المتحدث المؤثر",
-      "أرسل طلب التسجيل وادفع الرسوم",
-      "يُفعّل حسابك خلال 24 ساعة",
+      "أنشئ حسابك وأكّد بريدك الإلكتروني",
+      "احجز مقعدك في برنامج التدريب",
       "ابدأ مسارك نحو الاعتماد الرسمي",
     ],
     faqItems: [
@@ -267,8 +267,8 @@ export const COURSE_PAGE_DATA: Record<string, CoursePageData> = {
       "جلسات تطبيق مباشرة مع الأطفال",
     ],
     accessSteps: [
-      "أرسل طلبك وادفع الرسوم",
-      "يُفعّل حسابك خلال 24 ساعة",
+      "أنشئ حسابك وأكّد بريدك الإلكتروني",
+      "احجز مقعدك في البرنامج",
       "تصلك حقيبة المعلم الرقمية",
       "ابدأ تطبيق البرنامج في بيئتك",
     ],
@@ -513,8 +513,8 @@ export function StickyPurchaseCard({ priceJod, sessions, startDate, format, slug
           </Button>
           <p className="text-center text-xs text-muted-foreground leading-relaxed">
             {lang === "ar"
-              ? "بعد التسجيل ستصلك بيانات الدخول فوراً"
-              : "Login credentials sent immediately after registration"}
+              ? "أنشئ حسابك وأكّد بريدك الإلكتروني للوصول إلى البرنامج"
+              : "Create your account and verify your email to access the program"}
           </p>
         </>
 

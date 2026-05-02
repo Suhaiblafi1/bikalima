@@ -9,6 +9,7 @@ export interface MeUser {
   lastName: string | null;
   profileImageUrl: string | null;
   role: Role;
+  emailVerified?: boolean;
 }
 
 function getApiBase(): string {

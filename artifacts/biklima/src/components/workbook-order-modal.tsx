@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { T } from "../translations";
@@ -408,7 +409,7 @@ export function WorkbookOrderModal({ workbook, onClose }: Props) {
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">{wm.phoneLabel}</label>
-                        <Input type="tel" value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)} placeholder="+962..." required className="rounded-xl" />
+                        <PhoneInput lang={lang} value={buyerPhone} onChange={setBuyerPhone} required />
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-2">{wm.emailLabel}</label>

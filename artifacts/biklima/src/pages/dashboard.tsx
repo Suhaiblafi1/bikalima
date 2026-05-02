@@ -4,6 +4,8 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
+import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
 import StudentAssignmentsTab from "@/components/student-assignments-tab";
 import { useLang } from "@/hooks/useLang";
@@ -397,11 +399,6 @@ function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const credentialsNote =
-    lang === "ar"
-      ? "يتم تزويد الطلبة ببيانات الدخول تلقائياً بعد القبول في البرنامج."
-      : "Login credentials are provided automatically upon program admission.";
-
   const switchMode = (next: "login" | "register") => {
     setMode(next);
     setError("");
@@ -590,7 +587,6 @@ function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar
                 style={{ color: "hsl(var(--gold))" }}
                 aria-hidden
               />
-              <p className="text-foreground/80">{credentialsNote}</p>
             </div>
           )}
 
@@ -893,7 +889,7 @@ function AccountTab({ apiBase, lang: _lang, t, user }: { apiBase: string; lang: 
               </div>
               <div className="space-y-1">
                 <label htmlFor="phone" className="text-xs text-muted-foreground font-medium flex items-center gap-1"><Phone className="w-3 h-3" />{t.account.phone}</label>
-                <Input id="phone" type="tel" dir="ltr" placeholder="+962 7..." value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-xl" data-testid="input-phone" />
+                <PhoneInput id="phone" lang={lang} value={phone} onChange={setPhone} testId="input-phone" />
               </div>
             </div>
 
@@ -1122,6 +1118,24 @@ type RequestData = {
 
 export default function Dashboard() {
   const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth();
+  const { user: meUser, refresh: refreshMe } = useMe();
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const handleResendVerification = async () => {
+    setResendState("sending");
+    try {
+      const r = await fetch(`${apiBase}/auth/resend-verification`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!r.ok) throw new Error("failed");
+      setResendState("sent");
+      setTimeout(() => { setResendState("idle"); refreshMe(); }, 5000);
+    } catch {
+      setResendState("error");
+      setTimeout(() => setResendState("idle"), 4000);
+    }
+  };
   const [, navigate] = useLocation();
   const { lang } = useLang();
   const [activeTab, setActiveTab] = useState<Tab>("account");
@@ -1371,6 +1385,43 @@ export default function Dashboard() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h2>
         </div>
+
+        {meUser && meUser.emailVerified === false && (
+          <div
+            className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+            data-testid="email-verify-banner"
+          >
+            <div className="flex items-start gap-3 flex-1">
+              <Mail className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold text-amber-900 text-sm md:text-base">
+                  {lang === "ar" ? "أكّد بريدك الإلكتروني" : "Verify your email"}
+                </p>
+                <p className="text-sm text-amber-800 leading-relaxed">
+                  {lang === "ar"
+                    ? `أرسلنا رابط التأكيد إلى ${meUser.email}. رجاءً افتح الرسالة وانقر الرابط لتفعيل حسابك بالكامل.`
+                    : `We sent a verification link to ${meUser.email}. Please open it and click the link to fully activate your account.`}
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleResendVerification}
+              disabled={resendState === "sending" || resendState === "sent"}
+              className="rounded-full border-amber-400 text-amber-900 hover:bg-amber-100 shrink-0"
+              data-testid="resend-verification-btn"
+            >
+              {resendState === "sending"
+                ? (lang === "ar" ? "جارٍ الإرسال..." : "Sending...")
+                : resendState === "sent"
+                ? (lang === "ar" ? "تم الإرسال ✓" : "Sent ✓")
+                : resendState === "error"
+                ? (lang === "ar" ? "تعذّر الإرسال" : "Failed")
+                : (lang === "ar" ? "إعادة إرسال الرابط" : "Resend link")}
+            </Button>
+          </div>
+        )}
 
         <div className="flex flex-col md:flex-row gap-6">
           <nav className="md:w-64 shrink-0">

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Mail, Phone, AlertCircle, ArrowRight, Home } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -289,14 +290,11 @@ export default function CheckoutPage() {
                   <Phone className="w-4 h-4 text-primary" />
                   {lang === "ar" ? "رقم الهاتف" : "Phone Number"}
                 </label>
-                <Input
-                  type="tel"
+                <PhoneInput
                   required
-                  dir="ltr"
+                  lang={lang}
                   value={form.buyerPhone}
-                  onChange={(e) => setForm(f => ({ ...f, buyerPhone: e.target.value }))}
-                  className="rounded-xl"
-                  placeholder="+962 7X XXX XXXX"
+                  onChange={(v) => setForm((f) => ({ ...f, buyerPhone: v }))}
                 />
               </div>
 

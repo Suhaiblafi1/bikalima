@@ -21,9 +21,10 @@ export const usersTable = pgTable("users", {
   phone: varchar("phone"),
   bio: varchar("bio"),
   role: varchar("role", { length: 16 }).notNull().default("student"),
-  // Super admin gets every permission including destructive ones (e.g., delete
-  // certificates). Regular admins can add/edit/change status only.
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerificationToken: varchar("email_verification_token"),
+  emailVerificationExpiresAt: timestamp("email_verification_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
