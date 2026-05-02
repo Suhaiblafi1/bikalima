@@ -358,15 +358,15 @@ router.get("/admin/chat/threads", async (req: Request, res: Response) => {
   const limit = Math.min(Number(req.query.limit) || 50, 200);
 
   try {
-    const where =
+    const filtered =
       status === "open" || status === "closed"
-        ? eq(chatThreadsTable.status, status)
-        : undefined;
+        ? db
+            .select()
+            .from(chatThreadsTable)
+            .where(eq(chatThreadsTable.status, status))
+        : db.select().from(chatThreadsTable);
 
-    const rows = await db
-      .select()
-      .from(chatThreadsTable)
-      .where(where as any)
+    const rows = await filtered
       .orderBy(desc(chatThreadsTable.lastMessageAt))
       .limit(limit);
 
