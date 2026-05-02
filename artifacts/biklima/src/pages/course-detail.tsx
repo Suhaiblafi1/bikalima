@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { programs, getLocalizedProgram, RECORDED_PRICES } from "@/programsData";
 import type { Lang } from "@/translations";
+import { AppShell } from "@/components/app-shell";
 import {
   CourseHero,
   StickyPurchaseCard,
@@ -119,39 +120,7 @@ export default function CourseDetailPage() {
   const priceJod: number | "free" = price ?? "free";
 
   return (
-    <div className="min-h-screen bg-background text-foreground" dir={isRtl ? "rtl" : "ltr"} lang={lang}>
-
-      {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-6 h-16 flex items-center justify-between gap-4">
-          <button
-            onClick={() => navigate(`${baseUrl}/`)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm font-medium"
-          >
-            <ArrowStart className="w-4 h-4" />
-            {lang === "ar" ? "الرئيسية" : "Home"}
-          </button>
-
-          <button onClick={() => navigate(`${baseUrl}/`)} className="logo-biklima text-4xl text-primary leading-none">
-            بكلمة
-          </button>
-
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
-              {(["ar", "en"] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => switchLang(l)}
-                  className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  {l === "ar" ? "ع" : "EN"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="">
       {/* ── Hero ── */}
       <CourseHero
         title={loc.shortTitle}
@@ -284,6 +253,6 @@ export default function CourseDetailPage() {
           <a href="mailto:info@bikalima.com" className="hover:text-primary transition-colors">info@bikalima.com</a>
         </div>
       </footer>
-    </div>
+    </AppShell>
   );
 }

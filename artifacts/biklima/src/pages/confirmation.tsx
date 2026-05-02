@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, LayoutDashboard } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 
 type Lang = "ar" | "en";
 
@@ -9,10 +10,13 @@ const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
 export default function ConfirmationPage() {
   const [, navigate] = useLocation();
-  const [lang] = useState<Lang>(() => {
+  const [lang, setLang] = useState<Lang>(() => {
     try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
   });
-  const isRtl = lang === "ar";
+  const switchLang = (l: Lang) => {
+    setLang(l);
+    try { localStorage.setItem("bk_lang", l); } catch {}
+  };
 
   const steps = lang === "ar"
     ? [
@@ -27,7 +31,7 @@ export default function ConfirmationPage() {
       ];
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6" dir={isRtl ? "rtl" : "ltr"}>
+    <AppShell lang={lang} onLangChange={switchLang} containerClassName="flex-1 flex items-center justify-center p-6">
       <div className="max-w-lg w-full space-y-8 text-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
@@ -79,6 +83,6 @@ export default function ConfirmationPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

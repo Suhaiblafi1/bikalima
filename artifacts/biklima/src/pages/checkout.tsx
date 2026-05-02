@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Mail, Phone, AlertCircle, ArrowRight, Home } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 
 type Lang = "ar" | "en";
 
@@ -18,7 +19,7 @@ function getApiBase() {
 export default function CheckoutPage() {
   const [, navigate] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
-  const [lang] = useState<Lang>(() => {
+  const [lang, setLang] = useState<Lang>(() => {
     try { return (localStorage.getItem("bk_lang") as Lang) || "ar"; } catch { return "ar"; }
   });
   const isRtl = lang === "ar";
@@ -185,7 +186,7 @@ export default function CheckoutPage() {
   const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
 
   return (
-    <div className="min-h-screen bg-background" dir={isRtl ? "rtl" : "ltr"}>
+    <AppShell lang={lang} onLangChange={(l) => { setLang(l); try { localStorage.setItem("bk_lang", l); } catch {} }} containerClassName="">
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6">
         <div className="flex items-center gap-3">
           <button
@@ -319,6 +320,6 @@ export default function CheckoutPage() {
           {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
         </Button>
       </div>
-    </div>
+    </AppShell>
   );
 }
