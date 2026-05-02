@@ -260,4 +260,37 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* ── Warm gold accent — used sparingly on key headings & "best" markers ── */
+  .heading-accent-underline {
+    position: relative;
+    display: inline-block;
+    padding-bottom: .35rem;
+  }
+  .heading-accent-underline::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    width: 3rem;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--accent)) 0%,
+      hsl(var(--accent) / .55) 100%
+    );
+  }
+  .ring-gold {
+    box-shadow: 0 0 0 2px hsl(var(--accent) / .55), 0 4px 18px -4px hsl(var(--accent) / .35);
+  }
+
+  /* Add safe-area-aware bottom padding so the mobile sticky CTA never
+     hides the last page section on phones. */
+  @media (max-width: 767px) {
+    main {
+      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+  }
 }

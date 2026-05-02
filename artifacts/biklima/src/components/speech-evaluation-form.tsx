@@ -292,6 +292,9 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                       placeholder={t.textPlaceholder}
                       rows={6}
                       className="resize-y rounded-xl"
+                      aria-label={t.modeText}
+                      aria-required="true"
+                      required
                       data-testid="speech-eval-text"
                     />
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -311,6 +314,10 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                       onChange={(e) => setVideoUrl(e.target.value)}
                       placeholder={t.videoPlaceholder}
                       className="rounded-xl"
+                      inputMode="url"
+                      aria-label={t.modeVideo}
+                      aria-required="true"
+                      required
                       data-testid="speech-eval-video-url"
                     />
                     <p className="text-xs text-muted-foreground">{t.videoHint}</p>
@@ -327,6 +334,10 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                       onChange={(e) => setFullName(e.target.value.slice(0, 120))}
                       className="rounded-xl"
                       autoComplete="name"
+                      type="text"
+                      aria-label={t.nameLabel}
+                      aria-required="true"
+                      required
                       data-testid="speech-eval-name"
                     />
                   </div>
@@ -339,7 +350,11 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                       onChange={(e) => setEmail(e.target.value.slice(0, 200))}
                       className="rounded-xl"
                       autoComplete="email"
+                      inputMode="email"
                       dir="ltr"
+                      aria-label={t.emailLabel}
+                      aria-required="true"
+                      required
                       data-testid="speech-eval-email"
                     />
                   </div>
@@ -355,7 +370,11 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                     placeholder="962790000000"
                     className="rounded-xl"
                     autoComplete="tel"
+                    inputMode="tel"
                     dir="ltr"
+                    aria-label={t.whatsappLabel}
+                    aria-required="true"
+                    required
                     data-testid="speech-eval-whatsapp"
                   />
                   <p className="text-xs text-muted-foreground">{t.whatsappHint}</p>

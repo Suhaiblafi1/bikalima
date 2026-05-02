@@ -12,6 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useLang } from "@/hooks/useLang";
+import { trackExternalRegistrationClick } from "@/lib/analytics";
 
 interface ExternalLinkDialogProps {
   href: string;
@@ -85,9 +86,10 @@ export function ExternalLinkDialog({
             {t.cancel}
           </AlertDialogCancel>
           <AlertDialogAction
-            onClick={() =>
-              window.open(href, "_blank", "noopener,noreferrer")
-            }
+            onClick={() => {
+              trackExternalRegistrationClick(href, partner);
+              window.open(href, "_blank", "noopener,noreferrer");
+            }}
             data-testid="external-link-continue"
           >
             {t.continue}

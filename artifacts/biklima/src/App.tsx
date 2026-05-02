@@ -34,6 +34,7 @@ import PrivacyPage from "@/pages/privacy";
 import TermsPage from "@/pages/terms";
 import NotFound from "@/pages/not-found";
 import { FloatingWhatsapp } from "@/components/floating-whatsapp";
+import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +137,7 @@ function App() {
           <ScrollToTop />
           <AnimatedRouter />
           <FloatingWhatsapp />
+          <MobileStickyCta />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { trackWhatsappClick } from "@/lib/analytics";
 
 const DEFAULT_WHATSAPP = "97455377065";
 const STORAGE_KEY = "biklima_fab_dismissed_at";
@@ -64,7 +65,7 @@ export function FloatingWhatsapp() {
   };
 
   return (
-    <div className="fixed bottom-5 end-5 z-[60] flex flex-col items-end gap-2 print:hidden" data-testid="floating-whatsapp">
+    <div className="hidden md:flex fixed bottom-5 end-5 z-[60] flex-col items-end gap-2 print:hidden" data-testid="floating-whatsapp">
       <AnimatePresence>
         {showTeaser && (
           <motion.div
@@ -95,7 +96,7 @@ export function FloatingWhatsapp() {
         rel="noopener noreferrer"
         aria-label={t.bubble}
         title={t.bubble}
-        onClick={dismissTeaser}
+        onClick={() => { dismissTeaser(); trackWhatsappClick("floating_fab"); }}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.07 }}

@@ -66,6 +66,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { ProgramQuiz } from "@/components/program-quiz";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
 import { StatsSection } from "@/components/stats-section";
+import { trackProgramDetailsClick } from "@/lib/analytics";
+import { Star as StarIcon } from "lucide-react";
 import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
 import { JourneySection } from "@/components/journey-section";
@@ -401,7 +403,7 @@ export default function Home() {
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
                 <div className="aspect-[5/4] rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
-                  <img src={imgTedx} alt={t.hero.h1a} className="w-full h-full object-cover" />
+                  <img src={imgTedx} alt={t.hero.h1a} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
                   <div className="absolute bottom-6 left-6 right-6 z-20">
                     <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/40">
                       <AnimatePresence mode="wait">
@@ -423,13 +425,44 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── TRUST STRIP — early social proof immediately under hero ── */}
+        <section
+          aria-label="Trust strip"
+          className="py-3 md:py-4 bg-background border-y border-border/60"
+          data-testid="section-trust-strip"
+        >
+          <div className="container mx-auto px-3 md:px-6">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs md:text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
+                <Users className="w-4 h-4 text-primary" aria-hidden />
+                {(t.hero as any).trustStrip?.trainees}
+              </span>
+              <span className="hidden sm:inline opacity-30">·</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
+                <Globe className="w-4 h-4 text-primary" aria-hidden />
+                {(t.hero as any).trustStrip?.countries}
+              </span>
+              <span className="hidden sm:inline opacity-30">·</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
+                <StarIcon className="w-4 h-4 text-accent fill-accent" aria-hidden />
+                {(t.hero as any).trustStrip?.rating}
+              </span>
+              <span className="hidden sm:inline opacity-30">·</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
+                <GraduationCap className="w-4 h-4 text-primary" aria-hidden />
+                {(t.hero as any).trustStrip?.years}
+              </span>
+            </div>
+          </div>
+        </section>
+
         {/* ── TRAINER BIO ── */}
-        <section className="py-20 bg-secondary/20 border-y border-border">
+        <section className="py-12 md:py-20 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
               <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
                 <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-xl relative">
-                  <img src={imgHeroCollage} alt={t.trainerBio.name} className="w-full h-full object-cover object-[8%_15%]" />
+                  <img src={imgHeroCollage} alt={t.trainerBio.name} className="w-full h-full object-cover object-[8%_15%]" loading="lazy" decoding="async" />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
                 </div>
               </motion.div>
@@ -479,7 +512,7 @@ export default function Home() {
         </section>
 
         {/* ── AUTHOR'S MESSAGE ── */}
-        <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
+        <section className="py-14 md:py-24 bg-primary text-primary-foreground relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
           <div className="container mx-auto px-6 max-w-4xl relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
@@ -546,7 +579,7 @@ export default function Home() {
         <SpeechEvaluationForm lang={lang} />
 
         {/* ── BRANCHING DIAGRAM ── */}
-        <section id="structure" className="py-24 bg-background relative overflow-hidden">
+        <section id="structure" className="py-14 md:py-24 bg-background relative overflow-hidden">
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -556,10 +589,10 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center">
               <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="w-full max-w-2xl">
-                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-primary group cursor-pointer" onClick={() => navigate(`/courses/${PROGRAM_SLUGS.core}`)}>
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-primary group cursor-pointer" onClick={() => { trackProgramDetailsClick("core", "structure_core_card"); navigate(`/courses/${PROGRAM_SLUGS.core}`); }}>
                   <div className="relative">
                     <div className="aspect-[21/8] relative">
-                      <img src={coreProgram.image} alt={coreProgram.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={coreProgram.image} alt={coreProgram.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent" />
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
@@ -580,7 +613,7 @@ export default function Home() {
                   <div className="bg-card px-6 py-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1 min-w-[200px]">{coreProgram.hook}</p>
                     <div className="flex flex-wrap gap-2 shrink-0">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`/courses/${PROGRAM_SLUGS.core}`); }}>
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/courses/${PROGRAM_SLUGS.core}`); }}>
                         {t.structure.viewDetails}
                       </Button>
                       <Button variant="ghost" size="sm" className="rounded-full text-primary hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
@@ -606,9 +639,9 @@ export default function Home() {
                         <div className="w-px h-8 bg-border" />
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => navigate(`/courses/${PROGRAM_SLUGS[program.id]}`)}>
+                      <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => { trackProgramDetailsClick(program.id, "structure_branch_card"); navigate(`/courses/${PROGRAM_SLUGS[program.id]}`); }}>
                         <div className="aspect-[4/3.2] relative overflow-hidden">
-                          <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
                           <div className="absolute bottom-4 right-4 left-4">
                             <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-2 ${program.tagColor}`}>{program.role}</div>
@@ -632,7 +665,7 @@ export default function Home() {
                         <CardContent className="p-5 flex flex-col flex-1">
                           <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
                           <div className="flex gap-2 mb-2">
-                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); navigate(`/courses/${PROGRAM_SLUGS[program.id]}`); }}>
+                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/courses/${PROGRAM_SLUGS[program.id]}`); }}>
                               {t.structure.viewDetails}
                             </Button>
                             {program.id !== "children" && (
@@ -660,6 +693,169 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── PROGRAMS COMPARISON TABLE ── */}
+        <section
+          id="compare"
+          className="py-12 md:py-20 bg-gradient-to-b from-secondary/10 to-background border-t border-border"
+          data-testid="section-programs-compare"
+        >
+          <div className="container mx-auto px-3 md:px-6">
+            <div className="text-center mb-8 md:mb-10">
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground heading-accent-underline">
+                {(t.hero as any).compare.heading}
+              </h2>
+              <p className="text-muted-foreground text-base mt-4 max-w-2xl mx-auto">
+                {(t.hero as any).compare.sub}
+              </p>
+            </div>
+
+            {/* Mobile: stacked cards */}
+            <div className="md:hidden space-y-4 max-w-xl mx-auto">
+              {programs.map((rawP) => {
+                const p = getLocalizedProgram(rawP, lang);
+                const isCore = p.id === "core";
+                return (
+                  <div
+                    key={p.id}
+                    className={`relative rounded-2xl border bg-card p-5 shadow-sm ${isCore ? "border-accent ring-gold" : "border-border"}`}
+                    data-testid={`compare-card-${p.id}`}
+                  >
+                    {isCore && (
+                      <span className="absolute -top-3 start-4 inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-accent text-accent-foreground shadow-sm">
+                        <StarIcon className="w-3 h-3 fill-current" />
+                        {(t.hero as any).compare.bestPick}
+                      </span>
+                    )}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className={`shrink-0 w-1.5 self-stretch rounded-full bg-gradient-to-b ${p.accentColor}`} aria-hidden />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{p.role}</p>
+                        <h3 className="font-serif font-bold text-base text-foreground leading-snug">{p.shortTitle}</h3>
+                      </div>
+                    </div>
+                    <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                      <div>
+                        <dt className="text-muted-foreground font-medium">{(t.hero as any).compare.colAudience}</dt>
+                        <dd className="text-foreground font-semibold mt-0.5 leading-snug">{p.audience}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground font-medium">{(t.hero as any).compare.colDuration}</dt>
+                        <dd className="text-foreground font-semibold mt-0.5 leading-snug">
+                          {p.hours} {t.structure.hoursUnit} · {p.sessions} {t.structure.sessionsUnit}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground font-medium">{(t.hero as any).compare.colPrice}</dt>
+                        <dd className="text-foreground font-semibold mt-0.5 leading-snug">
+                          {p.id === "children"
+                            ? <span className="text-muted-foreground italic">{(t.hero as any).compare.priceSchools}</span>
+                            : <>{formatPrice(RECORDED_PRICES[p.id as keyof typeof RECORDED_PRICES])} <span className="text-muted-foreground text-[10px] font-normal">{t.structure.priceUnit}</span></>
+                          }
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground font-medium">{(t.hero as any).compare.colPrereq}</dt>
+                        <dd className="text-foreground font-semibold mt-0.5 leading-snug">
+                          {p.prerequisiteLabel || <span className="text-muted-foreground">{(t.hero as any).compare.none}</span>}
+                        </dd>
+                      </div>
+                      <div className="col-span-2">
+                        <dt className="text-muted-foreground font-medium">{(t.hero as any).compare.colOutcome}</dt>
+                        <dd className="text-foreground font-semibold mt-0.5 leading-snug">{p.transformation}</dd>
+                      </div>
+                    </dl>
+                    <Button
+                      size="sm"
+                      variant={isCore ? "default" : "outline"}
+                      className={`w-full mt-4 rounded-full ${isCore ? "bg-primary hover:bg-primary/90 text-white" : ""}`}
+                      onClick={() => { trackProgramDetailsClick(p.id, "compare_card_mobile"); navigate(`/courses/${PROGRAM_SLUGS[p.id as keyof typeof PROGRAM_SLUGS]}`); }}
+                      data-testid={`compare-cta-${p.id}`}
+                    >
+                      {(t.hero as any).compare.viewDetails}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 text-foreground">
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start">{(t.hero as any).compare.colProgram}</th>
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start">{(t.hero as any).compare.colAudience}</th>
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start">{(t.hero as any).compare.colDuration}</th>
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start">{(t.hero as any).compare.colPrice}</th>
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start">{(t.hero as any).compare.colOutcome}</th>
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start">{(t.hero as any).compare.colPrereq}</th>
+                      <th scope="col" className="px-4 py-3 font-bold text-xs uppercase tracking-wider text-start sr-only">CTA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {programs.map((rawP) => {
+                      const p = getLocalizedProgram(rawP, lang);
+                      const isCore = p.id === "core";
+                      return (
+                        <tr
+                          key={p.id}
+                          className={`border-t border-border align-top ${isCore ? "bg-accent/5" : "hover:bg-muted/20"} transition-colors`}
+                          data-testid={`compare-row-${p.id}`}
+                        >
+                          <td className="px-4 py-4 align-top">
+                            <div className="flex flex-col gap-1">
+                              {isCore && (
+                                <span className="self-start inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent text-accent-foreground">
+                                  <StarIcon className="w-3 h-3 fill-current" />
+                                  {(t.hero as any).compare.bestPick}
+                                </span>
+                              )}
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{p.role}</span>
+                              <span className="font-serif font-bold text-foreground text-base leading-snug">{p.shortTitle}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 align-top text-foreground/80 leading-relaxed">{p.audience}</td>
+                          <td className="px-4 py-4 align-top text-foreground/80 whitespace-nowrap">
+                            {p.hours} {t.structure.hoursUnit}
+                            <br />
+                            <span className="text-muted-foreground text-xs">{p.sessions} {t.structure.sessionsUnit}</span>
+                          </td>
+                          <td className="px-4 py-4 align-top whitespace-nowrap">
+                            {p.id === "children" ? (
+                              <span className="text-muted-foreground italic">{(t.hero as any).compare.priceSchools}</span>
+                            ) : (
+                              <span className="font-bold text-foreground">
+                                {formatPrice(RECORDED_PRICES[p.id as keyof typeof RECORDED_PRICES])}
+                                <span className="text-muted-foreground text-xs font-normal ms-1">{t.structure.priceUnit}</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 align-top text-foreground/80 leading-relaxed max-w-xs">{p.transformation}</td>
+                          <td className="px-4 py-4 align-top text-foreground/80 leading-relaxed">
+                            {p.prerequisiteLabel || <span className="text-muted-foreground">{(t.hero as any).compare.none}</span>}
+                          </td>
+                          <td className="px-4 py-4 align-top whitespace-nowrap">
+                            <Button
+                              size="sm"
+                              variant={isCore ? "default" : "outline"}
+                              className={`rounded-full ${isCore ? "bg-primary hover:bg-primary/90 text-white" : ""}`}
+                              onClick={() => { trackProgramDetailsClick(p.id, "compare_table"); navigate(`/courses/${PROGRAM_SLUGS[p.id as keyof typeof PROGRAM_SLUGS]}`); }}
+                              data-testid={`compare-cta-${p.id}-desktop`}
+                            >
+                              {(t.hero as any).compare.viewDetails}
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── REPEATING CTA ── */}
         <JourneyCta testIdSuffix="after-structure" />
 
@@ -673,7 +869,7 @@ export default function Home() {
         <JourneyCta variant="primary" testIdSuffix="after-journey" />
 
         {/* ── START HELP ── */}
-        <section className="py-16 bg-primary/5 border-y border-border">
+        <section className="py-12 md:py-16 bg-primary/5 border-y border-border">
           <div className="container mx-auto px-6 text-center max-w-2xl">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-5">
@@ -835,7 +1031,7 @@ export default function Home() {
 
 
         {/* ── GALLERY ── */}
-        <section id="gallery" className="py-24 bg-secondary/20 border-y border-border">
+        <section id="gallery" className="py-14 md:py-24 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
             <div className="text-center mb-10">
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
@@ -902,7 +1098,7 @@ export default function Home() {
         </section>
 
         {/* ── VIDEOS ── */}
-        <section id="videos" className="py-24 bg-background">
+        <section id="videos" className="py-14 md:py-24 bg-background">
           <div className="container mx-auto px-6">
             <div className="text-center mb-10">
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
@@ -1048,7 +1244,7 @@ export default function Home() {
         </section>
 
         {/* ── ENROLLMENT FORM ── */}
-        <section id="enroll" className="py-24 bg-secondary/20 border-t border-border">
+        <section id="enroll" className="py-14 md:py-24 bg-secondary/20 border-t border-border">
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto bg-card rounded-[2.5rem] shadow-xl overflow-hidden border border-border/50 grid lg:grid-cols-5">
               <div className="lg:col-span-3 p-8 md:p-12">
@@ -1310,7 +1506,7 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-card w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-2xl relative z-10 border border-border">
               <button aria-label="Close" onClick={() => setSelectedProgram(null)} className="absolute top-6 end-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-foreground hover:bg-white transition-colors z-20 shadow-sm"><X className="w-5 h-5" /></button>
               <div className="relative aspect-[21/8] overflow-hidden rounded-t-[2rem]">
-                <img src={selectedProgram.image} alt={selectedProgram.shortTitle} className="w-full h-full object-cover" />
+                <img src={selectedProgram.image} alt={selectedProgram.shortTitle} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 <div className={`absolute inset-0 bg-gradient-to-br ${selectedProgram.accentColor} opacity-75 mix-blend-multiply`} />
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-8 md:p-10">

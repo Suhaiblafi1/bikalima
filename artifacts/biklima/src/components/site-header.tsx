@@ -7,6 +7,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
 import { useCurrency, CURRENCIES, CURRENCY_ORDER, getBaseUrl } from "@/lib/site-config";
 import { T, type Lang } from "@/translations";
+import { trackInterestFormSubmit } from "@/lib/analytics";
 
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
@@ -95,7 +96,10 @@ export function SiteHeader() {
     navigate(path);
   };
 
-  const goCta = () => goToSection("enroll");
+  const goCta = () => {
+    trackInterestFormSubmit({ source: "header_cta", action: "scroll_to_form" });
+    goToSection("enroll");
+  };
 
   const initials = (user?.firstName?.[0] || user?.email?.[0] || "U").toUpperCase();
 

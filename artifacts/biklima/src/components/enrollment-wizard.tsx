@@ -13,6 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import type { Lang } from "../translations";
 import { T } from "../translations";
 import { programs, getLocalizedProgram } from "../programsData";
+import { ShieldCheck } from "lucide-react";
+import { useLocation } from "wouter";
+import { trackInterestFormSubmit } from "@/lib/analytics";
 
 type Audience = "individual" | "teacher" | "parent" | "institution";
 type GoalKey =
@@ -75,6 +78,7 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
   const w = t.enroll.wizard;
   const { toast } = useToast();
   const dir = lang === "ar" ? "rtl" : "ltr";
+  const [, navigate] = useLocation();
 
   const localizedPrograms = useMemo(
     () => programs.map((p) => getLocalizedProgram(p, lang)),
@@ -188,6 +192,12 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("server_error");
+      trackInterestFormSubmit({
+        source: "enrollment_wizard",
+        programId: effectiveProgramId ?? "",
+        audience: audience || "",
+        recommended: isRecommend,
+      });
       onSuccess({ name, program: programShortTitle });
     } catch {
       toast({
@@ -433,6 +443,9 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                     <Input
                       id="wiz-org"
                       required
+                      autoComplete="organization"
+                      aria-label={w.ariaOrg}
+                      aria-required="true"
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
                       className="h-11 rounded-xl bg-background"
@@ -447,6 +460,9 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                     <Input
                       id="wiz-name"
                       required
+                      autoComplete="name"
+                      aria-label={w.ariaName}
+                      aria-required="true"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="h-11 rounded-xl bg-background"
@@ -459,6 +475,11 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                     <Input
                       id="wiz-phone"
                       required
+                      type="tel"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      aria-label={w.ariaPhone}
+                      aria-required="true"
                       dir="ltr"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -474,6 +495,10 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                     id="wiz-email"
                     type="email"
                     required
+                    autoComplete="email"
+                    inputMode="email"
+                    aria-label={w.ariaEmail}
+                    aria-required="true"
                     dir="ltr"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -489,6 +514,9 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                       <Input
                         id="wiz-students"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        aria-label={w.ariaStudents}
                         value={studentCount}
                         onChange={(e) => setStudentCount(e.target.value)}
                         className="h-11 rounded-xl bg-background"
@@ -501,6 +529,9 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                       <Input
                         id="wiz-teachers"
                         type="number"
+                        inputMode="numeric"
+                        min={0}
+                        aria-label={w.ariaTeachers}
                         value={teacherCount}
                         onChange={(e) => setTeacherCount(e.target.value)}
                         className="h-11 rounded-xl bg-background"
@@ -514,12 +545,31 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                   <Label htmlFor="wiz-msg">{w.msgLabel}</Label>
                   <Textarea
                     id="wiz-msg"
+                    aria-label={w.ariaMessage}
                     value={extraMessage}
                     onChange={(e) => setExtraMessage(e.target.value)}
                     className="min-h-[80px] rounded-xl bg-background resize-none"
                     placeholder={w.msgPlaceholder}
                     data-testid="wizard-input-message"
                   />
+                </div>
+
+                {/* Privacy note */}
+                <div
+                  className="mt-2 flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-xs leading-relaxed text-muted-foreground"
+                  data-testid="wizard-privacy-note"
+                >
+                  <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-primary" aria-hidden />
+                  <p>
+                    <span>{w.privacyNote}</span>{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/privacy")}
+                      className="underline underline-offset-2 hover:text-primary transition-colors font-medium"
+                    >
+                      {w.privacyLinkText}
+                    </button>
+                  </p>
                 </div>
               </div>
             </div>
