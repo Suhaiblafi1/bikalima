@@ -221,7 +221,7 @@ export function ProgramQuiz({ lang }: { lang: Lang }) {
             </div>
           )}
 
-          <div className="p-6 md:p-10 min-h-[340px] flex flex-col">
+          <div className="p-5 md:p-7 min-h-[220px] flex flex-col">
             <AnimatePresence mode="wait">
               {/* INTRO */}
               {step === -1 && (
@@ -231,16 +231,16 @@ export function ProgramQuiz({ lang }: { lang: Lang }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.3 }}
-                  className="flex flex-col items-center justify-center text-center flex-1 gap-5 py-6"
+                  className="flex flex-col items-center justify-center text-center flex-1 gap-3 py-2"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="w-8 h-8 text-primary" />
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-muted-foreground max-w-md">{t.sub}</p>
+                  <p className="text-muted-foreground text-sm max-w-md">{t.sub}</p>
                   <Button
-                    size="lg"
+                    size="default"
                     onClick={() => setStep(0)}
-                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8"
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-6"
                     data-testid="button-quiz-start"
                   >
                     {t.start}
