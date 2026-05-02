@@ -75,6 +75,20 @@ export const PROGRAM_SLUGS: Record<string, string> = {
   children: "young-speaker",
 };
 
+export const PROGRAM_PAGE_SLUGS: Record<string, string> = {
+  core: "influential-speaker",
+  tot: "trainer-certification",
+  teachers: "teachers",
+  children: "kids",
+};
+
+export const SLUG_TO_PROGRAM_ID: Record<string, string> = {
+  "influential-speaker": "core",
+  "trainer-certification": "tot",
+  "teachers": "teachers",
+  "kids": "children",
+};
+
 export function getBaseUrl(): string {
   return import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 }

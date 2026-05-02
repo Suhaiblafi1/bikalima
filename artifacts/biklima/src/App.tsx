@@ -11,6 +11,7 @@ import AdminPanel from "@/pages/admin";
 import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import CourseDetailPage from "@/pages/course-detail";
+import ProgramPage from "@/pages/program";
 import LearnPage from "@/pages/learn";
 import CheckoutPage from "@/pages/checkout";
 import ConfirmationPage from "@/pages/confirmation";
@@ -57,6 +58,10 @@ function AnimatedRouter() {
           <Route path="/courses/:slug" component={CourseDetailPage} />
           <Route path="/courses">
             {() => <Redirect to="/" />}
+          </Route>
+          <Route path="/programs/:slug" component={ProgramPage} />
+          <Route path="/programs">
+            {() => <Redirect to="/#structure" />}
           </Route>
           <Route component={NotFound} />
         </Switch>

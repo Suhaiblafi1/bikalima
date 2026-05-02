@@ -66,7 +66,7 @@ import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORD
 import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
-import { useCurrency, PROGRAM_SLUGS, getBaseUrl } from "@/lib/site-config";
+import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -616,11 +616,14 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-card px-6 py-4 flex items-center justify-between gap-3">
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1">{coreProgram.hook}</p>
-                    <div className="flex gap-2 shrink-0">
+                  <div className="bg-card px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1 min-w-[200px]">{coreProgram.hook}</p>
+                    <div className="flex flex-wrap gap-2 shrink-0">
                       <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); navigate(`/courses/${PROGRAM_SLUGS.core}`); }}>
                         {t.structure.viewDetails}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="rounded-full text-primary hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
+                        {t.structure.viewProgramPage}
                       </Button>
                       <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); scrollTo("enroll"); }}>
                         {t.structure.enrollNow}
@@ -677,6 +680,9 @@ export default function Home() {
                               </Button>
                             )}
                           </div>
+                          <Button variant="ghost" size="sm" className="w-full rounded-full text-primary hover:bg-primary/10 mb-2 text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
+                            {t.structure.viewProgramPage}
+                          </Button>
                           {program.prerequisiteLabel && (
                             <div className={`flex items-center justify-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full ${prereqBadgeClass(program.id)}`}>
                               {program.id === "tot" ? <Lock className="w-2.5 h-2.5" /> : program.id === "children" ? <School className="w-2.5 h-2.5" /> : <AlertCircle className="w-2.5 h-2.5" />}
