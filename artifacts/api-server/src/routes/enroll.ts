@@ -404,6 +404,9 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       workbooksNeeded: payload.workbookCount ? parseInt(payload.workbookCount) : null,
       message: payload.reason || payload.orgMessage || null,
       formData: payload,
+      leadSource: "website",
+      syncStatus: "pending",
+      aiAnalysisStatus: "none",
     });
 
     dbStored = true;

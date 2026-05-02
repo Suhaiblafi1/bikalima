@@ -90,9 +90,10 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health`; `src/routes/enroll.ts` exposes `POST /enroll` (stores in DB + emails), `GET /my/enrollment-requests`; `src/routes/workbook-order.ts` exposes `POST /workbook-order` (stores in DB + emails), `GET /my/orders`; `src/routes/auth.ts` exposes login/callback/logout/user auth routes; `src/routes/admin.ts` exposes admin CRUD (users, courses, lessons, enrollments, enrollment-requests, workbook-orders) + student endpoints (`GET /my/courses`, `POST /my/lessons/:id/complete`)
+- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health`; `src/routes/enroll.ts` exposes `POST /enroll` (stores in DB + emails, stamps `leadSource:"website"` + `syncStatus:"pending"`), `GET /my/enrollment-requests`; `src/routes/workbook-order.ts` exposes `POST /workbook-order` (stores in DB + emails, also stamps lead source + sync status), `GET /my/orders`; `src/routes/auth.ts` exposes login/callback/logout/user auth routes; `src/routes/admin.ts` exposes admin CRUD; `src/routes/admin-integrations.ts` exposes `GET /admin/integrations/status` (admin-only) returning the registry of external integration providers and which env vars they're missing
 - Auth: Email/password registration and login, scrypt password hashing, sessions stored in PostgreSQL (7-day TTL), cookie-based (no external OAuth required)
 - Email: nodemailer sends enrollment & workbook order emails to `info@bikalima.com` (admin) and buyer; FROM address uses `SMTP_FROM` env var (set to `بكلمة <alkhawaldahsuhaib@gmail.com>`); needs SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_PORT, SMTP_FROM env vars; [SMTP] prefixed logs surface any auth/delivery errors
+- Integrations layer: `src/integrations/` contains stub modules for Odoo CRM (`ODOO_BASE_URL`, `ODOO_API_KEY`), OpenAI (`OPENAI_API_KEY`), Gemini (`GEMINI_API_KEY`), WhatsApp Business (`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`), Payments (`PAYMENT_PROVIDER_KEY` + optional `PAYMENT_PROVIDER=stripe|tap|paytabs`), and Storage (`STORAGE_ACCESS_KEY` + optional `STORAGE_PROVIDER=s3|r2|gdrive`). Each service exports `isEnabled()` + `getStatus()` and stub action methods that return `{ok:false, reason:"not_configured"}` when their env vars are missing — nothing crashes if no keys are set. `index.ts` exposes `getAllIntegrationStatuses()` which the admin endpoint serializes.
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
@@ -105,7 +106,8 @@ Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client insta
 - `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
 - `src/schema/index.ts` — barrel re-export of all models
 - `src/schema/auth.ts` — users and sessions tables
-- `src/schema/lms.ts` — courses, lessons, enrollments, lesson_progress, enrollment_requests, workbook_orders tables
+- `src/schema/lms.ts` — courses, lessons, enrollments, lesson_progress, enrollment_requests, workbook_orders, speech_evaluations tables. `enrollment_requests`, `workbook_orders`, and `speech_evaluations` carry integration columns (`externalCrmId`, `aiAnalysisStatus`, `aiAnalysisResult`, `assignedTrainerId` → `instructors.id`, `leadSource`, `syncStatus`, `lastSyncedAt`) so future Odoo/AI/payment sync can run without further schema work.
+- `src/schema/integrations.ts` — `integration_sync_events` table that logs every sync attempt (provider, entity_type, entity_id, action, status, externalId, errorMessage, payload, response, timestamps).
 - `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
 - Exports: `.` (pool, db, schema), `./schema` (schema only)
 

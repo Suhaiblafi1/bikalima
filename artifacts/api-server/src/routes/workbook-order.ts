@@ -355,9 +355,13 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
       buyerName: buyerName || "",
       buyerEmail: buyerEmail || "",
       buyerPhone: buyerPhone || "",
+      buyerCountry: buyerCountry || null,
+      notes: notes || null,
       deliveryAddress: format === "print" ? deliveryAddress : null,
       totalPrice: total,
       currency: currencyCode || "JOD",
+      leadSource: "website",
+      syncStatus: "pending",
     });
 
     const transporter = buildTransporter();

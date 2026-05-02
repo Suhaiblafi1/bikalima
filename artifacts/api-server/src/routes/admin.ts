@@ -13,10 +13,9 @@ import {
   instructorsTable,
 } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
+import { ADMIN_EMAILS, isAdmin, requireAdmin } from "../lib/admin.js";
 
 const router: IRouter = Router();
-
-const ADMIN_EMAILS = ["info@bikalima.com"];
 
 type CourseInsert = {
   titleAr: string; titleEn: string; titleFr: string;
@@ -46,19 +45,6 @@ type LessonResource = { titleAr: string; titleEn: string; url: string; type: str
 type SectionUpdate = { titleAr?: string; titleEn?: string; sortOrder?: number; isPublished?: boolean };
 
 type InstructorUpdate = { nameAr?: string; nameEn?: string; bioAr?: string; bioEn?: string; photoUrl?: string; email?: string };
-
-function isAdmin(req: Request): boolean {
-  if (!req.isAuthenticated() || !req.user) return false;
-  return ADMIN_EMAILS.includes(req.user.email.toLowerCase());
-}
-
-function requireAdmin(req: Request, res: Response): boolean {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Forbidden" });
-    return false;
-  }
-  return true;
-}
 
 router.get("/admin/check", (req: Request, res: Response) => {
   res.json({ isAdmin: isAdmin(req) });

@@ -121,6 +121,13 @@ export const enrollmentRequestsTable = pgTable("enrollment_requests", {
   status: varchar("status").$type<"pending" | "approved" | "rejected">().notNull().default("pending"),
   adminNotes: text("admin_notes"),
   formData: jsonb("form_data"),
+  externalCrmId: varchar("external_crm_id"),
+  aiAnalysisStatus: varchar("ai_analysis_status").$type<"none" | "pending" | "running" | "done" | "error">().default("none"),
+  aiAnalysisResult: jsonb("ai_analysis_result"),
+  assignedTrainerId: varchar("assigned_trainer_id").references(() => instructorsTable.id, { onDelete: "set null" }),
+  leadSource: varchar("lead_source"),
+  syncStatus: varchar("sync_status").$type<"pending" | "synced" | "error" | "skipped">().default("pending"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -133,12 +140,44 @@ export const workbookOrdersTable = pgTable("workbook_orders", {
   buyerName: varchar("buyer_name").notNull(),
   buyerEmail: varchar("buyer_email").notNull(),
   buyerPhone: varchar("buyer_phone").notNull(),
+  buyerCountry: varchar("buyer_country"),
+  notes: text("notes"),
   deliveryAddress: text("delivery_address"),
   totalPrice: integer("total_price"),
   currency: varchar("currency").default("JOD"),
   status: varchar("status").$type<"pending" | "confirmed" | "shipped" | "delivered">().notNull().default("pending"),
   adminNotes: text("admin_notes"),
+  externalCrmId: varchar("external_crm_id"),
+  leadSource: varchar("lead_source"),
+  syncStatus: varchar("sync_status").$type<"pending" | "synced" | "error" | "skipped">().default("pending"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const speechEvaluationsTable = pgTable("speech_evaluations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  fullName: varchar("full_name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone").notNull(),
+  videoUrl: varchar("video_url"),
+  audioUrl: varchar("audio_url"),
+  speechTopic: varchar("speech_topic"),
+  speechLanguage: varchar("speech_language"),
+  notes: text("notes"),
+  status: varchar("status").$type<"pending" | "in_review" | "completed" | "cancelled">().notNull().default("pending"),
+  externalCrmId: varchar("external_crm_id"),
+  aiAnalysisStatus: varchar("ai_analysis_status").$type<"none" | "pending" | "running" | "done" | "error">().default("none"),
+  aiAnalysisResult: jsonb("ai_analysis_result"),
+  transcriptText: text("transcript_text"),
+  trainerScore: integer("trainer_score"),
+  trainerFeedback: text("trainer_feedback"),
+  assignedTrainerId: varchar("assigned_trainer_id").references(() => instructorsTable.id, { onDelete: "set null" }),
+  leadSource: varchar("lead_source"),
+  syncStatus: varchar("sync_status").$type<"pending" | "synced" | "error" | "skipped">().default("pending"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
 export const ordersTable = pgTable("orders", {
@@ -178,5 +217,6 @@ export type LessonProgress = typeof lessonProgressTable.$inferSelect;
 export type LessonNote = typeof lessonNotesTable.$inferSelect;
 export type EnrollmentRequest = typeof enrollmentRequestsTable.$inferSelect;
 export type WorkbookOrder = typeof workbookOrdersTable.$inferSelect;
+export type SpeechEvaluation = typeof speechEvaluationsTable.$inferSelect;
 export type Order = typeof ordersTable.$inferSelect;
 export type Review = typeof reviewsTable.$inferSelect;
