@@ -270,8 +270,29 @@ export type LessonProgress = typeof lessonProgressTable.$inferSelect;
 export type LessonNote = typeof lessonNotesTable.$inferSelect;
 export type EnrollmentRequest = typeof enrollmentRequestsTable.$inferSelect;
 export type WorkbookOrder = typeof workbookOrdersTable.$inferSelect;
+export const siteSettingsTable = pgTable("site_settings", {
+  id: varchar("id").primaryKey().default("default"),
+  siteNameAr: varchar("site_name_ar"),
+  siteNameEn: varchar("site_name_en"),
+  defaultLang: varchar("default_lang").$type<"ar" | "en">().default("ar"),
+  defaultCurrency: varchar("default_currency").default("USD"),
+  contactEmail: varchar("contact_email"),
+  contactPhone: varchar("contact_phone"),
+  whatsappNumber: varchar("whatsapp_number"),
+  facebookUrl: varchar("facebook_url"),
+  instagramUrl: varchar("instagram_url"),
+  youtubeUrl: varchar("youtube_url"),
+  twitterUrl: varchar("twitter_url"),
+  privacyPolicyAr: text("privacy_policy_ar"),
+  privacyPolicyEn: text("privacy_policy_en"),
+  termsAr: text("terms_ar"),
+  termsEn: text("terms_en"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
 export type SpeechEvaluation = typeof speechEvaluationsTable.$inferSelect;
 export type Order = typeof ordersTable.$inferSelect;
 export type Review = typeof reviewsTable.$inferSelect;
 export type Assignment = typeof assignmentsTable.$inferSelect;
 export type AssignmentSubmission = typeof assignmentSubmissionsTable.$inferSelect;
+export type SiteSettings = typeof siteSettingsTable.$inferSelect;

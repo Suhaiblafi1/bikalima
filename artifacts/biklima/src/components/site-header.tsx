@@ -239,7 +239,7 @@ export function SiteHeader() {
                       </button>
                       {isAdmin && (
                         <button
-                          onClick={() => { setUserMenuOpen(false); navigate("/admin"); }}
+                          onClick={() => { setUserMenuOpen(false); navigate("/admin/overview"); }}
                           className="w-full text-start px-3 py-2 text-sm hover:bg-amber-50 transition-colors flex items-center gap-2"
                         >
                           <Shield className="w-4 h-4 text-amber-600" />
@@ -342,7 +342,7 @@ export function SiteHeader() {
                       </button>
                       {isAdmin && (
                         <button
-                          onClick={() => { setMobileOpen(false); navigate("/admin"); }}
+                          onClick={() => { setMobileOpen(false); navigate("/admin/overview"); }}
                           className="w-full text-center py-3 font-bold text-amber-700 border border-amber-300 rounded-2xl hover:bg-amber-50 transition-colors flex items-center justify-center gap-2"
                         >
                           <Shield className="w-4 h-4" />

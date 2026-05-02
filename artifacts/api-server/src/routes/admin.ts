@@ -11,6 +11,8 @@ import {
   workbookOrdersTable,
   ordersTable,
   instructorsTable,
+  reviewsTable,
+  siteSettingsTable,
 } from "@workspace/db";
 import { db as _db, courseTrainersTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
@@ -994,5 +996,106 @@ router.get("/admin/student-progress", async (req: Request, res: Response) => {
 router.get("/admin/orders", adminGetLmsOrders);
 router.patch("/admin/lms-orders/:id", adminPatchLmsOrder);
 router.patch("/admin/orders/:id", adminPatchLmsOrder);
+
+// ===== Reviews moderation =====
+router.get("/admin/reviews", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const rows = await db
+      .select({
+        id: reviewsTable.id,
+        userId: reviewsTable.userId,
+        courseId: reviewsTable.courseId,
+        rating: reviewsTable.rating,
+        commentAr: reviewsTable.commentAr,
+        commentEn: reviewsTable.commentEn,
+        reviewerName: reviewsTable.reviewerName,
+        createdAt: reviewsTable.createdAt,
+        userEmail: usersTable.email,
+        userFirstName: usersTable.firstName,
+        userLastName: usersTable.lastName,
+        courseTitleAr: coursesTable.titleAr,
+        courseTitleEn: coursesTable.titleEn,
+      })
+      .from(reviewsTable)
+      .leftJoin(usersTable, eq(usersTable.id, reviewsTable.userId))
+      .leftJoin(coursesTable, eq(coursesTable.id, reviewsTable.courseId))
+      .orderBy(desc(reviewsTable.createdAt));
+    res.json({ reviews: rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list reviews");
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+});
+
+router.delete("/admin/reviews/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    await db.delete(reviewsTable).where(eq(reviewsTable.id, req.params.id));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete review");
+    res.status(500).json({ error: "Failed to delete review" });
+  }
+});
+
+// ===== Site settings (singleton) =====
+async function ensureSettingsRow() {
+  const existing = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.id, "default")).limit(1);
+  if (existing.length > 0) return existing[0];
+  const inserted = await db
+    .insert(siteSettingsTable)
+    .values({ id: "default" })
+    .onConflictDoNothing()
+    .returning();
+  if (inserted.length > 0) return inserted[0];
+  const after = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.id, "default")).limit(1);
+  return after[0];
+}
+
+router.get("/admin/settings", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const settings = await ensureSettingsRow();
+    res.json({ settings });
+  } catch (err) {
+    req.log.error({ err }, "Failed to load settings");
+    res.status(500).json({ error: "Failed to load settings" });
+  }
+});
+
+router.patch("/admin/settings", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const allowed = [
+      "siteNameAr", "siteNameEn", "defaultLang", "defaultCurrency",
+      "contactEmail", "contactPhone", "whatsappNumber",
+      "facebookUrl", "instagramUrl", "youtubeUrl", "twitterUrl",
+      "privacyPolicyAr", "privacyPolicyEn", "termsAr", "termsEn",
+    ] as const;
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const update: Record<string, string | null> = {};
+    for (const key of allowed) {
+      if (key in body) {
+        const v = body[key];
+        if (v === null || v === "") update[key] = null;
+        else if (typeof v === "string") update[key] = v;
+      }
+    }
+    if (update.defaultLang && update.defaultLang !== "ar" && update.defaultLang !== "en") {
+      return res.status(400).json({ error: "defaultLang must be 'ar' or 'en'" });
+    }
+    await ensureSettingsRow();
+    const updated = await db
+      .update(siteSettingsTable)
+      .set(update)
+      .where(eq(siteSettingsTable.id, "default"))
+      .returning();
+    res.json({ settings: updated[0] });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update settings");
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+});
 
 export default router;

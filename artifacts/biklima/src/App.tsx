@@ -7,7 +7,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminRoute } from "@/components/route-guards";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
-import AdminPanel from "@/pages/admin";
+import AdminOverview from "@/pages/admin/overview";
+import AdminUsers from "@/pages/admin/users";
+import AdminCourses from "@/pages/admin/courses";
+import AdminEnrollments from "@/pages/admin/enrollments";
+import AdminWorkbookOrders from "@/pages/admin/workbook-orders";
+import AdminAssignments from "@/pages/admin/assignments";
+import AdminReviews from "@/pages/admin/reviews";
+import AdminSettings from "@/pages/admin/settings";
 import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import CourseDetailPage from "@/pages/course-detail";
@@ -44,11 +51,31 @@ function AnimatedRouter() {
           <Route path="/" component={Home} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/admin">
-            {() => (
-              <AdminRoute>
-                <AdminPanel />
-              </AdminRoute>
-            )}
+            {() => <Redirect to="/admin/overview" />}
+          </Route>
+          <Route path="/admin/overview">
+            {() => (<AdminRoute><AdminOverview /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/users">
+            {() => (<AdminRoute><AdminUsers /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/courses">
+            {() => (<AdminRoute><AdminCourses /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/enrollments">
+            {() => (<AdminRoute><AdminEnrollments /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/workbook-orders">
+            {() => (<AdminRoute><AdminWorkbookOrders /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/assignments">
+            {() => (<AdminRoute><AdminAssignments /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/reviews">
+            {() => (<AdminRoute><AdminReviews /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/settings">
+            {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
           </Route>
           <Route path="/gallery" component={GalleryPage} />
           <Route path="/workbooks" component={WorkbooksPage} />
