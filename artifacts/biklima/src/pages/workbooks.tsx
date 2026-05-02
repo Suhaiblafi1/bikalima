@@ -171,7 +171,26 @@ export default function WorkbooksPage() {
   };
 
   const base = import.meta.env.BASE_URL || "/";
+  const baseClean = base.replace(/\/$/, "");
   const [, navigate] = useLocation();
+
+  type NavItem = { label: string; id?: string; href?: string };
+  const navItems: NavItem[] = [
+    { label: t.nav.courses, id: "structure" },
+    { label: t.nav.events, id: "events" },
+    { label: t.nav.workbooks, href: "workbooks" },
+    { label: t.nav.gallery, id: "gallery" },
+    { label: t.nav.videos, id: "videos" },
+  ];
+
+  const goToSection = (item: NavItem) => {
+    if (item.href) {
+      navigate(`${base}${item.href}`);
+    } else if (item.id) {
+      // Navigate to home with hash; home page handles scroll on mount
+      window.location.href = `${baseClean}/#${item.id}`;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
@@ -189,9 +208,22 @@ export default function WorkbooksPage() {
                 : <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />}
               {lang === "ar" ? "الرئيسية" : "Home"}
             </button>
-            <span className="text-border">|</span>
-            <span className="logo-biklima text-3xl text-primary tracking-tight leading-none">بكلمة</span>
+            <span className="text-border hidden md:inline">|</span>
+            <span className="logo-biklima text-3xl text-primary tracking-tight leading-none hidden md:inline">بكلمة</span>
           </div>
+
+          {/* Main nav */}
+          <nav className="hidden lg:flex items-center gap-5 font-medium">
+            {navItems.map((item, idx) => (
+              <button
+                key={item.href || item.id || idx}
+                onClick={() => goToSection(item)}
+                className={`text-sm transition-colors ${item.href === "workbooks" ? "text-primary font-bold" : "text-foreground/80 hover:text-primary"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
 
           {/* Controls */}
           <div className="flex items-center gap-2">

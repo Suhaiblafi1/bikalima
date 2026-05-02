@@ -45,6 +45,24 @@ export default function GalleryPage() {
 
   const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
   const base = import.meta.env.BASE_URL || "/";
+  const baseClean = base.replace(/\/$/, "");
+
+  type NavItem = { label: string; id?: string; href?: string };
+  const navItems: NavItem[] = [
+    { label: t.nav.courses, id: "structure" },
+    { label: t.nav.events, id: "events" },
+    { label: t.nav.workbooks, href: "workbooks" },
+    { label: t.nav.gallery, id: "gallery" },
+    { label: t.nav.videos, id: "videos" },
+  ];
+
+  const goToSection = (item: NavItem) => {
+    if (item.href) {
+      window.location.href = `${baseClean}/${item.href}`;
+    } else if (item.id) {
+      window.location.href = `${baseClean}/#${item.id}`;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir}>
@@ -55,8 +73,22 @@ export default function GalleryPage() {
             <a href={base} className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-secondary/50 transition-colors">
               {dir === "rtl" ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
             </a>
-            <a href={base} className="logo-biklima text-4xl text-primary tracking-tight leading-none">بكلمة</a>
+            <a href={base} className="logo-biklima text-4xl text-primary tracking-tight leading-none hidden md:inline">بكلمة</a>
           </div>
+
+          {/* Main nav */}
+          <nav className="hidden lg:flex items-center gap-5 font-medium">
+            {navItems.map((item, idx) => (
+              <button
+                key={item.href || item.id || idx}
+                onClick={() => goToSection(item)}
+                className={`text-sm transition-colors ${item.id === "gallery" ? "text-primary font-bold" : "text-foreground/80 hover:text-primary"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
           <div className="flex items-center gap-1 border border-border rounded-full overflow-hidden">
             {langButtons.map(({ key, label }) => (
               <button key={key} onClick={() => switchLang(key)} className={`px-3 py-1.5 text-xs font-bold transition-colors ${lang === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>{label}</button>

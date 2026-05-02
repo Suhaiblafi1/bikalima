@@ -329,6 +329,24 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [lightboxOpen]);
 
+  // Handle hash on initial mount + when hash changes (so /#structure scrolls to that section)
+  useEffect(() => {
+    const scrollToHash = () => {
+      const hash = window.location.hash.replace(/^#/, "");
+      if (!hash) return;
+      // Wait one frame so target sections (which mount lazily) are present
+      setTimeout(() => {
+        const el = document.getElementById(hash);
+        if (el) {
+          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+        }
+      }, 60);
+    };
+    scrollToHash();
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
+  }, []);
+
   const handleWorkbookOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setWbSubmitting(true);
