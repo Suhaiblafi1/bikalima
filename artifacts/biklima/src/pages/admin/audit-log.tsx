@@ -49,6 +49,8 @@ export default function AdminAuditLogPage() {
   const [actor, setActor] = useState("");
   const [entityType, setEntityType] = useState("");
   const [action, setAction] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const load = useCallback(async (nextOffset: number) => {
     setLoading(true);
@@ -61,6 +63,8 @@ export default function AdminAuditLogPage() {
       if (actor.trim()) params.set("actor", actor.trim());
       if (entityType.trim()) params.set("entityType", entityType.trim());
       if (action.trim()) params.set("action", action.trim());
+      if (startDate) params.set("startDate", startDate);
+      if (endDate) params.set("endDate", endDate);
       const r = await apiFetch(`/admin/audit-log?${params.toString()}`);
       if (!r.ok) {
         setError("تعذّر تحميل السجل");
@@ -77,7 +81,7 @@ export default function AdminAuditLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, actor, entityType, action]);
+  }, [apiFetch, actor, entityType, action, startDate, endDate]);
 
   useEffect(() => { load(0); }, [load]);
 
@@ -117,7 +121,7 @@ export default function AdminAuditLogPage() {
             </Button>
           </div>
 
-          <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <form onSubmit={onSearch} className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             <Input
               value={actor}
               onChange={(e) => setActor(e.target.value)}
@@ -140,6 +144,24 @@ export default function AdminAuditLogPage() {
               className="text-sm h-9"
               dir="ltr"
               data-testid="audit-log-filter-action"
+            />
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="text-sm h-9"
+              dir="ltr"
+              aria-label="من تاريخ"
+              data-testid="audit-log-filter-start-date"
+            />
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="text-sm h-9"
+              dir="ltr"
+              aria-label="إلى تاريخ"
+              data-testid="audit-log-filter-end-date"
             />
             <Button type="submit" className="h-9 bg-primary text-white" data-testid="audit-log-apply">
               تطبيق

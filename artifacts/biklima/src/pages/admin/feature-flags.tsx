@@ -12,7 +12,17 @@ type FeatureFlag = {
   descriptionEn: string | null;
   updatedAt: string;
   updatedById: string | null;
+  updatedByEmail: string | null;
 };
+
+function formatUpdated(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("ar-EG", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return iso; }
+}
 
 type Toast = { type: "success" | "error"; text: string } | null;
 
@@ -123,6 +133,14 @@ export default function AdminFeatureFlagsPage() {
                     {f.descriptionEn && (
                       <p className="text-[11px] text-muted-foreground mt-0.5" dir="ltr">{f.descriptionEn}</p>
                     )}
+                    <p
+                      className="text-[11px] text-muted-foreground mt-2"
+                      data-testid={`feature-flag-meta-${f.key}`}
+                    >
+                      آخر تحديث: <span dir="ltr">{formatUpdated(f.updatedAt)}</span>
+                      {" — "}
+                      <span dir="ltr">{f.updatedByEmail ?? "—"}</span>
+                    </p>
                   </div>
                   <button
                     type="button"

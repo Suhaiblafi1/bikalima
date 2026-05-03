@@ -15,9 +15,10 @@ import {
   lessonsTable,
   speechEvaluationsTable,
 } from "@workspace/db";
-import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/admin.js";
 import { invalidateFeatureFlagCache, recordAuditLog } from "../lib/platform.js";
+import { usersTable } from "@workspace/db";
 
 // ── Validation helpers ─────────────────────────────────────────────────
 function parseBody<T>(schema: ZodSchema<T>, req: Request, res: Response): T | null {
@@ -66,6 +67,8 @@ const AuditQuerySchema = z.object({
   actor: z.string().optional().default(""),
   entityType: z.string().optional().default(""),
   action: z.string().optional().default(""),
+  startDate: z.string().optional().default(""),
+  endDate: z.string().optional().default(""),
 });
 
 const router: IRouter = Router();
@@ -102,8 +105,17 @@ router.get("/admin/feature-flags", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
     const rows = await db
-      .select()
+      .select({
+        key: featureFlagsTable.key,
+        enabled: featureFlagsTable.enabled,
+        descriptionAr: featureFlagsTable.descriptionAr,
+        descriptionEn: featureFlagsTable.descriptionEn,
+        updatedAt: featureFlagsTable.updatedAt,
+        updatedById: featureFlagsTable.updatedById,
+        updatedByEmail: usersTable.email,
+      })
       .from(featureFlagsTable)
+      .leftJoin(usersTable, eq(usersTable.id, featureFlagsTable.updatedById))
       .orderBy(asc(featureFlagsTable.key));
     res.json({ flags: rows });
   } catch (err) {
@@ -127,7 +139,7 @@ router.patch("/admin/feature-flags/:key", async (req: Request, res: Response) =>
     if (!before) return res.status(404).json({ error: "not-found" });
     const [row] = await db
       .update(featureFlagsTable)
-      .set({ enabled, updatedById: req.user?.id ?? null })
+      .set({ enabled, updatedById: req.user?.id ?? null, updatedAt: new Date() })
       .where(eq(featureFlagsTable.key, key))
       .returning();
     invalidateFeatureFlagCache(key);
@@ -198,6 +210,20 @@ router.get("/admin/audit-log", async (req: Request, res: Response) => {
     if (actor) conds.push(ilike(auditLogEntriesTable.actorEmail, `%${actor}%`));
     if (entityType) conds.push(eq(auditLogEntriesTable.entityType, entityType));
     if (action) conds.push(eq(auditLogEntriesTable.action, action));
+    const start = q.startDate.trim();
+    const end = q.endDate.trim();
+    if (start) {
+      const d = new Date(start);
+      if (!isNaN(d.getTime())) conds.push(gte(auditLogEntriesTable.createdAt, d));
+    }
+    if (end) {
+      const d = new Date(end);
+      if (!isNaN(d.getTime())) {
+        // Treat date-only inputs as inclusive end-of-day.
+        if (/^\d{4}-\d{2}-\d{2}$/.test(end)) d.setUTCHours(23, 59, 59, 999);
+        conds.push(lte(auditLogEntriesTable.createdAt, d));
+      }
+    }
 
     const where = conds.length === 0 ? undefined : and(...conds);
     const [{ count }] = await db

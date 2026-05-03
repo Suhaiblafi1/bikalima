@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { paymentService, toMinorUnits as toStripeMinorUnits } from "../integrations/paymentService.js";
+import { isFeatureEnabled } from "../lib/platform.js";
 
 const router: IRouter = Router();
 
@@ -53,6 +54,10 @@ router.post("/orders", async (req: Request, res: Response) => {
     return;
   }
   try {
+    // Server-side enforcement of the `payments` feature flag. Free
+    // courses (chargeAmount <= 0) are still allowed below since they
+    // never touch the payment gateway.
+    const paymentsEnabled = await isFeatureEnabled("payments");
     const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = req.body;
     if (!courseId || !buyerName?.trim() || !buyerEmail?.trim() || !buyerPhone?.trim()) {
       res.status(400).json({ error: "Missing required fields" });
@@ -105,6 +110,11 @@ router.post("/orders", async (req: Request, res: Response) => {
       }).returning();
       await ensureEnrollment(userId, course.id);
       res.json({ success: true, orderId: order.id, paid: true });
+      return;
+    }
+
+    if (!paymentsEnabled) {
+      res.status(503).json({ error: "الدفع الإلكتروني معطّل مؤقتاً" });
       return;
     }
 
