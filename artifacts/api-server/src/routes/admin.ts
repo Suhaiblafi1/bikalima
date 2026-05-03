@@ -15,7 +15,7 @@ import {
   siteSettingsTable,
   speechEvaluationsTable,
 } from "@workspace/db";
-import { db as _db, courseTrainersTable } from "@workspace/db";
+import { db as _db, courseTrainersTable, trainerLearnerNotesTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 import {
   ADMIN_EMAILS,
@@ -30,6 +30,20 @@ import { createNotification } from "../lib/notifications.js";
 import { recordAuditLog, awardBadgeIfEligible } from "../lib/platform.js";
 
 const router: IRouter = Router();
+
+// Returns the set of courseIds this user can administer. Admins get null
+// (= unrestricted). Trainers get only their assigned courses (course_trainers).
+// Anyone else gets an empty array (effectively blocked).
+async function getScopedCourseIds(req: Request): Promise<string[] | null> {
+  if (isAdmin(req)) return null;
+  if (!req.user) return [];
+  if (req.user.role !== "trainer") return [];
+  const rows = await db
+    .select({ courseId: courseTrainersTable.courseId })
+    .from(courseTrainersTable)
+    .where(eq(courseTrainersTable.userId, req.user.id));
+  return rows.map((r) => r.courseId);
+}
 
 type CourseInsert = {
   titleAr: string; titleEn: string; titleFr: string;
@@ -310,9 +324,15 @@ router.delete("/admin/users/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/courses", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
-    const courses = await db.select().from(coursesTable).orderBy(desc(coursesTable.createdAt));
+    const scope = await getScopedCourseIds(req);
+    const baseCourses = scope === null
+      ? await db.select().from(coursesTable).orderBy(desc(coursesTable.createdAt))
+      : scope.length === 0
+        ? []
+        : await db.select().from(coursesTable).where(inArray(coursesTable.id, scope)).orderBy(desc(coursesTable.createdAt));
+    const courses = baseCourses;
     const allLessons = await db.select().from(lessonsTable).orderBy(asc(lessonsTable.sortOrder));
     const allSections = await db.select().from(courseSectionsTable).orderBy(asc(courseSectionsTable.sortOrder));
     const allEnrollments = await db.select().from(enrollmentsTable);
@@ -569,9 +589,13 @@ router.delete("/admin/enrollments/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/enrollments", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
-    const enrollments = await db.select({
+    const scope = await getScopedCourseIds(req);
+    if (scope !== null && scope.length === 0) {
+      return res.json({ enrollments: [] });
+    }
+    const baseSelect = db.select({
       id: enrollmentsTable.id,
       userId: enrollmentsTable.userId,
       courseId: enrollmentsTable.courseId,
@@ -584,8 +608,10 @@ router.get("/admin/enrollments", async (req: Request, res: Response) => {
     })
     .from(enrollmentsTable)
     .leftJoin(usersTable, eq(enrollmentsTable.userId, usersTable.id))
-    .leftJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
-    .orderBy(desc(enrollmentsTable.enrolledAt));
+    .leftJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id));
+    const enrollments = scope === null
+      ? await baseSelect.orderBy(desc(enrollmentsTable.enrolledAt))
+      : await baseSelect.where(inArray(enrollmentsTable.courseId, scope)).orderBy(desc(enrollmentsTable.enrolledAt));
     res.json({ enrollments });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch enrollments" });
@@ -1074,9 +1100,13 @@ router.patch("/admin/orders/:id", adminPatchLmsOrder);
 
 // ===== Reviews moderation =====
 router.get("/admin/reviews", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
   try {
-    const rows = await db
+    const scope = await getScopedCourseIds(req);
+    if (scope !== null && scope.length === 0) {
+      return res.json({ reviews: [] });
+    }
+    const baseSelect = db
       .select({
         id: reviewsTable.id,
         userId: reviewsTable.userId,
@@ -1094,8 +1124,10 @@ router.get("/admin/reviews", async (req: Request, res: Response) => {
       })
       .from(reviewsTable)
       .leftJoin(usersTable, eq(usersTable.id, reviewsTable.userId))
-      .leftJoin(coursesTable, eq(coursesTable.id, reviewsTable.courseId))
-      .orderBy(desc(reviewsTable.createdAt));
+      .leftJoin(coursesTable, eq(coursesTable.id, reviewsTable.courseId));
+    const rows = scope === null
+      ? await baseSelect.orderBy(desc(reviewsTable.createdAt))
+      : await baseSelect.where(inArray(reviewsTable.courseId, scope)).orderBy(desc(reviewsTable.createdAt));
     res.json({ reviews: rows });
   } catch (err) {
     req.log.error({ err }, "Failed to list reviews");
@@ -1234,13 +1266,109 @@ router.get("/admin/trainers", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+// ===== Trainer "ملاحظاتي عن الطالب" — private notes a trainer keeps about a learner =====
+router.get("/admin/learners/:learnerId/trainer-notes", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "trainer")) return;
   try {
+    const learnerId = req.params.learnerId;
+    if (isAdmin(req)) {
+      const rows = await db
+        .select()
+        .from(trainerLearnerNotesTable)
+        .where(eq(trainerLearnerNotesTable.learnerId, learnerId))
+        .orderBy(desc(trainerLearnerNotesTable.updatedAt));
+      return res.json({ notes: rows });
+    }
+    const trainerId = req.user!.id;
+    // Verify the trainer is assigned to at least one course this learner is enrolled in.
+    const scope = await getScopedCourseIds(req);
+    if (scope === null || scope.length === 0) return res.json({ notes: [] });
+    const enrolled = await db
+      .select({ courseId: enrollmentsTable.courseId })
+      .from(enrollmentsTable)
+      .where(and(eq(enrollmentsTable.userId, learnerId), inArray(enrollmentsTable.courseId, scope)));
+    if (enrolled.length === 0) {
+      return res.status(403).json({ error: "Forbidden: learner not in your courses" });
+    }
     const rows = await db
       .select()
-      .from(speechEvaluationsTable)
-      .orderBy(desc(speechEvaluationsTable.createdAt));
+      .from(trainerLearnerNotesTable)
+      .where(and(
+        eq(trainerLearnerNotesTable.learnerId, learnerId),
+        eq(trainerLearnerNotesTable.trainerId, trainerId),
+      ))
+      .orderBy(desc(trainerLearnerNotesTable.updatedAt));
+    res.json({ notes: rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list trainer notes");
+    res.status(500).json({ error: "Failed to fetch trainer notes" });
+  }
+});
+
+router.post("/admin/learners/:learnerId/trainer-notes", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "trainer")) return;
+  try {
+    const learnerId = req.params.learnerId;
+    const note = typeof req.body?.note === "string" ? req.body.note.trim() : "";
+    const courseId = typeof req.body?.courseId === "string" && req.body.courseId ? req.body.courseId : null;
+    if (!note) return res.status(400).json({ error: "note required" });
+    if (note.length > 4000) return res.status(400).json({ error: "note too long (max 4000)" });
+    const trainerId = req.user!.id;
+    if (!isAdmin(req)) {
+      const scope = await getScopedCourseIds(req);
+      if (scope === null || scope.length === 0) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+      const enrolled = await db
+        .select({ courseId: enrollmentsTable.courseId })
+        .from(enrollmentsTable)
+        .where(and(eq(enrollmentsTable.userId, learnerId), inArray(enrollmentsTable.courseId, scope)));
+      if (enrolled.length === 0) {
+        return res.status(403).json({ error: "Forbidden: learner not in your courses" });
+      }
+      if (courseId && !scope.includes(courseId)) {
+        return res.status(403).json({ error: "Forbidden: course not in your scope" });
+      }
+    }
+    const [row] = await db.insert(trainerLearnerNotesTable).values({
+      trainerId, learnerId, courseId, note,
+    }).returning();
+    res.json({ note: row });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create trainer note");
+    res.status(500).json({ error: "Failed to create trainer note" });
+  }
+});
+
+router.delete("/admin/trainer-notes/:id", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "trainer")) return;
+  try {
+    const [existing] = await db.select().from(trainerLearnerNotesTable).where(eq(trainerLearnerNotesTable.id, req.params.id));
+    if (!existing) return res.status(404).json({ error: "Not found" });
+    if (!isAdmin(req) && existing.trainerId !== req.user!.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    await db.delete(trainerLearnerNotesTable).where(eq(trainerLearnerNotesTable.id, req.params.id));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete trainer note");
+    res.status(500).json({ error: "Failed to delete trainer note" });
+  }
+});
+
+router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "trainer")) return;
+  try {
+    const rows = isAdmin(req)
+      ? await db
+          .select()
+          .from(speechEvaluationsTable)
+          .orderBy(desc(speechEvaluationsTable.createdAt))
+      : await db
+          .select()
+          .from(speechEvaluationsTable)
+          .where(eq(speechEvaluationsTable.assignedTrainerUserId, req.user!.id))
+          .orderBy(desc(speechEvaluationsTable.createdAt));
     res.json({ evaluations: rows });
   } catch (err) {
     req.log.error({ err }, "Failed to list speech evaluations");
@@ -1249,7 +1377,19 @@ router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireRole(req, res, "trainer")) return;
+  // Trainers can only update evaluations explicitly assigned to them; cross-trainer
+  // mutations return 403. Admins are unrestricted.
+  if (!isAdmin(req)) {
+    const [owned] = await db
+      .select({ assignedTrainerUserId: speechEvaluationsTable.assignedTrainerUserId })
+      .from(speechEvaluationsTable)
+      .where(eq(speechEvaluationsTable.id, req.params.id));
+    if (!owned) return res.status(404).json({ error: "Not found" });
+    if (owned.assignedTrainerUserId !== req.user!.id) {
+      return res.status(403).json({ error: "Forbidden: not assigned to this evaluation" });
+    }
+  }
   try {
     const body = (req.body ?? {}) as {
       status?: unknown;
@@ -1349,6 +1489,9 @@ router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response
     }
 
     if (body.assignedTrainerUserId !== undefined) {
+      if (!isAdmin(req)) {
+        return res.status(403).json({ error: "Only admins can reassign evaluations" });
+      }
       if (body.assignedTrainerUserId === null || body.assignedTrainerUserId === "") {
         update.assignedTrainerUserId = null;
       } else if (typeof body.assignedTrainerUserId === "string") {

@@ -91,9 +91,21 @@ export function AdminLayout({
     .filter((g) => g.items.length > 0);
   const allVisible = visibleGroups.flatMap((g) => g.items);
 
+  // Trainers always land on /trainer, not the global admin overview.
+  if (role === "trainer" && activeKey === "overview") {
+    navigate("/trainer", { replace: true });
+    return (
+      <AppShell containerClassName="flex-1 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </AppShell>
+    );
+  }
+
   // If the role can't see the active page, redirect to first allowed.
   if (role && !canSee(role, activeKey)) {
-    if (allVisible.length > 0) {
+    if (role === "trainer") {
+      navigate("/trainer", { replace: true });
+    } else if (allVisible.length > 0) {
       navigate(allVisible[0].href, { replace: true });
     }
     return (

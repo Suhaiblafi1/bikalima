@@ -8,6 +8,7 @@ import { AdminRoute } from "@/components/route-guards";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import AdminOverview from "@/pages/admin/overview";
+import TrainerDashboard from "@/pages/trainer";
 import AdminUsers from "@/pages/admin/users";
 import AdminCourses from "@/pages/admin/courses";
 import AdminEnrollments from "@/pages/admin/enrollments";
@@ -75,6 +76,9 @@ function AnimatedRouter() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/admin">
             {() => <Redirect to="/admin/overview" />}
+          </Route>
+          <Route path="/trainer">
+            {() => (<AdminRoute><TrainerDashboard /></AdminRoute>)}
           </Route>
           <Route path="/admin/overview">
             {() => (<AdminRoute><AdminOverview /></AdminRoute>)}

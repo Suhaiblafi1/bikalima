@@ -141,10 +141,11 @@ export type AdminPageKey =
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
-  overview: ["admin", "trainer", "sales"],
+  // Trainers no longer land on the global admin overview — they go to /trainer.
+  overview: ["admin", "sales"],
   users: ["admin"],
   courses: ["admin", "trainer"],
-  enrollments: ["admin", "sales"],
+  enrollments: ["admin", "sales", "trainer"],
   "workbook-orders": ["admin", "sales"],
   assignments: ["admin", "trainer"],
   reviews: ["admin", "trainer"],
@@ -158,10 +159,10 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Live chat with site visitors — sales + admin handle replies.
   chat: ["admin", "sales"],
   settings: ["admin"],
-  // ── Growth Center (CRM/LMS) ───────────────────────────────────────────
-  leads: ["admin", "sales", "trainer"],
+  // ── Growth Center (CRM) — hidden from trainers per task #43 ────────────
+  leads: ["admin", "sales"],
   pipeline: ["admin", "sales"],
-  tasks: ["admin", "sales", "trainer"],
+  tasks: ["admin", "sales"],
   automations: ["admin"],
   "message-templates": ["admin", "sales"],
   funnels: ["admin", "sales"],

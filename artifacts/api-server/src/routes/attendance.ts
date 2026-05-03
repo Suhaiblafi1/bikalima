@@ -8,7 +8,19 @@ import {
   lessonSessionAttendanceTable,
 } from "@workspace/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { requireRole } from "../lib/admin.js";
+import { requireRole, isAdmin } from "../lib/admin.js";
+import { courseTrainersTable } from "@workspace/db";
+
+async function trainerOwnsCourse(req: Request, courseId: string): Promise<boolean> {
+  if (isAdmin(req)) return true;
+  if (!req.user) return false;
+  const [row] = await db
+    .select({ id: courseTrainersTable.id })
+    .from(courseTrainersTable)
+    .where(and(eq(courseTrainersTable.userId, req.user.id), eq(courseTrainersTable.courseId, courseId)))
+    .limit(1);
+  return !!row;
+}
 import { recordAuditLog } from "../lib/platform.js";
 import { createNotification } from "../lib/notifications.js";
 
@@ -23,6 +35,9 @@ router.get("/admin/courses/:id/attendance", async (req: Request, res: Response) 
   const courseId = req.params.id;
   const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, courseId)).limit(1);
   if (!course) return res.status(404).json({ error: "Course not found" });
+  if (!(await trainerOwnsCourse(req, courseId))) {
+    return res.status(403).json({ error: "Forbidden: not assigned to this course" });
+  }
 
   const lessons = await db
     .select({ id: lessonsTable.id, titleAr: lessonsTable.titleAr, titleEn: lessonsTable.titleEn, sortOrder: lessonsTable.sortOrder })
@@ -59,6 +74,9 @@ router.post("/admin/lessons/:id/attendance", async (req: Request, res: Response)
   const lessonId = req.params.id;
   const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId)).limit(1);
   if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+  if (!(await trainerOwnsCourse(req, lesson.courseId))) {
+    return res.status(403).json({ error: "Forbidden: not assigned to this course" });
+  }
 
   const entries = Array.isArray(req.body?.entries) ? req.body.entries : [];
   if (!entries.length) return res.status(400).json({ error: "entries required" });
