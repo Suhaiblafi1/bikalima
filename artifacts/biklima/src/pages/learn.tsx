@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Certificate } from "@/components/certificate";
 import { ActivityPlayer, type Activity, type SubmissionStatus } from "@/components/activity-player";
+import { ContentProtection } from "@/components/content-protection";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { programPageSlugFromCourseSlug } from "@/lib/site-config";
 
@@ -817,6 +818,7 @@ export default function LearnPage() {
         { label: lang === "ar" ? "تعلم" : "Learn" },
       ]}
     >
+      <ContentProtection>
       {/* Lesson sub-header */}
       <div className="sticky top-14 z-30 bg-card border-b border-border shadow-sm">
         <div className="flex items-center gap-3 px-4 h-14">
@@ -1357,6 +1359,7 @@ export default function LearnPage() {
           />
         </div>
       )}
+      </ContentProtection>
     </AppShell>
   );
 }
