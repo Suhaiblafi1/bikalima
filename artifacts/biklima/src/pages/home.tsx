@@ -686,9 +686,6 @@ export default function Home() {
         {/* ── PROGRAM QUIZ ── */}
         <ProgramQuiz lang={lang} />
 
-        {/* ── REPEATING CTA ── */}
-        <JourneyCta testIdSuffix="after-structure" />
-
         {/* ── BEFORE / AFTER ── */}
         <BeforeAfterSection />
 

@@ -197,7 +197,7 @@ export function ProgramQuiz({ lang }: { lang: Lang }) {
   const progressPct = isComplete ? 100 : step <= 0 ? 0 : (step / total) * 100;
 
   return (
-    <section id="program-quiz" className="py-20 md:py-24 bg-gradient-to-b from-background via-primary/5 to-background border-y border-border">
+    <section id="program-quiz" className="pt-20 md:pt-24 pb-10 md:pb-12 bg-gradient-to-b from-background via-primary/5 to-background border-y border-border">
       <div className="container mx-auto px-6 max-w-3xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">

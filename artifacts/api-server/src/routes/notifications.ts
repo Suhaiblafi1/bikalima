@@ -15,8 +15,12 @@ function requireAuth(req: Request, res: Response): boolean {
 router.get("/my/notifications", async (req: Request, res: Response) => {
   if (!requireAuth(req, res)) return;
   try {
+<<<<<<< HEAD
     const raw = parseInt(String(req.query.limit ?? "20"), 10);
     const limit = Math.min(Math.max(Number.isFinite(raw) && raw > 0 ? raw : 20, 1), 100);
+=======
+    const limit = Math.min(parseInt(String(req.query.limit ?? "20"), 10) || 20, 100);
+>>>>>>> c80f513 (Saved your changes before starting work)
     const rows = await db
       .select()
       .from(notificationsTable)
