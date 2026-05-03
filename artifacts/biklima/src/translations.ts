@@ -382,7 +382,7 @@ export const T = {
         voice: "الصوت والإيقاع",
         body: "الحضور المسرحي",
       },
-      skillLabel: "المهارة المُحلَّلة",
+      skillLabel: "الاستفادة",
     },
     modal: {
       aboutHeading: "عن البرنامج",
@@ -782,7 +782,7 @@ export const T = {
         voice: "Voice & Rhythm",
         body: "Stage Presence",
       },
-      skillLabel: "Skill Analyzed",
+      skillLabel: "Takeaway",
     },
     modal: {
       aboutHeading: "About the Program",
