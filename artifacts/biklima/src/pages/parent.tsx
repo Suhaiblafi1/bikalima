@@ -6,8 +6,24 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound } from "lucide-react";
 import { lazy, Suspense } from "react";
-import { Video, Clock, ExternalLink } from "lucide-react";
+import { Video, Clock, ExternalLink, Star, Award } from "lucide-react";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
+
+interface ChildDashboard {
+  linkId: string;
+  studentUserId: string;
+  name: string | null;
+  email: string | null;
+  relationshipAr: string | null;
+  recentReviews: Array<{
+    id: string; decision: string | null; totalScore: number | null;
+    createdAt: string; activityTitleAr: string | null; activityType: string | null;
+  }>;
+  certificates: Array<{
+    id: string; code: string; programName: string | null; certType: string;
+    status: string; issueDate: string; certificateFileUrl: string | null;
+  }>;
+}
 
 interface LiveSession {
   id: string; zoomJoinUrl: string; titleAr: string | null; scheduledAt: string;
@@ -41,6 +57,7 @@ export default function ParentPage() {
   const apiBase = getApiBase();
   const [children, setChildren] = useState<ChildSummary[] | null>(null);
   const [liveSessions, setLiveSessions] = useState<LiveSession[] | null>(null);
+  const [dashboard, setDashboard] = useState<ChildDashboard[] | null>(null);
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [redeeming, setRedeeming] = useState(false);
@@ -54,6 +71,10 @@ export default function ParentPage() {
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(d => setLiveSessions(d.sessions ?? []))
       .catch(() => setLiveSessions([]));
+    fetch(`${apiBase}/parent/dashboard`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => setDashboard(d.children ?? []))
+      .catch(() => setDashboard([]));
   }, [apiBase]);
 
   useEffect(() => {
@@ -239,6 +260,61 @@ export default function ParentPage() {
             )}
           </CardContent>
         </Card>
+
+        {dashboard && dashboard.length > 0 && (
+          <Card className="rounded-2xl">
+            <CardContent className="p-6 space-y-6">
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                <Star className="w-5 h-5 text-primary" />
+                تقييمات وإنجازات أبنائي
+              </h2>
+              {dashboard.map(child => (
+                <div key={child.linkId} className="border border-border rounded-xl p-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold">{child.name ?? child.email ?? "—"}</span>
+                    {child.relationshipAr && <span className="text-xs text-muted-foreground">({child.relationshipAr})</span>}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground mb-2">آخر تقييمات المدرّب</p>
+                    {child.recentReviews.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">لا توجد تقييمات بعد.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {child.recentReviews.map(r => (
+                          <li key={r.id} className="flex items-center gap-2 text-xs">
+                            <span className={`px-2 py-0.5 rounded-full font-bold ${r.decision === "pass" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                              {r.decision === "pass" ? "ناجح" : "بحاجة مراجعة"}
+                            </span>
+                            <span className="flex-1 truncate">{r.activityTitleAr ?? "نشاط"}</span>
+                            {r.totalScore != null && <span className="text-muted-foreground">{r.totalScore}/100</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1.5"><Award className="w-3.5 h-3.5" />الشهادات</p>
+                    {child.certificates.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">لا توجد شهادات صادرة بعد.</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {child.certificates.map(c => (
+                          <li key={c.id} className="flex items-center gap-2 text-xs">
+                            <Award className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="flex-1 truncate">{c.programName ?? c.certType} • <span dir="ltr" className="text-muted-foreground">{c.code}</span></span>
+                            {c.certificateFileUrl && (
+                              <a href={c.certificateFileUrl} target="_blank" rel="noopener noreferrer" className="text-primary font-bold">عرض</a>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
           <StudentMessagesTab lang="ar" currentUserId={user?.id ?? null} />

@@ -13,8 +13,13 @@ import {
   usersTable,
   lessonProgressTable,
   activitySubmissionsTable,
+  activityReviewsTable,
+  lessonActivitiesTable,
+  certificatesTable,
+  notificationsTable,
 } from "@workspace/db";
-import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { logger } from "../lib/logger.js";
 import { isSupervisorOrAdmin, requireRole } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
 
@@ -693,5 +698,154 @@ router.post("/messages/courses/:courseId/broadcast", async (req: Request, res: R
     res.status(500).json({ error: "Failed" });
   }
 });
+
+// ── PARENT DASHBOARD: per-child evaluations + certificates ────────────
+router.get("/parent/dashboard", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user?.id) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const me = req.user.id;
+  try {
+    const links = await db.select({
+      linkId: parentLinksTable.id,
+      studentUserId: parentLinksTable.studentUserId,
+      relationshipAr: parentLinksTable.relationshipAr,
+    }).from(parentLinksTable)
+      .where(and(eq(parentLinksTable.parentUserId, me), eq(parentLinksTable.status, "active")));
+    if (links.length === 0) { res.json({ children: [] }); return; }
+    const studentIds = links.map(l => l.studentUserId);
+    const students = await db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .from(usersTable).where(inArray(usersTable.id, studentIds));
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    // Latest 5 trainer reviews per child (joined with submission to get userId).
+    const reviews = await db.select({
+      id: activityReviewsTable.id,
+      submissionId: activityReviewsTable.submissionId,
+      reviewerId: activityReviewsTable.reviewerId,
+      totalScore: activityReviewsTable.totalScore,
+      decision: activityReviewsTable.decision,
+      createdAt: activityReviewsTable.createdAt,
+      userId: activitySubmissionsTable.userId,
+      activityId: activitySubmissionsTable.activityId,
+    }).from(activityReviewsTable)
+      .innerJoin(activitySubmissionsTable, eq(activitySubmissionsTable.id, activityReviewsTable.submissionId))
+      .where(inArray(activitySubmissionsTable.userId, studentIds))
+      .orderBy(desc(activityReviewsTable.createdAt))
+      .limit(50);
+    const activityIds = Array.from(new Set(reviews.map(r => r.activityId)));
+    const acts = activityIds.length > 0
+      ? await db.select({ id: lessonActivitiesTable.id, titleAr: lessonActivitiesTable.titleAr, type: lessonActivitiesTable.type })
+          .from(lessonActivitiesTable).where(inArray(lessonActivitiesTable.id, activityIds))
+      : [];
+    const actMap = new Map(acts.map(a => [a.id, a]));
+
+    // Certificates per child.
+    const certs = await db.select().from(certificatesTable)
+      .where(inArray(certificatesTable.userId, studentIds))
+      .orderBy(desc(certificatesTable.issueDate));
+
+    const children = links.map(l => {
+      const s = studentMap.get(l.studentUserId);
+      const myReviews = reviews.filter(r => r.userId === l.studentUserId).slice(0, 5).map(r => ({
+        id: r.id,
+        decision: r.decision,
+        totalScore: r.totalScore,
+        createdAt: r.createdAt,
+        activityTitleAr: actMap.get(r.activityId)?.titleAr ?? null,
+        activityType: actMap.get(r.activityId)?.type ?? null,
+      }));
+      const myCerts = certs.filter(c => c.userId === l.studentUserId).map(c => ({
+        id: c.id, code: c.code, programName: c.programName, certType: c.certType,
+        status: c.status, issueDate: c.issueDate, certificateFileUrl: c.certificateFileUrl,
+      }));
+      return {
+        linkId: l.linkId,
+        studentUserId: l.studentUserId,
+        name: s?.name ?? null,
+        email: s?.email ?? null,
+        relationshipAr: l.relationshipAr,
+        recentReviews: myReviews,
+        certificates: myCerts,
+      };
+    });
+    res.json({ children });
+  } catch (err) {
+    req.log.error({ err }, "parent dashboard failed");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// ── 30-min live-session reminder cron ─────────────────────────────────
+// Runs every 5 minutes. Finds sessions starting in [now+25min, now+30min]
+// (a 5-min window matching the cron interval) and notifies enrolled
+// students + linked parents. Dedupes via notifications.type+link presence.
+async function runLiveSessionReminders(): Promise<number> {
+  try {
+    const now = Date.now();
+    const winStart = new Date(now + 25 * 60_000);
+    const winEnd = new Date(now + 30 * 60_000);
+    const upcoming = await db.select().from(liveSessionsTable)
+      .where(and(
+        eq(liveSessionsTable.status, "scheduled"),
+        gte(liveSessionsTable.scheduledAt, winStart),
+        lte(liveSessionsTable.scheduledAt, winEnd),
+      ));
+    if (upcoming.length === 0) return 0;
+    let sent = 0;
+    for (const s of upcoming) {
+      const link = `/dashboard?tab=live&session=${s.id}`;
+      const [lesson] = await db.select({ courseId: lessonsTable.courseId, titleAr: lessonsTable.titleAr })
+        .from(lessonsTable).where(eq(lessonsTable.id, s.lessonId)).limit(1);
+      if (!lesson) continue;
+      const enrolled = await db.select({ userId: enrollmentsTable.userId })
+        .from(enrollmentsTable).where(eq(enrollmentsTable.courseId, lesson.courseId));
+      const studentIds = enrolled.map(e => e.userId);
+      const parents = studentIds.length > 0
+        ? await db.select({ parentUserId: parentLinksTable.parentUserId })
+            .from(parentLinksTable)
+            .where(and(inArray(parentLinksTable.studentUserId, studentIds), eq(parentLinksTable.status, "active")))
+        : [];
+      const recipients = new Set<string>([
+        ...studentIds,
+        ...parents.map(p => p.parentUserId).filter((x): x is string => !!x),
+      ]);
+      for (const userId of recipients) {
+        const [already] = await db.select({ id: notificationsTable.id })
+          .from(notificationsTable)
+          .where(and(
+            eq(notificationsTable.userId, userId),
+            eq(notificationsTable.type, "live_session_reminder"),
+            eq(notificationsTable.link, link),
+          )).limit(1);
+        if (already) continue;
+        await createNotification({
+          userId,
+          type: "live_session_reminder",
+          titleAr: "حصة مباشرة بعد ٣٠ دقيقة ⏰",
+          titleEn: "Live session in 30 minutes",
+          bodyAr: s.titleAr ?? lesson.titleAr ?? null,
+          bodyEn: null,
+          link,
+        });
+        sent++;
+      }
+    }
+    return sent;
+  } catch (err) {
+    logger.error({ err }, "live-session reminder run failed");
+    return 0;
+  }
+}
+
+let reminderTimer: NodeJS.Timeout | null = null;
+export function startLiveSessionReminders(): void {
+  if (reminderTimer) return;
+  reminderTimer = setInterval(() => {
+    runLiveSessionReminders().catch((err) => logger.error({ err }, "live reminder failed"));
+  }, 5 * 60_000);
+  setTimeout(() => {
+    runLiveSessionReminders().catch((err) => logger.error({ err }, "live reminder failed"));
+  }, 30_000).unref();
+  reminderTimer.unref?.();
+}
 
 export default router;

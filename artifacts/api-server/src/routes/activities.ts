@@ -404,8 +404,28 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
       if ((totalDone?.c ?? 0) === 1) {
         await awardBadgeIfEligible(userId, "kid_strong_start", { activityId });
       }
-      if ((totalDone?.c ?? 0) >= 5) {
-        await awardBadgeIfEligible(userId, "kid_little_leader", { count: totalDone?.c });
+      // "Little Leader": 5 distinct passed activities (matches trainer-review path).
+      const distinctPassed = await db.selectDistinct({ activityId: activitySubmissionsTable.activityId })
+        .from(activitySubmissionsTable)
+        .where(and(
+          eq(activitySubmissionsTable.userId, userId),
+          eq(activitySubmissionsTable.status, "completed"),
+        ));
+      if (distinctPassed.length >= 5) {
+        await awardBadgeIfEligible(userId, "kid_little_leader", { count: distinctPassed.length });
+      }
+      // Cross-activity self-assessment prompt: ask "كيف كان شعورك؟" after every
+      // completed activity (skip when the activity *is* a self_assessment).
+      if (act.type !== "self_assessment") {
+        await createNotification({
+          userId,
+          type: "self_assessment_prompt",
+          titleAr: "كيف كان شعورك؟ ⭐",
+          titleEn: "How did that feel?",
+          bodyAr: "قيّم نشاطك الأخير بنجمة واحدة بسيطة 🌟",
+          bodyEn: "Rate your last activity with a quick star.",
+          link: `/dashboard?tab=activities&selfAssess=${activityId}`,
+        });
       }
       if (act.type === "challenge") {
         await awardBadgeIfEligible(userId, "kid_challenge_champion", { activityId });
@@ -708,6 +728,18 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
     // Little Speaker: passing voice_recording review → "صوت واضح"
     if (act?.type === "voice_recording") {
       await awardBadgeIfEligible(sub.userId, "kid_voice_clear", { submissionId: id });
+    }
+    // Self-assessment prompt after a trainer-passed submission too.
+    if (decision === "pass") {
+      await createNotification({
+        userId: sub.userId,
+        type: "self_assessment_prompt",
+        titleAr: "كيف كان شعورك؟ ⭐",
+        titleEn: "How did that feel?",
+        bodyAr: "قيّم تجربتك بعد مراجعة المدرّب 🌟",
+        bodyEn: "Rate how you felt after the review.",
+        link: `/dashboard?tab=activities&selfAssess=${sub.activityId}`,
+      });
     }
     // "Little Leader": 5 distinct passed activities (any type).
     const distinctPassed = await db.selectDistinct({ activityId: activitySubmissionsTable.activityId })

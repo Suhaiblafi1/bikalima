@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startDailyAbsenceDigest } from "./lib/attendance-digest";
+import { startLiveSessionReminders } from "./routes/little-speaker";
 
 const rawPort = process.env["PORT"];
 
@@ -24,4 +25,5 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   startDailyAbsenceDigest();
+  startLiveSessionReminders();
 });
