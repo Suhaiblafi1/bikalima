@@ -722,24 +722,6 @@ export default function Home() {
               <p className="text-muted-foreground">{getSectionContent(cms, "events", lang, "subheading", t.structure.upcomingEventsSub)}</p>
             </motion.div>
 
-            {/* Collaboration strip */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="max-w-3xl mx-auto mb-8"
-            >
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 px-5 py-3 rounded-2xl bg-white border border-primary/20 shadow-sm">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  {lang === "ar" ? "بالتعاون مع" : "In collaboration with"}
-                </span>
-                <span className="hidden sm:inline-block w-px h-5 bg-border" />
-                <span className="text-base font-bold text-foreground">
-                  {lang === "ar" ? "شركة الحياة الحسية للتعليم" : "Sensorial Life Education"}
-                </span>
-              </div>
-            </motion.div>
-
             {upcomingEvents.length > 0 ? (
               <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
                 {upcomingEvents.map((ev) => {
