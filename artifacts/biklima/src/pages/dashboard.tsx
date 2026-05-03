@@ -389,6 +389,12 @@ function StudentCertificatesTab({ apiBase, lang }: { apiBase: string; lang: Lang
 function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar; onAuthenticated: () => void }) {
   const { login, register } = useAuth();
   const [, navigate] = useLocation();
+  const redirectTarget = (() => {
+    if (typeof window === "undefined") return "/dashboard";
+    const r = new URLSearchParams(window.location.search).get("redirect");
+    if (r && r.startsWith("/") && !r.startsWith("//")) return r;
+    return "/dashboard";
+  })();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -407,6 +413,13 @@ function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar
     setConfirmPassword("");
     setFirstName("");
     setLastName("");
+  };
+
+  const getRedirectTarget = (): string => {
+    if (typeof window === "undefined") return "/dashboard";
+    const r = new URLSearchParams(window.location.search).get("redirect");
+    if (r && r.startsWith("/") && !r.startsWith("//")) return r;
+    return "/dashboard";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -428,7 +441,7 @@ function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar
         setError(result.error);
       } else {
         onAuthenticated();
-        navigate("/dashboard");
+        navigate(getRedirectTarget());
       }
     } else {
       setLoading(true);
@@ -438,7 +451,7 @@ function AuthForm({ lang, t, onAuthenticated }: { lang: Lang; t: typeof dashT.ar
         setError(result.error);
       } else {
         onAuthenticated();
-        navigate("/dashboard");
+        navigate(getRedirectTarget());
       }
     }
   };

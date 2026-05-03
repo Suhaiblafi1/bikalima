@@ -19,7 +19,7 @@ export const T = {
       h1a: "لديك ما تقوله —",
       h1b: "وبكلمة ستُسمَع.",
       sub: "كثيرون يخسرون فرصهم لأن أفكارهم تتوه بين العقل والكلام. في المقابلة، الاجتماع، المنصة، والحياة — بكلمة هي الحل لمن أسكته التردد ولم يُسمع بعد.",
-      ctaPrimary: "سجّل اهتمامك الآن",
+      ctaPrimary: "ابدأ التعلم الآن",
       ctaSecondary: "اكتشف البرامج التدريبية",
       trustStrip: {
         trainees: "أكثر من ٨٠٠ متدرب",
@@ -226,8 +226,8 @@ export const T = {
       ],
     },
     enroll: {
-      heading: "سجّل اهتمامك",
-      sub: "احجز مقعدك أو اطلب استشارة لتحديد البرنامج الأنسب لك.",
+      heading: "للمؤسسات والمجموعات",
+      sub: "اطلب عرضًا مخصصًا لمؤسستك أو مجموعتك. للأفراد: استخدم زر «ابدأ التعلم الآن» في الأعلى للتسجيل المباشر في الدورة.",
       applicantTypeLabel: "نوع المتقدم",
       applicantIndividual: "فرد",
       applicantInstitution: "مؤسسة تعليمية",
@@ -419,7 +419,7 @@ export const T = {
       h1a: "Bikalima,",
       h1b: "We Create Impact.",
       sub: "A foundational public speaking course for youth and professionals, branching into tracks for certified trainers, educators, parents, and children.",
-      ctaPrimary: "Register your interest",
+      ctaPrimary: "Start learning now",
       ctaSecondary: "Explore the Programs",
       trustStrip: {
         trainees: "800+ trainees",
@@ -626,8 +626,8 @@ export const T = {
       ],
     },
     enroll: {
-      heading: "Register Your Interest",
-      sub: "Reserve your seat or request a consultation to find the right program for you.",
+      heading: "For Institutions & Groups",
+      sub: "Request a custom proposal for your institution or group. For individuals: use the “Start learning now” button above to enroll directly in a course.",
       applicantTypeLabel: "Applicant Type",
       applicantIndividual: "Individual",
       applicantInstitution: "Educational Institution",

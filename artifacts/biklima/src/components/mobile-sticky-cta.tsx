@@ -48,26 +48,26 @@ export function MobileStickyCta() {
   const goEnroll = () => {
     const isHome = location === "/" || location === "";
     if (isHome) {
-      const el = document.getElementById("enroll");
+      const el = document.getElementById("structure");
       if (el) {
         window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
         return;
       }
     }
-    navigate("/#enroll");
+    navigate("/#structure");
   };
 
   const goConsult = () => {
     trackZoomBookingClick("mobile_sticky_cta");
     const isHome = location === "/" || location === "";
     if (isHome) {
-      const el = document.getElementById("speech-evaluation") || document.getElementById("enroll");
+      const el = document.getElementById("speech-evaluation") || document.getElementById("structure");
       if (el) {
         window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
         return;
       }
     }
-    navigate("/#enroll");
+    navigate("/#structure");
   };
 
   return (

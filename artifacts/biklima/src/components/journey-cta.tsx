@@ -9,12 +9,12 @@ type Props = {
   testIdSuffix?: string;
 };
 
-function scrollToEnroll() {
-  const el = document.getElementById("enroll");
+function scrollToStructure() {
+  const el = document.getElementById("structure");
   if (el) {
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
   } else {
-    window.location.hash = "enroll";
+    window.location.hash = "structure";
   }
 }
 
@@ -53,7 +53,7 @@ export function JourneyCta({ variant = "soft", testIdSuffix = "" }: Props) {
           </div>
           <Button
             size="lg"
-            onClick={scrollToEnroll}
+            onClick={scrollToStructure}
             className={
               variant === "primary"
                 ? "rounded-full bg-white text-primary hover:bg-white/90 px-7 shrink-0"

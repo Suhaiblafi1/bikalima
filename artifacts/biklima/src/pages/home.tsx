@@ -384,7 +384,7 @@ export default function Home() {
                   </h1>
                   <p className="text-base md:text-2xl text-muted-foreground leading-relaxed mb-7 md:mb-10 max-w-lg">{t.hero.sub}</p>
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaPrimary}</Button>
+                    <Button size="lg" onClick={() => navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`)} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaPrimary}</Button>
                     <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaSecondary}</Button>
                   </div>
                   <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
@@ -611,7 +611,7 @@ export default function Home() {
                       <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
                         {t.structure.viewDetails}
                       </Button>
-                      <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); scrollTo("enroll"); }}>
+                      <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`); }}>
                         {t.structure.enrollNow}
                       </Button>
                     </div>
@@ -661,7 +661,7 @@ export default function Home() {
                               {t.structure.viewDetails}
                             </Button>
                             {program.id !== "children" && (
-                              <Button size="sm" className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); scrollTo("enroll"); }}>
+                              <Button size="sm" className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS[program.id]}`); }}>
                                 {t.structure.enrollNow}
                               </Button>
                             )}

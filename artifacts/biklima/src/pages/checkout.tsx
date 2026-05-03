@@ -95,7 +95,7 @@ export default function CheckoutPage() {
         setError(data.error || (lang === "ar" ? "حدث خطأ — يرجى المحاولة مرة أخرى." : "An error occurred — please try again."));
         return;
       }
-      navigate(`/confirmation`);
+      navigate(`/confirmation?slug=${encodeURIComponent(slug)}`);
     } catch {
       setError(lang === "ar" ? "حدث خطأ في الاتصال — يرجى المحاولة مرة أخرى." : "Connection error — please try again.");
     } finally {
@@ -127,7 +127,7 @@ export default function CheckoutPage() {
             </p>
             <Button
               className="w-full rounded-full font-bold"
-              onClick={() => navigate(`/dashboard`)}
+              onClick={() => navigate(`/dashboard?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`)}
             >
               {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : "Sign In / Create Account"}
             </Button>

@@ -99,7 +99,7 @@ export function SiteHeader() {
 
   const goCta = () => {
     trackInterestFormSubmit({ source: "header_cta", action: "scroll_to_form" });
-    goToSection("enroll");
+    goToSection("structure");
   };
 
   const initials = (user?.firstName?.[0] || user?.email?.[0] || "U").toUpperCase();

@@ -1,24 +1,50 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Home, LayoutDashboard } from "lucide-react";
+import { CheckCircle, Home, LayoutDashboard, GraduationCap } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+
+const REDIRECT_SECONDS = 6;
 
 export default function ConfirmationPage() {
   const [, navigate] = useLocation();
   const { lang } = useLang();
 
+  const slug = (() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("slug") || "";
+  })();
+
+  const learnPath = slug ? `/courses/${slug}/learn` : null;
+
+  const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS);
+
+  useEffect(() => {
+    if (!learnPath) return;
+    const interval = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(interval);
+          navigate(learnPath);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [learnPath, navigate]);
+
   const steps = lang === "ar"
     ? [
         { num: "1", text: "ستصلك رسالة تأكيد على بريدك الإلكتروني" },
-        { num: "2", text: "أكّد بريدك من الرابط في الرسالة لتفعيل حسابك" },
-        { num: "3", text: "سيتواصل معك فريقنا لترتيب التفاصيل وتأكيد المقعد" },
+        { num: "2", text: "سيتواصل معك فريقنا لتأكيد الدفع وتفعيل وصولك للدورة" },
+        { num: "3", text: "ابدأ التعلم فور تفعيل حسابك" },
       ]
     : [
         { num: "1", text: "A confirmation email will be sent to your inbox" },
-        { num: "2", text: "Verify your email via the link to activate your account" },
-        { num: "3", text: "Our team will reach out to finalize details and confirm your spot" },
+        { num: "2", text: "Our team will reach out to confirm payment and activate your course access" },
+        { num: "3", text: "Start learning as soon as your account is activated" },
       ];
 
   return (
@@ -43,6 +69,14 @@ export default function ConfirmationPage() {
           </div>
         </div>
 
+        {learnPath && (
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 text-sm text-foreground">
+            {lang === "ar"
+              ? <>سيتم تحويلك إلى صفحة الدورة خلال <span className="font-bold text-primary">{secondsLeft}</span> ثانية…</>
+              : <>Redirecting you to your course in <span className="font-bold text-primary">{secondsLeft}</span> seconds…</>}
+          </div>
+        )}
+
         <div className="bg-muted/40 border border-border rounded-2xl p-6 text-start space-y-4">
           <h2 className="font-bold text-foreground text-base">
             {lang === "ar" ? "الخطوات التالية:" : "What Happens Next:"}
@@ -60,7 +94,17 @@ export default function ConfirmationPage() {
         </div>
 
         <div className="flex flex-col gap-3">
+          {learnPath && (
+            <Button
+              className="w-full rounded-full font-bold py-6 text-base gap-2"
+              onClick={() => navigate(learnPath)}
+            >
+              <GraduationCap className="w-4 h-4" />
+              {lang === "ar" ? "الذهاب إلى الدورة الآن" : "Go to Course Now"}
+            </Button>
+          )}
           <Button
+            variant={learnPath ? "outline" : "default"}
             className="w-full rounded-full font-bold py-6 text-base gap-2"
             onClick={() => navigate(`/dashboard`)}
           >

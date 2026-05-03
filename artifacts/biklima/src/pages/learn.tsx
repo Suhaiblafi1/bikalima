@@ -240,6 +240,8 @@ export default function LearnPage() {
   const [certError, setCertError] = useState<string | null>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
 
+  const base = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
+
   const lastKey = (s: string) => `bk_learn_${s}`;
 
   useEffect(() => {
