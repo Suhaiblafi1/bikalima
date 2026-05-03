@@ -1155,7 +1155,9 @@ function isRubricComplete(rubric: Record<string, number> | null | undefined): bo
   });
 }
 
-// List trainers + admins (used by the speech evaluation assignment dropdown)
+// List trainers (used by the speech evaluation assignment dropdown).
+// Only role='trainer' is returned; admins are intentionally excluded so the
+// dropdown reflects assignable trainer accounts.
 router.get("/admin/trainers", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
