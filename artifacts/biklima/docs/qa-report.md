@@ -81,11 +81,8 @@ in the preview pane.
 These were either already tracked as separate project tasks or are
 non-trivial and shouldn't be silently absorbed into a QA pass:
 
-- **End-to-end happy-path Playwright suite** (anon → enroll → pay →
-  lesson → speech → evaluation → badge → certificate → graduates).
-  The local `runTest` harness reliably hits its 10-iteration cap on
-  this repo across multiple prior tasks, so a real test scaffold
-  needs its own task with infra setup.
+- ~~**End-to-end happy-path Playwright suite**~~ — **Done** (Task #55).
+  See [End-to-end Playwright suite](#end-to-end-playwright-suite) below.
 - **Replace email-based interest forms with the in-app consultation
   flow on program pages** — tracked as a separate project task.
 - **Make program detail and learn pages reuse the same workbook
@@ -96,6 +93,99 @@ non-trivial and shouldn't be silently absorbed into a QA pass:
   — separate task.
 - **Hide the duplicated lesson video iframe when a video activity
   exists** — separate task.
+
+---
+
+## End-to-end Playwright suite
+
+A Playwright-based e2e suite lives under `artifacts/biklima/tests/`
+and exercises the full learner happy path against the running dev
+stack and the same Postgres database the api-server uses.
+
+**How to run**
+
+```bash
+# from anywhere in the repo (root has a passthrough script)
+pnpm test
+# or, scoped to the biklima artifact
+pnpm --filter @workspace/biklima test
+```
+
+Both the API server (`artifacts/api-server`) and the web app
+(`artifacts/biklima`) workflows must be running. The suite talks to
+the shared proxy at `http://localhost:80` (override with
+`E2E_BASE_URL`).
+
+**What it covers**
+
+The happy-path spec (`tests/e2e/learner-journey.spec.ts`) walks the
+full learner journey end-to-end:
+
+1. **Anonymous browse** — the homepage responds 2xx and renders the
+   brand title.
+2. **Enroll → pay** — the seeded learner places an order via
+   `POST /api/orders`. The seeded course is free, so the same code
+   path used by paid orders auto-enrolls without hitting Stripe.
+3. **Access lesson** — `GET /api/courses/:slug/access` reports
+   `hasAccess: true` and the `/courses/:slug/learn` page renders the
+   seeded lesson.
+4. **Submit speech** — `POST /api/speech-evaluation` accepts an
+   anonymous submission.
+5. **Get evaluation** — `GET /api/me/speech-evaluations` exposes the
+   seeded *published* report to the learner with `overallScore`,
+   `finalReportMd`, and `programRecommendation` populated.
+6. **See badge** — `GET /api/my/badges` returns the seeded badge
+   with `earned: true` and a non-null `earnedAt`.
+7. **Verify + download certificate** — `GET /api/verify?code=…`
+   returns `{ found: true }` for the seeded code, `GET
+   /api/certificates/:code` and `GET /api/me/certificates` both
+   expose the seeded `certificateFileUrl` (the download link the UI
+   renders).
+8. **Graduates registry** — the seed forces the `graduates_page`
+   feature flag on, so `GET /api/graduates` includes the seeded
+   graduate and the `/graduates` page renders the learner's full
+   name without redirecting.
+
+**Fixtures**
+
+`tests/fixtures/auth.ts` exposes three Playwright contexts:
+
+- `anon` — no session cookie (anonymous visitor).
+- `learner` — programmatically logged in as the seeded learner via
+  `POST /api/auth/login`, with the session cookie injected into the
+  browser context.
+- `admin` — same, but for the seeded admin user (role=`admin`,
+  `isSuperAdmin=true`).
+
+**Seed data**
+
+`tests/global-setup.ts` upserts (idempotent across runs):
+
+- A free, published test course `e2e-test-course` with one section
+  and one lesson.
+- An admin user `e2e.admin@bikalima.test`.
+- A learner user `e2e.learner@bikalima.test` enrolled in the test
+  course.
+- A certificate `BK-CERT-E2E-0001` for the learner with
+  `showInRegistry=true` and a placeholder `certificateFileUrl`.
+- A *published* speech evaluation for the learner (with rubric
+  scores, `overallScore`, `finalReportMd`, and `reportPublishedAt`).
+- A badge definition `e2e_test_badge` and a matching `user_badges`
+  row awarding it to the learner.
+- A `feature_flags` row forcing `graduates_page` to enabled.
+
+These rows are namespaced (the slug, the cert code, and the
+`@bikalima.test` email domain) so they don't collide with real
+content in the dev database.
+
+**Caveats / future work**
+
+- The suite shares the dev database. For CI we'd want a separate
+  Postgres instance per run; the existing setup is already
+  idempotent so adding a `--global-teardown` that prunes the
+  fixtures by namespace is the natural next step.
+- Stripe is intentionally bypassed by using a free course. A future
+  pass should add a Stripe-mock-backed paid order flow.
 
 ---
 
