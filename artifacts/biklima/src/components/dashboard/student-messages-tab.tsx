@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { MessageCircle, Send, Loader2, ChevronLeft } from "lucide-react";
+import { MessageCircle, Send, Loader2, ChevronLeft, Plus } from "lucide-react";
+
+interface Contact { id: string; firstName: string | null; lastName: string | null; email: string; role: string | null }
 
 interface Thread {
   id: string;
@@ -38,6 +40,46 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [showCompose, setShowCompose] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [composeTo, setComposeTo] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const openCompose = async () => {
+    setShowCompose(true);
+    if (contacts.length === 0) {
+      const r = await fetch(`${apiBase}/messages/contacts`, { credentials: "include" });
+      if (r.ok) { const d = await r.json(); setContacts(d.contacts ?? []); }
+    }
+  };
+
+  const createThread = async () => {
+    if (!composeTo || !composeBody.trim()) return;
+    setCreating(true);
+    try {
+      const r = await fetch(`${apiBase}/messages/threads`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientUserId: composeTo,
+          subject: composeSubject.trim() || (isRtl ? "رسالة جديدة" : "New message"),
+          body: composeBody.trim(),
+        }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        setShowCompose(false);
+        setComposeTo(""); setComposeSubject(""); setComposeBody("");
+        loadThreads();
+        if (d.threadId) openThread(d.threadId);
+      } else {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error ?? (isRtl ? "تعذّر إنشاء المحادثة" : "Could not create conversation"));
+      }
+    } finally { setCreating(false); }
+  };
 
   const loadThreads = useCallback(() => {
     fetch(`${apiBase}/messages/threads`, { credentials: "include" })
@@ -93,12 +135,56 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
   return (
     <Card className="rounded-2xl">
       <CardContent className="p-6 md:p-8">
-        <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-primary" />
-          {isRtl ? "الرسائل" : "Messages"}
-        </h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-bold text-xl flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            {isRtl ? "الرسائل" : "Messages"}
+          </h3>
+          {!openId && !showCompose && (
+            <button onClick={openCompose} className="text-sm font-bold inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white">
+              <Plus className="w-4 h-4" />
+              {isRtl ? "محادثة جديدة" : "New conversation"}
+            </button>
+          )}
+        </div>
 
-        {!openId && (
+        {showCompose && !openId && (
+          <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20 mb-4">
+            <p className="font-bold text-sm">{isRtl ? "محادثة جديدة" : "New conversation"}</p>
+            <select value={composeTo} onChange={(e) => setComposeTo(e.target.value)}
+              className="w-full p-2 rounded-lg border border-border text-sm bg-card">
+              <option value="">{isRtl ? "اختر المستلم..." : "Choose recipient..."}</option>
+              {contacts.map(c => (
+                <option key={c.id} value={c.id}>
+                  {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.email} {c.role ? `(${c.role})` : ""}
+                </option>
+              ))}
+            </select>
+            <input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)}
+              placeholder={isRtl ? "الموضوع (اختياري)" : "Subject (optional)"}
+              className="w-full p-2 rounded-lg border border-border text-sm" />
+            <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)}
+              placeholder={isRtl ? "اكتب رسالتك..." : "Write your message..."}
+              className="w-full min-h-[80px] p-2 rounded-lg border border-border text-sm" />
+            <div className="flex gap-2">
+              <button onClick={createThread} disabled={creating || !composeTo || !composeBody.trim()}
+                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-50">
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isRtl ? "إرسال" : "Send"}
+              </button>
+              <button onClick={() => setShowCompose(false)} className="px-4 py-2 rounded-lg border border-border text-sm">
+                {isRtl ? "إلغاء" : "Cancel"}
+              </button>
+            </div>
+            {contacts.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                {isRtl ? "لا يوجد جهات اتصال متاحة. سجّل في دورة لمراسلة المدرّب." : "No contacts available. Enroll in a course to message a trainer."}
+              </p>
+            )}
+          </div>
+        )}
+
+        {!openId && !showCompose && (
           <>
             {threads === null ? (
               <div className="py-12 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" /></div>

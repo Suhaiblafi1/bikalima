@@ -36,9 +36,7 @@ async function isCourseTrainer(userId: string, courseId: string): Promise<boolea
   return !!row;
 }
 
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ LIVE SESSIONS (Zoom links per lesson)                                ║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// --- LIVE SESSIONS (Zoom links per lesson) ---
 
 // Trainer/admin: read or upsert a lesson's live session.
 router.get("/admin/lessons/:lessonId/live-session", async (req: Request, res: Response) => {
@@ -164,9 +162,7 @@ router.get("/my/live-sessions", async (req: Request, res: Response) => {
   }
 });
 
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ PARENT LINKS (parent ↔ student)                                      ║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// --- PARENT LINKS (parent ↔ student) ---
 
 // Student or admin: create an invite code that a parent can redeem.
 router.post("/parent/invites", async (req: Request, res: Response) => {
@@ -308,9 +304,7 @@ router.get("/parent/my-invites", async (req: Request, res: Response) => {
   res.json({ invites: rows });
 });
 
-// ╔══════════════════════════════════════════════════════════════════════╗
-// ║ INTERNAL MESSAGING (trainer ↔ student/parent + course broadcast)     ║
-// ╚══════════════════════════════════════════════════════════════════════╝
+// --- INTERNAL MESSAGING (trainer ↔ student/parent + course broadcast) ---
 
 // List my threads (any thread I'm a participant in)
 router.get("/messages/threads", async (req: Request, res: Response) => {
@@ -335,6 +329,67 @@ router.get("/messages/threads", async (req: Request, res: Response) => {
     res.json({ threads: myThreads });
   } catch (err) {
     req.log.error({ err }, "list threads failed");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// List users I'm allowed to message (mirrors POST /messages/threads RBAC).
+router.get("/messages/contacts", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user?.id) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const me = req.user.id;
+  const myRole = req.user.role ?? "student";
+  try {
+    const ids = new Set<string>();
+    if (myRole === "trainer" || isSupervisorOrAdmin(req)) {
+      const myCourses = (await db.select({ courseId: courseTrainersTable.courseId })
+        .from(courseTrainersTable).where(eq(courseTrainersTable.userId, me))).map(r => r.courseId);
+      if (myCourses.length > 0) {
+        const students = await db.select({ userId: enrollmentsTable.userId })
+          .from(enrollmentsTable).where(inArray(enrollmentsTable.courseId, myCourses));
+        const studentIds = students.map(s => s.userId);
+        for (const sid of studentIds) ids.add(sid);
+        if (studentIds.length > 0) {
+          const parents = await db.select({ parentUserId: parentLinksTable.parentUserId })
+            .from(parentLinksTable)
+            .where(and(eq(parentLinksTable.status, "active"), inArray(parentLinksTable.studentUserId, studentIds)));
+          for (const p of parents) if (p.parentUserId) ids.add(p.parentUserId);
+        }
+      }
+    } else if (myRole === "parent") {
+      const children = (await db.select({ studentUserId: parentLinksTable.studentUserId })
+        .from(parentLinksTable)
+        .where(and(eq(parentLinksTable.parentUserId, me), eq(parentLinksTable.status, "active"))))
+        .map(r => r.studentUserId);
+      for (const cid of children) ids.add(cid);
+      if (children.length > 0) {
+        const courseIds = (await db.select({ courseId: enrollmentsTable.courseId })
+          .from(enrollmentsTable).where(inArray(enrollmentsTable.userId, children))).map(r => r.courseId);
+        if (courseIds.length > 0) {
+          const trainers = await db.select({ userId: courseTrainersTable.userId })
+            .from(courseTrainersTable).where(inArray(courseTrainersTable.courseId, courseIds));
+          for (const t of trainers) ids.add(t.userId);
+        }
+      }
+    } else {
+      // Student → trainers of their enrolled courses.
+      const myCourses = (await db.select({ courseId: enrollmentsTable.courseId })
+        .from(enrollmentsTable).where(eq(enrollmentsTable.userId, me))).map(r => r.courseId);
+      if (myCourses.length > 0) {
+        const trainers = await db.select({ userId: courseTrainersTable.userId })
+          .from(courseTrainersTable).where(inArray(courseTrainersTable.courseId, myCourses));
+        for (const t of trainers) ids.add(t.userId);
+      }
+    }
+    ids.delete(me);
+    const idList = Array.from(ids);
+    if (idList.length === 0) { res.json({ contacts: [] }); return; }
+    const users = await db.select({
+      id: usersTable.id, firstName: usersTable.firstName, lastName: usersTable.lastName,
+      email: usersTable.email, role: usersTable.role,
+    }).from(usersTable).where(inArray(usersTable.id, idList));
+    res.json({ contacts: users });
+  } catch (err) {
+    req.log.error({ err }, "list contacts failed");
     res.status(500).json({ error: "Failed" });
   }
 });

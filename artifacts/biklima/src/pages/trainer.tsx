@@ -8,7 +8,7 @@ import { useApiFetch } from "@/pages/admin/_shared";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
 import {
   BookOpen, GraduationCap, Mic2, ClipboardList, CalendarCheck, Loader2,
-  FileText, AlertTriangle, StickyNote,
+  FileText, AlertTriangle, StickyNote, Megaphone, Send,
 } from "lucide-react";
 
 type CourseRow = { id: string; titleAr: string; titleEn: string; enrollmentCount: number };
@@ -39,6 +39,32 @@ export default function TrainerDashboardPage() {
   const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [openLearnerNotes, setOpenLearnerNotes] = useState<string | null>(null);
+  const [broadcastCourseId, setBroadcastCourseId] = useState("");
+  const [broadcastSubject, setBroadcastSubject] = useState("");
+  const [broadcastBody, setBroadcastBody] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+
+  const sendBroadcast = useCallback(async () => {
+    if (!broadcastCourseId || !broadcastBody.trim()) return;
+    setBroadcastSending(true);
+    try {
+      const r = await apiFetch(`/messages/courses/${broadcastCourseId}/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: broadcastSubject.trim() || "إعلان من المدرّب",
+          body: broadcastBody.trim(),
+        }),
+      });
+      if (r.ok) {
+        setBroadcastSubject(""); setBroadcastBody("");
+        alert("تم إرسال الإعلان لجميع طلاب الدورة.");
+      } else {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error ?? "فشل الإرسال");
+      }
+    } finally { setBroadcastSending(false); }
+  }, [apiFetch, broadcastCourseId, broadcastSubject, broadcastBody]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -186,6 +212,34 @@ export default function TrainerDashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {courses.length > 0 && (
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-primary" /> إعلان لطلاب الدورة</h2>
+                <p className="text-xs text-muted-foreground">سيتم إرسال الرسالة كمحادثة لكل طالب مسجّل في الدورة المختارة.</p>
+                <select value={broadcastCourseId} onChange={(e) => setBroadcastCourseId(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-border text-sm bg-card" data-testid="broadcast-course-select">
+                  <option value="">اختر الدورة...</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>{c.titleAr} ({c.enrollmentCount})</option>
+                  ))}
+                </select>
+                <input value={broadcastSubject} onChange={(e) => setBroadcastSubject(e.target.value)}
+                  placeholder="الموضوع (اختياري)"
+                  className="w-full p-2 rounded-lg border border-border text-sm" />
+                <textarea value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)}
+                  placeholder="نص الإعلان..."
+                  className="w-full min-h-[80px] p-2 rounded-lg border border-border text-sm" />
+                <Button size="sm" onClick={sendBroadcast}
+                  disabled={broadcastSending || !broadcastCourseId || !broadcastBody.trim()}
+                  data-testid="broadcast-send">
+                  {broadcastSending ? <Loader2 className="w-4 h-4 animate-spin me-1" /> : <Send className="w-4 h-4 me-1" />}
+                  إرسال الإعلان
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardContent className="p-4 space-y-3">
