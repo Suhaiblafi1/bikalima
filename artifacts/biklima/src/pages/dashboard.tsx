@@ -1640,6 +1640,31 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [badgeToast]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !meUser?.id) return;
+    let cancelled = false;
+    const seenKey = `bikalima:seen-badges:${meUser.id}`;
+    fetch(`${apiBase}/my/badges`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.badges) return;
+        let seen: string[] = [];
+        try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch {}
+        const seenSet = new Set(seen);
+        const earned = d.badges.filter((b: { earned: boolean }) => b.earned);
+        const fresh = earned.filter((b: { key: string }) => !seenSet.has(b.key));
+        if (fresh.length > 0) {
+          const newest = fresh.slice().sort((a: { earnedAt: string | null }, b: { earnedAt: string | null }) =>
+            (b.earnedAt ? new Date(b.earnedAt).getTime() : 0) - (a.earnedAt ? new Date(a.earnedAt).getTime() : 0))[0];
+          setBadgeToast({ titleAr: newest.titleAr, titleEn: newest.titleEn, icon: newest.icon, colorClass: newest.colorClass });
+        }
+        const allKeys = earned.map((b: { key: string }) => b.key);
+        try { localStorage.setItem(seenKey, JSON.stringify(allKeys)); } catch {}
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isAuthenticated, meUser?.id, apiBase]);
+
   const markComplete = async (lessonId: string) => {
     try {
       const r = await fetch(`${apiBase}/my/lessons/${lessonId}/complete`, { method: "POST", credentials: "include" });
