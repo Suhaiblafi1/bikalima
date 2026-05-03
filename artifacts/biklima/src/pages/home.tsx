@@ -367,7 +367,7 @@ export default function Home() {
 
       <main>
         {/* ── HERO ── */}
-        <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden flex items-center min-h-[90vh]">
+        <section className="relative pt-20 pb-10 md:pt-48 md:pb-32 overflow-hidden flex items-center md:min-h-[90vh]">
           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-secondary/60 blur-[100px] opacity-70 -z-10" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[100px] opacity-70 -z-10" />
           <div className="w-full px-3 md:px-6 flex">
@@ -378,14 +378,14 @@ export default function Home() {
                     <span className="w-2 h-2 rounded-full bg-primary" />
                     {t.hero.badge}
                   </div>
-                  <h1 className="font-serif text-5xl md:text-7xl font-bold leading-[1.2] text-foreground mb-6">
+                  <h1 className="font-serif text-4xl md:text-7xl font-bold leading-[1.15] text-foreground mb-5 md:mb-6">
                     {t.hero.h1a} <br />
                     <span className="text-primary">{t.hero.h1b}</span>
                   </h1>
-                  <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed mb-10 max-w-lg">{t.hero.sub}</p>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-lg h-14 px-8">{t.hero.ctaPrimary}</Button>
-                    <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-lg h-14 px-8">{t.hero.ctaSecondary}</Button>
+                  <p className="text-base md:text-2xl text-muted-foreground leading-relaxed mb-7 md:mb-10 max-w-lg">{t.hero.sub}</p>
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                    <Button size="lg" onClick={() => scrollTo("enroll")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaPrimary}</Button>
+                    <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaSecondary}</Button>
                   </div>
                   <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
                     <Quote className="text-primary w-4 h-4 mb-2 opacity-50" />
