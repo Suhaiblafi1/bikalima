@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Mic2, Video, FileText, CheckCircle2, Send, Clock, Loader2 } from "lucide-react";
 import type { Lang } from "../translations";
 
@@ -195,19 +194,19 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
   return (
     <section
       id="speech-evaluation"
-      className="py-20 md:py-24 bg-gradient-to-b from-background via-secondary/30 to-background border-y border-border"
+      className="py-12 md:py-16 bg-gradient-to-b from-background via-secondary/30 to-background border-y border-border"
     >
-      <div className="container mx-auto px-6 max-w-3xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
-            <Mic2 className="w-4 h-4" />
+      <div className="container mx-auto px-4 md:px-6 max-w-2xl">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium mb-3 text-xs">
+            <Mic2 className="w-3.5 h-3.5" />
             {t.badge}
           </div>
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-3">{t.heading}</h2>
-          <p className="text-muted-foreground text-base md:text-lg max-w-xl mx-auto">{t.sub}</p>
+          <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-2">{t.heading}</h2>
+          <p className="text-muted-foreground text-sm md:text-base max-w-xl mx-auto">{t.sub}</p>
         </div>
 
-        <div className="bg-card border border-border rounded-3xl shadow-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-lg overflow-hidden">
           <AnimatePresence mode="wait">
             {success ? (
               <motion.div
@@ -248,121 +247,110 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.3 }}
                 onSubmit={handleSubmit}
-                className="p-6 md:p-10 space-y-5"
+                className="p-4 md:p-6 space-y-3.5"
               >
-                {/* Mode tabs */}
-                <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1.5 rounded-2xl">
+                {/* Mode tabs — compact pill */}
+                <div className="inline-flex w-full bg-muted/50 p-1 rounded-full">
                   <button
                     type="button"
                     onClick={() => setMode("text")}
-                    className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
                       mode === "text"
                         ? "bg-background shadow-sm text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                     data-testid="speech-eval-mode-text"
                   >
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-3.5 h-3.5" />
                     {t.modeText}
                   </button>
                   <button
                     type="button"
                     onClick={() => setMode("video")}
-                    className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
                       mode === "video"
                         ? "bg-background shadow-sm text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                     data-testid="speech-eval-mode-video"
                   >
-                    <Video className="w-4 h-4" />
+                    <Video className="w-3.5 h-3.5" />
                     {t.modeVideo}
                   </button>
                 </div>
 
                 {/* Content input */}
                 {mode === "text" ? (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="speech-text" className="text-sm font-medium">
-                      {t.modeText}
-                    </Label>
+                  <div className="space-y-1">
                     <Textarea
                       id="speech-text"
                       value={speechText}
                       onChange={(e) => setSpeechText(e.target.value.slice(0, 5000))}
                       placeholder={t.textPlaceholder}
-                      rows={6}
-                      className="resize-y rounded-xl"
+                      rows={4}
+                      className="resize-y rounded-xl text-sm"
                       aria-label={t.modeText}
                       aria-required="true"
                       required
                       data-testid="speech-eval-text"
                     />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span>{t.textHint}</span>
                       <span>{speechText.length} / 5000</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="speech-video" className="text-sm font-medium">
-                      {t.modeVideo}
-                    </Label>
+                  <div className="space-y-1">
                     <Input
                       id="speech-video"
                       type="url"
                       value={videoUrl}
                       onChange={(e) => setVideoUrl(e.target.value)}
                       placeholder={t.videoPlaceholder}
-                      className="rounded-xl"
+                      className="rounded-xl text-sm"
                       inputMode="url"
                       aria-label={t.modeVideo}
                       aria-required="true"
                       required
                       data-testid="speech-eval-video-url"
                     />
-                    <p className="text-xs text-muted-foreground">{t.videoHint}</p>
+                    <p className="text-[11px] text-muted-foreground">{t.videoHint}</p>
                   </div>
                 )}
 
-                {/* Contact fields */}
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="speech-name" className="text-sm font-medium">{t.nameLabel}</Label>
-                    <Input
-                      id="speech-name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value.slice(0, 120))}
-                      className="rounded-xl"
-                      autoComplete="name"
-                      type="text"
-                      aria-label={t.nameLabel}
-                      aria-required="true"
-                      required
-                      data-testid="speech-eval-name"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="speech-email" className="text-sm font-medium">{t.emailLabel}</Label>
-                    <Input
-                      id="speech-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value.slice(0, 200))}
-                      className="rounded-xl"
-                      autoComplete="email"
-                      inputMode="email"
-                      dir="ltr"
-                      aria-label={t.emailLabel}
-                      aria-required="true"
-                      required
-                      data-testid="speech-eval-email"
-                    />
-                  </div>
+                {/* Contact fields — 3 columns on desktop for compactness */}
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Input
+                    id="speech-name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value.slice(0, 120))}
+                    placeholder={t.nameLabel}
+                    className="rounded-xl text-sm"
+                    autoComplete="name"
+                    type="text"
+                    aria-label={t.nameLabel}
+                    aria-required="true"
+                    required
+                    data-testid="speech-eval-name"
+                  />
+                  <Input
+                    id="speech-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.slice(0, 200))}
+                    placeholder={t.emailLabel}
+                    className="rounded-xl text-sm"
+                    autoComplete="email"
+                    inputMode="email"
+                    dir="ltr"
+                    aria-label={t.emailLabel}
+                    aria-required="true"
+                    required
+                    data-testid="speech-eval-email"
+                  />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="speech-whatsapp" className="text-sm font-medium">{t.whatsappLabel}</Label>
+                <div>
                   <PhoneInput
                     id="speech-whatsapp"
                     lang={lang}
@@ -372,32 +360,30 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                     required
                     testId="speech-eval-whatsapp"
                   />
-                  <p className="text-xs text-muted-foreground">{t.whatsappHint}</p>
                 </div>
 
                 {error && (
-                  <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3" data-testid="speech-eval-error">
+                  <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2" data-testid="speech-eval-error">
                     {error}
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                  <p className="text-xs text-muted-foreground max-w-xs">{t.privacy}</p>
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-muted-foreground line-clamp-2 flex-1">{t.privacy}</p>
                   <Button
                     type="submit"
-                    size="lg"
                     disabled={submitting}
-                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 disabled:opacity-60"
+                    className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-5 h-10 text-sm disabled:opacity-60 shrink-0"
                     data-testid="button-speech-eval-submit"
                   >
                     {submitting ? (
                       <>
-                        <Loader2 className="w-4 h-4 me-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 me-1.5 animate-spin" />
                         {t.submitting}
                       </>
                     ) : (
                       <>
-                        <Send className="w-4 h-4 me-2" />
+                        <Send className="w-4 h-4 me-1.5" />
                         {t.submit}
                       </>
                     )}
