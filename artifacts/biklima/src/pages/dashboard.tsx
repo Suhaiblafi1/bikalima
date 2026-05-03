@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Redirect } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1860,11 +1860,15 @@ export default function Dashboard() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <AppShell containerClassName="">
-        <AuthForm lang={lang} t={t} onAuthenticated={refreshUser} />
-      </AppShell>
-    );
+    // Hand off to the dedicated /login page so anonymous visitors don't
+    // pay the cost of the full dashboard tree just to see a login form.
+    const currentRedirect = typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("redirect")
+      : null;
+    const target = currentRedirect && currentRedirect.startsWith("/") && !currentRedirect.startsWith("//")
+      ? currentRedirect
+      : "/dashboard";
+    return <Redirect to={`/login?redirect=${encodeURIComponent(target)}`} replace />;
   }
 
   // Spec order: Courses · Continue · Assignments · Speech Evaluations ·

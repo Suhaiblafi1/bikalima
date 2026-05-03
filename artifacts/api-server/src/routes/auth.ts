@@ -99,7 +99,13 @@ function setSessionCookie(res: Response, sid: string) {
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
-  res.set("Cache-Control", "no-store");
+  // Short private cache lets the browser memoize during a single navigation
+  // burst without re-hitting the sessions table for every component that
+  // reads useAuth(). `Vary: Cookie` keeps cached responses keyed to the
+  // session, so a logged-out tab can never see another user's cached
+  // identity, and `must-revalidate` forces a 304 round-trip after expiry.
+  res.set("Cache-Control", "private, max-age=5, must-revalidate");
+  res.set("Vary", "Cookie");
   res.json(
     GetCurrentAuthUserResponse.parse({
       user: req.isAuthenticated() ? req.user : null,
@@ -111,6 +117,8 @@ router.get("/auth/user", (req: Request, res: Response) => {
 // includes the resolved role (admin|trainer|student|sales) so the frontend
 // can gate the admin UI by role without parsing it out of /auth/user.
 router.get("/me", async (req: Request, res: Response) => {
+  // /me carries role + emailVerified — keep authoritative on every read so
+  // role changes and sign-out are reflected immediately.
   res.set("Cache-Control", "no-store");
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "Not authenticated" });

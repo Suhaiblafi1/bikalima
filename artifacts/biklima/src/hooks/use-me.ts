@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export type Role = "admin" | "trainer" | "student" | "sales";
 
@@ -24,45 +25,41 @@ interface MeState {
   refresh: () => void;
 }
 
+export const ME_QUERY_KEY = ["auth", "me"] as const;
+
+async function fetchMe(): Promise<MeUser | null> {
+  const r = await fetch(`${getApiBase()}/me`, { credentials: "include" });
+  if (r.status === 401 || !r.ok) return null;
+  const data = await r.json();
+  return (data?.user as MeUser) ?? null;
+}
+
 /**
  * Fetches the currently authenticated user (with role) from `/api/me`.
- * Returns `user: null` and `role: null` if the user is not signed in.
- * The `refresh` function re-fetches from the server (e.g. after a role change).
+ * Backed by React Query so all call sites share a single cached result and
+ * only one network request fires per navigation.
  */
 export function useMe(): MeState {
-  const [user, setUser] = useState<MeUser | null>(null);
-  const [isLoading, setLoading] = useState(true);
-  const [tick, setTick] = useState(0);
+  const qc = useQueryClient();
+  const { data: user = null, isPending, isFetching } = useQuery({
+    queryKey: ME_QUERY_KEY,
+    queryFn: fetchMe,
+    // Short stale window: dedupe within a navigation burst, but let
+    // refetch-on-focus pick up role/email-verification changes promptly.
+    staleTime: 5_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`${getApiBase()}/me`, { credentials: "include" })
-      .then(async (r) => {
-        if (r.status === 401) return null;
-        if (!r.ok) return null;
-        const data = await r.json();
-        return data?.user ?? null;
-      })
-      .then((u) => {
-        if (cancelled) return;
-        setUser(u);
-        setLoading(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setUser(null);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tick]);
+  const refresh = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ME_QUERY_KEY });
+  }, [qc]);
 
   return {
     user,
     role: user?.role ?? null,
-    isLoading,
-    refresh: () => setTick((t) => t + 1),
+    isLoading: isPending && isFetching,
+    refresh,
   };
 }
