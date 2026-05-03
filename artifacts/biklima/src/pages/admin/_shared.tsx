@@ -141,26 +141,32 @@ export type AdminPageKey =
   | "audit-log" | "feature-flags" | "impact-stats";
 
 // Per-role page visibility. Admin always sees everything.
+//
+// Supervisor (مشرف) is a limited-admin role: it can manage LMS content,
+// operations, and content/overview pages but is intentionally locked out of
+// Users, Site Settings, Feature Flags, Audit Log, and the entire Growth
+// Center (CRM). The matching API endpoints enforce the same boundary; this
+// list only governs which tabs the sidebar renders.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Trainers no longer land on the global admin overview — they go to /trainer.
-  overview: ["admin", "sales"],
+  overview: ["admin", "supervisor", "sales"],
   users: ["admin"],
-  courses: ["admin", "trainer"],
-  enrollments: ["admin", "sales", "trainer"],
-  "workbook-orders": ["admin", "sales"],
-  assignments: ["admin", "trainer"],
-  reviews: ["admin", "trainer"],
-  "speech-evaluations": ["admin", "sales", "trainer"],
-  "home-page": ["admin"],
-  workbooks: ["admin"],
-  "field-media": ["admin", "trainer"],
+  courses: ["admin", "supervisor", "trainer"],
+  enrollments: ["admin", "supervisor", "sales", "trainer"],
+  "workbook-orders": ["admin", "supervisor", "sales"],
+  assignments: ["admin", "supervisor", "trainer"],
+  reviews: ["admin", "supervisor", "trainer"],
+  "speech-evaluations": ["admin", "supervisor", "sales", "trainer"],
+  "home-page": ["admin", "supervisor"],
+  workbooks: ["admin", "supervisor"],
+  "field-media": ["admin", "supervisor", "trainer"],
   // Trainers see only their own students' certs (API-side scoped); sales/support
-  // can search but cannot create/edit. Admin/super-admin see and manage everything.
-  certificates: ["admin", "trainer", "sales"],
+  // can search but cannot create/edit. Admin/supervisor see and manage everything.
+  certificates: ["admin", "supervisor", "trainer", "sales"],
   // Live chat with site visitors — sales + admin handle replies.
   chat: ["admin", "sales"],
   settings: ["admin"],
-  // ── Growth Center (CRM) — hidden from trainers per task #43 ────────────
+  // ── Growth Center (CRM) — admin/sales only; supervisor excluded ────────
   leads: ["admin", "sales"],
   pipeline: ["admin", "sales"],
   tasks: ["admin", "sales"],
@@ -170,7 +176,7 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Platform governance — admin only.
   "audit-log": ["admin"],
   "feature-flags": ["admin"],
-  "impact-stats": ["admin"],
+  "impact-stats": ["admin", "supervisor"],
 };
 
 export const LEAD_STATUS_OPTIONS: { value: string; labelAr: string; color: string }[] = [
@@ -308,7 +314,7 @@ export const SPEECH_EVAL_STATUS_OPTIONS: { value: SpeechEvaluationRecord["status
 ];
 
 export const ROLE_LABELS_AR: Record<Role, string> = {
-  admin: "مدير", trainer: "مدرّب", student: "طالب", sales: "مبيعات/دعم",
+  admin: "مدير", supervisor: "مشرف", trainer: "مدرّب", student: "طالب", sales: "مبيعات/دعم",
 };
 
 export const ORDER_STATUS_OPTIONS: { value: string; labelAr: string }[] = [

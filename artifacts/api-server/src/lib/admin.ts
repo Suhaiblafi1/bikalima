@@ -4,8 +4,14 @@ import { eq, sql } from "drizzle-orm";
 
 export const ADMIN_EMAILS = ["info@bikalima.com"];
 
-export type Role = "admin" | "trainer" | "student" | "sales";
-export const ROLES: readonly Role[] = ["admin", "trainer", "student", "sales"] as const;
+export type Role = "admin" | "supervisor" | "trainer" | "student" | "sales";
+export const ROLES: readonly Role[] = ["admin", "supervisor", "trainer", "student", "sales"] as const;
+
+/** Returns true when the request is authenticated as the hard-pinned master account. */
+export function isMasterAccount(req: Request): boolean {
+  if (!req.isAuthenticated() || !req.user) return false;
+  return ADMIN_EMAILS.includes(req.user.email.toLowerCase());
+}
 
 export function isValidRole(value: unknown): value is Role {
   return typeof value === "string" && (ROLES as readonly string[]).includes(value);
@@ -48,8 +54,26 @@ export function isAdmin(req: Request): boolean {
   return ADMIN_EMAILS.includes(req.user.email.toLowerCase());
 }
 
+/**
+ * True when the user is a true admin OR a supervisor. Use this for endpoints
+ * that the supervisor role is allowed to use (LMS/content/overview).
+ */
+export function isSupervisorOrAdmin(req: Request): boolean {
+  if (isAdmin(req)) return true;
+  return req.user?.role === "supervisor";
+}
+
 export function requireAdmin(req: Request, res: Response): boolean {
   if (!isAdmin(req)) {
+    res.status(403).json({ error: "Forbidden" });
+    return false;
+  }
+  return true;
+}
+
+/** Allow admins (incl. master) and supervisors. Used for LMS/content endpoints. */
+export function requireSupervisorOrAdmin(req: Request, res: Response): boolean {
+  if (!isSupervisorOrAdmin(req)) {
     res.status(403).json({ error: "Forbidden" });
     return false;
   }
@@ -67,6 +91,9 @@ export function requireRole(req: Request, res: Response, ...allowed: Role[]): bo
   }
   const role = req.user.role ?? "student";
   if (role === "admin") return true;
+  // Master account always passes regardless of stored role (defense in depth
+  // against accidental DB-level demotions of the bootstrap admin).
+  if (ADMIN_EMAILS.includes(req.user.email.toLowerCase())) return true;
   if (allowed.includes(role)) return true;
   res.status(403).json({ error: "Forbidden", role, allowed });
   return false;

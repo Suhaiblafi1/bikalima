@@ -20,7 +20,10 @@ import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 import {
   ADMIN_EMAILS,
   isAdmin,
+  isSupervisorOrAdmin,
+  isMasterAccount,
   requireAdmin,
+  requireSupervisorOrAdmin,
   requireRole,
   isValidRole,
   countAdmins,
@@ -35,7 +38,7 @@ const router: IRouter = Router();
 // (= unrestricted). Trainers get only their assigned courses (course_trainers).
 // Anyone else gets an empty array (effectively blocked).
 async function getScopedCourseIds(req: Request): Promise<string[] | null> {
-  if (isAdmin(req)) return null;
+  if (isSupervisorOrAdmin(req)) return null;
   if (!req.user) return [];
   // Sales/support can see all data (read-only via UI) — treated as unscoped for reads.
   if (req.user.role === "sales") return null;
@@ -83,7 +86,7 @@ router.get("/admin/check", (req: Request, res: Response) => {
   // allow trainers and sales/support in too. The `role` field tells the
   // frontend which tabs to render.
   const canAccessAdminArea =
-    isAdmin(req) || role === "trainer" || role === "sales";
+    isAdmin(req) || role === "supervisor" || role === "trainer" || role === "sales";
   res.json({
     isAdmin: isAdmin(req),
     canAccessAdminArea,
@@ -92,7 +95,7 @@ router.get("/admin/check", (req: Request, res: Response) => {
 });
 
 router.get("/admin/stats", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const [usersCount] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable);
     const [todayCount] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(sql`${usersTable.createdAt} >= CURRENT_DATE`);
@@ -144,7 +147,14 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
     const { id } = req.params;
     const { role } = req.body ?? {};
     if (!isValidRole(role)) {
-      res.status(400).json({ error: "Invalid role", allowed: ["admin", "trainer", "student", "sales"] });
+      res.status(400).json({ error: "Invalid role", allowed: ["admin", "supervisor", "trainer", "student", "sales"] });
+      return;
+    }
+    // Only the master account may grant the elevated `admin` role. Regular
+    // admins can promote users to supervisor/trainer/sales/student, but
+    // creating another super-admin requires the master account.
+    if (role === "admin" && !isMasterAccount(req)) {
+      res.status(403).json({ error: "Only the master account can grant the admin role" });
       return;
     }
 
@@ -166,10 +176,14 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
         ?? (lockedTargets as unknown as Array<{ id: string; email: string; role: string }>)[0];
       if (!targetRow) return { ok: false, status: 404, error: "Not found" };
 
+      // The master account is hard-pinned: its role can never be changed by
+      // any caller (including the master itself). The bootstrap re-promotion
+      // in getUserRole guarantees admin even if the DB is tampered with.
+      if (ADMIN_EMAILS.includes(targetRow.email.toLowerCase())) {
+        return { ok: false, status: 403, error: "Cannot change the role of the master account" };
+      }
+
       if (targetRow.role === "admin" && role !== "admin") {
-        if (ADMIN_EMAILS.includes(targetRow.email.toLowerCase())) {
-          return { ok: false, status: 403, error: "Cannot demote a bootstrap admin" };
-        }
         // Count *other* admins (not counting this row, which is being demoted),
         // also under a row-share lock so a concurrent demotion of a different
         // admin row is forced to serialize behind us.
@@ -223,14 +237,14 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
 // ---- Course trainers (many-to-many between courses and trainer users) ----
 
 router.get("/admin/courses/:id/trainers", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer", "sales")) return;
+  if (!requireRole(req, res, "supervisor", "trainer", "sales")) return;
   try {
     // A trainer may only inspect the trainer roster of a course they're
     // assigned to. Admins are unrestricted. We treat a non-membership lookup
     // as 404 to avoid leaking which course IDs exist.
     // Admins and sales/support are unrestricted. Trainers may only inspect the
     // trainer roster of a course they're assigned to (404 to avoid leaking ids).
-    if (!isAdmin(req) && req.user?.role !== "sales") {
+    if (!isSupervisorOrAdmin(req) && req.user?.role !== "sales") {
       const userId = req.user?.id;
       if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
       const [own] = await db.select({ id: courseTrainersTable.id })
@@ -341,7 +355,7 @@ router.delete("/admin/users/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/courses", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer", "sales")) return;
+  if (!requireRole(req, res, "supervisor", "trainer", "sales")) return;
   try {
     const scope = await getScopedCourseIds(req);
     const baseCourses = scope === null
@@ -376,7 +390,7 @@ const COURSE_FIELDS = [
 ];
 
 router.post("/admin/courses", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     if (!req.body.titleAr || !req.body.titleEn) { res.status(400).json({ error: "titleAr and titleEn required" }); return; }
     const vals: CourseInsert = { titleAr: req.body.titleAr, titleEn: req.body.titleEn, titleFr: req.body.titleFr || "" };
@@ -392,7 +406,7 @@ router.post("/admin/courses", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { id } = req.params;
     const updates: Partial<CourseInsert> = {};
@@ -409,7 +423,7 @@ router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/courses/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const [existing] = await db.select().from(coursesTable).where(eq(coursesTable.id, req.params.id));
     await db.delete(coursesTable).where(eq(coursesTable.id, req.params.id));
@@ -434,7 +448,7 @@ router.delete("/admin/courses/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/courses/:courseId/lessons", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { courseId } = req.params;
     const { titleAr, titleEn, titleFr, videoUrl, videoType, durationMinutes, sortOrder, sectionId, isFreePreview, isPublished, descriptionAr, descriptionEn, resources } = req.body;
@@ -458,7 +472,7 @@ router.post("/admin/courses/:courseId/lessons", async (req: Request, res: Respon
 });
 
 router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const updates: LessonUpdate = {};
     const allowedKeys: (keyof LessonUpdate)[] = ["titleAr", "titleEn", "titleFr", "videoUrl", "videoType", "durationMinutes", "sortOrder", "isPublished", "sectionId", "isFreePreview", "descriptionAr", "descriptionEn", "resources"];
@@ -474,7 +488,7 @@ router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/lessons/:id/resources", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { id } = req.params;
     const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, id));
@@ -491,7 +505,7 @@ router.post("/admin/lessons/:id/resources", async (req: Request, res: Response) 
 });
 
 router.delete("/admin/lessons/:id/resources/:idx", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { id, idx } = req.params;
     const [lesson] = await db.select({ id: lessonsTable.id, resources: lessonsTable.resources }).from(lessonsTable).where(eq(lessonsTable.id, id));
@@ -506,7 +520,7 @@ router.delete("/admin/lessons/:id/resources/:idx", async (req: Request, res: Res
 });
 
 router.post("/admin/courses/:courseId/sections", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { courseId } = req.params;
     const { titleAr, titleEn, sortOrder } = req.body;
@@ -521,7 +535,7 @@ router.post("/admin/courses/:courseId/sections", async (req: Request, res: Respo
 });
 
 router.patch("/admin/sections/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const updates: SectionUpdate = {};
     const allowedKeys: (keyof SectionUpdate)[] = ["titleAr", "titleEn", "sortOrder", "isPublished"];
@@ -537,7 +551,7 @@ router.patch("/admin/sections/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/sections/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     await db.delete(courseSectionsTable).where(eq(courseSectionsTable.id, req.params.id));
     res.json({ success: true });
@@ -547,7 +561,7 @@ router.delete("/admin/sections/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { id } = req.params;
     const [original] = await db.select().from(coursesTable).where(eq(coursesTable.id, id));
@@ -587,7 +601,7 @@ router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) 
 });
 
 router.delete("/admin/lessons/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const [existing] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, req.params.id));
     await db.delete(lessonsTable).where(eq(lessonsTable.id, req.params.id));
@@ -612,7 +626,7 @@ router.delete("/admin/lessons/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/enrollments", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { userId, courseId } = req.body;
     const existing = await db.select().from(enrollmentsTable)
@@ -626,7 +640,7 @@ router.post("/admin/enrollments", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/enrollments/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     await db.delete(enrollmentsTable).where(eq(enrollmentsTable.id, req.params.id));
     res.json({ success: true });
@@ -636,7 +650,7 @@ router.delete("/admin/enrollments/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/enrollments", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer", "sales")) return;
+  if (!requireRole(req, res, "supervisor", "trainer", "sales")) return;
   try {
     const scope = await getScopedCourseIds(req);
     if (scope !== null && scope.length === 0) {
@@ -719,7 +733,7 @@ const ORDER_STATUSES = ["new", "contacted", "paid", "completed", "cancelled",
   "pending", "confirmed", "shipped", "delivered"] as const;
 
 router.get("/admin/workbook-orders", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "sales")) return;
+  if (!requireRole(req, res, "supervisor", "sales")) return;
   try {
     const orders = await db.select().from(workbookOrdersTable).orderBy(desc(workbookOrdersTable.createdAt));
     res.json({ orders });
@@ -729,7 +743,7 @@ router.get("/admin/workbook-orders", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/workbook-orders/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "sales")) return;
+  if (!requireRole(req, res, "supervisor", "sales")) return;
   try {
     const { status, adminNotes } = req.body;
     const updates: { status?: string; adminNotes?: string } = {};
@@ -891,7 +905,7 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
 });
 
 router.get("/admin/instructors", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const instructors = await db.select().from(instructorsTable).orderBy(asc(instructorsTable.nameAr));
     res.json({ instructors });
@@ -899,7 +913,7 @@ router.get("/admin/instructors", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/instructors", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { nameAr, nameEn, bioAr, bioEn, photoUrl, email } = req.body;
     if (!nameAr || !nameEn) { res.status(400).json({ error: "nameAr and nameEn required" }); return; }
@@ -909,7 +923,7 @@ router.post("/admin/instructors", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/instructors/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const updates: InstructorUpdate = {};
     const allowedKeys: (keyof InstructorUpdate)[] = ["nameAr", "nameEn", "bioAr", "bioEn", "photoUrl", "email"];
@@ -923,7 +937,7 @@ router.patch("/admin/instructors/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/instructors/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     await db.delete(instructorsTable).where(eq(instructorsTable.id, req.params.id));
     res.json({ success: true });
@@ -931,6 +945,8 @@ router.delete("/admin/instructors/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/revenue", async (req: Request, res: Response) => {
+  // Billing analytics are admin-only — supervisors are explicitly excluded
+  // from financial data per the supervisor permission spec.
   if (!requireAdmin(req, res)) return;
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -1086,7 +1102,7 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
 router.get("/admin/lms-orders", adminGetLmsOrders);
 
 router.get("/admin/student-progress", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const enrollments = await db
       .select({
@@ -1163,7 +1179,7 @@ router.patch("/admin/orders/:id", adminPatchLmsOrder);
 
 // ===== Reviews moderation =====
 router.get("/admin/reviews", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer", "sales")) return;
+  if (!requireRole(req, res, "supervisor", "trainer", "sales")) return;
   try {
     const scope = await getScopedCourseIds(req);
     if (scope !== null && scope.length === 0) {
@@ -1199,7 +1215,7 @@ router.get("/admin/reviews", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/reviews/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     await db.delete(reviewsTable).where(eq(reviewsTable.id, req.params.id));
     res.json({ ok: true });
@@ -1309,7 +1325,7 @@ function isRubricComplete(rubric: Record<string, number> | null | undefined): bo
 // Only role='trainer' is returned; admins are intentionally excluded so the
 // dropdown reflects assignable trainer accounts.
 router.get("/admin/trainers", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const rows = await db
       .select({
@@ -1513,11 +1529,11 @@ router.delete("/admin/trainer-notes/:id", async (req: Request, res: Response) =>
 });
 
 router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer", "sales")) return;
+  if (!requireRole(req, res, "supervisor", "trainer", "sales")) return;
   try {
-    // Admin and sales/support get unscoped read access; trainers see only
-    // evaluations explicitly assigned to them.
-    const unscoped = isAdmin(req) || req.user?.role === "sales";
+    // Admin/supervisor and sales/support get unscoped read access; trainers
+    // see only evaluations explicitly assigned to them.
+    const unscoped = isSupervisorOrAdmin(req) || req.user?.role === "sales";
     const rows = unscoped
       ? await db
           .select()
@@ -1536,10 +1552,10 @@ router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   // Trainers can only update evaluations explicitly assigned to them; cross-trainer
-  // mutations return 403. Admins are unrestricted.
-  if (!isAdmin(req)) {
+  // mutations return 403. Admins and supervisors are unrestricted.
+  if (!isSupervisorOrAdmin(req)) {
     const [owned] = await db
       .select({ assignedTrainerUserId: speechEvaluationsTable.assignedTrainerUserId })
       .from(speechEvaluationsTable)
@@ -1648,8 +1664,8 @@ router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response
     }
 
     if (body.assignedTrainerUserId !== undefined) {
-      if (!isAdmin(req)) {
-        return res.status(403).json({ error: "Only admins can reassign evaluations" });
+      if (!isSupervisorOrAdmin(req)) {
+        return res.status(403).json({ error: "Only admins or supervisors can reassign evaluations" });
       }
       if (body.assignedTrainerUserId === null || body.assignedTrainerUserId === "") {
         update.assignedTrainerUserId = null;

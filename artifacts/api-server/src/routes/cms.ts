@@ -7,14 +7,14 @@ import {
   adminActivitiesTable,
 } from "@workspace/db";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { requireAdmin, requireRole } from "../lib/admin.js";
+import { requireRole, requireSupervisorOrAdmin } from "../lib/admin.js";
 import { HOME_SECTION_KEYS, isSectionKey } from "../cms/sections-schema.js";
 import { SECTION_DEFAULTS } from "../cms/sections-defaults.js";
 
 // Allow trainers to also manage the field-media library + analysis (UI shows
 // the page to admin+trainer; keep the API authorization aligned with that).
 function requireFieldMediaAccess(req: Request, res: Response): boolean {
-  return requireRole(req, res, "admin", "trainer");
+  return requireRole(req, res, "admin", "supervisor", "trainer");
 }
 
 const router: IRouter = Router();
@@ -47,7 +47,7 @@ async function logActivity(
 // the public read can pick the content up immediately and admins can edit
 // individual fields without first having to "Save All" every section.
 router.get("/admin/home-sections", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const existingRows = await db.select().from(homePageSectionsTable);
     const byKey = new Map(existingRows.map((r) => [r.sectionKey, r] as const));
@@ -103,7 +103,7 @@ router.get("/admin/home-sections", async (req: Request, res: Response) => {
 });
 
 router.put("/admin/home-sections/:key", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const { key } = req.params;
   if (!isSectionKey(key)) return res.status(400).json({ error: "Invalid section key" });
   try {
@@ -192,7 +192,7 @@ type WorkbookBody = {
 };
 
 router.get("/admin/workbooks", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const rows = await db
       .select()
@@ -206,7 +206,7 @@ router.get("/admin/workbooks", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/workbooks", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const body = (req.body ?? {}) as WorkbookBody;
     if (!body.slug || !body.titleAr) {
@@ -245,7 +245,7 @@ router.post("/admin/workbooks", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/workbooks/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const { id } = req.params;
   try {
     const body = (req.body ?? {}) as WorkbookBody;
@@ -277,7 +277,7 @@ router.patch("/admin/workbooks/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/workbooks/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const { id } = req.params;
   try {
     const [row] = await db.delete(workbooksTable).where(eq(workbooksTable.id, id)).returning();
@@ -495,7 +495,7 @@ router.get("/field-media", async (req: Request, res: Response) => {
 
 // ── Admin: Recent activity feed + Top programs ──────────────────────────
 router.get("/admin/activities", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const rows = await db
       .select()
@@ -510,7 +510,7 @@ router.get("/admin/activities", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/top-programs", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     // Aggregate enrollment requests by programId. Returns the top 6.
     const rows = await db.execute(sql`

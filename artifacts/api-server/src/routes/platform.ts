@@ -16,7 +16,7 @@ import {
   speechEvaluationsTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
-import { requireAdmin } from "../lib/admin.js";
+import { requireAdmin, requireSupervisorOrAdmin } from "../lib/admin.js";
 import { invalidateFeatureFlagCache, recordAuditLog } from "../lib/platform.js";
 import { usersTable } from "@workspace/db";
 
@@ -247,7 +247,7 @@ router.get("/admin/audit-log", async (req: Request, res: Response) => {
 
 // ── ADMIN: impact stats ─────────────────────────────────────────────────
 router.get("/admin/impact-stats", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const overrides = await db
       .select()
@@ -271,7 +271,7 @@ router.get("/admin/impact-stats", async (req: Request, res: Response) => {
 
 // ── ADMIN: impact stories (separate from impact-stats per OpenAPI) ──────
 router.get("/admin/impact-stories", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const stories = await db
       .select()
@@ -285,7 +285,7 @@ router.get("/admin/impact-stories", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/impact-stats/:key", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const key = String(req.params.key ?? "").trim();
   if (!key) return res.status(400).json({ error: "missing-key" });
   const body = parseBody(ImpactStatPatchSchema, req, res);
@@ -331,7 +331,7 @@ router.patch("/admin/impact-stats/:key", async (req: Request, res: Response) => 
 
 // Stories CRUD
 router.post("/admin/impact-stories", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const body = parseBody(StoryCreateSchema, req, res);
   if (!body) return;
   try {
@@ -364,7 +364,7 @@ router.post("/admin/impact-stories", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/impact-stories/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const id = String(req.params.id ?? "").trim();
   const body = parseBody(StoryUpdateSchema, req, res);
   if (!body) return;
@@ -400,7 +400,7 @@ router.patch("/admin/impact-stories/:id", async (req: Request, res: Response) =>
 });
 
 router.delete("/admin/impact-stories/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const id = String(req.params.id ?? "").trim();
   try {
     const [row] = await db

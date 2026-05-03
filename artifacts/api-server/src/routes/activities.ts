@@ -18,7 +18,7 @@ import {
   type ActivityType,
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { isAdmin, requireAdmin, requireRole } from "../lib/admin.js";
+import { isSupervisorOrAdmin, requireAdmin, requireRole } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
 
 const router: IRouter = Router();
@@ -165,7 +165,7 @@ async function canManageLesson(req: Request, lessonId: string): Promise<{ ok: bo
   if (!req.isAuthenticated() || !req.user?.id) return { ok: false };
   const ctx = await getLessonContext(lessonId);
   if (!ctx) return { ok: false };
-  if (isAdmin(req)) return { ok: true, courseId: ctx.courseId };
+  if (isSupervisorOrAdmin(req)) return { ok: true, courseId: ctx.courseId };
   if (await isCourseTrainer(req.user.id, ctx.courseId)) return { ok: true, courseId: ctx.courseId };
   return { ok: false, courseId: ctx.courseId };
 }
@@ -291,7 +291,7 @@ router.get("/lessons/:lessonId/activities", async (req: Request, res: Response) 
 
     let allowed = ctx.isFreePreview;
     if (!allowed && userId) {
-      if (isAdmin(req)) allowed = true;
+      if (isSupervisorOrAdmin(req)) allowed = true;
       else if (await isCourseTrainer(userId, ctx.courseId)) allowed = true;
       else if (await isEnrolled(userId, ctx.courseId)) allowed = true;
     }
@@ -466,7 +466,7 @@ router.get("/me/badges", async (req: Request, res: Response) => {
 // All endpoints below require the user to be either an admin OR an assigned
 // trainer for the lesson's course. Trainers cannot manage other courses.
 router.get("/admin/lessons/:lessonId/activities", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const { lessonId } = req.params;
   const auth = await canManageLesson(req, lessonId);
   if (!auth.ok) { res.status(403).json({ error: "Not authorized for this course" }); return; }
@@ -477,7 +477,7 @@ router.get("/admin/lessons/:lessonId/activities", async (req: Request, res: Resp
 });
 
 router.post("/admin/lessons/:lessonId/activities", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const { lessonId } = req.params;
   const auth = await canManageLesson(req, lessonId);
   if (!auth.ok) { res.status(403).json({ error: "Not authorized for this course" }); return; }
@@ -508,7 +508,7 @@ router.post("/admin/lessons/:lessonId/activities", async (req: Request, res: Res
 });
 
 router.patch("/admin/activities/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const { id } = req.params;
   const [existing] = await db.select({ lessonId: lessonActivitiesTable.lessonId })
     .from(lessonActivitiesTable).where(eq(lessonActivitiesTable.id, id)).limit(1);
@@ -533,7 +533,7 @@ router.patch("/admin/activities/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/activities/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const [existing] = await db.select({ lessonId: lessonActivitiesTable.lessonId })
     .from(lessonActivitiesTable).where(eq(lessonActivitiesTable.id, req.params.id)).limit(1);
   if (!existing) { res.status(404).json({ error: "Activity not found" }); return; }
@@ -544,7 +544,7 @@ router.delete("/admin/activities/:id", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/lessons/:lessonId/activities/reorder", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const { lessonId } = req.params;
   const auth = await canManageLesson(req, lessonId);
   if (!auth.ok) { res.status(403).json({ error: "Not authorized for this course" }); return; }
@@ -567,12 +567,12 @@ router.post("/admin/lessons/:lessonId/activities/reorder", async (req: Request, 
 
 // ── TRAINER: list pending submissions ──────────────────────────────────
 router.get("/instructor/submissions", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const userId = req.user!.id;
   const status = String(req.query.status ?? "pending");
 
   let courseIds: string[] | null = null;
-  if (!isAdmin(req)) {
+  if (!isSupervisorOrAdmin(req)) {
     courseIds = await getUserCoursesAsTrainer(userId);
     if (courseIds.length === 0) { res.json({ submissions: [] }); return; }
   }
@@ -613,7 +613,7 @@ router.get("/instructor/submissions", async (req: Request, res: Response) => {
 
 // ── TRAINER: review a submission (rubric + decision) ───────────────────
 router.post("/instructor/submissions/:id/review", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const reviewerId = req.user!.id;
   const { id } = req.params;
   const body = req.body ?? {};
@@ -630,7 +630,7 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
     .where(eq(activitySubmissionsTable.id, id))
     .limit(1);
   if (!sub) { res.status(404).json({ error: "Not found" }); return; }
-  if (!isAdmin(req) && !(await isCourseTrainer(reviewerId, sub.courseId))) {
+  if (!isSupervisorOrAdmin(req) && !(await isCourseTrainer(reviewerId, sub.courseId))) {
     res.status(403).json({ error: "Not authorized for this course" });
     return;
   }
@@ -699,7 +699,7 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
 
 // ── TRAINER: get full submission detail (with activity + reviews) ─────
 router.get("/instructor/submissions/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   const { id } = req.params;
   const [sub] = await db.select({
     id: activitySubmissionsTable.id,
@@ -717,7 +717,7 @@ router.get("/instructor/submissions/:id", async (req: Request, res: Response) =>
     .innerJoin(lessonsTable, eq(lessonsTable.id, activitySubmissionsTable.lessonId))
     .where(eq(activitySubmissionsTable.id, id)).limit(1);
   if (!sub) { res.status(404).json({ error: "Not found" }); return; }
-  if (!isAdmin(req) && !(await isCourseTrainer(req.user!.id, sub.courseId))) {
+  if (!isSupervisorOrAdmin(req) && !(await isCourseTrainer(req.user!.id, sub.courseId))) {
     res.status(403).json({ error: "Not authorized" }); return;
   }
   const [act] = await db.select().from(lessonActivitiesTable).where(eq(lessonActivitiesTable.id, sub.activityId)).limit(1);

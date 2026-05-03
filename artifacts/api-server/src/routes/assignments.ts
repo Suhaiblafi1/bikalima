@@ -9,7 +9,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { requireRole, isAdmin } from "../lib/admin.js";
+import { requireRole, isSupervisorOrAdmin } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
 import { recordAuditLog } from "../lib/platform.js";
 
@@ -17,7 +17,7 @@ import { recordAuditLog } from "../lib/platform.js";
 // Admins get null (= unrestricted). Trainers get their assigned course list.
 // Returns an empty array for anyone else (effectively blocks them).
 async function getAdminScopeCourseIds(req: Request): Promise<string[] | null> {
-  if (isAdmin(req)) return null;
+  if (isSupervisorOrAdmin(req)) return null;
   if (!req.user) return [];
   if (req.user.role !== "trainer") return [];
   const rows = await db
@@ -301,7 +301,7 @@ router.get("/my/assignments/progress", async (req: Request, res: Response) => {
 // ────────────────────────────────────────────────────────────────────────────
 
 router.get("/admin/assignments", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   try {
     const scope = await getAdminScopeCourseIds(req);
     // Trainer with no assigned courses sees nothing rather than 403'ing.
@@ -366,7 +366,7 @@ router.get("/admin/assignments", async (req: Request, res: Response) => {
 });
 
 router.post("/admin/assignments", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   try {
     const { courseId, titleAr, titleEn, descriptionAr, descriptionEn, dueAt, isPublished } =
       req.body ?? {};
@@ -401,7 +401,7 @@ router.post("/admin/assignments", async (req: Request, res: Response) => {
 });
 
 router.patch("/admin/assignments/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   try {
     const { id } = req.params;
     const { courseId, titleAr, titleEn, descriptionAr, descriptionEn, dueAt, isPublished } =
@@ -451,7 +451,7 @@ router.patch("/admin/assignments/:id", async (req: Request, res: Response) => {
 });
 
 router.delete("/admin/assignments/:id", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   try {
     const { id } = req.params;
     const scope = await getAdminScopeCourseIds(req);
@@ -471,7 +471,7 @@ router.delete("/admin/assignments/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/assignments/:id/submissions", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   try {
     const { id } = req.params;
     const scope = await getAdminScopeCourseIds(req);
@@ -535,7 +535,7 @@ router.get("/admin/assignments/:id/submissions", async (req: Request, res: Respo
 });
 
 router.post("/admin/submissions/:id/evaluate", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
   try {
     const { id } = req.params;
     const body = req.body ?? {};

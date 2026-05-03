@@ -118,16 +118,22 @@ export default function AdminUsersPage() {
                   ) : <span className="font-medium">{u.firstName || u.lastName ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "—"}</span>}</td>
                   <td className="py-2 px-3 text-muted-foreground">{editingId === u.id ? <Input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="h-7 text-xs w-40" /> : u.email}</td>
                   <td className="py-2 px-3">
-                    <select
-                      value={u.role}
-                      onChange={(e) => updateRole(u.id, e.target.value as Role)}
-                      className="text-xs border rounded p-1 bg-background"
-                      aria-label="الدور"
-                    >
-                      {(Object.keys(ROLE_LABELS_AR) as Role[]).map((r) => (
-                        <option key={r} value={r}>{ROLE_LABELS_AR[r]}</option>
-                      ))}
-                    </select>
+                    {u.email.toLowerCase() === "info@bikalima.com" ? (
+                      <span className="text-xs font-bold text-primary" title="حساب المدير العام — لا يمكن تغيير دوره">
+                        {ROLE_LABELS_AR[u.role]} 🛡️
+                      </span>
+                    ) : (
+                      <select
+                        value={u.role}
+                        onChange={(e) => updateRole(u.id, e.target.value as Role)}
+                        className="text-xs border rounded p-1 bg-background"
+                        aria-label="الدور"
+                      >
+                        {(Object.keys(ROLE_LABELS_AR) as Role[]).map((r) => (
+                          <option key={r} value={r}>{ROLE_LABELS_AR[r]}</option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                   <td className="py-2 px-3 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString("ar-SA")}</td>
                   <td className="py-2 px-3 text-end">

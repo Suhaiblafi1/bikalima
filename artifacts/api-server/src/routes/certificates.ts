@@ -6,7 +6,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
-import { requireAdmin, requireRole, isAdmin } from "../lib/admin.js";
+import { requireAdmin, requireRole, requireSupervisorOrAdmin, isSupervisorOrAdmin } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
 import { awardBadgeIfEligible, recordAuditLog } from "../lib/platform.js";
 
@@ -165,10 +165,10 @@ router.get("/graduates", async (req: Request, res: Response) => {
 
 // ── ADMIN: list (admin sees all, trainer sees only theirs) ───────────────
 router.get("/admin/certificates", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "admin", "trainer", "sales")) return;
+  if (!requireRole(req, res, "admin", "supervisor", "trainer", "sales")) return;
   try {
     const role = req.user?.role ?? "student";
-    const adminFlag = isAdmin(req);
+    const adminFlag = isSupervisorOrAdmin(req);
     const search = String(req.query.q ?? "").trim();
     const status = String(req.query.status ?? "").trim();
     const type = String(req.query.type ?? "").trim();
@@ -204,7 +204,7 @@ router.get("/admin/certificates", async (req: Request, res: Response) => {
 
 // ── ADMIN: generate next code (BK-CERT-YYYY-NNNN) ────────────────────────
 router.post("/admin/certificates/generate-code", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const year = new Date().getFullYear();
     const prefix = `BK-CERT-${year}-`;
@@ -229,7 +229,7 @@ router.post("/admin/certificates/generate-code", async (req: Request, res: Respo
 
 // ── ADMIN: CSV export (admin only) ───────────────────────────────────────
 router.get("/admin/certificates/export.csv", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const rows = await db
       .select()
@@ -282,7 +282,7 @@ type CertBody = {
 };
 
 router.post("/admin/certificates", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const body = (req.body ?? {}) as CertBody;
     if (!body.fullName || !body.email || !body.certType) {
@@ -373,7 +373,7 @@ router.post("/admin/certificates", async (req: Request, res: Response) => {
 
 // ── ADMIN: update (admin only) ───────────────────────────────────────────
 router.patch("/admin/certificates/:id", async (req: Request, res: Response) => {
-  if (!requireAdmin(req, res)) return;
+  if (!requireSupervisorOrAdmin(req, res)) return;
   const { id } = req.params;
   try {
     const body = (req.body ?? {}) as CertBody;
