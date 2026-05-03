@@ -140,7 +140,7 @@ router.patch("/admin/feature-flags/:key", async (req: Request, res: Response) =>
       before: { enabled: before.enabled },
       after: { enabled },
     });
-    res.json({ flag: row });
+    res.json(row);
   } catch (err) {
     req.log.error({ err, key }, "update feature flag failed");
     res.status(500).json({ error: "failed" });
@@ -219,7 +219,7 @@ router.get("/admin/audit-log", async (req: Request, res: Response) => {
   }
 });
 
-// ── ADMIN: impact stats (overrides + stories management) ───────────────
+// ── ADMIN: impact stats ─────────────────────────────────────────────────
 router.get("/admin/impact-stats", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
@@ -227,14 +227,33 @@ router.get("/admin/impact-stats", async (req: Request, res: Response) => {
       .select()
       .from(impactStatsOverridesTable)
       .orderBy(asc(impactStatsOverridesTable.displayOrder));
+    const real = await computeRealImpact();
+    const stats = overrides.map((o) => ({
+      key: o.key,
+      labelAr: o.labelAr,
+      labelEn: o.labelEn,
+      overrideValue: o.overrideValue ?? null,
+      realValue: formatRealValue(o.key, real),
+      displayOrder: o.displayOrder,
+    }));
+    res.json({ stats });
+  } catch (err) {
+    req.log.error({ err }, "list impact stats failed");
+    res.status(500).json({ error: "failed" });
+  }
+});
+
+// ── ADMIN: impact stories (separate from impact-stats per OpenAPI) ──────
+router.get("/admin/impact-stories", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
     const stories = await db
       .select()
       .from(transformationStoriesTable)
       .orderBy(asc(transformationStoriesTable.displayOrder), desc(transformationStoriesTable.createdAt));
-    const real = await computeRealImpact();
-    res.json({ overrides, stories, real });
+    res.json({ stories });
   } catch (err) {
-    req.log.error({ err }, "list impact stats failed");
+    req.log.error({ err }, "list impact stories failed");
     res.status(500).json({ error: "failed" });
   }
 });
@@ -269,7 +288,15 @@ router.patch("/admin/impact-stats/:key", async (req: Request, res: Response) => 
       before: { overrideValue: before.overrideValue, labelAr: before.labelAr, labelEn: before.labelEn },
       after: { overrideValue: row.overrideValue, labelAr: row.labelAr, labelEn: row.labelEn },
     });
-    res.json({ override: row });
+    const real = await computeRealImpact();
+    res.json({
+      key: row.key,
+      labelAr: row.labelAr,
+      labelEn: row.labelEn,
+      overrideValue: row.overrideValue ?? null,
+      realValue: formatRealValue(row.key, real),
+      displayOrder: row.displayOrder,
+    });
   } catch (err) {
     req.log.error({ err, key }, "update impact stat failed");
     res.status(500).json({ error: "failed" });
