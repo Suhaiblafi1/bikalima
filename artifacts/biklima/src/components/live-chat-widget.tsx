@@ -472,10 +472,11 @@ export function LiveChatWidget() {
             aria-label={t.headerTitle}
           >
             {/* Header */}
-            <div className="bg-gradient-to-l from-[#128C7E] to-[#25D366] text-white px-4 py-3 flex items-center justify-between">
+            <div className="bg-gradient-to-l from-primary/90 to-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl leading-none" aria-hidden>
-                  🐨
+                <div className="relative w-9 h-9 rounded-full bg-white/20 flex items-center justify-center leading-none" aria-hidden>
+                  <span className="text-xl">🐨</span>
+                  <span className="absolute -bottom-0.5 -end-0.5 text-[11px]">🎤</span>
                 </div>
                 <div className="leading-tight">
                   <p className="font-bold text-sm">{t.headerTitle}</p>
@@ -673,19 +674,22 @@ export function LiveChatWidget() {
         whileHover={{ scale: 1.07 }}
         whileTap={{ scale: 0.95 }}
         transition={{ type: "spring", stiffness: 200, damping: 15, delay: 1 }}
-        className="relative bg-[#25D366] hover:bg-[#1ebe5c] text-white rounded-full shadow-2xl w-14 h-14 flex items-center justify-center"
+        className="relative bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-2xl w-14 h-14 flex items-center justify-center"
         data-testid="live-chat-bubble"
       >
         {!open && unread === 0 && (
           <span
-            className="absolute inset-0 rounded-full bg-[#25D366] opacity-60 animate-ping"
+            className="absolute inset-0 rounded-full bg-primary opacity-60 animate-ping"
             aria-hidden
           />
         )}
         {open ? (
           <X className="w-6 h-6 relative" strokeWidth={2.4} />
         ) : (
-          <span className="relative text-[28px] leading-none" aria-hidden>🐨</span>
+          <span className="relative leading-none" aria-hidden>
+            <span className="text-[28px]">🐨</span>
+            <span className="absolute -bottom-1 -end-1 text-[14px] drop-shadow-sm">🎤</span>
+          </span>
         )}
         {unread > 0 && !open && (
           <span

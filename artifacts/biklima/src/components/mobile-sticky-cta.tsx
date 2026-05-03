@@ -83,10 +83,13 @@ export function MobileStickyCta() {
             trackWhatsappClick("mobile_sticky_cta");
             window.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT));
           }}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-[#25D366] text-white py-2 font-bold text-[11px] active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-primary text-primary-foreground py-2 font-bold text-[11px] active:scale-95 transition-transform"
           data-testid="mobile-sticky-whatsapp"
         >
-          <span className="text-base leading-none" aria-hidden>🐨</span>
+          <span className="relative inline-block leading-none" aria-hidden>
+            <span className="text-base">🐨</span>
+            <span className="absolute -bottom-0.5 -end-1 text-[10px]">🎤</span>
+          </span>
           <span>{t.chat}</span>
         </button>
         <button
