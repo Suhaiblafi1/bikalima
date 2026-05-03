@@ -389,8 +389,7 @@ export default function Home() {
                   </h1>
                   <p className="text-base md:text-2xl text-muted-foreground leading-relaxed mb-7 md:mb-10 max-w-lg">{getSectionContent(cms, "hero", lang, "subtitle", t.hero.sub)}</p>
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <Button size="lg" onClick={() => navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`)} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaPrimary", t.hero.ctaPrimary)}</Button>
-                    <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaSecondary", t.hero.ctaSecondary)}</Button>
+                    <Button size="lg" onClick={() => scrollTo("structure")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaSecondary", t.hero.ctaSecondary)}</Button>
                   </div>
                   <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
                     <Quote className="text-primary w-4 h-4 mb-2 opacity-50" />
