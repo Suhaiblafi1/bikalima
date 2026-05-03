@@ -17,13 +17,21 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminFeatureFlag,
+  AdminFeatureFlagListResponse,
+  AdminImpactStat,
+  AdminImpactStatsResponse,
+  AdminListAuditLogParams,
+  AuditLogResponse,
   AuthUserEnvelope,
   BeginBrowserLoginParams,
   ExchangeMobileAuthorizationCodeBody,
   ExchangeMobileAuthorizationCodeResponse,
+  FeatureFlagPatchBody,
   FeatureFlagsResponse,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
+  ImpactStatPatchBody,
   LogoutMobileSessionResponse,
   MyBadgesResponse,
   PublicImpactResponse,
@@ -782,6 +790,430 @@ export function useListMyBadges<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all feature flags with descriptions (admin).
+ */
+export const getAdminListFeatureFlagsUrl = () => {
+  return `/api/admin/feature-flags`;
+};
+
+export const adminListFeatureFlags = async (
+  options?: RequestInit,
+): Promise<AdminFeatureFlagListResponse> => {
+  return customFetch<AdminFeatureFlagListResponse>(
+    getAdminListFeatureFlagsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getAdminListFeatureFlagsQueryKey = () => {
+  return [`/api/admin/feature-flags`] as const;
+};
+
+export const getAdminListFeatureFlagsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListFeatureFlags>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListFeatureFlags>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListFeatureFlagsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListFeatureFlags>>
+  > = ({ signal }) => adminListFeatureFlags({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListFeatureFlags>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListFeatureFlagsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListFeatureFlags>>
+>;
+export type AdminListFeatureFlagsQueryError = ErrorType<void>;
+
+/**
+ * @summary List all feature flags with descriptions (admin).
+ */
+
+export function useAdminListFeatureFlags<
+  TData = Awaited<ReturnType<typeof adminListFeatureFlags>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListFeatureFlags>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListFeatureFlagsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Toggle a feature flag.
+ */
+export const getAdminUpdateFeatureFlagUrl = (key: string) => {
+  return `/api/admin/feature-flags/${key}`;
+};
+
+export const adminUpdateFeatureFlag = async (
+  key: string,
+  featureFlagPatchBody: FeatureFlagPatchBody,
+  options?: RequestInit,
+): Promise<AdminFeatureFlag> => {
+  return customFetch<AdminFeatureFlag>(getAdminUpdateFeatureFlagUrl(key), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(featureFlagPatchBody),
+  });
+};
+
+export const getAdminUpdateFeatureFlagMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateFeatureFlag>>,
+    TError,
+    { key: string; data: BodyType<FeatureFlagPatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateFeatureFlag>>,
+  TError,
+  { key: string; data: BodyType<FeatureFlagPatchBody> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateFeatureFlag"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateFeatureFlag>>,
+    { key: string; data: BodyType<FeatureFlagPatchBody> }
+  > = (props) => {
+    const { key, data } = props ?? {};
+
+    return adminUpdateFeatureFlag(key, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateFeatureFlagMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateFeatureFlag>>
+>;
+export type AdminUpdateFeatureFlagMutationBody = BodyType<FeatureFlagPatchBody>;
+export type AdminUpdateFeatureFlagMutationError = ErrorType<void>;
+
+/**
+ * @summary Toggle a feature flag.
+ */
+export const useAdminUpdateFeatureFlag = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateFeatureFlag>>,
+    TError,
+    { key: string; data: BodyType<FeatureFlagPatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateFeatureFlag>>,
+  TError,
+  { key: string; data: BodyType<FeatureFlagPatchBody> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateFeatureFlagMutationOptions(options));
+};
+
+/**
+ * @summary Paginated audit log entries.
+ */
+export const getAdminListAuditLogUrl = (params?: AdminListAuditLogParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/audit-log?${stringifiedParams}`
+    : `/api/admin/audit-log`;
+};
+
+export const adminListAuditLog = async (
+  params?: AdminListAuditLogParams,
+  options?: RequestInit,
+): Promise<AuditLogResponse> => {
+  return customFetch<AuditLogResponse>(getAdminListAuditLogUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListAuditLogQueryKey = (
+  params?: AdminListAuditLogParams,
+) => {
+  return [`/api/admin/audit-log`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListAuditLogQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListAuditLog>>,
+  TError = ErrorType<void>,
+>(
+  params?: AdminListAuditLogParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListAuditLog>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminListAuditLogQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListAuditLog>>
+  > = ({ signal }) => adminListAuditLog(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListAuditLog>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListAuditLogQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListAuditLog>>
+>;
+export type AdminListAuditLogQueryError = ErrorType<void>;
+
+/**
+ * @summary Paginated audit log entries.
+ */
+
+export function useAdminListAuditLog<
+  TData = Awaited<ReturnType<typeof adminListAuditLog>>,
+  TError = ErrorType<void>,
+>(
+  params?: AdminListAuditLogParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListAuditLog>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListAuditLogQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin view of impact stats with override values.
+ */
+export const getAdminListImpactStatsUrl = () => {
+  return `/api/admin/impact-stats`;
+};
+
+export const adminListImpactStats = async (
+  options?: RequestInit,
+): Promise<AdminImpactStatsResponse> => {
+  return customFetch<AdminImpactStatsResponse>(getAdminListImpactStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListImpactStatsQueryKey = () => {
+  return [`/api/admin/impact-stats`] as const;
+};
+
+export const getAdminListImpactStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListImpactStats>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListImpactStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListImpactStatsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListImpactStats>>
+  > = ({ signal }) => adminListImpactStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListImpactStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListImpactStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListImpactStats>>
+>;
+export type AdminListImpactStatsQueryError = ErrorType<void>;
+
+/**
+ * @summary Admin view of impact stats with override values.
+ */
+
+export function useAdminListImpactStats<
+  TData = Awaited<ReturnType<typeof adminListImpactStats>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListImpactStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListImpactStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update an impact-stat override or labels.
+ */
+export const getAdminUpdateImpactStatUrl = (key: string) => {
+  return `/api/admin/impact-stats/${key}`;
+};
+
+export const adminUpdateImpactStat = async (
+  key: string,
+  impactStatPatchBody: ImpactStatPatchBody,
+  options?: RequestInit,
+): Promise<AdminImpactStat> => {
+  return customFetch<AdminImpactStat>(getAdminUpdateImpactStatUrl(key), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(impactStatPatchBody),
+  });
+};
+
+export const getAdminUpdateImpactStatMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateImpactStat>>,
+    TError,
+    { key: string; data: BodyType<ImpactStatPatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateImpactStat>>,
+  TError,
+  { key: string; data: BodyType<ImpactStatPatchBody> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateImpactStat"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateImpactStat>>,
+    { key: string; data: BodyType<ImpactStatPatchBody> }
+  > = (props) => {
+    const { key, data } = props ?? {};
+
+    return adminUpdateImpactStat(key, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateImpactStatMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateImpactStat>>
+>;
+export type AdminUpdateImpactStatMutationBody = BodyType<ImpactStatPatchBody>;
+export type AdminUpdateImpactStatMutationError = ErrorType<void>;
+
+/**
+ * @summary Update an impact-stat override or labels.
+ */
+export const useAdminUpdateImpactStat = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateImpactStat>>,
+    TError,
+    { key: string; data: BodyType<ImpactStatPatchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateImpactStat>>,
+  TError,
+  { key: string; data: BodyType<ImpactStatPatchBody> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateImpactStatMutationOptions(options));
+};
 
 /**
  * @summary Log out a mobile session

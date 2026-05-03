@@ -79,6 +79,62 @@ export interface MyBadge {
   earnedAt?: string | null;
 }
 
+export interface AdminFeatureFlag {
+  key: string;
+  enabled: boolean;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  updatedAt?: string | null;
+  updatedById?: string | null;
+}
+
+export interface AdminFeatureFlagListResponse {
+  flags: AdminFeatureFlag[];
+}
+
+export interface FeatureFlagPatchBody {
+  enabled: boolean;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorUserId?: string | null;
+  actorEmail?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  description?: string | null;
+  beforeJson?: unknown | null;
+  afterJson?: unknown | null;
+  createdAt: string;
+}
+
+export interface AuditLogResponse {
+  entries: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminImpactStat {
+  key: string;
+  labelAr: string;
+  labelEn: string;
+  overrideValue?: string | null;
+  realValue: string;
+  displayOrder: number;
+}
+
+export interface AdminImpactStatsResponse {
+  stats: AdminImpactStat[];
+}
+
+export interface ImpactStatPatchBody {
+  overrideValue?: string | null;
+  labelAr?: string;
+  labelEn?: string;
+}
+
 export interface MyBadgesResponse {
   badges: MyBadge[];
   earnedCount: number;
@@ -101,4 +157,19 @@ export type HandleBrowserLoginCallbackParams = {
   code?: string;
   state?: string;
   iss?: string;
+};
+
+export type AdminListAuditLogParams = {
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+  actor?: string;
+  entityType?: string;
+  action?: string;
 };

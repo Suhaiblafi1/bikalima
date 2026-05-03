@@ -12,8 +12,15 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1777781617455,
-      "tag": "0001_platform_foundations",
+      "when": 1777781937489,
+      "tag": "0001_pre_platform_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777781940035,
+      "tag": "0002_platform_foundations",
       "breakpoints": true
     }
   ]

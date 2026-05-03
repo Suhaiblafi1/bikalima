@@ -14,7 +14,6 @@ import {
   lessonProgressTable,
   lessonsTable,
   speechEvaluationsTable,
-  usersTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/admin.js";
@@ -483,9 +482,5 @@ function formatRealValue(key: string, real: Awaited<ReturnType<typeof computeRea
     default:                    return "";
   }
 }
-
-// Touch the import so unused-import linters don't trip on `usersTable`
-// (kept here for future joins with actor profile data in audit log).
-void usersTable;
 
 export default router;

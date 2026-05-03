@@ -6,16 +6,25 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./adminFeatureFlag";
+export * from "./adminFeatureFlagListResponse";
+export * from "./adminImpactStat";
+export * from "./adminImpactStatsResponse";
+export * from "./adminListAuditLogParams";
+export * from "./auditLogEntry";
+export * from "./auditLogResponse";
 export * from "./authorizationSessionHeaderParameter";
 export * from "./authUser";
 export * from "./authUserEnvelope";
 export * from "./beginBrowserLoginParams";
 export * from "./exchangeMobileAuthorizationCodeBody";
 export * from "./exchangeMobileAuthorizationCodeResponse";
+export * from "./featureFlagPatchBody";
 export * from "./featureFlagsResponse";
 export * from "./featureFlagsResponseFlags";
 export * from "./handleBrowserLoginCallbackParams";
 export * from "./healthStatus";
+export * from "./impactStatPatchBody";
 export * from "./logoutMobileSessionResponse";
 export * from "./myBadge";
 export * from "./myBadgesResponse";

@@ -151,6 +151,129 @@ paths:
                 $ref: '#/components/schemas/MyBadgesResponse'
         '401':
           description: Not authenticated.
+  /admin/feature-flags:
+    get:
+      tags: [Platform]
+      operationId: adminListFeatureFlags
+      summary: List all feature flags with descriptions (admin).
+      parameters:
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Flag list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFeatureFlagListResponse'
+        '403':
+          description: Forbidden.
+  /admin/feature-flags/{key}:
+    patch:
+      tags: [Platform]
+      operationId: adminUpdateFeatureFlag
+      summary: Toggle a feature flag.
+      parameters:
+        - $ref: '#/components/parameters/SessionCookie'
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlagPatchBody'
+      responses:
+        '200':
+          description: Updated flag.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminFeatureFlag'
+        '400':
+          description: Invalid input.
+        '403':
+          description: Forbidden.
+        '404':
+          description: Not found.
+  /admin/audit-log:
+    get:
+      tags: [Platform]
+      operationId: adminListAuditLog
+      summary: Paginated audit log entries.
+      parameters:
+        - $ref: '#/components/parameters/SessionCookie'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: actor
+          in: query
+          schema: { type: string }
+        - name: entityType
+          in: query
+          schema: { type: string }
+        - name: action
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Audit entries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogResponse'
+        '403':
+          description: Forbidden.
+  /admin/impact-stats:
+    get:
+      tags: [Platform]
+      operationId: adminListImpactStats
+      summary: Admin view of impact stats with override values.
+      parameters:
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Impact stats.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminImpactStatsResponse'
+        '403':
+          description: Forbidden.
+  /admin/impact-stats/{key}:
+    patch:
+      tags: [Platform]
+      operationId: adminUpdateImpactStat
+      summary: Update an impact-stat override or labels.
+      parameters:
+        - $ref: '#/components/parameters/SessionCookie'
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpactStatPatchBody'
+      responses:
+        '200':
+          description: Updated stat row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminImpactStat'
+        '400':
+          description: Invalid input.
+        '403':
+          description: Forbidden.
+        '404':
+          description: Not found.
   /mobile-auth/logout:
     post:
       tags: [Auth]
@@ -335,6 +458,75 @@ components:
           format: date-time
           nullable: true
       required: [key, titleAr, titleEn, icon, colorClass, earned]
+    AdminFeatureFlag:
+      type: object
+      properties:
+        key: { type: string }
+        enabled: { type: boolean }
+        descriptionAr: { type: string, nullable: true }
+        descriptionEn: { type: string, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        updatedById: { type: string, nullable: true }
+      required: [key, enabled]
+    AdminFeatureFlagListResponse:
+      type: object
+      properties:
+        flags:
+          type: array
+          items: { $ref: '#/components/schemas/AdminFeatureFlag' }
+      required: [flags]
+    FeatureFlagPatchBody:
+      type: object
+      properties:
+        enabled: { type: boolean }
+      required: [enabled]
+    AuditLogEntry:
+      type: object
+      properties:
+        id: { type: string }
+        actorUserId: { type: string, nullable: true }
+        actorEmail: { type: string, nullable: true }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        beforeJson: { nullable: true }
+        afterJson: { nullable: true }
+        createdAt: { type: string, format: date-time }
+      required: [id, action, entityType, createdAt]
+    AuditLogResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items: { $ref: '#/components/schemas/AuditLogEntry' }
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+      required: [entries, total, limit, offset]
+    AdminImpactStat:
+      type: object
+      properties:
+        key: { type: string }
+        labelAr: { type: string }
+        labelEn: { type: string }
+        overrideValue: { type: string, nullable: true }
+        realValue: { type: string }
+        displayOrder: { type: integer }
+      required: [key, labelAr, labelEn, realValue, displayOrder]
+    AdminImpactStatsResponse:
+      type: object
+      properties:
+        stats:
+          type: array
+          items: { $ref: '#/components/schemas/AdminImpactStat' }
+      required: [stats]
+    ImpactStatPatchBody:
+      type: object
+      properties:
+        overrideValue: { type: string, nullable: true }
+        labelAr: { type: string }
+        labelEn: { type: string }
     MyBadgesResponse:
       type: object
       properties:

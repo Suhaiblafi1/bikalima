@@ -132,6 +132,124 @@ export const ListMyBadgesResponse = zod.object({
 });
 
 /**
+ * @summary List all feature flags with descriptions (admin).
+ */
+export const AdminListFeatureFlagsResponse = zod.object({
+  flags: zod.array(
+    zod.object({
+      key: zod.string(),
+      enabled: zod.boolean(),
+      descriptionAr: zod.string().nullish(),
+      descriptionEn: zod.string().nullish(),
+      updatedAt: zod.coerce.date().nullish(),
+      updatedById: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Toggle a feature flag.
+ */
+export const AdminUpdateFeatureFlagParams = zod.object({
+  key: zod.coerce.string(),
+});
+
+export const AdminUpdateFeatureFlagBody = zod.object({
+  enabled: zod.boolean(),
+});
+
+export const AdminUpdateFeatureFlagResponse = zod.object({
+  key: zod.string(),
+  enabled: zod.boolean(),
+  descriptionAr: zod.string().nullish(),
+  descriptionEn: zod.string().nullish(),
+  updatedAt: zod.coerce.date().nullish(),
+  updatedById: zod.string().nullish(),
+});
+
+/**
+ * @summary Paginated audit log entries.
+ */
+export const adminListAuditLogQueryLimitDefault = 100;
+export const adminListAuditLogQueryLimitMax = 500;
+
+export const adminListAuditLogQueryOffsetDefault = 0;
+export const adminListAuditLogQueryOffsetMin = 0;
+
+export const AdminListAuditLogQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(adminListAuditLogQueryLimitMax)
+    .default(adminListAuditLogQueryLimitDefault),
+  offset: zod.coerce
+    .number()
+    .min(adminListAuditLogQueryOffsetMin)
+    .default(adminListAuditLogQueryOffsetDefault),
+  actor: zod.coerce.string().optional(),
+  entityType: zod.coerce.string().optional(),
+  action: zod.coerce.string().optional(),
+});
+
+export const AdminListAuditLogResponse = zod.object({
+  entries: zod.array(
+    zod.object({
+      id: zod.string(),
+      actorUserId: zod.string().nullish(),
+      actorEmail: zod.string().nullish(),
+      action: zod.string(),
+      entityType: zod.string(),
+      entityId: zod.string().nullish(),
+      description: zod.string().nullish(),
+      beforeJson: zod.unknown().nullish(),
+      afterJson: zod.unknown().nullish(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+  total: zod.number(),
+  limit: zod.number(),
+  offset: zod.number(),
+});
+
+/**
+ * @summary Admin view of impact stats with override values.
+ */
+export const AdminListImpactStatsResponse = zod.object({
+  stats: zod.array(
+    zod.object({
+      key: zod.string(),
+      labelAr: zod.string(),
+      labelEn: zod.string(),
+      overrideValue: zod.string().nullish(),
+      realValue: zod.string(),
+      displayOrder: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Update an impact-stat override or labels.
+ */
+export const AdminUpdateImpactStatParams = zod.object({
+  key: zod.coerce.string(),
+});
+
+export const AdminUpdateImpactStatBody = zod.object({
+  overrideValue: zod.string().nullish(),
+  labelAr: zod.string().optional(),
+  labelEn: zod.string().optional(),
+});
+
+export const AdminUpdateImpactStatResponse = zod.object({
+  key: zod.string(),
+  labelAr: zod.string(),
+  labelEn: zod.string(),
+  overrideValue: zod.string().nullish(),
+  realValue: zod.string(),
+  displayOrder: zod.number(),
+});
+
+/**
  * @summary Log out a mobile session
  */
 export const LogoutMobileSessionHeader = zod.object({
