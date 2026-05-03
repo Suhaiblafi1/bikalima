@@ -1499,6 +1499,95 @@ function ScheduleTab({ lang, t, courses }: { lang: Lang; t: typeof dashT.ar; cou
   );
 }
 
+function CourseAttendanceLine({
+  courseId,
+  slug,
+  lessons,
+  summary,
+  isRtl,
+}: {
+  courseId: string;
+  slug: string | null;
+  lessons: { id: string; titleAr: string; titleEn: string }[];
+  summary?: { present: number; absent: number; excused: number; tracked: number };
+  isRtl: boolean;
+}) {
+  const apiBase = getApiBase();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [entries, setEntries] = useState<{ lessonId: string; status: string; note: string | null; markedAt: string }[]>([]);
+
+  const tracked = summary?.tracked ?? 0;
+  const attended = (summary?.present ?? 0) + (summary?.excused ?? 0);
+  const absent = summary?.absent ?? 0;
+
+  const toggle = async () => {
+    if (open) { setOpen(false); return; }
+    setOpen(true);
+    if (!slug || entries.length > 0) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`${apiBase}/my/courses/${slug}/attendance`, { credentials: "include" });
+      if (r.ok) {
+        const d = await r.json();
+        setEntries(d.entries ?? []);
+      }
+    } finally { setLoading(false); }
+  };
+
+  if (tracked === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-0.5">
+      <button
+        type="button"
+        onClick={toggle}
+        className="text-xs text-emerald-700 text-start hover:underline focus:outline-none"
+        data-testid={`attendance-summary-${courseId}`}
+      >
+        {isRtl ? `حضرت ${attended} من ${tracked} جلسات` : `Attended ${attended} of ${tracked} sessions`}
+        {absent > 0 && (
+          <span className="text-red-600"> • {isRtl ? `${absent} غياب` : `${absent} absent`}</span>
+        )}
+        <span className="ms-1 text-muted-foreground">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-1 p-2 rounded-lg bg-muted/30 border text-[11px] space-y-1" data-testid={`attendance-breakdown-${courseId}`}>
+          {loading ? (
+            <p className="text-muted-foreground text-center">…</p>
+          ) : entries.length === 0 ? (
+            <p className="text-muted-foreground text-center" data-testid={`attendance-breakdown-empty-${courseId}`}>
+              {isRtl ? "لا توجد سجلات حضور بعد." : "No attendance records yet."}
+            </p>
+          ) : (
+            entries.map((e) => {
+              const lesson = lessons.find((l) => l.id === e.lessonId);
+              const title = lesson ? (isRtl ? lesson.titleAr : lesson.titleEn) : e.lessonId;
+              const label =
+                e.status === "present" ? (isRtl ? "حاضر" : "Present")
+                : e.status === "absent" ? (isRtl ? "غائب" : "Absent")
+                : (isRtl ? "معذور" : "Excused");
+              const color =
+                e.status === "present" ? "bg-emerald-100 text-emerald-700"
+                : e.status === "absent" ? "bg-red-100 text-red-700"
+                : "bg-amber-100 text-amber-700";
+              return (
+                <div key={e.lessonId} className="flex items-center gap-2">
+                  <span className={`px-1.5 py-0.5 rounded font-bold ${color}`}>{label}</span>
+                  <span className="flex-1 truncate text-start">{title}</span>
+                  {e.note && <span className="text-muted-foreground italic truncate max-w-[40%]" title={e.note}>“{e.note}”</span>}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VideoEmbed({ url }: { url: string }) {
   const ytId = getYouTubeId(url);
   if (ytId) {
@@ -1993,21 +2082,14 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground text-start">{totalLessons} {isRtl ? "درس" : "lessons"} • {pct}% {t.courses.progress.toLowerCase()}</p>
-                              {(() => {
-                                const att = attendanceByCourse[course.courseId];
-                                if (!att || att.tracked === 0) return null;
-                                const attended = att.present + att.excused;
-                                return (
-                                  <p className="text-xs text-emerald-700 text-start mt-0.5" data-testid={`attendance-summary-${course.courseId}`}>
-                                    {isRtl
-                                      ? `حضرت ${attended} من ${att.tracked} جلسات`
-                                      : `Attended ${attended} of ${att.tracked} sessions`}
-                                    {att.absent > 0 && (
-                                      <span className="text-red-600"> • {isRtl ? `${att.absent} غياب` : `${att.absent} absent`}</span>
-                                    )}
-                                  </p>
-                                );
-                              })()}
+                              <CourseAttendanceLine
+                                courseId={course.courseId}
+                                slug={course.slug}
+                                lessons={course.lessons}
+                                summary={attendanceByCourse[course.courseId]}
+                                isRtl={isRtl}
+                              />
+                              
                               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
                               </div>

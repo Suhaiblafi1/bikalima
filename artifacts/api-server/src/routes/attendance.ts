@@ -155,25 +155,6 @@ router.post("/admin/lessons/:id/attendance", async (req: Request, res: Response)
     });
   }
 
-  // Per-lesson summary digest to all course trainers (acts as the "daily digest" surrogate)
-  if (newlyAbsentUserIds.length > 0) {
-    const trainers = await db
-      .select({ userId: courseTrainersTable.userId })
-      .from(courseTrainersTable)
-      .where(eq(courseTrainersTable.courseId, lesson.courseId));
-    for (const t of trainers) {
-      await createNotification({
-        userId: t.userId,
-        type: "attendance_absent_digest",
-        titleAr: "ملخّص غياب الجلسة",
-        titleEn: "Session absence summary",
-        bodyAr: `تم تسجيل ${newlyAbsentUserIds.length} حالة غياب في جلسة "${lesson.titleAr}".`,
-        bodyEn: `${newlyAbsentUserIds.length} learners marked absent in "${lesson.titleEn}".`,
-        link: "/admin/courses",
-      });
-    }
-  }
-
   res.json({ ok: true, written });
 });
 
