@@ -138,7 +138,7 @@ export type AdminPageKey =
   | "certificates" | "chat" | "settings"
   | "leads" | "pipeline" | "tasks" | "automations"
   | "message-templates" | "funnels"
-  | "audit-log" | "feature-flags";
+  | "audit-log" | "feature-flags" | "impact-stats";
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
@@ -170,6 +170,7 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Platform governance — admin only.
   "audit-log": ["admin"],
   "feature-flags": ["admin"],
+  "impact-stats": ["admin"],
 };
 
 export const LEAD_STATUS_OPTIONS: { value: string; labelAr: string; color: string }[] = [

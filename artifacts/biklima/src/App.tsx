@@ -47,6 +47,8 @@ import AdminMessageTemplatesPage from "@/pages/admin/message-templates";
 import AdminFunnelsPage from "@/pages/admin/funnels";
 import AdminAuditLogPage from "@/pages/admin/audit-log";
 import AdminFeatureFlagsPage from "@/pages/admin/feature-flags";
+import AdminImpactStatsPage from "@/pages/admin/impact-stats";
+import ImpactPage from "@/pages/impact";
 import ConsultationPage from "@/pages/consultation";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { SLUG_TO_PROGRAM_ID, PROGRAM_PAGE_SLUGS } from "@/lib/site-config";
@@ -149,6 +151,10 @@ function AnimatedRouter() {
           <Route path="/admin/feature-flags">
             {() => (<AdminRoute><AdminFeatureFlagsPage /></AdminRoute>)}
           </Route>
+          <Route path="/admin/impact-stats">
+            {() => (<AdminRoute><AdminImpactStatsPage /></AdminRoute>)}
+          </Route>
+          <Route path="/impact" component={ImpactPage} />
           <Route path="/consultation" component={ConsultationPage} />
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}

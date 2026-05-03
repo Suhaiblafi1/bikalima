@@ -8,7 +8,7 @@ import {
   ClipboardList, Star, Mic2, Settings as SettingsIcon,
   Layout as LayoutIcon, FileText, Film, ShieldCheck, MessageCircle,
   UserPlus, KanbanSquare, ListTodo, Zap, MessageSquareText, Filter,
-  ScrollText, ToggleRight,
+  ScrollText, ToggleRight, Sparkles,
 } from "lucide-react";
 
 type NavItem = {
@@ -60,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
       { key: "home-page",   label: "الصفحة الرئيسية", href: "/admin/home-page",   icon: <LayoutIcon className="w-4 h-4" /> },
       { key: "workbooks",   label: "الكراسات",        href: "/admin/workbooks",   icon: <FileText className="w-4 h-4" /> },
       { key: "field-media", label: "من الميدان",       href: "/admin/field-media", icon: <Film className="w-4 h-4" /> },
+      { key: "impact-stats", label: "الأثر والقصص",    href: "/admin/impact-stats", icon: <Sparkles className="w-4 h-4" /> },
     ],
   },
   {

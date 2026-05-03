@@ -92,6 +92,11 @@ export function SiteFooter() {
                   {lang === "ar" ? "سجل الخريجين" : "Graduates registry"}
                 </button>
               </li>
+              <li>
+                <button onClick={() => navigate("/impact")} className="hover:text-accent transition text-start" data-testid="footer-link-impact">
+                  {lang === "ar" ? "أثرنا بالأرقام" : "Our impact"}
+                </button>
+              </li>
             </ul>
           </div>
 
