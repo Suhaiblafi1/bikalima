@@ -727,20 +727,57 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
   if (!req.isAuthenticated() || !req.user) { res.status(401).json({ error: "Not authenticated" }); return; }
   try {
     const { lessonId } = req.params;
+    const userId = req.user.id;
     const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId));
     if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
     const enrollment = await db.select().from(enrollmentsTable)
-      .where(and(eq(enrollmentsTable.userId, req.user.id), eq(enrollmentsTable.courseId, lesson.courseId)));
+      .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, lesson.courseId)));
     if (enrollment.length === 0) { res.status(403).json({ error: "Not enrolled in this course" }); return; }
     const existing = await db.select().from(lessonProgressTable)
-      .where(and(eq(lessonProgressTable.userId, req.user.id), eq(lessonProgressTable.lessonId, lessonId)));
+      .where(and(eq(lessonProgressTable.userId, userId), eq(lessonProgressTable.lessonId, lessonId)));
+    const wasAlreadyCompleted = existing.length > 0 && existing[0].completed === true;
     if (existing.length > 0) {
       await db.update(lessonProgressTable).set({ completed: true, completedAt: new Date() })
         .where(eq(lessonProgressTable.id, existing[0].id));
     } else {
-      await db.insert(lessonProgressTable).values({ userId: req.user.id, lessonId, completed: true, completedAt: new Date() });
+      await db.insert(lessonProgressTable).values({ userId, lessonId, completed: true, completedAt: new Date() });
     }
-    res.json({ success: true });
+
+    // ── Badges: only fire on a fresh completion to avoid spam on re-clicks
+    const newlyAwarded: { key: string; titleAr: string; titleEn: string; icon: string; colorClass: string }[] = [];
+    if (!wasAlreadyCompleted) {
+      try {
+        const r1 = await awardBadgeIfEligible(userId, "lesson_completed", { lessonId });
+        for (const b of r1.awarded) newlyAwarded.push({ key: b.key, titleAr: b.titleAr, titleEn: b.titleEn, icon: b.icon, colorClass: b.colorClass });
+
+        // Course progress check (only published lessons count).
+        const allLessons = await db.select({ id: lessonsTable.id }).from(lessonsTable)
+          .where(and(eq(lessonsTable.courseId, lesson.courseId), eq(lessonsTable.isPublished, true)));
+        const lessonIds = allLessons.map(l => l.id);
+        if (lessonIds.length > 0) {
+          const completedRows = await db.select({ id: lessonProgressTable.lessonId })
+            .from(lessonProgressTable)
+            .where(and(
+              eq(lessonProgressTable.userId, userId),
+              eq(lessonProgressTable.completed, true),
+              inArray(lessonProgressTable.lessonId, lessonIds),
+            ));
+          const completedCount = completedRows.length;
+          const ratio = completedCount / lessonIds.length;
+          if (ratio >= 0.5) {
+            const r2 = await awardBadgeIfEligible(userId, "course_half_done", { courseId: lesson.courseId });
+            for (const b of r2.awarded) newlyAwarded.push({ key: b.key, titleAr: b.titleAr, titleEn: b.titleEn, icon: b.icon, colorClass: b.colorClass });
+          }
+          if (completedCount >= lessonIds.length) {
+            const r3 = await awardBadgeIfEligible(userId, "course_completed", { courseId: lesson.courseId });
+            for (const b of r3.awarded) newlyAwarded.push({ key: b.key, titleAr: b.titleAr, titleEn: b.titleEn, icon: b.icon, colorClass: b.colorClass });
+          }
+        }
+      } catch (err) {
+        req.log.warn({ err }, "[BADGE] lesson completion award failed");
+      }
+    }
+    res.json({ success: true, awardedBadges: newlyAwarded });
   } catch (err) {
     res.status(500).json({ error: "Failed to update progress" });
   }

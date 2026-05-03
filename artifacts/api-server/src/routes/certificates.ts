@@ -8,6 +8,7 @@ import {
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { requireAdmin, requireRole, isAdmin } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
+import { awardBadgeIfEligible } from "../lib/platform.js";
 
 const router: IRouter = Router();
 
@@ -347,6 +348,14 @@ router.post("/admin/certificates", async (req: Request, res: Response) => {
         bodyEn: `Certificate ${row.code} has been issued. Download it from My Certificates.`,
         link: "/dashboard?tab=certificates",
       });
+      // Trainer-certification badge.
+      if (row.certType === "trainer" && row.status === "active") {
+        try {
+          await awardBadgeIfEligible(row.userId, "trainer_certificate_issued", { certificateId: row.id, code: row.code });
+        } catch (err) {
+          req.log.warn({ err }, "[BADGE] trainer_certificate_issued award failed");
+        }
+      }
     }
     res.status(201).json({ certificate: row });
   } catch (err) {

@@ -59,6 +59,7 @@ const dashT = {
       assignments: "الواجبات",
       evaluations: "تقييمات الخطاب",
       certificates: "شهاداتي واعتماداتي",
+      achievements: "إنجازاتي",
     },
     account: {
       heading: "معلومات الحساب",
@@ -147,6 +148,7 @@ const dashT = {
       assignments: "Assignments",
       evaluations: "Speech Evaluations",
       certificates: "My Certificates",
+      achievements: "My Achievements",
     },
     account: {
       heading: "Account Information",
@@ -234,9 +236,10 @@ const tabIcons = {
   assignments: ClipboardList,
   evaluations: Mic,
   certificates: ShieldCheck,
+  achievements: Award,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates";
+type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements";
 
 type MyCert = {
   id: string;
@@ -383,6 +386,158 @@ function StudentCertificatesTab({ apiBase, lang }: { apiBase: string; lang: Lang
               </div>
             ))}
           </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+type BadgeCard = {
+  key: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  icon: string;
+  colorClass: string;
+  earnedAt?: string;
+};
+
+const BADGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "play-circle": Play,
+  "mic": Mic,
+  "clipboard-check": ClipboardList,
+  "trending-up": Star,
+  "graduation-cap": Award,
+  "sparkles": Sparkles,
+  "shield-check": ShieldCheck,
+  "award": Award,
+};
+
+type BadgesResponse = {
+  badges: Array<BadgeCard & { earned: boolean; earnedAt: string | null }>;
+  earnedCount: number;
+  totalCount: number;
+};
+
+function StudentAchievementsTab({ apiBase, lang }: { apiBase: string; lang: Lang }) {
+  const [earned, setEarned] = useState<BadgeCard[]>([]);
+  const [locked, setLocked] = useState<BadgeCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const isAr = lang === "ar";
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`${apiBase}/my/badges`, { credentials: "include" })
+      .then(async (r) => (r.ok ? (await r.json()) as BadgesResponse : { badges: [], earnedCount: 0, totalCount: 0 }))
+      .then((d) => {
+        if (cancelled) return;
+        const e: BadgeCard[] = [];
+        const l: BadgeCard[] = [];
+        for (const b of d.badges || []) {
+          const card: BadgeCard = {
+            key: b.key, titleAr: b.titleAr, titleEn: b.titleEn,
+            descriptionAr: b.descriptionAr, descriptionEn: b.descriptionEn,
+            icon: b.icon, colorClass: b.colorClass,
+            earnedAt: b.earnedAt ?? undefined,
+          };
+          if (b.earned) e.push(card); else l.push(card);
+        }
+        e.sort((a, b) => {
+          const ta = a.earnedAt ? new Date(a.earnedAt).getTime() : 0;
+          const tb = b.earnedAt ? new Date(b.earnedAt).getTime() : 0;
+          return tb - ta;
+        });
+        setEarned(e);
+        setLocked(l);
+        setLoading(false);
+      })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [apiBase]);
+  const renderCard = (b: BadgeCard, isEarned: boolean) => {
+    const Icon = BADGE_ICONS[b.icon] ?? Award;
+    return (
+      <div
+        key={b.key}
+        className={`rounded-2xl p-5 border ${isEarned ? "border-border bg-card" : "border-dashed border-border/60 bg-muted/30 opacity-70"}`}
+        data-testid={`badge-${b.key}-${isEarned ? "earned" : "locked"}`}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isEarned ? b.colorClass : "bg-muted text-muted-foreground"}`}>
+            {isEarned ? <Icon className="w-6 h-6" /> : <Lock className="w-5 h-5" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-sm">{isAr ? b.titleAr : b.titleEn}</h4>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {isAr ? (b.descriptionAr ?? "") : (b.descriptionEn ?? "")}
+            </p>
+            {isEarned && b.earnedAt && (
+              <p className="text-[10px] text-muted-foreground mt-2">
+                {isAr ? "حصلت عليها في " : "Earned on "}
+                {(() => { try { return new Date(b.earnedAt!).toLocaleDateString(isAr ? "ar-EG" : "en-US"); } catch { return b.earnedAt; } })()}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-6 md:p-8 space-y-6">
+        <div>
+          <h3 className="font-bold text-xl flex items-center gap-2">
+            <Award className="w-5 h-5 text-primary" />
+            {isAr ? "إنجازاتي" : "My Achievements"}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isAr
+              ? "اجمع شارات بكلمة كلما تقدّمت في رحلتك التعليمية."
+              : "Collect Bikalima badges as you progress in your learning journey."}
+          </p>
+        </div>
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
+          </div>
+        ) : (
+          <>
+            {earned.length === 0 ? (
+              <div className="text-center py-10 space-y-3" data-testid="badges-empty">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                  <Award className="w-10 h-10 text-primary/50" />
+                </div>
+                <p className="text-sm font-medium">
+                  {isAr ? "لم تحصل على أي شارة بعد." : "You haven't earned any badges yet."}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  {isAr
+                    ? "أكمل أول درس أو ارفع أول خطاب لك للحصول على شارتك الأولى."
+                    : "Complete your first lesson or upload your first speech to earn your first badge."}
+                </p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">
+                  {isAr ? `محصّلة (${earned.length})` : `Earned (${earned.length})`}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {earned.map((b) => renderCard(b, true))}
+                </div>
+              </div>
+            )}
+            {locked.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">
+                  {isAr ? `لم تُكتسب بعد (${locked.length})` : `Not earned yet (${locked.length})`}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {locked.map((b) => renderCard(b, false))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -1431,7 +1586,7 @@ export default function Dashboard() {
   const readTabFromUrl = (): Tab => {
     if (typeof window === "undefined") return "account";
     const t = new URLSearchParams(window.location.search).get("tab");
-    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "schedule"];
+    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule"];
     return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "account";
   };
   const [activeTab, setActiveTab] = useState<Tab>(readTabFromUrl());
@@ -1478,8 +1633,22 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, fetchData, apiBase]);
 
+  const [badgeToast, setBadgeToast] = useState<{ titleAr: string; titleEn: string; icon: string; colorClass: string } | null>(null);
+  useEffect(() => {
+    if (!badgeToast) return;
+    const t = setTimeout(() => setBadgeToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [badgeToast]);
+
   const markComplete = async (lessonId: string) => {
-    await fetch(`${apiBase}/my/lessons/${lessonId}/complete`, { method: "POST", credentials: "include" });
+    try {
+      const r = await fetch(`${apiBase}/my/lessons/${lessonId}/complete`, { method: "POST", credentials: "include" });
+      if (r.ok) {
+        const d = await r.json().catch(() => ({}));
+        const awarded: Array<{ titleAr: string; titleEn: string; icon: string; colorClass: string }> = d.awardedBadges ?? [];
+        if (awarded.length > 0) setBadgeToast(awarded[0]);
+      }
+    } catch {}
     fetchData();
   };
 
@@ -1506,7 +1675,7 @@ export default function Dashboard() {
     );
   }
 
-  const tabs: Tab[] = ["account", "courses", "assignments", "evaluations", "certificates", "orders", "schedule"];
+  const tabs: Tab[] = ["account", "courses", "assignments", "evaluations", "achievements", "certificates", "orders", "schedule"];
 
   const currentCourse = viewingCourse ? courses.find(c => c.courseId === viewingCourse) : null;
   const currentLesson = currentCourse && activeLesson ? currentCourse.lessons.find(l => l.id === activeLesson) : null;
@@ -1959,12 +2128,41 @@ export default function Dashboard() {
               <StudentCertificatesTab apiBase={apiBase} lang={lang} />
             )}
 
+            {activeTab === "achievements" && (
+              <StudentAchievementsTab apiBase={apiBase} lang={lang} />
+            )}
+
             {activeTab === "schedule" && (
               <ScheduleTab lang={lang} t={t} courses={courses} />
             )}
           </main>
         </div>
       </div>
+      {badgeToast && (() => {
+        const Icon = BADGE_ICONS[badgeToast.icon] ?? Award;
+        return (
+          <div
+            className={`fixed bottom-6 ${isRtl ? "left-6" : "right-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-border bg-card p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
+            role="status"
+            data-testid="badge-toast"
+          >
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${badgeToast.colorClass}`}>
+              <Icon className="w-6 h-6" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-primary">
+                {isRtl ? "🎉 شارة جديدة!" : "🎉 New badge!"}
+              </p>
+              <p className="font-bold text-sm">{isRtl ? badgeToast.titleAr : badgeToast.titleEn}</p>
+            </div>
+            <button
+              onClick={() => setBadgeToast(null)}
+              className="text-muted-foreground hover:text-foreground text-lg leading-none"
+              aria-label="dismiss"
+            >×</button>
+          </div>
+        );
+      })()}
     </AppShell>
   );
 }
