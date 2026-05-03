@@ -1,10 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { z, type ZodSchema } from "zod";
 import {
   db,
   auditLogEntriesTable,
   badgeDefinitionsTable,
   featureFlagsTable,
   impactStatsOverridesTable,
+  lessonSessionAttendanceTable,
   transformationStoriesTable,
   userBadgesTable,
   certificatesTable,
@@ -17,6 +19,55 @@ import {
 import { and, asc, desc, eq, ilike, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/admin.js";
 import { invalidateFeatureFlagCache, recordAuditLog } from "../lib/platform.js";
+
+// ── Validation helpers ─────────────────────────────────────────────────
+function parseBody<T>(schema: ZodSchema<T>, req: Request, res: Response): T | null {
+  const result = schema.safeParse(req.body ?? {});
+  if (!result.success) {
+    res.status(400).json({ error: "invalid-input", issues: result.error.issues });
+    return null;
+  }
+  return result.data;
+}
+
+function parseQuery<T>(schema: ZodSchema<T>, req: Request, res: Response): T | null {
+  const result = schema.safeParse(req.query ?? {});
+  if (!result.success) {
+    res.status(400).json({ error: "invalid-query", issues: result.error.issues });
+    return null;
+  }
+  return result.data;
+}
+
+// ── Zod schemas for request inputs ─────────────────────────────────────
+const FeatureFlagPatchSchema = z.object({ enabled: z.boolean() });
+
+const ImpactStatPatchSchema = z.object({
+  overrideValue: z.string().nullable().optional(),
+  labelAr: z.string().min(1).optional(),
+  labelEn: z.string().min(1).optional(),
+});
+
+const StoryCreateSchema = z.object({
+  name: z.string().min(1),
+  roleAr: z.string().nullable().optional(),
+  roleEn: z.string().nullable().optional(),
+  quoteAr: z.string().min(1),
+  quoteEn: z.string().nullable().optional(),
+  photoUrl: z.string().url().nullable().optional(),
+  displayOrder: z.number().int().optional(),
+  isPublished: z.boolean().optional(),
+});
+
+const StoryUpdateSchema = StoryCreateSchema.partial();
+
+const AuditQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).optional().default(100),
+  offset: z.coerce.number().int().min(0).optional().default(0),
+  actor: z.string().optional().default(""),
+  entityType: z.string().optional().default(""),
+  action: z.string().optional().default(""),
+});
 
 const router: IRouter = Router();
 
@@ -65,8 +116,10 @@ router.get("/admin/feature-flags", async (req: Request, res: Response) => {
 router.patch("/admin/feature-flags/:key", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const key = String(req.params.key ?? "").trim();
-  const enabled = Boolean((req.body ?? {}).enabled);
   if (!key) return res.status(400).json({ error: "missing-key" });
+  const body = parseBody(FeatureFlagPatchSchema, req, res);
+  if (!body) return;
+  const { enabled } = body;
   try {
     const [before] = await db
       .select()
@@ -134,14 +187,13 @@ router.get("/my/badges", async (req: Request, res: Response) => {
 // ── ADMIN: audit log (paginated, filterable) ────────────────────────────
 router.get("/admin/audit-log", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
+  const q = parseQuery(AuditQuerySchema, req, res);
+  if (!q) return;
   try {
-    const limitRaw = parseInt(String(req.query.limit ?? "100"), 10);
-    const limit = Math.min(Math.max(Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 100, 1), 500);
-    const offsetRaw = parseInt(String(req.query.offset ?? "0"), 10);
-    const offset = Math.max(Number.isFinite(offsetRaw) ? offsetRaw : 0, 0);
-    const actor = String(req.query.actor ?? "").trim();
-    const entityType = String(req.query.entityType ?? "").trim();
-    const action = String(req.query.action ?? "").trim();
+    const { limit, offset } = q;
+    const actor = q.actor.trim();
+    const entityType = q.entityType.trim();
+    const action = q.action.trim();
 
     const conds = [];
     if (actor) conds.push(ilike(auditLogEntriesTable.actorEmail, `%${actor}%`));
@@ -192,8 +244,9 @@ router.patch("/admin/impact-stats/:key", async (req: Request, res: Response) => 
   if (!requireAdmin(req, res)) return;
   const key = String(req.params.key ?? "").trim();
   if (!key) return res.status(400).json({ error: "missing-key" });
+  const body = parseBody(ImpactStatPatchSchema, req, res);
+  if (!body) return;
   try {
-    const body = (req.body ?? {}) as { overrideValue?: string | null; labelAr?: string; labelEn?: string };
     const [before] = await db
       .select()
       .from(impactStatsOverridesTable)
@@ -227,11 +280,9 @@ router.patch("/admin/impact-stats/:key", async (req: Request, res: Response) => 
 // Stories CRUD
 router.post("/admin/impact-stories", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
+  const body = parseBody(StoryCreateSchema, req, res);
+  if (!body) return;
   try {
-    const body = (req.body ?? {}) as Partial<typeof transformationStoriesTable.$inferInsert>;
-    if (!body.name || !body.quoteAr) {
-      return res.status(400).json({ error: "name and quoteAr are required" });
-    }
     const [row] = await db
       .insert(transformationStoriesTable)
       .values({
@@ -263,8 +314,9 @@ router.post("/admin/impact-stories", async (req: Request, res: Response) => {
 router.patch("/admin/impact-stories/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const id = String(req.params.id ?? "").trim();
+  const body = parseBody(StoryUpdateSchema, req, res);
+  if (!body) return;
   try {
-    const body = (req.body ?? {}) as Partial<typeof transformationStoriesTable.$inferInsert>;
     const [before] = await db
       .select()
       .from(transformationStoriesTable)
@@ -366,6 +418,7 @@ router.get("/admin/platform-health", async (req: Request, res: Response) => {
     const [al] = await db.select({ c: sql<number>`count(*)::int` }).from(auditLogEntriesTable);
     const [is] = await db.select({ c: sql<number>`count(*)::int` }).from(impactStatsOverridesTable);
     const [ts] = await db.select({ c: sql<number>`count(*)::int` }).from(transformationStoriesTable);
+    const [att] = await db.select({ c: sql<number>`count(*)::int` }).from(lessonSessionAttendanceTable);
     res.json({
       counts: {
         badge_definitions: b?.c ?? 0,
@@ -374,6 +427,7 @@ router.get("/admin/platform-health", async (req: Request, res: Response) => {
         audit_log_entries: al?.c ?? 0,
         impact_stats_overrides: is?.c ?? 0,
         transformation_stories: ts?.c ?? 0,
+        lesson_session_attendance: att?.c ?? 0,
       },
     });
   } catch (err) {

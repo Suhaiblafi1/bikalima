@@ -75,6 +75,63 @@ export const ExchangeMobileAuthorizationCodeResponse = zod.object({
 });
 
 /**
+ * Returns enabled/disabled state for every defined feature flag. Missing keys default to enabled on the client.
+ * @summary Public map of feature flags (key → enabled).
+ */
+export const ListFeatureFlagsResponse = zod.object({
+  flags: zod.record(zod.string(), zod.boolean()),
+});
+
+/**
+ * Returns the headline impact numbers (with admin overrides applied) plus the published transformation stories carousel.
+ * @summary Public impact statistics and transformation stories.
+ */
+export const GetPublicImpactResponse = zod.object({
+  stats: zod.array(
+    zod.object({
+      key: zod.string(),
+      labelAr: zod.string(),
+      labelEn: zod.string(),
+      value: zod.string(),
+      isOverridden: zod.boolean(),
+    }),
+  ),
+  stories: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      roleAr: zod.string().nullish(),
+      roleEn: zod.string().nullish(),
+      quoteAr: zod.string(),
+      quoteEn: zod.string().nullish(),
+      photoUrl: zod.string().nullish(),
+      displayOrder: zod.number(),
+    }),
+  ),
+});
+
+/**
+ * @summary Badges earned by the current user (with locked previews).
+ */
+export const ListMyBadgesResponse = zod.object({
+  badges: zod.array(
+    zod.object({
+      key: zod.string(),
+      titleAr: zod.string(),
+      titleEn: zod.string(),
+      descriptionAr: zod.string().nullish(),
+      descriptionEn: zod.string().nullish(),
+      icon: zod.string(),
+      colorClass: zod.string(),
+      earned: zod.boolean(),
+      earnedAt: zod.coerce.date().nullish(),
+    }),
+  ),
+  earnedCount: zod.number(),
+  totalCount: zod.number(),
+});
+
+/**
  * @summary Log out a mobile session
  */
 export const LogoutMobileSessionHeader = zod.object({

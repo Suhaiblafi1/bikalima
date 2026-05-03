@@ -58,6 +58,7 @@ export default function AdminOverviewPage() {
   const [platformHealth, setPlatformHealth] = useState<{
     badge_definitions: number; user_badges: number; feature_flags: number;
     audit_log_entries: number; impact_stats_overrides: number; transformation_stories: number;
+    lesson_session_attendance: number;
   } | null>(null);
 
   const fetchGrowth = useCallback(async () => {
@@ -289,7 +290,7 @@ export default function AdminOverviewPage() {
                 صحة الجداول الجديدة (شارات، حضور، سجل تدقيق، أعلام، أثر)
               </span>
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 text-xs">
               {[
                 { label: "تعريفات الشارات", value: platformHealth.badge_definitions },
                 { label: "شارات الطلاب",   value: platformHealth.user_badges },
@@ -297,6 +298,7 @@ export default function AdminOverviewPage() {
                 { label: "سجل التدقيق",    value: platformHealth.audit_log_entries },
                 { label: "أرقام الأثر",    value: platformHealth.impact_stats_overrides },
                 { label: "قصص التحول",    value: platformHealth.transformation_stories },
+                { label: "حضور الجلسات",  value: platformHealth.lesson_session_attendance },
               ].map((s, i) => (
                 <div key={i} className="rounded-lg border bg-muted/20 p-2">
                   <p className="text-[10px] text-muted-foreground">{s.label}</p>

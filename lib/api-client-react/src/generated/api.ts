@@ -21,9 +21,12 @@ import type {
   BeginBrowserLoginParams,
   ExchangeMobileAuthorizationCodeBody,
   ExchangeMobileAuthorizationCodeResponse,
+  FeatureFlagsResponse,
   HandleBrowserLoginCallbackParams,
   HealthStatus,
   LogoutMobileSessionResponse,
+  MyBadgesResponse,
+  PublicImpactResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -552,6 +555,233 @@ export const useExchangeMobileAuthorizationCode = <
     getExchangeMobileAuthorizationCodeMutationOptions(options),
   );
 };
+
+/**
+ * Returns enabled/disabled state for every defined feature flag. Missing keys default to enabled on the client.
+ * @summary Public map of feature flags (key → enabled).
+ */
+export const getListFeatureFlagsUrl = () => {
+  return `/api/feature-flags`;
+};
+
+export const listFeatureFlags = async (
+  options?: RequestInit,
+): Promise<FeatureFlagsResponse> => {
+  return customFetch<FeatureFlagsResponse>(getListFeatureFlagsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListFeatureFlagsQueryKey = () => {
+  return [`/api/feature-flags`] as const;
+};
+
+export const getListFeatureFlagsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listFeatureFlags>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFeatureFlags>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListFeatureFlagsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listFeatureFlags>>
+  > = ({ signal }) => listFeatureFlags({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listFeatureFlags>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListFeatureFlagsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listFeatureFlags>>
+>;
+export type ListFeatureFlagsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Public map of feature flags (key → enabled).
+ */
+
+export function useListFeatureFlags<
+  TData = Awaited<ReturnType<typeof listFeatureFlags>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFeatureFlags>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFeatureFlagsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns the headline impact numbers (with admin overrides applied) plus the published transformation stories carousel.
+ * @summary Public impact statistics and transformation stories.
+ */
+export const getGetPublicImpactUrl = () => {
+  return `/api/impact`;
+};
+
+export const getPublicImpact = async (
+  options?: RequestInit,
+): Promise<PublicImpactResponse> => {
+  return customFetch<PublicImpactResponse>(getGetPublicImpactUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetPublicImpactQueryKey = () => {
+  return [`/api/impact`] as const;
+};
+
+export const getGetPublicImpactQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPublicImpact>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicImpact>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPublicImpactQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicImpact>>> = ({
+    signal,
+  }) => getPublicImpact({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicImpact>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPublicImpactQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getPublicImpact>>
+>;
+export type GetPublicImpactQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Public impact statistics and transformation stories.
+ */
+
+export function useGetPublicImpact<
+  TData = Awaited<ReturnType<typeof getPublicImpact>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getPublicImpact>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetPublicImpactQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Badges earned by the current user (with locked previews).
+ */
+export const getListMyBadgesUrl = () => {
+  return `/api/my/badges`;
+};
+
+export const listMyBadges = async (
+  options?: RequestInit,
+): Promise<MyBadgesResponse> => {
+  return customFetch<MyBadgesResponse>(getListMyBadgesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyBadgesQueryKey = () => {
+  return [`/api/my/badges`] as const;
+};
+
+export const getListMyBadgesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyBadges>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyBadges>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyBadgesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyBadges>>> = ({
+    signal,
+  }) => listMyBadges({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyBadges>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyBadgesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyBadges>>
+>;
+export type ListMyBadgesQueryError = ErrorType<void>;
+
+/**
+ * @summary Badges earned by the current user (with locked previews).
+ */
+
+export function useListMyBadges<
+  TData = Awaited<ReturnType<typeof listMyBadges>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyBadges>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyBadgesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Log out a mobile session

@@ -37,6 +37,54 @@ export interface LogoutMobileSessionResponse {
   success: boolean;
 }
 
+export type FeatureFlagsResponseFlags = { [key: string]: boolean };
+
+export interface FeatureFlagsResponse {
+  flags: FeatureFlagsResponseFlags;
+}
+
+export interface PublicImpactStat {
+  key: string;
+  labelAr: string;
+  labelEn: string;
+  value: string;
+  isOverridden: boolean;
+}
+
+export interface PublicTransformationStory {
+  id: string;
+  name: string;
+  roleAr?: string | null;
+  roleEn?: string | null;
+  quoteAr: string;
+  quoteEn?: string | null;
+  photoUrl?: string | null;
+  displayOrder: number;
+}
+
+export interface PublicImpactResponse {
+  stats: PublicImpactStat[];
+  stories: PublicTransformationStory[];
+}
+
+export interface MyBadge {
+  key: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  icon: string;
+  colorClass: string;
+  earned: boolean;
+  earnedAt?: string | null;
+}
+
+export interface MyBadgesResponse {
+  badges: MyBadge[];
+  earnedCount: number;
+  totalCount: number;
+}
+
 /**
  * Bearer token for mobile session authentication.
  */

@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: Auth
     description: Browser and mobile authentication endpoints.
+  - name: Platform
+    description: Public platform endpoints (feature flags, public impact, my badges).
 paths:
   /healthz:
     get:
@@ -107,6 +109,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExchangeMobileAuthorizationCodeResponse'
+  /feature-flags:
+    get:
+      tags: [Platform]
+      operationId: listFeatureFlags
+      summary: Public map of feature flags (key → enabled).
+      description: Returns enabled/disabled state for every defined feature flag. Missing keys default to enabled on the client.
+      responses:
+        '200':
+          description: Flag map.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlagsResponse'
+  /impact:
+    get:
+      tags: [Platform]
+      operationId: getPublicImpact
+      summary: Public impact statistics and transformation stories.
+      description: Returns the headline impact numbers (with admin overrides applied) plus the published transformation stories carousel.
+      responses:
+        '200':
+          description: Impact payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicImpactResponse'
+  /my/badges:
+    get:
+      tags: [Platform]
+      operationId: listMyBadges
+      summary: Badges earned by the current user (with locked previews).
+      parameters:
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Badge list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyBadgesResponse'
+        '401':
+          description: Not authenticated.
   /mobile-auth/logout:
     post:
       tags: [Auth]
@@ -206,3 +250,100 @@ components:
           type: boolean
       required:
         - success
+    FeatureFlagsResponse:
+      type: object
+      properties:
+        flags:
+          type: object
+          additionalProperties:
+            type: boolean
+      required:
+        - flags
+    PublicImpactStat:
+      type: object
+      properties:
+        key:
+          type: string
+        labelAr:
+          type: string
+        labelEn:
+          type: string
+        value:
+          type: string
+        isOverridden:
+          type: boolean
+      required: [key, labelAr, labelEn, value, isOverridden]
+    PublicTransformationStory:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        roleAr:
+          type: string
+          nullable: true
+        roleEn:
+          type: string
+          nullable: true
+        quoteAr:
+          type: string
+        quoteEn:
+          type: string
+          nullable: true
+        photoUrl:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+      required: [id, name, quoteAr, displayOrder]
+    PublicImpactResponse:
+      type: object
+      properties:
+        stats:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicImpactStat'
+        stories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicTransformationStory'
+      required: [stats, stories]
+    MyBadge:
+      type: object
+      properties:
+        key:
+          type: string
+        titleAr:
+          type: string
+        titleEn:
+          type: string
+        descriptionAr:
+          type: string
+          nullable: true
+        descriptionEn:
+          type: string
+          nullable: true
+        icon:
+          type: string
+        colorClass:
+          type: string
+        earned:
+          type: boolean
+        earnedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [key, titleAr, titleEn, icon, colorClass, earned]
+    MyBadgesResponse:
+      type: object
+      properties:
+        badges:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyBadge'
+        earnedCount:
+          type: integer
+        totalCount:
+          type: integer
+      required: [badges, earnedCount, totalCount]

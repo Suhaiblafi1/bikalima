@@ -82,41 +82,42 @@ export function invalidateFeatureFlagCache(key?: string): void {
 // ── Badges ──────────────────────────────────────────────────────────────
 
 /**
- * Award a badge to a user if they don't already have it. Idempotent: a
- * unique index on (userId, badgeKey) prevents duplicates. Returns
- * `{ awarded: true, badge }` only on the FIRST award.
+ * Award badges to a user for a given event. Looks up active badge
+ * definitions whose `eventName` matches and inserts a row in
+ * `user_badges` for each (skipping any the user already has). Idempotent
+ * via the unique (userId, badgeKey) constraint.
+ *
+ * Example: awardBadgeIfEligible(userId, "lesson_completed", { lessonId })
+ *
+ * Returns the list of newly-awarded badges (empty when nothing is new).
  */
-export async function awardBadgeIfEligible(opts: {
-  userId: string;
-  badgeKey: string;
-  payload?: Record<string, unknown>;
-}): Promise<{ awarded: boolean; badge?: BadgeDefinition }> {
+export async function awardBadgeIfEligible(
+  userId: string,
+  eventName: string,
+  payload?: Record<string, unknown>,
+): Promise<{ awarded: BadgeDefinition[] }> {
   try {
-    const [definition] = await db
+    const candidates = await db
       .select()
       .from(badgeDefinitionsTable)
-      .where(eq(badgeDefinitionsTable.key, opts.badgeKey));
-    if (!definition || !definition.isActive) {
-      return { awarded: false };
+      .where(eq(badgeDefinitionsTable.eventName, eventName));
+    const active = candidates.filter((d) => d.isActive);
+    if (active.length === 0) return { awarded: [] };
+    const awarded: BadgeDefinition[] = [];
+    for (const def of active) {
+      const inserted = await db
+        .insert(userBadgesTable)
+        .values({ userId, badgeKey: def.key, payload: payload ?? null })
+        .onConflictDoNothing({
+          target: [userBadgesTable.userId, userBadgesTable.badgeKey],
+        })
+        .returning();
+      if (inserted.length > 0) awarded.push(def);
     }
-    const inserted = await db
-      .insert(userBadgesTable)
-      .values({
-        userId: opts.userId,
-        badgeKey: opts.badgeKey,
-        payload: opts.payload ?? null,
-      })
-      .onConflictDoNothing({
-        target: [userBadgesTable.userId, userBadgesTable.badgeKey],
-      })
-      .returning();
-    if (inserted.length === 0) {
-      return { awarded: false, badge: definition };
-    }
-    return { awarded: true, badge: definition };
+    return { awarded };
   } catch (err) {
-    logger.warn({ err, ...opts }, "badge award failed");
-    return { awarded: false };
+    logger.warn({ err, userId, eventName }, "badge award failed");
+    return { awarded: [] };
   }
 }
 
