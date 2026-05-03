@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, speechEvaluationsTable } from "@workspace/db";
+import { registerLeadFromForm } from "../lib/leads.js";
 
 const router: IRouter = Router();
 
@@ -124,6 +125,29 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
       .returning({ id: speechEvaluationsTable.id });
 
     req.log.info({ id: inserted.id, email }, "speech-evaluation lead created");
+
+    // ── CRM: register/upsert as a lead ──────────────────────────────
+    try {
+      await registerLeadFromForm({
+        contact: {
+          fullName,
+          phone: phone || null,
+          email: email || null,
+          source: "speech_evaluation",
+        },
+        activity: {
+          type: "linked_speech_evaluation",
+          summaryAr: `قدّم تقييم خطاب جديد${speechTopic ? ` — موضوع: ${speechTopic}` : ""}`,
+          relatedEntityType: "speech_evaluation",
+          relatedEntityId: inserted.id,
+        },
+        trigger: "speech_evaluation.created",
+        triggerPayload: { speechTopic, speechLanguage },
+      });
+    } catch (err) {
+      req.log.warn({ err }, "[CRM] speech_evaluation lead upsert failed");
+    }
+
     res.json({ ok: true, id: inserted.id });
   } catch (err) {
     req.log.error({ err }, "Failed to create speech evaluation");

@@ -14,6 +14,7 @@ import {
   isWhatsAppConfigured,
   getTeamWhatsAppNumber,
 } from "../lib/whatsapp";
+import { registerLeadFromForm } from "../lib/leads.js";
 
 const router: IRouter = Router();
 
@@ -231,6 +232,25 @@ router.post("/chat/threads", async (req: Request, res: Response) => {
     // Best-effort notifications — do not block response
     notifyTeamByEmail({ thread, body: message }).catch(() => {});
     pingTeamWhatsApp(thread, message).catch(() => {});
+
+    // ── CRM: register/upsert as a lead ────────────────────────────
+    if (whatsapp || email) {
+      registerLeadFromForm({
+        contact: {
+          fullName: name,
+          phone: whatsapp,
+          email,
+          source: "live_chat",
+        },
+        activity: {
+          type: "linked_chat",
+          summaryAr: `بدأ شات مباشر: ${message.slice(0, 100)}`,
+          relatedEntityType: "chat_thread",
+          relatedEntityId: thread.id,
+        },
+        trigger: "chat.message_received",
+      }).catch(() => {});
+    }
 
     res.json({ threadId: thread.id, token, thread: publicThread(thread) });
   } catch (err) {

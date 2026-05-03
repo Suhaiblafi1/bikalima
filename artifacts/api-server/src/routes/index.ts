@@ -15,6 +15,12 @@ import cmsRouter from "./cms";
 import certificatesRouter from "./certificates";
 import chatRouter from "./chat";
 import notificationsRouter from "./notifications";
+import leadsRouter from "./leads";
+import tasksRouter from "./tasks";
+import automationsRouter from "./automations";
+import messageTemplatesRouter from "./message-templates";
+import funnelsRouter from "./funnels";
+import growthRouter from "./growth";
 
 const router: IRouter = Router();
 
@@ -34,5 +40,11 @@ router.use(cmsRouter);
 router.use(certificatesRouter);
 router.use(chatRouter);
 router.use(notificationsRouter);
+router.use(leadsRouter);
+router.use(tasksRouter);
+router.use(automationsRouter);
+router.use(messageTemplatesRouter);
+router.use(funnelsRouter);
+router.use(growthRouter);
 
 export default router;

@@ -132,7 +132,9 @@ export type AdminPageKey =
   | "overview" | "users" | "courses" | "enrollments"
   | "workbook-orders" | "assignments" | "reviews"
   | "speech-evaluations" | "home-page" | "workbooks" | "field-media"
-  | "certificates" | "chat" | "settings";
+  | "certificates" | "chat" | "settings"
+  | "leads" | "pipeline" | "tasks" | "automations"
+  | "message-templates" | "funnels";
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
@@ -153,7 +155,51 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Live chat with site visitors — sales + admin handle replies.
   chat: ["admin", "sales"],
   settings: ["admin"],
+  // ── Growth Center (CRM/LMS) ───────────────────────────────────────────
+  leads: ["admin", "sales", "trainer"],
+  pipeline: ["admin", "sales"],
+  tasks: ["admin", "sales", "trainer"],
+  automations: ["admin"],
+  "message-templates": ["admin", "sales"],
+  funnels: ["admin", "sales"],
 };
+
+export const LEAD_STATUS_OPTIONS: { value: string; labelAr: string; color: string }[] = [
+  { value: "new",              labelAr: "جديد",         color: "bg-slate-100 text-slate-700" },
+  { value: "contacted",        labelAr: "تم التواصل",   color: "bg-sky-100 text-sky-800" },
+  { value: "interested",       labelAr: "مهتم",         color: "bg-cyan-100 text-cyan-800" },
+  { value: "consultation",     labelAr: "جلسة استشارة", color: "bg-indigo-100 text-indigo-800" },
+  { value: "offer_sent",       labelAr: "تم إرسال العرض", color: "bg-purple-100 text-purple-800" },
+  { value: "awaiting_payment", labelAr: "بانتظار الدفع", color: "bg-amber-100 text-amber-800" },
+  { value: "paid",             labelAr: "دفع",          color: "bg-emerald-100 text-emerald-800" },
+  { value: "student",          labelAr: "طالب",         color: "bg-green-100 text-green-800" },
+  { value: "not_qualified",    labelAr: "غير مؤهل",     color: "bg-rose-100 text-rose-700" },
+];
+
+export const LEAD_SOURCE_LABELS: Record<string, string> = {
+  interest_form: "نموذج اهتمام",
+  speech_evaluation: "تقييم خطاب",
+  workbook_order: "طلب كراسة",
+  consultation: "حجز استشارة",
+  live_chat: "شات مباشر",
+  certificate_verify: "تحقق شهادة",
+  whatsapp: "واتساب",
+  enrollment: "طلب تسجيل",
+  other: "أخرى",
+};
+
+export const INTEREST_SCORE_OPTIONS: { value: "hot" | "warm" | "cold"; labelAr: string; color: string }[] = [
+  { value: "hot",  labelAr: "ساخن",  color: "bg-red-100 text-red-700" },
+  { value: "warm", labelAr: "دافئ",  color: "bg-amber-100 text-amber-700" },
+  { value: "cold", labelAr: "بارد",  color: "bg-blue-100 text-blue-700" },
+];
+
+export function leadStatusLabel(value: string): string {
+  return LEAD_STATUS_OPTIONS.find((s) => s.value === value)?.labelAr ?? value;
+}
+export function leadStatusColor(value: string): string {
+  return LEAD_STATUS_OPTIONS.find((s) => s.value === value)?.color ?? "bg-gray-100 text-gray-700";
+}
 
 // Display metadata for the categories used in Field Media (من الميدان).
 export const FIELD_MEDIA_CATEGORIES = [

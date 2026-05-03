@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
 import { db, workbookOrdersTable } from "@workspace/db";
+import { registerLeadFromForm } from "../lib/leads.js";
 import { toWaPhone } from "../lib/phone.js";
 
 const workbookOrderRouter = Router();
@@ -363,6 +364,29 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
       leadSource: "website",
       syncStatus: "pending",
     });
+
+    // ── CRM: register/upsert as a lead and fire automations ───────────
+    try {
+      await registerLeadFromForm({
+        contact: {
+          fullName: buyerName || buyerEmail || buyerPhone || "بدون اسم",
+          phone: buyerPhone || null,
+          email: buyerEmail || null,
+          country: buyerCountry || null,
+          source: "workbook_order",
+          interestProgramTitle: workbookTitle || workbookId || null,
+        },
+        activity: {
+          type: "linked_workbook_order",
+          summaryAr: `طلب كراسة: ${workbookTitle || workbookId} (${format || "pdf"})`,
+          relatedEntityType: "workbook_order",
+        },
+        trigger: "workbook_order.created",
+        triggerPayload: { workbookId, format: format || "pdf" },
+      });
+    } catch (err) {
+      console.warn("[CRM] workbook lead upsert failed:", err);
+    }
 
     const transporter = buildTransporter();
     if (transporter) {

@@ -37,6 +37,14 @@ import NotFound from "@/pages/not-found";
 import { LiveChatWidget } from "@/components/live-chat-widget";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 import AdminChatPage from "@/pages/admin/chat";
+import AdminLeadsPage from "@/pages/admin/leads";
+import AdminLeadDetailPage from "@/pages/admin/lead-detail";
+import AdminPipelinePage from "@/pages/admin/pipeline";
+import AdminTasksPage from "@/pages/admin/tasks";
+import AdminAutomationsPage from "@/pages/admin/automations";
+import AdminMessageTemplatesPage from "@/pages/admin/message-templates";
+import AdminFunnelsPage from "@/pages/admin/funnels";
+import ConsultationPage from "@/pages/consultation";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +114,28 @@ function AnimatedRouter() {
           <Route path="/admin/chat">
             {() => (<AdminRoute><AdminChatPage /></AdminRoute>)}
           </Route>
+          <Route path="/admin/leads/:id">
+            {(params) => (<AdminRoute><AdminLeadDetailPage id={params.id} /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/leads">
+            {() => (<AdminRoute><AdminLeadsPage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/pipeline">
+            {() => (<AdminRoute><AdminPipelinePage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/tasks">
+            {() => (<AdminRoute><AdminTasksPage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/automations">
+            {() => (<AdminRoute><AdminAutomationsPage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/message-templates">
+            {() => (<AdminRoute><AdminMessageTemplatesPage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/funnels">
+            {() => (<AdminRoute><AdminFunnelsPage /></AdminRoute>)}
+          </Route>
+          <Route path="/consultation" component={ConsultationPage} />
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
           </Route>

@@ -1,5 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { eq } from "drizzle-orm";
+import { db, consultationBookingsTable } from "@workspace/db";
+import { registerLeadFromForm } from "../lib/leads.js";
 
 const consultationRouter = Router();
 
@@ -318,6 +321,54 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
     ? `تم تأكيد موعدك — بكلمة · ${date} الساعة ${time}`
     : `Booking Confirmed — Bikalima · ${date} at ${time}`;
   const subjectAdmin = `🗓 حجز جديد من ${name} — ${date} الساعة ${time}`;
+
+  // ── Persist booking + register/upsert lead ─────────────────────
+  let bookingId: string | null = null;
+  try {
+    const [row] = await db
+      .insert(consultationBookingsTable)
+      .values({
+        fullName: name,
+        email,
+        phone: phoneText,
+        preferredDate: date,
+        preferredTime: time,
+        notes: notesText || null,
+        consultationType: (req.body as { consultationType?: string })?.consultationType ?? null,
+        interestProgramId: (req.body as { programId?: string })?.programId ?? null,
+        interestProgramTitle: (req.body as { programTitle?: string })?.programTitle ?? null,
+        status: "requested",
+      })
+      .returning({ id: consultationBookingsTable.id });
+    bookingId = row.id;
+
+    const { leadId } = await registerLeadFromForm({
+      contact: {
+        fullName: name,
+        phone: phoneText || null,
+        email,
+        source: "consultation",
+        interestProgramTitle: (req.body as { programTitle?: string })?.programTitle ?? null,
+      },
+      activity: {
+        type: "linked_consultation",
+        summaryAr: `حجز جلسة استشارة — ${date} الساعة ${time}`,
+        relatedEntityType: "consultation",
+        relatedEntityId: bookingId ?? undefined,
+        payload: { date, time, notes: notesText },
+      },
+      trigger: "consultation.created",
+      triggerPayload: { date, time },
+    });
+    if (bookingId) {
+      await db
+        .update(consultationBookingsTable)
+        .set({ leadId })
+        .where(eq(consultationBookingsTable.id, bookingId));
+    }
+  } catch (err) {
+    console.warn("[Consultation] CRM upsert failed:", err);
+  }
 
   const transporter = buildTransporter();
   if (transporter) {

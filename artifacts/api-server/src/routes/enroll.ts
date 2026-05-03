@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
 import { db, enrollmentRequestsTable } from "@workspace/db";
+import { registerLeadFromForm } from "../lib/leads.js";
 import { toWaPhone } from "../lib/phone.js";
 
 const enrollRouter = Router();
@@ -428,6 +429,31 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
 
     dbStored = true;
     log.info({ applicantType: payload.type, program: payload.program }, "Enrollment stored in DB");
+
+    // ── CRM: register/upsert as a lead and trigger automations ────────
+    try {
+      const isInst = payload.type === "institution";
+      const fullName = isInst ? (payload.contactPerson || payload.orgName || "") : (payload.name || "");
+      await registerLeadFromForm({
+        contact: {
+          fullName,
+          phone: payload.phone || null,
+          email: payload.email || null,
+          source: "enrollment",
+          interestProgramId: payload.program || null,
+          interestProgramTitle: payload.programTitle || payload.program || null,
+        },
+        activity: {
+          type: "linked_enrollment",
+          summaryAr: `طلب تسجيل جديد في برنامج: ${payload.programTitle || payload.program || ""}`,
+          relatedEntityType: "enrollment",
+        },
+        trigger: "enrollment.created",
+        triggerPayload: { program: payload.program, mode: payload.mode },
+      });
+    } catch (err) {
+      log.warn({ err }, "[CRM] enrollment lead upsert failed");
+    }
   } catch (err) {
     log.error({ err }, "Failed to store enrollment in DB");
   }
