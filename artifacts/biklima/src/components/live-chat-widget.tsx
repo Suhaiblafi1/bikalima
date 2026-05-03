@@ -39,6 +39,7 @@ const TEXT = {
     reset: "بدء محادثة جديدة",
     closeBtn: "إغلاق",
     minimize: "تصغير",
+    helpPrompt: "كيف أساعدك..",
     errorGeneric: "تعذّر الإرسال، حاول مرة أخرى.",
     errorRate: "أرسلت رسائل كثيرة. انتظر قليلًا.",
     errorClosed: "تم إغلاق المحادثة من قبل الفريق.",
@@ -71,6 +72,7 @@ const TEXT = {
     reset: "Start a new chat",
     closeBtn: "Close",
     minimize: "Minimize",
+    helpPrompt: "How can I help..",
     errorGeneric: "Couldn't send. Please try again.",
     errorRate: "Too many messages — please wait a moment.",
     errorClosed: "Conversation was closed by the team.",
@@ -663,7 +665,8 @@ export function LiveChatWidget() {
         )}
       </AnimatePresence>
 
-      {/* Floating bubble */}
+      {/* Floating character (frame-less). The koala holds a mic and a
+          small speech bubble above prompts the visitor. */}
       <motion.button
         type="button"
         onClick={onBubbleClick}
@@ -674,26 +677,37 @@ export function LiveChatWidget() {
         whileHover={{ scale: 1.07 }}
         whileTap={{ scale: 0.95 }}
         transition={{ type: "spring", stiffness: 200, damping: 15, delay: 1 }}
-        className="relative bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shadow-2xl w-14 h-14 flex items-center justify-center"
+        className="relative flex flex-col items-center gap-1 bg-transparent border-0 p-0 cursor-pointer"
         data-testid="live-chat-bubble"
       >
-        {!open && unread === 0 && (
+        {!open && (
           <span
-            className="absolute inset-0 rounded-full bg-primary opacity-60 animate-ping"
-            aria-hidden
-          />
+            className="px-3 py-1.5 rounded-full bg-background text-foreground text-xs font-bold shadow-lg border border-border whitespace-nowrap relative"
+            data-testid="live-chat-help-prompt"
+          >
+            {t.helpPrompt}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-background border-b border-e border-border"
+              aria-hidden
+            />
+          </span>
         )}
         {open ? (
-          <X className="w-6 h-6 relative" strokeWidth={2.4} />
+          <span className="w-12 h-12 rounded-full bg-foreground/80 text-background shadow-2xl flex items-center justify-center">
+            <X className="w-6 h-6" strokeWidth={2.4} />
+          </span>
         ) : (
-          <span className="relative leading-none" aria-hidden>
-            <span className="text-[28px]">🐨</span>
-            <span className="absolute -bottom-1 -end-1 text-[14px] drop-shadow-sm">🎤</span>
+          <span
+            className="relative inline-block leading-none drop-shadow-[0_8px_14px_rgba(0,0,0,0.25)]"
+            aria-hidden
+          >
+            <span className="text-[64px]">🐨</span>
+            <span className="absolute bottom-1 -end-2 text-[28px]">🎤</span>
           </span>
         )}
         {unread > 0 && !open && (
           <span
-            className="absolute -top-1 -end-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center border-2 border-background"
+            className="absolute top-7 -end-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center border-2 border-background"
             data-testid="live-chat-unread"
           >
             {unread > 9 ? "9+" : unread}
