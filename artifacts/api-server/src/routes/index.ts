@@ -25,6 +25,7 @@ import platformRouter from "./platform";
 import attendanceRouter from "./attendance";
 import activitiesRouter, { bootstrapActivities } from "./activities";
 import littleSpeakerRouter from "./little-speaker";
+import accreditationsRouter from "./accreditations";
 
 const router: IRouter = Router();
 
@@ -54,6 +55,7 @@ router.use(platformRouter);
 router.use(attendanceRouter);
 router.use(activitiesRouter);
 router.use(littleSpeakerRouter);
+router.use(accreditationsRouter);
 
 // Run idempotent activities bootstrap (seed badges, convert legacy lessons)
 void bootstrapActivities();

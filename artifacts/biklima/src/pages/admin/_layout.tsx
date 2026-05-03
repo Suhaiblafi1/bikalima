@@ -51,7 +51,8 @@ const NAV_GROUPS: NavGroup[] = [
       { key: "speech-evaluations", label: "طلبات تقييم الخطاب", href: "/admin/speech-evaluations", icon: <Mic2 className="w-4 h-4" /> },
       { key: "assignments",        label: "الواجبات والتقييم",  href: "/admin/assignments",        icon: <ClipboardList className="w-4 h-4" /> },
       { key: "reviews",            label: "آراء الطلاب",        href: "/admin/reviews",            icon: <Star className="w-4 h-4" /> },
-      { key: "certificates",       label: "الشهادات والاعتمادات", href: "/admin/certificates",     icon: <ShieldCheck className="w-4 h-4" /> },
+      { key: "certificates",       label: "شهادات الطلاب",       href: "/admin/certificates",     icon: <ShieldCheck className="w-4 h-4" /> },
+      { key: "accreditations",     label: "اعتمادات المنصة",     href: "/admin/accreditations",   icon: <ShieldCheck className="w-4 h-4" /> },
     ],
   },
   {
@@ -68,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: "users",          label: "المستخدمون",     href: "/admin/users",          icon: <Users className="w-4 h-4" /> },
       { key: "settings",       label: "إعدادات الموقع", href: "/admin/settings",       icon: <SettingsIcon className="w-4 h-4" /> },
+      { key: "policies",       label: "الشروط والسياسات", href: "/admin/policies",     icon: <ScrollText className="w-4 h-4" /> },
       { key: "feature-flags",  label: "تفعيل الميزات",  href: "/admin/feature-flags",  icon: <ToggleRight className="w-4 h-4" /> },
       { key: "audit-log",      label: "سجل العمليات",   href: "/admin/audit-log",      icon: <ScrollText className="w-4 h-4" /> },
     ],

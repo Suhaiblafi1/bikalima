@@ -6,3 +6,4 @@ export * from "./chat";
 export * from "./notifications";
 export * from "./platform";
 export * from "./little-speaker";
+export * from "./accreditations";

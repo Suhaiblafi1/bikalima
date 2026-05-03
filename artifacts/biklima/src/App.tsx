@@ -37,6 +37,8 @@ const ImpactPage = lazy(() => import("@/pages/impact"));
 const ConsultationPage = lazy(() => import("@/pages/consultation"));
 const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const TermsPage = lazy(() => import("@/pages/terms"));
+const AccreditationsPage = lazy(() => import("@/pages/accreditations"));
+const PoliciesPage = lazy(() => import("@/pages/policies"));
 
 // Admin pages — group into a single chunk per page; they all require an
 // authenticated admin so an anonymous visitor never pays for them.
@@ -63,6 +65,8 @@ const AdminMessageTemplatesPage = lazy(() => import("@/pages/admin/message-templ
 const AdminFunnelsPage = lazy(() => import("@/pages/admin/funnels"));
 const AdminAuditLogPage = lazy(() => import("@/pages/admin/audit-log"));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/admin/feature-flags"));
+const AdminAccreditationsPage = lazy(() => import("@/pages/admin/accreditations"));
+const AdminPoliciesPage = lazy(() => import("@/pages/admin/policies"));
 const AdminImpactStatsPage = lazy(() => import("@/pages/admin/impact-stats"));
 
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -208,6 +212,15 @@ function AppRouter() {
         </Route>
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/terms" component={TermsPage} />
+        <Route path="/accreditations" component={AccreditationsPage} />
+        <Route path="/policies/:slug" component={PoliciesPage} />
+        <Route path="/policies" component={PoliciesPage} />
+        <Route path="/admin/accreditations">
+          {() => (<AdminRoute><AdminAccreditationsPage /></AdminRoute>)}
+        </Route>
+        <Route path="/admin/policies">
+          {() => (<AdminRoute><AdminPoliciesPage /></AdminRoute>)}
+        </Route>
         <Route path="/gallery" component={GalleryPage} />
         <Route path="/workbooks" component={WorkbooksPage} />
         <Route path="/verify" component={VerifyPage} />

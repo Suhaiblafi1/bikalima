@@ -139,7 +139,8 @@ export type AdminPageKey =
   | "certificates" | "chat" | "settings"
   | "leads" | "pipeline" | "tasks" | "automations"
   | "message-templates" | "funnels"
-  | "audit-log" | "feature-flags" | "impact-stats";
+  | "audit-log" | "feature-flags" | "impact-stats"
+  | "accreditations" | "policies";
 
 // Per-role page visibility. Admin always sees everything.
 //
@@ -178,6 +179,10 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   "audit-log": ["admin"],
   "feature-flags": ["admin"],
   "impact-stats": ["admin", "supervisor"],
+  // Institutional accreditations — supervisors can view/manage; admin owns CRUD.
+  accreditations: ["admin", "supervisor"],
+  // Versioned legal policies — admin only.
+  policies: ["admin"],
 };
 
 export const LEAD_STATUS_OPTIONS: { value: string; labelAr: string; color: string }[] = [

@@ -97,6 +97,16 @@ export function SiteFooter() {
                   {lang === "ar" ? "أثرنا بالأرقام" : "Our impact"}
                 </button>
               </li>
+              <li>
+                <button onClick={() => navigate("/accreditations")} className="hover:text-accent transition text-start" data-testid="footer-link-accreditations">
+                  {lang === "ar" ? "اعتماداتنا" : "Accreditations"}
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate("/policies")} className="hover:text-accent transition text-start" data-testid="footer-link-policies">
+                  {lang === "ar" ? "الشروط والسياسات" : "Terms & Policies"}
+                </button>
+              </li>
             </ul>
           </div>
 
