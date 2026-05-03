@@ -20,6 +20,7 @@ import {
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { isSupervisorOrAdmin, requireAdmin, requireRole } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
+import { awardBadgeIfEligible } from "../lib/platform.js";
 
 const router: IRouter = Router();
 
@@ -389,8 +390,33 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
       if (isFirstCompletion) {
         await awardSkillPoints(userId, act.skillKeys ?? [], act.pointsReward);
       }
-      await recomputeLessonProgress(userId, act.lessonId);
+      const lessonCompleted = await recomputeLessonProgress(userId, act.lessonId);
       await checkAndAwardBadges(userId);
+
+      // ── Little Speaker badge events (event-based system) ──
+      // Strong start: any first activity ever
+      const [totalDone] = await db.select({ c: sql<number>`count(*)::int` })
+        .from(activitySubmissionsTable)
+        .where(and(
+          eq(activitySubmissionsTable.userId, userId),
+          eq(activitySubmissionsTable.status, "completed"),
+        ));
+      if ((totalDone?.c ?? 0) === 1) {
+        await awardBadgeIfEligible(userId, "kid_strong_start", { activityId });
+      }
+      if ((totalDone?.c ?? 0) >= 5) {
+        await awardBadgeIfEligible(userId, "kid_little_leader", { count: totalDone?.c });
+      }
+      if (act.type === "challenge") {
+        await awardBadgeIfEligible(userId, "kid_challenge_champion", { activityId });
+      }
+      // Self-assessment: confident_speaker if autoScore (0..100) ≥ 75
+      if (act.type === "self_assessment" && (autoScore ?? 0) >= 75) {
+        await awardBadgeIfEligible(userId, "kid_confident_speaker", { activityId, autoScore });
+      }
+      if (lessonCompleted) {
+        await awardBadgeIfEligible(userId, "lesson_completed", { lessonId: act.lessonId });
+      }
     } else {
       // Notify trainers of the course
       const trainers = await db.select({ userId: courseTrainersTable.userId })
@@ -677,8 +703,25 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
     if (!priorPass) {
       await awardSkillPoints(sub.userId, act?.skillKeys ?? [], act?.pointsReward ?? 10);
     }
-    await recomputeLessonProgress(sub.userId, sub.lessonId);
+    const lessonNowComplete = await recomputeLessonProgress(sub.userId, sub.lessonId);
     await checkAndAwardBadges(sub.userId);
+    // Little Speaker: passing voice_recording review → "صوت واضح"
+    if (act?.type === "voice_recording") {
+      await awardBadgeIfEligible(sub.userId, "kid_voice_clear", { submissionId: id });
+    }
+    // "Little Leader": 5 distinct passed activities (any type).
+    const distinctPassed = await db.selectDistinct({ activityId: activitySubmissionsTable.activityId })
+      .from(activitySubmissionsTable)
+      .where(and(
+        eq(activitySubmissionsTable.userId, sub.userId),
+        eq(activitySubmissionsTable.status, "completed"),
+      ));
+    if (distinctPassed.length >= 5) {
+      await awardBadgeIfEligible(sub.userId, "kid_little_leader", { count: distinctPassed.length });
+    }
+    if (lessonNowComplete) {
+      await awardBadgeIfEligible(sub.userId, "lesson_completed", { lessonId: sub.lessonId });
+    }
   }
 
   // Resolve course slug for the deep link (route is /courses/:slug/learn).

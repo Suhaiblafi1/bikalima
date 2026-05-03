@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-export type Role = "admin" | "supervisor" | "trainer" | "student" | "sales";
+export type Role = "admin" | "supervisor" | "trainer" | "student" | "sales" | "parent";
 
 export interface MeUser {
   id: string;

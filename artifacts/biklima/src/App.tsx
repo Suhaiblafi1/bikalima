@@ -24,6 +24,7 @@ import { MobileStickyCta } from "@/components/mobile-sticky-cta";
 // code.
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const TrainerDashboard = lazy(() => import("@/pages/trainer"));
+const ParentPage = lazy(() => import("@/pages/parent"));
 const LearnPage = lazy(() => import("@/pages/learn"));
 const InstructorReviewsPage = lazy(() => import("@/pages/instructor-reviews"));
 const GalleryPage = lazy(() => import("@/pages/gallery"));
@@ -124,6 +125,7 @@ function AppRouter() {
         <Route path="/" component={Home} />
         <Route path="/login" component={LoginPage} />
         <Route path="/dashboard" component={DashboardRoute} />
+        <Route path="/parent" component={ParentPage} />
         <Route path="/admin">
           {() => <Redirect to="/admin/overview" />}
         </Route>

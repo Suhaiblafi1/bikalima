@@ -29,7 +29,7 @@ export const usersTable = pgTable("users", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
-export type UserRole = "admin" | "supervisor" | "trainer" | "student" | "sales";
+export type UserRole = "admin" | "supervisor" | "trainer" | "student" | "sales" | "parent";
 
 export type UpsertUser = typeof usersTable.$inferInsert;
 export type User = typeof usersTable.$inferSelect;

@@ -314,7 +314,7 @@ export const SPEECH_EVAL_STATUS_OPTIONS: { value: SpeechEvaluationRecord["status
 ];
 
 export const ROLE_LABELS_AR: Record<Role, string> = {
-  admin: "مدير", supervisor: "مشرف", trainer: "مدرّب", student: "طالب", sales: "مبيعات/دعم",
+  admin: "مدير", supervisor: "مشرف", trainer: "مدرّب", student: "طالب", sales: "مبيعات/دعم", parent: "ولي أمر",
 };
 
 export const ORDER_STATUS_OPTIONS: { value: string; labelAr: string }[] = [

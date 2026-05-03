@@ -518,27 +518,63 @@ function ScenarioActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<Bod
 
 // ── 10. Self-assessment ────────────────────────────────────────────────
 function SelfAssessmentActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<BodyProps, "enrolled" | "isPending">) {
-  const cfg = activity.config as { items?: string[]; scale?: number };
+  const cfg = activity.config as { items?: string[]; scale?: number; kidFriendly?: boolean };
   const items = cfg.items ?? ["وضوحي في طرح الفكرة", "ثقتي أمام الآخرين", "تحكمي في صوتي ولغة جسدي"];
   const scale = cfg.scale ?? 5;
+  // Kid-friendly mode renders an emoji + label slider instead of plain numbers.
+  // Defaults to true for the Little Speaker program; can be disabled per activity.
+  const kidFriendly = cfg.kidFriendly !== false;
   const [vals, setVals] = useState<Record<number, number>>({});
   const allDone = items.every((_, i) => vals[i] !== undefined);
+
+  // Map a 1..scale value to a kid-friendly face + Arabic label.
+  const faceFor = (v: number): { emoji: string; label: string; color: string } => {
+    const pct = (v - 1) / Math.max(1, scale - 1); // 0..1
+    if (pct < 0.2) return { emoji: "😟", label: "أحتاج تدريب أكثر", color: "bg-rose-100 border-rose-300 text-rose-700" };
+    if (pct < 0.45) return { emoji: "🙂", label: "بدأت أتحسّن", color: "bg-amber-100 border-amber-300 text-amber-700" };
+    if (pct < 0.7) return { emoji: "😊", label: "جيد", color: "bg-sky-100 border-sky-300 text-sky-700" };
+    if (pct < 0.95) return { emoji: "😃", label: "رائع جداً", color: "bg-emerald-100 border-emerald-300 text-emerald-700" };
+    return { emoji: "🤩", label: "بطل!", color: "bg-fuchsia-100 border-fuchsia-300 text-fuchsia-700" };
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {items.map((it, i) => (
-        <div key={i}>
-          <p className="text-sm font-medium mb-1.5">{it}</p>
-          <div className="flex gap-1.5">
-            {Array.from({ length: scale }, (_, k) => k + 1).map((v) => {
-              const sel = vals[i] === v;
-              return (
-                <button key={v} onClick={() => !isDone && setVals({ ...vals, [i]: v })}
-                  className={`w-9 h-9 rounded-lg text-sm font-semibold border ${sel ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted/30"}`}>
-                  {v}
-                </button>
-              );
-            })}
-          </div>
+        <div key={i} className={kidFriendly ? "p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-fuchsia-50 border border-primary/10" : ""}>
+          <p className={`font-medium mb-2 ${kidFriendly ? "text-base" : "text-sm"}`}>{it}</p>
+          {kidFriendly ? (
+            <div className="grid grid-cols-5 gap-2">
+              {Array.from({ length: scale }, (_, k) => k + 1).map((v) => {
+                const sel = vals[i] === v;
+                const f = faceFor(v);
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => !isDone && setVals({ ...vals, [i]: v })}
+                    disabled={isDone}
+                    className={`flex flex-col items-center gap-1 py-3 rounded-2xl border-2 transition-all ${sel ? `${f.color} scale-105 shadow-md` : "border-border bg-background hover:scale-105"}`}
+                    aria-label={`${v} - ${f.label}`}
+                  >
+                    <span className="text-3xl leading-none">{f.emoji}</span>
+                    <span className="text-[10px] font-semibold">{f.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex gap-1.5">
+              {Array.from({ length: scale }, (_, k) => k + 1).map((v) => {
+                const sel = vals[i] === v;
+                return (
+                  <button key={v} onClick={() => !isDone && setVals({ ...vals, [i]: v })}
+                    className={`w-9 h-9 rounded-lg text-sm font-semibold border ${sel ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted/30"}`}>
+                    {v}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       ))}
       {!isDone && (
@@ -546,7 +582,7 @@ function SelfAssessmentActivity({ activity, isDone, isSubmitting, onSubmit }: Om
           const avg = Object.values(vals).reduce((a, b) => a + b, 0) / Math.max(1, items.length);
           onSubmit({ payload: { vals }, autoScore: Math.round((avg / scale) * 100) });
         }} disabled={isSubmitting || !allDone}>
-          حفظ التقييم
+          {kidFriendly ? "🎉 أرسل تقييمي" : "حفظ التقييم"}
         </PrimaryBtn>
       )}
     </div>

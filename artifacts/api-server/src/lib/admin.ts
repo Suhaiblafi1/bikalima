@@ -4,8 +4,8 @@ import { eq, sql } from "drizzle-orm";
 
 export const ADMIN_EMAILS = ["info@bikalima.com"];
 
-export type Role = "admin" | "supervisor" | "trainer" | "student" | "sales";
-export const ROLES: readonly Role[] = ["admin", "supervisor", "trainer", "student", "sales"] as const;
+export type Role = "admin" | "supervisor" | "trainer" | "student" | "sales" | "parent";
+export const ROLES: readonly Role[] = ["admin", "supervisor", "trainer", "student", "sales", "parent"] as const;
 
 /** Returns true when the request is authenticated as the hard-pinned master account. */
 export function isMasterAccount(req: Request): boolean {

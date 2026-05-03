@@ -30,6 +30,9 @@ const StudentCertificatesTab = lazy(() => import("@/components/dashboard/student
 const StudentAchievementsTab = lazy(() => import("@/components/dashboard/student-achievements-tab"));
 const StudentEvaluationsTab = lazy(() => import("@/components/dashboard/student-evaluations-tab"));
 const StudentWorkbooksTab = lazy(() => import("@/components/dashboard/student-workbooks-tab"));
+const StudentLiveSessionsTab = lazy(() => import("@/components/dashboard/student-live-sessions-tab"));
+const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
+const StudentFamilyTab = lazy(() => import("@/components/dashboard/student-family-tab"));
 
 function TabSuspenseFallback() {
   return (
@@ -76,6 +79,7 @@ import {
   Download,
   AlertCircle,
   X,
+  MessageCircle,
 } from "lucide-react";
 
 type Lang = "ar" | "en";
@@ -96,6 +100,9 @@ const dashT = {
       skills: "مهاراتي وشاراتي",
       workbooks: "مكتباتي",
       continue: "أكمل التعلم",
+      live: "الحصص المباشرة",
+      messages: "الرسائل",
+      family: "أهلي وأولياء أمري",
     },
     account: {
       heading: "معلومات الحساب",
@@ -173,6 +180,9 @@ const dashT = {
       skills: "Skills & Badges",
       workbooks: "My Workbooks",
       continue: "Continue Learning",
+      live: "Live Sessions",
+      messages: "Messages",
+      family: "My Family",
     },
     account: {
       heading: "Account Information",
@@ -249,9 +259,12 @@ const tabIcons = {
   skills: Sparkles,
   workbooks: BookMarked,
   continue: Play,
+  live: Video,
+  messages: MessageCircle,
+  family: Users,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements" | "skills" | "workbooks" | "continue";
+type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements" | "skills" | "workbooks" | "continue" | "live" | "messages" | "family";
 
 type NextLessonData = {
   courseId: string;
@@ -764,7 +777,7 @@ export default function Dashboard() {
   const readTabFromUrl = (): Tab => {
     if (typeof window === "undefined") return "account";
     const t = new URLSearchParams(window.location.search).get("tab");
-    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule", "skills", "workbooks", "continue"];
+    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule", "skills", "workbooks", "continue", "live", "messages", "family"];
     return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "courses";
   };
   const [activeTab, setActiveTab] = useState<Tab>(readTabFromUrl());
@@ -923,7 +936,7 @@ export default function Dashboard() {
   // Spec order: Courses · Continue · Assignments · Speech Evaluations ·
   // Workbooks · Certificates · Orders · Schedule · Account.
   // Achievements/skills are kept after certificates so badges still show.
-  const allTabs: Tab[] = ["courses", "continue", "assignments", "evaluations", "workbooks", "certificates", "achievements", "skills", "orders", "schedule", "account"];
+  const allTabs: Tab[] = ["courses", "continue", "live", "messages", "assignments", "evaluations", "workbooks", "certificates", "achievements", "skills", "family", "orders", "schedule", "account"];
   // Hide tabs we know are empty from parent-level data. Tabs that fetch
   // their own data (assignments/evaluations/certificates/achievements/
   // skills/schedule/account) stay visible — each renders its own warm
@@ -1306,6 +1319,24 @@ export default function Dashboard() {
           <main className="flex-1 min-w-0">
             {activeTab === "account" && (
               <AccountTab apiBase={apiBase} lang={lang} t={t} user={user} />
+            )}
+
+            {activeTab === "live" && (
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentLiveSessionsTab lang={lang} />
+              </Suspense>
+            )}
+
+            {activeTab === "messages" && (
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentMessagesTab lang={lang} currentUserId={userId} />
+              </Suspense>
+            )}
+
+            {activeTab === "family" && (
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentFamilyTab lang={lang} />
+              </Suspense>
             )}
 
             {activeTab === "courses" && (
