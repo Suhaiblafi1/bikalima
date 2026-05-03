@@ -3,10 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic2, ExternalLink, ChevronDown, ChevronUp, Mail, Phone, Calendar, Send, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mic2, ExternalLink, ChevronDown, ChevronUp, Mail, Phone, Calendar, Send, Save, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
 import { useMe } from "@/hooks/use-me";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import {
   useApiFetch,
   StatusBadge,
@@ -64,6 +65,7 @@ function RubricEditor({
   const [feedback, setFeedback] = useState<string>(evaluation.trainerFeedback ?? "");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const aiEvalEnabled = useFeatureFlag("ai_evaluation");
 
   const numericRubric = useMemo(() => {
     const out: number[] = [];
@@ -257,6 +259,20 @@ function RubricEditor({
       )}
 
       <div className="flex flex-wrap gap-2 justify-end pt-1">
+        {aiEvalEnabled && (
+          <Button
+            variant="outline"
+            size="sm"
+            type="button"
+            disabled
+            title="سيتم تفعيل التقييم بالذكاء الاصطناعي قريباً"
+            className="rounded-full"
+            data-testid={`ai-evaluate-${evaluation.id}`}
+          >
+            <Sparkles className="w-3.5 h-3.5 me-1" />
+            اقتراح تقرير بالذكاء الاصطناعي
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
