@@ -500,6 +500,9 @@ export const activitySubmissionsTable = pgTable(
     mediaUrl: varchar("media_url"),
     // Free-form student-provided answer (text answers, drag mappings, etc.)
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    // Kid-friendly post-activity self-assessment (1=😟 .. 5=🤩). null = not rated.
+    selfAssessmentRating: integer("self_assessment_rating"),
+    selfAssessmentAt: timestamp("self_assessment_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

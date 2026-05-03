@@ -197,6 +197,8 @@ function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
   const [progress, setProgress] = useState<Record<string, { status: SubmissionStatus }>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [ratingFor, setRatingFor] = useState<{ submissionId: string; activityTitle: string } | null>(null);
+  const [savingRating, setSavingRating] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -225,10 +227,30 @@ function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
         body: JSON.stringify(data),
       });
       if (r.ok) {
+        const d = await r.json().catch(() => ({}));
+        const act = acts.find(a => a.id === activityId);
+        if (d?.submission?.id && act && act.type !== "self_assessment") {
+          setRatingFor({ submissionId: d.submission.id, activityTitle: act.titleAr ?? "نشاطك" });
+        }
         await reload();
         await onAnyChange();
       }
     } finally { setSubmitting(null); }
+  };
+
+  const submitRating = async (rating: number) => {
+    if (!ratingFor) return;
+    setSavingRating(true);
+    try {
+      await fetch(`${apiBase}/me/submissions/${ratingFor.submissionId}/self-assessment`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+    } finally {
+      setSavingRating(false);
+      setRatingFor(null);
+    }
   };
 
   if (loading) return null;
@@ -246,6 +268,35 @@ function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
           enrolled={enrolled}
         />
       ))}
+      {ratingFor && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          <div className="bg-white dark:bg-card rounded-2xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
+            <h3 className="font-bold text-lg">كيف كان شعورك؟ ⭐</h3>
+            <p className="text-sm text-muted-foreground">قيّم تجربتك مع: <span className="font-bold">{ratingFor.activityTitle}</span></p>
+            <div className="flex justify-center gap-2 text-3xl">
+              {[
+                { v: 1, e: "😟", l: "صعب" },
+                { v: 2, e: "🙁", l: "غير ممتاز" },
+                { v: 3, e: "😐", l: "متوسط" },
+                { v: 4, e: "🙂", l: "جيد" },
+                { v: 5, e: "🤩", l: "رائع!" },
+              ].map(opt => (
+                <button
+                  key={opt.v}
+                  onClick={() => submitRating(opt.v)}
+                  disabled={savingRating}
+                  aria-label={opt.l}
+                  className="w-14 h-14 rounded-2xl border border-border hover:bg-primary/10 hover:scale-110 transition disabled:opacity-50"
+                >{opt.e}</button>
+              ))}
+            </div>
+            <button
+              onClick={() => setRatingFor(null)}
+              className="text-xs text-muted-foreground underline"
+            >تخطّي</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

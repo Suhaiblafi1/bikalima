@@ -416,6 +416,8 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
       }
       // Cross-activity self-assessment prompt: ask "كيف كان شعورك؟" after every
       // completed activity (skip when the activity *is* a self_assessment).
+      // The actual UI/persistence is the kid-friendly modal in learn.tsx that
+      // posts to POST /me/submissions/:id/self-assessment.
       if (act.type !== "self_assessment") {
         await createNotification({
           userId,
@@ -424,7 +426,7 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
           titleEn: "How did that feel?",
           bodyAr: "قيّم نشاطك الأخير بنجمة واحدة بسيطة 🌟",
           bodyEn: "Rate your last activity with a quick star.",
-          link: `/dashboard?tab=activities&selfAssess=${activityId}`,
+          link: `/courses`,
         });
       }
       if (act.type === "challenge") {
@@ -725,9 +727,19 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
     }
     const lessonNowComplete = await recomputeLessonProgress(sub.userId, sub.lessonId);
     await checkAndAwardBadges(sub.userId);
-    // Little Speaker: passing voice_recording review → "صوت واضح"
+    // Little Speaker: "صوت واضح" after 3 passed voice_recording reviews.
     if (act?.type === "voice_recording") {
-      await awardBadgeIfEligible(sub.userId, "kid_voice_clear", { submissionId: id });
+      const passedVoice = await db.selectDistinct({ activityId: activitySubmissionsTable.activityId })
+        .from(activitySubmissionsTable)
+        .innerJoin(lessonActivitiesTable, eq(lessonActivitiesTable.id, activitySubmissionsTable.activityId))
+        .where(and(
+          eq(activitySubmissionsTable.userId, sub.userId),
+          eq(activitySubmissionsTable.status, "completed"),
+          eq(lessonActivitiesTable.type, "voice_recording"),
+        ));
+      if (passedVoice.length >= 3) {
+        await awardBadgeIfEligible(sub.userId, "kid_voice_clear", { count: passedVoice.length });
+      }
     }
     // Self-assessment prompt after a trainer-passed submission too.
     if (decision === "pass") {
@@ -738,7 +750,7 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
         titleEn: "How did that feel?",
         bodyAr: "قيّم تجربتك بعد مراجعة المدرّب 🌟",
         bodyEn: "Rate how you felt after the review.",
-        link: `/dashboard?tab=activities&selfAssess=${sub.activityId}`,
+        link: `/courses`,
       });
     }
     // "Little Leader": 5 distinct passed activities (any type).
@@ -804,6 +816,32 @@ router.get("/instructor/submissions/:id", async (req: Request, res: Response) =>
 });
 
 // ── ADMIN: badges CRUD (admin only) ────────────────────────────────────
+// Kid-friendly post-activity self-assessment: persist 1..5 rating with the
+// most recent submission for the (user, activity) pair. This is the FE flow
+// triggered immediately after every activity submission (and after a passing
+// trainer review for trainer-reviewed activity types).
+router.post("/me/submissions/:id/self-assessment", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user?.id) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const userId = req.user.id;
+  const { id } = req.params;
+  const rating = Math.round(Number((req.body ?? {}).rating));
+  if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+    res.status(400).json({ error: "rating must be 1..5" }); return;
+  }
+  try {
+    const [sub] = await db.select({ id: activitySubmissionsTable.id, userId: activitySubmissionsTable.userId })
+      .from(activitySubmissionsTable).where(eq(activitySubmissionsTable.id, id)).limit(1);
+    if (!sub || sub.userId !== userId) { res.status(404).json({ error: "Not found" }); return; }
+    await db.update(activitySubmissionsTable)
+      .set({ selfAssessmentRating: rating, selfAssessmentAt: new Date() })
+      .where(eq(activitySubmissionsTable.id, id));
+    res.json({ ok: true, rating });
+  } catch (err) {
+    req.log.error({ err }, "self-assessment save failed");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
 router.get("/admin/badges", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const rows = await db.select().from(badgesTable).orderBy(asc(badgesTable.createdAt));
