@@ -366,35 +366,6 @@ export function WorkbookOrderModal({ workbook, onClose }: Props) {
                   </Button>
                 </div>
 
-                {/* Order summary card (visible BEFORE submitting) */}
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 md:p-6 mb-6">
-                  <p className="font-bold text-foreground mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
-                    <span>🧾</span>{L.orderSummaryTitle}
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">{L.workbookLabel}</div>
-                      <div className="font-semibold text-foreground truncate">{wb.workbook.title}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">{wm.formatLabel}</div>
-                      <div className="font-semibold text-foreground">{formatLabel}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">{L.unitPriceLabel}</div>
-                      <div className="font-semibold text-foreground">{formatPrice(unitPrice)}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground mb-1">{L.qtyLabel}</div>
-                      <div className="font-semibold text-foreground">{quantity}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between border-t border-primary/20 pt-3 mt-4">
-                    <span className="text-sm font-bold text-primary">{wm.totalLabel}</span>
-                    <span className="text-2xl font-bold text-primary">{formatPrice(totalPrice)}</span>
-                  </div>
-                </div>
-
                 {/* Order form */}
                 <div className="bg-secondary/20 rounded-2xl border border-border p-6 md:p-8">
                   <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
@@ -518,6 +489,35 @@ export function WorkbookOrderModal({ workbook, onClose }: Props) {
                       </Button>
                     </div>
                   </form>
+                </div>
+
+                {/* Order summary card (shown BELOW the order form) */}
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 md:p-6 mt-6">
+                  <p className="font-bold text-foreground mb-3 text-sm uppercase tracking-wide flex items-center gap-2">
+                    <span>🧾</span>{L.orderSummaryTitle}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{L.workbookLabel}</div>
+                      <div className="font-semibold text-foreground truncate">{wb.workbook.title}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{wm.formatLabel}</div>
+                      <div className="font-semibold text-foreground">{formatLabel}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{L.unitPriceLabel}</div>
+                      <div className="font-semibold text-foreground">{formatPrice(unitPrice)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{L.qtyLabel}</div>
+                      <div className="font-semibold text-foreground">{quantity}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-primary/20 pt-3 mt-4">
+                    <span className="text-sm font-bold text-primary">{wm.totalLabel}</span>
+                    <span className="text-2xl font-bold text-primary">{formatPrice(totalPrice)}</span>
+                  </div>
                 </div>
               </motion.div>
             )}
