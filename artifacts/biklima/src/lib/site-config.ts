@@ -75,18 +75,17 @@ export const PROGRAM_SLUGS: Record<string, string> = {
   children: "young-speaker",
 };
 
-export const PROGRAM_PAGE_SLUGS: Record<string, string> = {
-  core: "influential-speaker",
-  tot: "trainer-certification",
-  teachers: "teachers",
-  children: "kids",
-};
-
+// Legacy /programs/:slug URLs map to program IDs via this table so we can
+// redirect old shared/bookmarked links to the unified /courses/:slug page.
 export const SLUG_TO_PROGRAM_ID: Record<string, string> = {
   "influential-speaker": "core",
   "trainer-certification": "tot",
   "teachers": "teachers",
   "kids": "children",
+  // Also accept the new /courses slugs so the redirect handler can no-op safely.
+  "certified-trainer": "tot",
+  "educators-program": "teachers",
+  "young-speaker": "children",
 };
 
 export function getBaseUrl(): string {

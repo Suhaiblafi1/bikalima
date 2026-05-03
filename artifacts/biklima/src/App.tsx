@@ -27,7 +27,6 @@ import GraduatesPage from "@/pages/graduates";
 import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import CourseDetailPage from "@/pages/course-detail";
-import ProgramPage from "@/pages/program";
 import LearnPage from "@/pages/learn";
 import CheckoutPage from "@/pages/checkout";
 import ConfirmationPage from "@/pages/confirmation";
@@ -45,6 +44,7 @@ import AdminAutomationsPage from "@/pages/admin/automations";
 import AdminMessageTemplatesPage from "@/pages/admin/message-templates";
 import AdminFunnelsPage from "@/pages/admin/funnels";
 import ConsultationPage from "@/pages/consultation";
+import { PROGRAM_SLUGS, SLUG_TO_PROGRAM_ID } from "@/lib/site-config";
 
 const queryClient = new QueryClient();
 
@@ -154,7 +154,13 @@ function AnimatedRouter() {
           <Route path="/courses">
             {() => <Redirect to="/" />}
           </Route>
-          <Route path="/programs/:slug" component={ProgramPage} />
+          <Route path="/programs/:slug">
+            {(params) => {
+              const programId = SLUG_TO_PROGRAM_ID[params.slug];
+              const newSlug = programId ? PROGRAM_SLUGS[programId] : null;
+              return <Redirect to={newSlug ? `/courses/${newSlug}` : "/#structure"} replace />;
+            }}
+          </Route>
           <Route path="/programs">
             {() => <Redirect to="/#structure" />}
           </Route>

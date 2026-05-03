@@ -60,7 +60,7 @@ import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORD
 import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
-import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
+import { useCurrency, PROGRAM_SLUGS, getBaseUrl } from "@/lib/site-config";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { ProgramQuiz } from "@/components/program-quiz";
@@ -627,7 +627,7 @@ export default function Home() {
                   <div className="bg-card px-6 py-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1 min-w-[200px]">{coreProgram.hook}</p>
                     <div className="flex flex-wrap gap-2 shrink-0">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/courses/${PROGRAM_SLUGS.core}`); }} data-testid="link-program-page-core">
                         {t.structure.viewDetails}
                       </Button>
                       <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`); }}>
@@ -676,7 +676,7 @@ export default function Home() {
                         <CardContent className="p-5 flex flex-col flex-1">
                           <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
                           <div className="flex gap-2 mb-2">
-                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
+                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/courses/${PROGRAM_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
                               {t.structure.viewDetails}
                             </Button>
                             {program.id !== "children" && (

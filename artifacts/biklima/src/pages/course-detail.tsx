@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Layers, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { programs, getLocalizedProgram, RECORDED_PRICES } from "@/programsData";
+import { programs, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_FACTS } from "@/programsData";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import {
@@ -20,6 +20,82 @@ import {
   getCoursePageData,
   type DbLesson,
 } from "./course-components";
+
+interface WorkbookStructureSectionProps {
+  programId: string;
+  workbookTitle: string;
+  workbookDescription: string;
+  lang: "ar" | "en" | "fr";
+}
+
+function WorkbookStructureSection({ programId, workbookTitle, workbookDescription, lang }: WorkbookStructureSectionProps) {
+  const facts = WORKBOOK_FACTS[programId];
+  if (!facts) return null;
+  const isAr = lang === "ar";
+  const sectionsLabel = isAr ? "قسم تدريبي" : "training sections";
+  const unitsLabel = isAr ? "وحدة رئيسية" : "core units";
+  const intro = isAr
+    ? "مبني على كراسة تدريبية مُحكمة، بهيكل واضح وتمارين مُتدرّجة:"
+    : "Built on a rigorously structured training workbook with progressive exercises:";
+  const heading = isAr ? "الكراسة المرافقة" : "The Companion Workbook";
+  const structureHeading = isAr ? "بنية الكراسة" : "Workbook Structure";
+  const langKey = isAr ? "ar" : "en";
+
+  return (
+    <section className="py-10 border-t border-border">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <BookOpen className="w-4 h-4 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold text-foreground">{heading}</h2>
+      </div>
+
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-900 rounded-2xl p-6 flex items-start gap-4 mb-6">
+        <div className="shrink-0 w-12 h-12 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 flex items-center justify-center">
+          <BookOpen className="w-6 h-6" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-serif text-lg md:text-xl font-bold mb-2">{workbookTitle}</h3>
+          <p className="text-sm md:text-base text-foreground/80 leading-relaxed">{workbookDescription}</p>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8">
+        <div className="flex items-center gap-3 mb-4">
+          <Layers className="w-5 h-5 text-primary" />
+          <h3 className="font-serif text-lg md:text-xl font-bold">{structureHeading}</h3>
+        </div>
+        <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">{intro}</p>
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 text-center">
+            <div className="text-3xl md:text-4xl font-black text-primary leading-none mb-1">{facts.sections}</div>
+            <div className="text-[11px] md:text-xs uppercase tracking-wider text-muted-foreground font-semibold">{sectionsLabel}</div>
+          </div>
+          <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 text-center">
+            <div className="text-3xl md:text-4xl font-black text-primary leading-none mb-1">{facts.units.length}</div>
+            <div className="text-[11px] md:text-xs uppercase tracking-wider text-muted-foreground font-semibold">{unitsLabel}</div>
+          </div>
+        </div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 flex items-center gap-2">
+          <FileText className="w-3.5 h-3.5" />
+          {facts.unitsLabel[langKey]}
+        </div>
+        <ol className="space-y-2">
+          {facts.units.map((u, i) => (
+            <li key={i} className="flex items-start gap-3 bg-background/60 border border-border rounded-xl p-3">
+              <span className="shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center">
+                {i + 1}
+              </span>
+              <span className="text-sm md:text-base font-semibold leading-relaxed pt-0.5">
+                {u[langKey]}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
 
 const SLUG_TO_ID: Record<string, string> = {
   "influential-speaker": "core",
@@ -164,6 +240,12 @@ export default function CourseDetailPage() {
                 <SessionsAccordion modules={courseData.modules} dbLessons={dbLessons} lang={lang} />
                 <PracticeSection practicePoints={courseData.practicePoints} lang={lang} />
                 <AccessSection accessSteps={courseData.accessSteps} lang={lang} />
+                <WorkbookStructureSection
+                  programId={programId}
+                  workbookTitle={loc.workbook.title}
+                  workbookDescription={loc.workbook.description}
+                  lang={lang}
+                />
                 <TrainerSection lang={lang} />
                 <FAQSection faqItems={courseData.faqItems} lang={lang} />
                 <FinalCTA
