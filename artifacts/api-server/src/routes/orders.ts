@@ -7,6 +7,7 @@ import {
   enrollmentsTable,
 } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
+import { paymentService, toMinorUnits as toStripeMinorUnits } from "../integrations/paymentService.js";
 
 const router: IRouter = Router();
 
@@ -19,10 +20,31 @@ function buildTransporter() {
   const pass = process.env.SMTP_PASS;
   const port = parseInt(process.env.SMTP_PORT ?? "587", 10);
   if (!host || !user || !pass) {
-    console.warn("[SMTP] Missing config — LMS order emails will not be sent.");
     return null;
   }
   return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+}
+
+function getPublicOrigin(req: Request): string {
+  const fromEnv = process.env.PUBLIC_APP_URL;
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  const domains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (domains.length > 0) return `https://${domains[0]}`;
+  const dev = process.env.REPLIT_DEV_DOMAIN;
+  if (dev) return `https://${dev}`;
+  const proto = (req.headers["x-forwarded-proto"] as string | undefined)?.split(",")[0] ?? req.protocol;
+  const host = (req.headers["x-forwarded-host"] as string | undefined) ?? req.get("host") ?? "localhost";
+  return `${proto}://${host}`;
+}
+
+async function ensureEnrollment(userId: string, courseId: string): Promise<void> {
+  const existing = await db
+    .select({ id: enrollmentsTable.id })
+    .from(enrollmentsTable)
+    .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, courseId)))
+    .limit(1);
+  if (existing.length > 0) return;
+  await db.insert(enrollmentsTable).values({ userId, courseId, status: "active" });
 }
 
 router.post("/orders", async (req: Request, res: Response) => {
@@ -56,7 +78,7 @@ router.post("/orders", async (req: Request, res: Response) => {
     }
 
     const [course] = await db
-      .select({ id: coursesTable.id, titleAr: coursesTable.titleAr, titleEn: coursesTable.titleEn, price: coursesTable.price })
+      .select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr, titleEn: coursesTable.titleEn, price: coursesTable.price, discountPrice: coursesTable.discountPrice })
       .from(coursesTable)
       .where(eq(coursesTable.id, courseId));
 
@@ -66,6 +88,25 @@ router.post("/orders", async (req: Request, res: Response) => {
     }
 
     const userId = req.user.id;
+    const chargeAmount = course.discountPrice ?? course.price ?? 0;
+
+    // If course is free, enroll immediately and skip the payment gateway.
+    if (chargeAmount <= 0) {
+      const [order] = await db.insert(ordersTable).values({
+        userId,
+        courseId: course.id,
+        buyerName: buyerName.trim(),
+        buyerEmail: buyerEmail.toLowerCase().trim(),
+        buyerPhone: buyerPhone.trim(),
+        amount: 0,
+        currency: "JOD",
+        status: "paid",
+        paymentNotes: paymentNotes?.trim() || null,
+      }).returning();
+      await ensureEnrollment(userId, course.id);
+      res.json({ success: true, orderId: order.id, paid: true });
+      return;
+    }
 
     const [order] = await db.insert(ordersTable).values({
       userId,
@@ -73,12 +114,54 @@ router.post("/orders", async (req: Request, res: Response) => {
       buyerName: buyerName.trim(),
       buyerEmail: buyerEmail.toLowerCase().trim(),
       buyerPhone: buyerPhone.trim(),
-      amount: course.price ?? null,
+      amount: chargeAmount,
       currency: "JOD",
       status: "pending",
       paymentNotes: paymentNotes?.trim() || null,
     }).returning();
 
+    // If a payment gateway is configured, create a checkout session and
+    // hand the user off to it. The success page will verify the session
+    // and grant access.
+    if (paymentService.isEnabled()) {
+      const origin = getPublicOrigin(req);
+      const slug = course.slug ?? course.id;
+      const successUrl = `${origin}/confirmation?slug=${encodeURIComponent(slug)}&order_id=${encodeURIComponent(order.id)}&session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${origin}/checkout?slug=${encodeURIComponent(slug)}&payment=cancelled`;
+
+      const result = await paymentService.createCheckoutSession({
+        amount: chargeAmount,
+        currency: "JOD",
+        description: course.titleAr,
+        customerEmail: buyerEmail.toLowerCase().trim(),
+        successUrl,
+        cancelUrl,
+        metadata: {
+          orderId: order.id,
+          courseId: course.id,
+          userId,
+        },
+      });
+
+      if (result.ok) {
+        res.json({ success: true, orderId: order.id, checkoutUrl: result.url, sessionId: result.sessionId });
+        return;
+      }
+
+      req.log.error({ result }, "stripe checkout session creation failed");
+      // Mark the order failed so admins can see it didn't go through.
+      await db.update(ordersTable).set({ status: "failed", updatedAt: new Date() }).where(eq(ordersTable.id, order.id));
+      res.status(502).json({
+        error:
+          result.reason === "not_configured"
+            ? "Payment gateway not configured"
+            : `Payment gateway error: ${result.message}`,
+      });
+      return;
+    }
+
+    // ── Fallback: no payment gateway configured. Keep the legacy
+    // manual-confirmation flow (admin emails, contact-the-buyer).
     const transporter = buildTransporter();
     if (transporter) {
       const adminHtml = `
@@ -117,10 +200,131 @@ router.post("/orders", async (req: Request, res: Response) => {
       ]);
     }
 
-    res.json({ success: true, orderId: order.id });
+    res.json({ success: true, orderId: order.id, manualReview: true });
   } catch (err) {
-    console.error("POST /orders error:", err);
+    req.log.error({ err }, "POST /orders error");
     res.status(500).json({ error: "Failed to submit order" });
+  }
+});
+
+// Verifies a Stripe Checkout session, marks the order paid (idempotent),
+// and creates the enrollment so the student can immediately access the
+// course on the success page.
+//
+// SECURITY: the order id is taken authoritatively from the Stripe session's
+// metadata — never from the client — and we cross-check that the session's
+// metadata user/course and the session's amount/currency match the order
+// we created. This prevents a buyer from paying a cheap order and using
+// that session to mark an expensive order paid.
+router.post("/orders/verify-session", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const sessionId = String(req.body?.sessionId ?? "").trim();
+    if (!sessionId) {
+      res.status(400).json({ error: "Missing sessionId" });
+      return;
+    }
+    if (!paymentService.isEnabled()) {
+      res.status(503).json({ error: "Payment gateway not configured" });
+      return;
+    }
+
+    const status = await paymentService.getSessionStatus(sessionId);
+    if (!status.ok) {
+      res.status(502).json({
+        error:
+          status.reason === "not_configured"
+            ? "Payment gateway not configured"
+            : `Payment verification failed: ${status.message}`,
+      });
+      return;
+    }
+
+    // Authoritative binding: the order id MUST come from the session
+    // metadata that we set when creating the session. Any client-supplied
+    // orderId is ignored.
+    const orderId = status.metadata.orderId;
+    const metaUserId = status.metadata.userId;
+    const metaCourseId = status.metadata.courseId;
+    if (!orderId || !metaUserId || !metaCourseId) {
+      res.status(400).json({ error: "Session is not bound to an order" });
+      return;
+    }
+
+    const [order] = await db
+      .select()
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId));
+
+    if (!order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    // The session metadata must match the order, AND the order must
+    // belong to the calling user. Any mismatch is a tampering attempt.
+    if (
+      order.userId !== metaUserId ||
+      order.courseId !== metaCourseId ||
+      order.userId !== req.user.id
+    ) {
+      req.log.warn(
+        { orderId, sessionId, userId: req.user.id },
+        "verify-session: session/order/user mismatch",
+      );
+      res.status(403).json({ error: "Session does not match this order" });
+      return;
+    }
+
+    if (!status.paid) {
+      if (order.status === "pending") {
+        await db
+          .update(ordersTable)
+          .set({ status: "awaiting_payment", updatedAt: new Date() })
+          .where(eq(ordersTable.id, order.id));
+      }
+      res.json({ paid: false, status: order.status });
+      return;
+    }
+
+    // Verify the amount Stripe actually charged matches what we recorded
+    // for this order (in the same minor-unit convention Stripe uses).
+    if (status.currency && order.currency && status.currency.toLowerCase() !== order.currency.toLowerCase()) {
+      req.log.warn({ orderId, sessionId }, "verify-session: currency mismatch");
+      res.status(409).json({ error: "Payment currency does not match order" });
+      return;
+    }
+    if (status.amountTotal != null && order.amount != null) {
+      const expectedMinor = toStripeMinorUnits(order.amount, order.currency ?? "JOD");
+      if (status.amountTotal !== expectedMinor) {
+        req.log.warn(
+          { orderId, sessionId, expectedMinor, actual: status.amountTotal },
+          "verify-session: amount mismatch",
+        );
+        res.status(409).json({ error: "Payment amount does not match order" });
+        return;
+      }
+    }
+
+    // Mark order paid (idempotent) and ensure the enrollment exists.
+    if (order.status !== "paid") {
+      await db
+        .update(ordersTable)
+        .set({ status: "paid", updatedAt: new Date() })
+        .where(eq(ordersTable.id, order.id));
+    }
+
+    if (order.courseId && order.userId) {
+      await ensureEnrollment(order.userId, order.courseId);
+    }
+
+    res.json({ paid: true, orderId: order.id, courseId: order.courseId });
+  } catch (err) {
+    req.log.error({ err }, "POST /orders/verify-session error");
+    res.status(500).json({ error: "Failed to verify payment" });
   }
 });
 
@@ -150,6 +354,7 @@ async function handleMyOrders(req: Request, res: Response): Promise<void> {
 
     res.json({ orders });
   } catch (err) {
+    req.log.error({ err }, "fetch my orders failed");
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 }

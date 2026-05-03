@@ -21,7 +21,9 @@ export default function CheckoutPage() {
   const isRtl = lang === "ar";
   const apiBase = getApiBase();
 
-  const slug = new URLSearchParams(window.location.search).get("slug") || "";
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("slug") || "";
+  const paymentCancelled = params.get("payment") === "cancelled";
 
   const [courseId, setCourseId] = useState<string>("");
   const [courseTitleAr, setCourseTitleAr] = useState<string>("");
@@ -95,7 +97,15 @@ export default function CheckoutPage() {
         setError(data.error || (lang === "ar" ? "حدث خطأ — يرجى المحاولة مرة أخرى." : "An error occurred — please try again."));
         return;
       }
-      navigate(`/confirmation?slug=${encodeURIComponent(slug)}`);
+      const data = await res.json().catch(() => ({}));
+      // If a payment gateway is configured, the API returns a checkout URL
+      // we should redirect the buyer to. After paying they come back to
+      // /confirmation, which verifies the session and grants access.
+      if (data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      navigate(`/confirmation?slug=${encodeURIComponent(slug)}${data?.orderId ? `&order_id=${encodeURIComponent(data.orderId)}` : ""}${data?.manualReview ? "&manual=1" : ""}`);
     } catch {
       setError(lang === "ar" ? "حدث خطأ في الاتصال — يرجى المحاولة مرة أخرى." : "Connection error — please try again.");
     } finally {
@@ -246,6 +256,15 @@ export default function CheckoutPage() {
                 ? "أكمل بياناتك وسيتواصل معك فريق بكلمة لتأكيد الدفع وتفعيل حسابك."
                 : "Complete your details and the Bikalima team will contact you to confirm payment and activate your account."}
             </p>
+
+            {paymentCancelled && !error && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {lang === "ar"
+                  ? "تم إلغاء عملية الدفع. يمكنك المحاولة مرة أخرى."
+                  : "Payment was cancelled. You can try again."}
+              </div>
+            )}
 
             {error && (
               <div className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 text-destructive text-sm flex items-center gap-2">
