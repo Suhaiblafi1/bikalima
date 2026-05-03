@@ -1168,7 +1168,7 @@ router.get("/admin/trainers", async (req: Request, res: Response) => {
         role: usersTable.role,
       })
       .from(usersTable)
-      .where(sql`${usersTable.role} in ('admin','trainer')`)
+      .where(sql`${usersTable.role} = 'trainer'`)
       .orderBy(asc(usersTable.email));
     res.json({ trainers: rows });
   } catch (err) {
@@ -1199,6 +1199,7 @@ router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response
       trainerFeedback?: unknown;
       trainerScore?: unknown;
       rubricScores?: unknown;
+      rubricNotes?: unknown;
       programRecommendation?: unknown;
       finalReportMd?: unknown;
       assignedTrainerUserId?: unknown;
@@ -1237,6 +1238,29 @@ router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response
       }
       update.rubricScores = nextRubric;
       update.overallScore = computeOverallScore(nextRubric);
+    }
+
+    // ── Rubric notes (per-criterion qualitative feedback) ────────────
+    if (body.rubricNotes !== undefined) {
+      if (body.rubricNotes === null) {
+        update.rubricNotes = null;
+      } else if (typeof body.rubricNotes === "object") {
+        const sanitizedNotes: Record<string, string> = {};
+        for (const [k, v] of Object.entries(body.rubricNotes as Record<string, unknown>)) {
+          if (!(RUBRIC_CRITERIA as readonly string[]).includes(k)) continue;
+          if (v === null || v === "") continue;
+          if (typeof v !== "string") {
+            return res.status(400).json({ error: `Rubric note "${k}" must be a string` });
+          }
+          if (v.length > 2000) {
+            return res.status(400).json({ error: `Rubric note "${k}" too long (max 2000 chars)` });
+          }
+          sanitizedNotes[k] = v;
+        }
+        update.rubricNotes = Object.keys(sanitizedNotes).length > 0 ? sanitizedNotes : null;
+      } else {
+        return res.status(400).json({ error: "rubricNotes must be an object" });
+      }
     }
 
     if (body.programRecommendation !== undefined) {

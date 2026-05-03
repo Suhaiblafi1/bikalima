@@ -46,6 +46,14 @@ function RubricEditor({
     }
     return seed;
   });
+  const [notes, setNotes] = useState<Record<string, string>>(() => {
+    const seed: Record<string, string> = {};
+    for (const c of RUBRIC_CRITERIA) {
+      const v = evaluation.rubricNotes?.[c.key];
+      seed[c.key] = typeof v === "string" ? v : "";
+    }
+    return seed;
+  });
   const [recommendation, setRecommendation] = useState<string>(evaluation.programRecommendation ?? "");
   const [reportMd, setReportMd] = useState<string>(evaluation.finalReportMd ?? "");
   const [trainerId, setTrainerId] = useState<string>(evaluation.assignedTrainerUserId ?? "");
@@ -84,6 +92,7 @@ function RubricEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rubricScores: collectRubricForSubmit(),
+          rubricNotes: notes,
           programRecommendation: recommendation || null,
           finalReportMd: reportMd,
           assignedTrainerUserId: trainerId || null,
@@ -153,27 +162,37 @@ function RubricEditor({
             النتيجة الإجمالية: {liveOverall !== null ? <span className="text-primary text-base">{liveOverall}</span> : <span className="text-muted-foreground">—</span>}
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        <div className="grid sm:grid-cols-2 gap-3">
           {RUBRIC_CRITERIA.map((c) => (
-            <div key={c.key}>
-              <label className="block text-[11px] text-muted-foreground mb-0.5">{c.labelAr}</label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={rubric[c.key] === "" ? "" : String(rubric[c.key])}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw === "") {
-                    setRubric((p) => ({ ...p, [c.key]: "" }));
-                    return;
-                  }
-                  const n = Number(raw);
-                  if (Number.isNaN(n)) return;
-                  setRubric((p) => ({ ...p, [c.key]: Math.max(0, Math.min(100, Math.round(n))) }));
-                }}
-                className="h-8 text-sm"
-                data-testid={`rubric-${c.key}-${evaluation.id}`}
+            <div key={c.key} className="border border-border/60 rounded-lg p-2 bg-muted/10">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label className="text-[11px] font-bold text-muted-foreground">{c.labelAr}</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={rubric[c.key] === "" ? "" : String(rubric[c.key])}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setRubric((p) => ({ ...p, [c.key]: "" }));
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isNaN(n)) return;
+                    setRubric((p) => ({ ...p, [c.key]: Math.max(0, Math.min(100, Math.round(n))) }));
+                  }}
+                  className="h-8 text-sm w-20"
+                  data-testid={`rubric-${c.key}-${evaluation.id}`}
+                />
+              </div>
+              <Textarea
+                value={notes[c.key] ?? ""}
+                onChange={(e) => setNotes((p) => ({ ...p, [c.key]: e.target.value.slice(0, 2000) }))}
+                rows={2}
+                placeholder="ملاحظة قصيرة لهذا المعيار (اختيارية)"
+                className="text-xs"
+                data-testid={`rubric-note-${c.key}-${evaluation.id}`}
               />
             </div>
           ))}

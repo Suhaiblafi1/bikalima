@@ -186,11 +186,11 @@ router.get("/me/speech-evaluations", async (req: Request, res: Response) => {
         videoUrl: speechEvaluationsTable.videoUrl,
         transcriptText: speechEvaluationsTable.transcriptText,
         rubricScores: speechEvaluationsTable.rubricScores,
+        rubricNotes: speechEvaluationsTable.rubricNotes,
         overallScore: speechEvaluationsTable.overallScore,
         programRecommendation: speechEvaluationsTable.programRecommendation,
         finalReportMd: speechEvaluationsTable.finalReportMd,
         reportPublishedAt: speechEvaluationsTable.reportPublishedAt,
-        trainerFeedback: speechEvaluationsTable.trainerFeedback,
         createdAt: speechEvaluationsTable.createdAt,
         updatedAt: speechEvaluationsTable.updatedAt,
       })
@@ -204,7 +204,28 @@ router.get("/me/speech-evaluations", async (req: Request, res: Response) => {
           : eq(speechEvaluationsTable.userId, userId),
       )
       .orderBy(desc(speechEvaluationsTable.createdAt));
-    res.json({ evaluations: rows });
+    // Hide draft evaluator content until the trainer publishes the report.
+    // Pre-publish, only safe summary fields (status, topic, raw inputs) are
+    // returned. `trainerFeedback` is internal and never exposed to learners.
+    const sanitized = rows.map((r) => {
+      const isPublished = !!r.reportPublishedAt;
+      return {
+        id: r.id,
+        status: r.status,
+        speechTopic: r.speechTopic,
+        videoUrl: r.videoUrl,
+        transcriptText: r.transcriptText,
+        rubricScores: isPublished ? r.rubricScores : null,
+        rubricNotes: isPublished ? r.rubricNotes : null,
+        overallScore: isPublished ? r.overallScore : null,
+        programRecommendation: isPublished ? r.programRecommendation : null,
+        finalReportMd: isPublished ? r.finalReportMd : null,
+        reportPublishedAt: r.reportPublishedAt,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      };
+    });
+    res.json({ evaluations: sanitized });
   } catch (err) {
     req.log.error({ err }, "Failed to load my speech evaluations");
     res.status(500).json({ error: "Failed to load evaluations" });

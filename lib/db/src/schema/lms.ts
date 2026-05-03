@@ -176,6 +176,9 @@ export const speechEvaluationsTable = pgTable("speech_evaluations", {
   // admin/trainer when grading. `overallScore` is recomputed server-side
   // from `rubricScores` so it stays consistent.
   rubricScores: jsonb("rubric_scores").$type<Record<string, number>>(),
+  // Optional per-criterion qualitative notes keyed by the same criterion keys
+  // as `rubricScores`. Surfaced to the learner alongside the published score.
+  rubricNotes: jsonb("rubric_notes").$type<Record<string, string>>(),
   overallScore: integer("overall_score"),
   programRecommendation: varchar("program_recommendation").$type<"core" | "tot" | "teachers" | "children" | "none">(),
   finalReportMd: text("final_report_md"),

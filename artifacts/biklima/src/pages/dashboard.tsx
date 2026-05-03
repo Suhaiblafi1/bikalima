@@ -396,11 +396,11 @@ type MyEvaluation = {
   videoUrl: string | null;
   transcriptText: string | null;
   rubricScores: Record<string, number> | null;
+  rubricNotes: Record<string, string> | null;
   overallScore: number | null;
   programRecommendation: "core" | "tot" | "teachers" | "children" | "none" | null;
   finalReportMd: string | null;
   reportPublishedAt: string | null;
-  trainerFeedback: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -582,14 +582,25 @@ function StudentEvaluationsTab({ apiBase, lang }: { apiBase: string; lang: Lang 
                     <>
                       {/* Rubric breakdown */}
                       {ev.rubricScores && (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                           {RUBRIC_LABELS.map((r) => {
                             const v = ev.rubricScores?.[r.key];
                             if (typeof v !== "number") return null;
+                            const note = ev.rubricNotes?.[r.key];
                             return (
-                              <div key={r.key} className="bg-muted/40 rounded-lg p-2 text-center">
-                                <div className="text-muted-foreground">{r[lang]}</div>
-                                <div className="font-bold text-foreground">{v}</div>
+                              <div key={r.key} className="bg-muted/40 rounded-lg p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-muted-foreground">{r[lang]}</span>
+                                  <span className="font-bold text-foreground">{v}</span>
+                                </div>
+                                {note && (
+                                  <p
+                                    className="mt-1 text-[11px] text-muted-foreground leading-relaxed whitespace-pre-wrap"
+                                    data-testid={`rubric-note-${r.key}-${ev.id}`}
+                                  >
+                                    {note}
+                                  </p>
+                                )}
                               </div>
                             );
                           })}

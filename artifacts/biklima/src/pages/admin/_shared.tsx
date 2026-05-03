@@ -249,6 +249,7 @@ export type SpeechEvaluationRecord = {
   trainerScore: number | null;
   trainerFeedback: string | null;
   rubricScores: Record<string, number> | null;
+  rubricNotes: Record<string, string> | null;
   overallScore: number | null;
   programRecommendation: "core" | "tot" | "teachers" | "children" | "none" | null;
   finalReportMd: string | null;
