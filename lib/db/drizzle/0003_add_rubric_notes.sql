@@ -1,0 +1,1 @@
+ALTER TABLE "speech_evaluations" ADD COLUMN "rubric_notes" jsonb;
