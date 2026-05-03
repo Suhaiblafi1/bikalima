@@ -136,7 +136,7 @@ export const SECTION_DEFAULTS: Record<SectionKey, { ar: SectionContent; en: Sect
   },
   "enrollment-form": {
     ar: {
-      heading: "للمؤسسات والمجموعات",
+      heading: "للأفراد والمؤسسات",
       subheading:
         "اطلب عرضًا مخصصًا لمؤسستك أو مجموعتك. للأفراد: استخدم زر «ابدأ التعلم الآن» في الأعلى للتسجيل المباشر في الدورة.",
       submitLabel: "تأكيد الطلب",
