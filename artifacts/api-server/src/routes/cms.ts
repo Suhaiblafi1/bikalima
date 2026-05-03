@@ -8,6 +8,8 @@ import {
 } from "@workspace/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin, requireRole } from "../lib/admin.js";
+import { HOME_SECTION_KEYS, isSectionKey } from "../cms/sections-schema.js";
+import { SECTION_DEFAULTS } from "../cms/sections-defaults.js";
 
 // Allow trainers to also manage the field-media library + analysis (UI shows
 // the page to admin+trainer; keep the API authorization aligned with that).
@@ -39,39 +41,53 @@ async function logActivity(
   }
 }
 
-const HOME_SECTION_KEYS = [
-  "hero",
-  "about-trainer",
-  "why-bikalima",
-  "programs",
-  "events",
-  "gallery-preview",
-  "field-videos",
-  "testimonials",
-  "faq",
-  "enrollment-form",
-  "footer",
-] as const;
-
-type SectionKey = (typeof HOME_SECTION_KEYS)[number];
-function isSectionKey(v: unknown): v is SectionKey {
-  return typeof v === "string" && (HOME_SECTION_KEYS as readonly string[]).includes(v);
-}
-
 // ── HOME PAGE SECTIONS (admin) ──────────────────────────────────────────
+//
+// On first hit per missing key we seed a real DB row from SECTION_DEFAULTS so
+// the public read can pick the content up immediately and admins can edit
+// individual fields without first having to "Save All" every section.
 router.get("/admin/home-sections", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const rows = await db.select().from(homePageSectionsTable);
-    const byKey = new Map(rows.map((r) => [r.sectionKey, r] as const));
-    // Always return the canonical list, filling gaps with defaults so the
-    // admin UI shows every section even if no row exists yet.
+    const existingRows = await db.select().from(homePageSectionsTable);
+    const byKey = new Map(existingRows.map((r) => [r.sectionKey, r] as const));
+
+    const missing = HOME_SECTION_KEYS.filter((k) => !byKey.has(k));
+    if (missing.length > 0) {
+      const seedValues = missing.map((key) => {
+        const idx = HOME_SECTION_KEYS.indexOf(key);
+        const defaults = SECTION_DEFAULTS[key];
+        return {
+          sectionKey: key,
+          contentAr: defaults.ar as Record<string, unknown>,
+          contentEn: defaults.en as Record<string, unknown>,
+          visible: true,
+          orderIndex: idx,
+          status: "published" as const,
+          publishedAt: new Date(),
+        };
+      });
+      // Use onConflictDoNothing so a concurrent seed from another request
+      // does not raise a unique-constraint error.
+      await db
+        .insert(homePageSectionsTable)
+        .values(seedValues)
+        .onConflictDoNothing({ target: homePageSectionsTable.sectionKey });
+      const refreshed = await db.select().from(homePageSectionsTable);
+      byKey.clear();
+      for (const r of refreshed) byKey.set(r.sectionKey, r);
+    }
+
     const sections = HOME_SECTION_KEYS.map((key, idx) => {
       const existing = byKey.get(key);
+      const defaults = SECTION_DEFAULTS[key];
+      // Final safety net: if seed insert was skipped for any reason, still
+      // hand back a synthetic row populated with the defaults so the admin
+      // UI never sees an empty form.
       return existing ?? {
         sectionKey: key,
-        contentAr: null,
-        contentEn: null,
+        contentAr: defaults.ar as Record<string, unknown>,
+        contentEn: defaults.en as Record<string, unknown>,
         visible: true,
         orderIndex: idx,
         status: "published" as const,
@@ -124,13 +140,32 @@ router.put("/admin/home-sections/:key", async (req: Request, res: Response) => {
   }
 });
 
-// Public read (only published + visible)
+// Public read (only published + visible). If the table has not been seeded
+// yet, synthesize default rows inline so the public site never sees an empty
+// CMS payload. The defaults match what the admin seed inserts on first hit.
 router.get("/home-sections", async (_req: Request, res: Response) => {
   try {
     const rows = await db
       .select()
       .from(homePageSectionsTable)
       .where(and(eq(homePageSectionsTable.status, "published"), eq(homePageSectionsTable.visible, true)));
+    if (rows.length === 0) {
+      const synthetic = HOME_SECTION_KEYS.map((key, idx) => {
+        const defaults = SECTION_DEFAULTS[key];
+        return {
+          sectionKey: key,
+          contentAr: defaults.ar as Record<string, unknown>,
+          contentEn: defaults.en as Record<string, unknown>,
+          visible: true,
+          orderIndex: idx,
+          status: "published" as const,
+          publishedAt: null,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      res.json({ sections: synthetic });
+      return;
+    }
     res.json({ sections: rows });
   } catch (err) {
     res.status(500).json({ error: "Failed to load home sections" });

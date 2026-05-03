@@ -73,6 +73,8 @@ import { BeforeAfterSection } from "@/components/before-after-section";
 import { JourneyCta } from "@/components/journey-cta";
 import { EnrollmentWizard } from "@/components/enrollment-wizard";
 import { ExternalLinkDialog } from "@/components/external-link-dialog";
+import { useHomeSections } from "@/hooks/use-home-sections";
+import { getSectionContent } from "@/cms/sections-schema";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
 import imgTedx from "@assets/42267697_10160981969510644_1547980864304971776_n_1774982322778.jpg";
@@ -154,6 +156,7 @@ export default function Home() {
   const { format: formatPrice, currency, currencyKey, setCurrencyKey } = useCurrency();
   const { lang, switchLang, dir } = useLang();
   const t = T[lang];
+  const { cms } = useHomeSections();
   const { user: _user, isLoading: _authLoading, isAuthenticated: _isAuthenticated, logout: _logout } = useAuth();
   const [, navigate] = useLocation();
   const articles = wisdomArticles[lang];
@@ -376,16 +379,16 @@ export default function Home() {
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-6">
                     <span className="w-2 h-2 rounded-full bg-primary" />
-                    {t.hero.badge}
+                    {getSectionContent(cms, "hero", lang, "badgeText", t.hero.badge)}
                   </div>
                   <h1 className="font-serif text-4xl md:text-7xl font-bold leading-[1.15] text-foreground mb-5 md:mb-6">
-                    {t.hero.h1a} <br />
-                    <span className="text-primary">{t.hero.h1b}</span>
+                    {getSectionContent(cms, "hero", lang, "titleLine1", t.hero.h1a)} <br />
+                    <span className="text-primary">{getSectionContent(cms, "hero", lang, "titleLine2", t.hero.h1b)}</span>
                   </h1>
-                  <p className="text-base md:text-2xl text-muted-foreground leading-relaxed mb-7 md:mb-10 max-w-lg">{t.hero.sub}</p>
+                  <p className="text-base md:text-2xl text-muted-foreground leading-relaxed mb-7 md:mb-10 max-w-lg">{getSectionContent(cms, "hero", lang, "subtitle", t.hero.sub)}</p>
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                    <Button size="lg" onClick={() => navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`)} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaPrimary}</Button>
-                    <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{t.hero.ctaSecondary}</Button>
+                    <Button size="lg" onClick={() => navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`)} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaPrimary", t.hero.ctaPrimary)}</Button>
+                    <Button size="lg" variant="outline" onClick={() => scrollTo("structure")} className="rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaSecondary", t.hero.ctaSecondary)}</Button>
                   </div>
                   <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
                     <Quote className="text-primary w-4 h-4 mb-2 opacity-50" />
@@ -455,6 +458,7 @@ export default function Home() {
         </section>
 
         {/* ── TRAINER BIO ── */}
+        {(cms["about-trainer"]?.visible ?? true) && (
         <section className="py-12 md:py-20 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
@@ -465,11 +469,16 @@ export default function Home() {
                 </div>
               </motion.div>
               <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-4">
-                <h2 className="font-serif text-3xl md:text-4xl font-bold">{t.trainerBio.heading}</h2>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold">{getSectionContent(cms, "about-trainer", lang, "heading", t.trainerBio.heading)}</h2>
                 <h3 className="font-serif text-2xl font-bold text-primary">{t.trainerBio.name}</h3>
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{t.trainerBio.title}</p>
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">{getSectionContent(cms, "about-trainer", lang, "subheading", t.trainerBio.title)}</p>
                 {(() => {
-                  const bioPages = t.trainerBio.bio.split("\n\n");
+                  const fallbackPages = t.trainerBio.bio.split("\n\n");
+                  const cmsP1 = getSectionContent(cms, "about-trainer", lang, "bioParagraph1", "");
+                  const cmsP2 = getSectionContent(cms, "about-trainer", lang, "bioParagraph2", "");
+                  const bioPages = cmsP1
+                    ? (cmsP2 ? [cmsP1, cmsP2] : [cmsP1, ...fallbackPages.slice(1)])
+                    : fallbackPages;
                   return (
                     <div className="relative">
                       <AnimatePresence mode="wait">
@@ -508,6 +517,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ── AUTHOR'S MESSAGE ── */}
         <section className="py-14 md:py-24 bg-primary text-primary-foreground relative overflow-hidden">
@@ -532,6 +542,7 @@ export default function Home() {
         </section>
 
         {/* ── WHY BIKLIMA ── */}
+        {(cms["why-bikalima"]?.visible ?? true) && (
         <section className="py-14 bg-secondary/30">
           <div className="container mx-auto px-6">
             <div className="text-center mb-10">
@@ -542,12 +553,18 @@ export default function Home() {
                 transition={{ duration: 0.5 }}
                 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-3"
               >
-                {t.why.heading}
+                {getSectionContent(cms, "why-bikalima", lang, "heading", t.why.heading)}
               </motion.h2>
-              <p className="text-muted-foreground text-base max-w-xl mx-auto">{(t.why as any).sub}</p>
+              <p className="text-muted-foreground text-base max-w-xl mx-auto">{getSectionContent(cms, "why-bikalima", lang, "subheading", (t.why as any).sub)}</p>
             </div>
             <div className="grid md:grid-cols-3 gap-5">
-              {(t.why as any).items.map((item: { title: string; desc: string }, i: number) => (
+              {(() => {
+                const fallback = (t.why as any).items as Array<{ title: string; desc: string }>;
+                const items = [0, 1, 2].map((i) => ({
+                  title: getSectionContent(cms, "why-bikalima", lang, `point${i + 1}Title`, fallback[i]?.title ?? ""),
+                  desc:  getSectionContent(cms, "why-bikalima", lang, `point${i + 1}Body`,  fallback[i]?.desc  ?? ""),
+                }));
+                return items.map((item, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 24 }}
@@ -562,10 +579,12 @@ export default function Home() {
                   <h3 className="font-bold text-foreground text-base mb-2 leading-snug">{item.title}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
                 </motion.div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
         </section>
+        )}
 
         {/* ── STATS ── */}
         <StatsSection />
@@ -578,8 +597,8 @@ export default function Home() {
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6">{t.structure.heading}</h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{t.structure.sub}</p>
+                <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6">{getSectionContent(cms, "programs", lang, "heading", t.structure.heading)}</h2>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{getSectionContent(cms, "programs", lang, "subheading", t.structure.sub)}</p>
               </motion.div>
             </div>
             <div className="flex flex-col items-center">
@@ -693,13 +712,14 @@ export default function Home() {
         <JourneyCta variant="primary" testIdSuffix="after-journey" />
 
         {/* ── UPCOMING EVENTS ── */}
+        {(cms["events"]?.visible ?? true) && (
         <section id="events" className="py-10 bg-gradient-to-b from-primary/5 to-background border-b border-border">
           <div className="container mx-auto px-6">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-6">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
-                <Calendar className="w-4 h-4" />{t.structure.upcomingEventsHeading}
+                <Calendar className="w-4 h-4" />{getSectionContent(cms, "events", lang, "heading", t.structure.upcomingEventsHeading)}
               </div>
-              <p className="text-muted-foreground">{t.structure.upcomingEventsSub}</p>
+              <p className="text-muted-foreground">{getSectionContent(cms, "events", lang, "subheading", t.structure.upcomingEventsSub)}</p>
             </motion.div>
 
             {/* Collaboration strip */}
@@ -833,9 +853,11 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
 
 
         {/* ── GALLERY ── */}
+        {(cms["gallery-preview"]?.visible ?? true) && (
         <section id="gallery" className="py-14 md:py-24 bg-secondary/20 border-y border-border">
           <div className="container mx-auto px-6">
             <div className="text-center mb-10">
@@ -844,8 +866,8 @@ export default function Home() {
                   <span className="w-2 h-2 rounded-full bg-primary" />
                   {lang === "ar" ? "مسيرة بكلمة منذ ٢٠١٩" : "Bikalima's Journey since 2019"}
                 </div>
-                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.gallery.heading}</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.gallery.sub}</p>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{getSectionContent(cms, "gallery-preview", lang, "heading", t.gallery.heading)}</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{getSectionContent(cms, "gallery-preview", lang, "subheading", t.gallery.sub)}</p>
               </motion.div>
             </div>
             {/* Tab buttons */}
@@ -901,8 +923,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ── VIDEOS ── */}
+        {(cms["field-videos"]?.visible ?? true) && (
         <section id="videos" className="py-14 md:py-24 bg-background">
           <div className="container mx-auto px-6">
             <div className="text-center mb-10">
@@ -911,8 +935,8 @@ export default function Home() {
                   <PlayCircle className="w-4 h-4" />
                   {lang === "ar" ? "مكتبة تعليمية شاملة" : "Comprehensive Learning Library"}
                 </div>
-                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
-                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
+                <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{getSectionContent(cms, "field-videos", lang, "heading", t.videos.heading)}</h2>
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{getSectionContent(cms, "field-videos", lang, "subheading", t.videos.sub)}</p>
               </motion.div>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-none snap-x">
@@ -988,19 +1012,21 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
 
         {/* ── TESTIMONIALS ── */}
-        <TestimonialsSection />
+        {(cms["testimonials"]?.visible ?? true) && (<TestimonialsSection />)}
 
         {/* ── REPEATING CTA ── */}
         <JourneyCta testIdSuffix="after-testimonials" />
 
         {/* ── FAQ ── */}
+        {(cms["faq"]?.visible ?? true) && (
         <section className="py-14 md:py-24 bg-background">
           <div className="container mx-auto px-6 max-w-4xl">
             <div className="text-center mb-16">
-              <h2 className="font-serif text-4xl font-bold mb-4">{t.faq.heading}</h2>
-              <p className="text-xl text-muted-foreground">{t.faq.sub}</p>
+              <h2 className="font-serif text-4xl font-bold mb-4">{getSectionContent(cms, "faq", lang, "heading", t.faq.heading)}</h2>
+              <p className="text-xl text-muted-foreground">{getSectionContent(cms, "faq", lang, "subheading", t.faq.sub)}</p>
             </div>
             {(() => {
               const perPage = 5;
@@ -1047,8 +1073,10 @@ export default function Home() {
             })()}
           </div>
         </section>
+        )}
 
         {/* ── ENROLLMENT FORM ── */}
+        {(cms["enrollment-form"]?.visible ?? true) && (
         <section id="enroll" className="py-14 md:py-24 bg-secondary/20 border-t border-border">
           <div className="container mx-auto px-6">
             <div className="max-w-6xl mx-auto bg-card rounded-[2.5rem] shadow-xl overflow-hidden border border-border/50 grid lg:grid-cols-5">
@@ -1196,6 +1224,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        )}
       </main>
 
       <SiteFooter />
