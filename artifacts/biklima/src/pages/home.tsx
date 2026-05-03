@@ -426,44 +426,31 @@ export default function Home() {
         {/* ── TRUST STRIP — early social proof immediately under hero ── */}
         <section
           aria-label="Trust strip"
-          className="py-3 md:py-4 bg-background border-y border-border/60"
+          className="py-5 md:py-7 bg-background border-y border-border/60"
           data-testid="section-trust-strip"
         >
           <div className="container mx-auto px-3 md:px-6">
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs md:text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
-                <Users className="w-4 h-4 text-primary" aria-hidden />
+            <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-base md:text-lg text-muted-foreground">
+              <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
+                <Users className="w-5 h-5 md:w-6 md:h-6 text-primary" aria-hidden />
                 {(t.hero as any).trustStrip?.trainees}
               </span>
               <span className="hidden sm:inline opacity-30">·</span>
-              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
-                <Globe className="w-4 h-4 text-primary" aria-hidden />
+              <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
+                <Globe className="w-5 h-5 md:w-6 md:h-6 text-primary" aria-hidden />
                 {(t.hero as any).trustStrip?.countries}
               </span>
               <span className="hidden sm:inline opacity-30">·</span>
-              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
-                <StarIcon className="w-4 h-4 text-accent fill-accent" aria-hidden />
+              <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
+                <StarIcon className="w-5 h-5 md:w-6 md:h-6 text-accent fill-accent" aria-hidden />
                 {(t.hero as any).trustStrip?.rating}
               </span>
               <span className="hidden sm:inline opacity-30">·</span>
-              <span className="inline-flex items-center gap-1.5 font-semibold text-foreground/80">
-                <GraduationCap className="w-4 h-4 text-primary" aria-hidden />
+              <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
+                <GraduationCap className="w-5 h-5 md:w-6 md:h-6 text-primary" aria-hidden />
                 {(t.hero as any).trustStrip?.years}
               </span>
             </div>
-            {(t.hero as any).institutions && (
-              <div
-                className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] md:text-xs text-muted-foreground/80"
-                data-testid="institutions-strip"
-              >
-                <span className="uppercase tracking-wider font-bold text-foreground/55">
-                  {(t.hero as any).institutions.label}
-                </span>
-                <span className="font-medium text-foreground/70" dir="ltr">
-                  {(t.hero as any).institutions.list}
-                </span>
-              </div>
-            )}
           </div>
         </section>
 
