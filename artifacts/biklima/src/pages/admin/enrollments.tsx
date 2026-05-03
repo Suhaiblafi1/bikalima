@@ -6,6 +6,9 @@ import {
   FileText, GraduationCap, TrendingUp, CheckCircle, XCircle, UserPlus,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
+import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
+import { useMe } from "@/hooks/use-me";
+import { StickyNote } from "lucide-react";
 import {
   useApiFetch, StatusBadge,
   type RequestRecord, type LmsOrderRecord, type StudentProgressRecord, type UserRecord, type CourseRecord,
@@ -15,7 +18,9 @@ type SubTab = "requests" | "lms-orders" | "progress";
 
 export default function AdminEnrollmentsPage() {
   const apiFetch = useApiFetch();
+  const { user: me, role } = useMe();
   const [subTab, setSubTab] = useState<SubTab>("requests");
+  const [openProgressNotes, setOpenProgressNotes] = useState<string | null>(null);
 
   const [requests, setRequests] = useState<RequestRecord[]>([]);
   const [lmsOrders, setLmsOrders] = useState<LmsOrderRecord[]>([]);
@@ -338,6 +343,7 @@ export default function AdminEnrollmentsPage() {
                       <th className="px-3 py-2 font-semibold whitespace-nowrap">الدروس</th>
                       <th className="px-3 py-2 font-semibold whitespace-nowrap">الحالة</th>
                       <th className="px-3 py-2 font-semibold whitespace-nowrap">آخر نشاط</th>
+                      <th className="px-3 py-2 font-semibold text-end">ملاحظاتي</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -345,6 +351,7 @@ export default function AdminEnrollmentsPage() {
                       const fullName = [p.userFirstName, p.userLastName].filter(Boolean).join(" ") || "—";
                       const last = p.lastActivityAt ? new Date(p.lastActivityAt).toLocaleDateString("ar-EG") : "—";
                       return (
+                        <>
                         <tr key={p.enrollmentId} className="border-t border-border hover:bg-muted/20 transition-colors">
                           <td className="px-3 py-2.5">
                             <div className="font-medium">{fullName}</div>
@@ -377,7 +384,31 @@ export default function AdminEnrollmentsPage() {
                             </span>
                           </td>
                           <td className="px-3 py-2.5 whitespace-nowrap text-[11px] text-muted-foreground">{last}</td>
+                          <td className="px-3 py-2.5 text-end">
+                            {(role === "trainer" || role === "admin") && (
+                              <button
+                                onClick={() => setOpenProgressNotes(openProgressNotes === p.userId ? null : p.userId)}
+                                className="inline-flex items-center gap-1 text-xs text-amber-700 hover:text-amber-900"
+                                data-testid={`progress-notes-toggle-${p.userId}`}
+                              >
+                                <StickyNote className="w-3 h-3" />
+                                {openProgressNotes === p.userId ? "إغلاق" : "ملاحظاتي"}
+                              </button>
+                            )}
+                          </td>
                         </tr>
+                        {openProgressNotes === p.userId && (
+                          <tr key={`${p.enrollmentId}-notes`} className="bg-amber-50/30">
+                            <td colSpan={7} className="px-3 py-3">
+                              <TrainerNotesPanel
+                                learnerId={p.userId}
+                                courseId={p.courseId}
+                                currentTrainerId={me?.id ?? null}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </>
                       );
                     })}
                   </tbody>

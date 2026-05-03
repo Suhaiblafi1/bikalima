@@ -15,7 +15,7 @@ import {
   siteSettingsTable,
   speechEvaluationsTable,
 } from "@workspace/db";
-import { db as _db, courseTrainersTable, trainerLearnerNotesTable } from "@workspace/db";
+import { db as _db, courseTrainersTable, trainerLearnerNotesTable, assignmentsTable, assignmentSubmissionsTable, lessonSessionAttendanceTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 import {
   ADMIN_EMAILS,
@@ -1263,6 +1263,93 @@ router.get("/admin/trainers", async (req: Request, res: Response) => {
   } catch (err) {
     req.log.error({ err }, "Failed to list trainers");
     res.status(500).json({ error: "Failed to list trainers" });
+  }
+});
+
+// ===== Trainer overview: pending submissions + lessons needing attendance =====
+router.get("/admin/trainer/overview", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "trainer")) return;
+  try {
+    const scope = await getScopedCourseIds(req);
+    const courseIds = scope ?? [];
+    if (scope !== null && courseIds.length === 0) {
+      return res.json({ pendingSubmissions: [], lessonsNeedingAttendance: [] });
+    }
+
+    const assignmentsQ = db
+      .select({ id: assignmentsTable.id, courseId: assignmentsTable.courseId })
+      .from(assignmentsTable);
+    const trainerAssignments = scope === null
+      ? await assignmentsQ
+      : await assignmentsQ.where(inArray(assignmentsTable.courseId, courseIds));
+    const assignmentIds = trainerAssignments.map((a) => a.id);
+
+    let pendingSubmissions: Array<{
+      id: string; assignmentId: string; assignmentTitleAr: string | null;
+      courseId: string | null; courseTitleAr: string | null;
+      userId: string; userEmail: string | null; userFirstName: string | null; userLastName: string | null;
+      submittedAt: Date | null;
+    }> = [];
+    if (assignmentIds.length > 0) {
+      pendingSubmissions = await db
+        .select({
+          id: assignmentSubmissionsTable.id,
+          assignmentId: assignmentSubmissionsTable.assignmentId,
+          assignmentTitleAr: assignmentsTable.titleAr,
+          courseId: assignmentsTable.courseId,
+          courseTitleAr: coursesTable.titleAr,
+          userId: assignmentSubmissionsTable.userId,
+          userEmail: usersTable.email,
+          userFirstName: usersTable.firstName,
+          userLastName: usersTable.lastName,
+          submittedAt: assignmentSubmissionsTable.submittedAt,
+        })
+        .from(assignmentSubmissionsTable)
+        .innerJoin(assignmentsTable, eq(assignmentSubmissionsTable.assignmentId, assignmentsTable.id))
+        .leftJoin(coursesTable, eq(assignmentsTable.courseId, coursesTable.id))
+        .leftJoin(usersTable, eq(assignmentSubmissionsTable.userId, usersTable.id))
+        .where(and(
+          inArray(assignmentSubmissionsTable.assignmentId, assignmentIds),
+          eq(assignmentSubmissionsTable.status, "submitted"),
+        ))
+        .orderBy(desc(assignmentSubmissionsTable.submittedAt))
+        .limit(50);
+    }
+
+    // Lessons in scope, plus how many attendance entries each has
+    const lessonsQ = db
+      .select({
+        id: lessonsTable.id,
+        titleAr: lessonsTable.titleAr,
+        courseId: lessonsTable.courseId,
+        courseTitleAr: coursesTable.titleAr,
+        sortOrder: lessonsTable.sortOrder,
+      })
+      .from(lessonsTable)
+      .leftJoin(coursesTable, eq(lessonsTable.courseId, coursesTable.id));
+    const lessons = scope === null
+      ? await lessonsQ.orderBy(asc(lessonsTable.sortOrder)).limit(200)
+      : await lessonsQ.where(inArray(lessonsTable.courseId, courseIds)).orderBy(asc(lessonsTable.sortOrder)).limit(200);
+
+    const lessonIds = lessons.map((l) => l.id);
+    const attCounts = lessonIds.length
+      ? await db
+          .select({ lessonId: lessonSessionAttendanceTable.lessonId, c: sql<number>`count(*)::int` })
+          .from(lessonSessionAttendanceTable)
+          .where(inArray(lessonSessionAttendanceTable.lessonId, lessonIds))
+          .groupBy(lessonSessionAttendanceTable.lessonId)
+      : [];
+    const cMap = new Map<string, number>();
+    for (const r of attCounts) cMap.set(r.lessonId, r.c);
+    const lessonsNeedingAttendance = lessons
+      .map((l) => ({ ...l, attendanceCount: cMap.get(l.id) ?? 0 }))
+      .filter((l) => l.attendanceCount === 0)
+      .slice(0, 20);
+
+    res.json({ pendingSubmissions, lessonsNeedingAttendance });
+  } catch (err) {
+    req.log.error({ err }, "Failed to load trainer overview");
+    res.status(500).json({ error: "Failed to load overview" });
   }
 });
 

@@ -5,11 +5,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 import { useApiFetch } from "@/pages/admin/_shared";
-import { BookOpen, GraduationCap, Mic2, ClipboardList, CalendarCheck, Loader2 } from "lucide-react";
+import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
+import {
+  BookOpen, GraduationCap, Mic2, ClipboardList, CalendarCheck, Loader2,
+  FileText, AlertTriangle, StickyNote,
+} from "lucide-react";
 
 type CourseRow = { id: string; titleAr: string; titleEn: string; enrollmentCount: number };
-type EnrollmentRow = { id: string; userId: string; userEmail: string | null; userFirstName: string | null; userLastName: string | null; courseTitle: string | null };
+type EnrollmentRow = { id: string; userId: string; userEmail: string | null; userFirstName: string | null; userLastName: string | null; courseTitle: string | null; courseId: string };
 type SpeechEvalRow = { id: string; fullName: string; status: string; createdAt: string; overallScore: number | null };
+type PendingSubmission = {
+  id: string; assignmentId: string; assignmentTitleAr: string | null;
+  courseId: string | null; courseTitleAr: string | null;
+  userId: string; userEmail: string | null; userFirstName: string | null; userLastName: string | null;
+  submittedAt: string | null;
+};
+type LessonNeedingAttendance = {
+  id: string; titleAr: string; courseId: string; courseTitleAr: string | null;
+};
 
 export default function TrainerDashboardPage() {
   const apiFetch = useApiFetch();
@@ -18,35 +31,32 @@ export default function TrainerDashboardPage() {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [learners, setLearners] = useState<EnrollmentRow[]>([]);
   const [evals, setEvals] = useState<SpeechEvalRow[]>([]);
+  const [pendingSubs, setPendingSubs] = useState<PendingSubmission[]>([]);
+  const [lessonsNeed, setLessonsNeed] = useState<LessonNeedingAttendance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openLearnerNotes, setOpenLearnerNotes] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [c, e, sp] = await Promise.all([
+    const [c, e, sp, ov] = await Promise.all([
       apiFetch("/admin/courses").then((r) => (r.ok ? r.json() : { courses: [] })),
       apiFetch("/admin/enrollments").then((r) => (r.ok ? r.json() : { enrollments: [] })),
       apiFetch("/admin/speech-evaluations").then((r) => (r.ok ? r.json() : { evaluations: [] })),
+      apiFetch("/admin/trainer/overview").then((r) => (r.ok ? r.json() : { pendingSubmissions: [], lessonsNeedingAttendance: [] })),
     ]);
     setCourses(c.courses ?? []);
     setLearners(e.enrollments ?? []);
     setEvals(sp.evaluations ?? []);
+    setPendingSubs(ov.pendingSubmissions ?? []);
+    setLessonsNeed(ov.lessonsNeedingAttendance ?? []);
     setLoading(false);
   }, [apiFetch]);
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user) {
-      navigate("/dashboard", { replace: true });
-      return;
-    }
-    if (role === "admin") {
-      navigate("/admin/overview", { replace: true });
-      return;
-    }
-    if (role !== "trainer") {
-      navigate("/dashboard", { replace: true });
-      return;
-    }
+    if (!user) { navigate("/dashboard", { replace: true }); return; }
+    if (role === "admin") { navigate("/admin/overview", { replace: true }); return; }
+    if (role !== "trainer") { navigate("/dashboard", { replace: true }); return; }
     void load();
   }, [user, role, isLoading, load, navigate]);
 
@@ -74,14 +84,62 @@ export default function TrainerDashboardPage() {
           </div>
         </header>
 
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard icon={<BookOpen className="w-5 h-5" />} label="دوراتي" value={courses.length} />
           <StatCard icon={<GraduationCap className="w-5 h-5" />} label="طلابي" value={uniqueLearners.size} />
+          <StatCard icon={<FileText className="w-5 h-5" />} label="تسليمات بانتظار التقييم" value={pendingSubs.length} testid="stat-pending-subs" />
+          <StatCard icon={<CalendarCheck className="w-5 h-5" />} label="حصص بحاجة تسجيل حضور" value={lessonsNeed.length} testid="stat-lessons-need-attendance" />
           <StatCard icon={<Mic2 className="w-5 h-5" />} label="تقييمات صوتية" value={evals.length} sub={`${pendingEvals.length} بانتظار المراجعة`} />
-          <StatCard icon={<ClipboardList className="w-5 h-5" />} label="إجراءات سريعة" value={"—"} sub="من القائمة الجانبية" />
         </section>
 
         <section className="grid md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <h2 className="font-semibold flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> تسليمات الواجبات بانتظار التقييم</h2>
+              {pendingSubs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">لا توجد تسليمات تنتظر التقييم.</p>
+              ) : (
+                <ul className="space-y-2" data-testid="trainer-pending-submissions">
+                  {pendingSubs.slice(0, 8).map((s) => (
+                    <li key={s.id} className="flex items-center justify-between border border-border rounded-xl px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{s.assignmentTitleAr ?? "واجب"}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {[s.userFirstName, s.userLastName].filter(Boolean).join(" ") || s.userEmail || "طالب"}
+                          {s.courseTitleAr ? ` · ${s.courseTitleAr}` : ""}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => navigate("/admin/assignments")}>تقييم</Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <h2 className="font-semibold flex items-center gap-2"><CalendarCheck className="w-4 h-4 text-primary" /> حصص بحاجة لتسجيل حضور</h2>
+              {lessonsNeed.length === 0 ? (
+                <p className="text-sm text-muted-foreground">لا توجد حصص بحاجة لتسجيل حضور.</p>
+              ) : (
+                <ul className="space-y-2" data-testid="trainer-lessons-need-attendance">
+                  {lessonsNeed.slice(0, 8).map((l) => (
+                    <li key={l.id} className="flex items-center justify-between border border-border rounded-xl px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{l.titleAr}</div>
+                        <div className="text-xs text-muted-foreground truncate">{l.courseTitleAr ?? "—"}</div>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/courses`)}>
+                        <AlertTriangle className="w-3 h-3 ms-1" /> تسجيل
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardContent className="p-4 space-y-3">
               <h2 className="font-semibold flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" /> دوراتي</h2>
@@ -134,16 +192,48 @@ export default function TrainerDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="trainer-learners">
                   <thead className="text-xs text-muted-foreground border-b border-border">
-                    <tr><th className="text-start py-2 px-2">الاسم</th><th className="text-start py-2 px-2">البريد</th><th className="text-start py-2 px-2">الدورة</th></tr>
+                    <tr>
+                      <th className="text-start py-2 px-2">الاسم</th>
+                      <th className="text-start py-2 px-2">البريد</th>
+                      <th className="text-start py-2 px-2">الدورة</th>
+                      <th className="text-end py-2 px-2">ملاحظاتي</th>
+                    </tr>
                   </thead>
                   <tbody>
-                    {Array.from(uniqueLearners.values()).slice(0, 50).map((l) => (
-                      <tr key={l.id} className="border-b border-border/40">
-                        <td className="py-2 px-2">{[l.userFirstName, l.userLastName].filter(Boolean).join(" ") || "—"}</td>
-                        <td className="py-2 px-2 text-muted-foreground">{l.userEmail ?? "—"}</td>
-                        <td className="py-2 px-2">{l.courseTitle ?? "—"}</td>
-                      </tr>
-                    ))}
+                    {Array.from(uniqueLearners.values()).slice(0, 50).map((l) => {
+                      const open = openLearnerNotes === l.userId;
+                      return (
+                        <>
+                          <tr key={l.id} className="border-b border-border/40">
+                            <td className="py-2 px-2">{[l.userFirstName, l.userLastName].filter(Boolean).join(" ") || "—"}</td>
+                            <td className="py-2 px-2 text-muted-foreground">{l.userEmail ?? "—"}</td>
+                            <td className="py-2 px-2">{l.courseTitle ?? "—"}</td>
+                            <td className="py-2 px-2 text-end">
+                              <Button
+                                size="sm"
+                                variant={open ? "default" : "outline"}
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setOpenLearnerNotes(open ? null : l.userId)}
+                                data-testid={`toggle-notes-${l.userId}`}
+                              >
+                                <StickyNote className="w-3 h-3" /> {open ? "إغلاق" : "ملاحظاتي"}
+                              </Button>
+                            </td>
+                          </tr>
+                          {open && (
+                            <tr key={`${l.id}-notes`} className="bg-amber-50/30">
+                              <td colSpan={4} className="py-3 px-2">
+                                <TrainerNotesPanel
+                                  learnerId={l.userId}
+                                  courseId={l.courseId}
+                                  currentTrainerId={user?.id ?? null}
+                                />
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -153,7 +243,7 @@ export default function TrainerDashboardPage() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3 text-sm">
-            <CalendarCheck className="w-5 h-5 text-primary" />
+            <ClipboardList className="w-5 h-5 text-primary" />
             <span>لإدارة الحضور والواجبات والشهادات استخدم القائمة الجانبية في لوحة الإدارة.</span>
             <Button size="sm" variant="outline" className="ms-auto" onClick={() => navigate("/admin/courses")}>فتح لوحة الإدارة</Button>
           </CardContent>
@@ -163,10 +253,10 @@ export default function TrainerDashboardPage() {
   );
 }
 
-function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: number | string; sub?: string }) {
+function StatCard({ icon, label, value, sub, testid }: { icon: React.ReactNode; label: string; value: number | string; sub?: string; testid?: string }) {
   return (
     <Card>
-      <CardContent className="p-4">
+      <CardContent className="p-4" data-testid={testid}>
         <div className="flex items-center gap-2 text-muted-foreground text-xs">{icon}{label}</div>
         <div className="text-2xl font-bold mt-1">{value}</div>
         {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}

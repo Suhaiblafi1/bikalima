@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic2, ExternalLink, ChevronDown, ChevronUp, Mail, Phone, Calendar, Send, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import { AdminLayout } from "./_layout";
+import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
+import { useMe } from "@/hooks/use-me";
 import {
   useApiFetch,
   StatusBadge,
@@ -27,11 +29,13 @@ function RubricEditor({
   trainers,
   onSaved,
   onToast,
+  canReassign,
 }: {
   evaluation: SpeechEvaluationRecord;
   trainers: TrainerOption[];
   onSaved: (next: SpeechEvaluationRecord) => void;
   onToast: (t: Toast) => void;
+  canReassign: boolean;
 }) {
   const apiFetch = useApiFetch();
   const initialRubric: Record<string, number> = {};
@@ -87,18 +91,21 @@ function RubricEditor({
     if (publish) setPublishing(true);
     else setSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        rubricScores: collectRubricForSubmit(),
+        rubricNotes: notes,
+        programRecommendation: recommendation || null,
+        finalReportMd: reportMd,
+        trainerFeedback: feedback,
+        publish,
+      };
+      if (canReassign && (trainerId || "") !== (evaluation.assignedTrainerUserId ?? "")) {
+        payload.assignedTrainerUserId = trainerId || null;
+      }
       const res = await apiFetch(`/admin/speech-evaluations/${evaluation.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rubricScores: collectRubricForSubmit(),
-          rubricNotes: notes,
-          programRecommendation: recommendation || null,
-          finalReportMd: reportMd,
-          assignedTrainerUserId: trainerId || null,
-          trainerFeedback: feedback,
-          publish,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = (await res.json().catch(() => ({}))) as { evaluation?: SpeechEvaluationRecord; error?: string };
       if (!res.ok) {
@@ -123,20 +130,33 @@ function RubricEditor({
       <div className="grid md:grid-cols-2 gap-3">
         <div>
           <label className="block font-bold text-muted-foreground mb-1">المدرّب المسؤول</label>
-          <select
-            value={trainerId}
-            onChange={(e) => setTrainerId(e.target.value)}
-            className="w-full text-xs border rounded p-2 bg-background"
-            data-testid={`trainer-select-${evaluation.id}`}
-          >
-            <option value="">— لم يُعيَّن —</option>
-            {trainers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {(t.firstName || t.lastName) ? `${t.firstName ?? ""} ${t.lastName ?? ""}`.trim() : t.email}
-                {t.role === "admin" ? " (مدير)" : ""}
-              </option>
-            ))}
-          </select>
+          {canReassign ? (
+            <select
+              value={trainerId}
+              onChange={(e) => setTrainerId(e.target.value)}
+              className="w-full text-xs border rounded p-2 bg-background"
+              data-testid={`trainer-select-${evaluation.id}`}
+            >
+              <option value="">— لم يُعيَّن —</option>
+              {trainers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {(t.firstName || t.lastName) ? `${t.firstName ?? ""} ${t.lastName ?? ""}`.trim() : t.email}
+                  {t.role === "admin" ? " (مدير)" : ""}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div
+              className="w-full text-xs border rounded p-2 bg-muted text-muted-foreground"
+              data-testid={`trainer-display-${evaluation.id}`}
+            >
+              {(() => {
+                const t = trainers.find((x) => x.id === trainerId);
+                if (!t) return "أنت";
+                return (t.firstName || t.lastName) ? `${t.firstName ?? ""} ${t.lastName ?? ""}`.trim() : t.email;
+              })()}
+            </div>
+          )}
         </div>
         <div>
           <label className="block font-bold text-muted-foreground mb-1">توصية البرنامج</label>
@@ -265,6 +285,7 @@ function RubricEditor({
 
 export default function AdminSpeechEvaluationsPage() {
   const apiFetch = useApiFetch();
+  const { user: me, role } = useMe();
   const [items, setItems] = useState<SpeechEvaluationRecord[]>([]);
   const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -504,7 +525,16 @@ export default function AdminSpeechEvaluationsPage() {
                               trainers={trainers}
                               onSaved={(next) => setItems((prev) => prev.map((p) => (p.id === next.id ? next : p)))}
                               onToast={setToast}
+                              canReassign={role === "admin"}
                             />
+                            {i.userId && (role === "trainer" || role === "admin") && (
+                              <div className="mt-3">
+                                <TrainerNotesPanel
+                                  learnerId={i.userId}
+                                  currentTrainerId={me?.id ?? null}
+                                />
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )}
