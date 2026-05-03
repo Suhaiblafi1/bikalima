@@ -89,7 +89,7 @@ export default function AdminTasksPage() {
           <h1 className="text-xl font-bold flex items-center gap-2"><ListTodo className="w-5 h-5 text-primary" /> المهام</h1>
           <p className="text-xs text-muted-foreground mt-0.5">{tasks.length} مهمة</p>
         </div>
-        <Button onClick={() => setShowNew(true)} className="bg-primary text-white"><Plus className="w-4 h-4 ml-1" /> مهمة جديدة</Button>
+        <Button onClick={() => setShowNew(true)} className="bg-primary text-white"><Plus className="w-4 h-4 me-1" /> مهمة جديدة</Button>
       </div>
 
       <div className="flex flex-wrap gap-1.5 items-center">

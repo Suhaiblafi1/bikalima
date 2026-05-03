@@ -41,6 +41,19 @@ The project is a pnpm monorepo utilizing TypeScript (v5.9) and Node.js (v24). It
 - **OpenAPI:** `openapi.yaml` defines the API structure.
 - **Orval:** Generates Zod schemas (`lib/api-zod`) for validation and React Query hooks/fetch client (`lib/api-client-react`) for frontend API interaction.
 
+# Quality Assurance
+
+A site-wide button/link/RTL audit was completed (see
+`artifacts/biklima/docs/qa-report.md`). Four RTL property
+violations were fixed (`text-left`, `mr-auto`, `ml-1`, `left-2`
+replaced with their logical equivalents). All `/admin/*` routes are
+guarded by `AdminRoute`, every `target="_blank"` carries a `rel`
+attribute, no `console.log` / `debugger` left in `src/`, header and
+footer links all resolve, and the four follow-up tasks already
+tracked in the project queue (consultation flow on program pages,
+shared workbook structure, cloud uploads, English rubric, duplicate
+lesson video) are explicitly out of scope for this QA pass.
+
 # External Dependencies
 
 - **Database:** PostgreSQL

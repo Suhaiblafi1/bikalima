@@ -286,7 +286,7 @@ export default function AdminOverviewPage() {
           <CardContent className="p-4">
             <h3 className="font-bold text-sm flex items-center gap-2 mb-3">
               <Database className="w-4 h-4 text-primary" /> النظام الأساسي
-              <span className="text-[10px] text-muted-foreground font-normal mr-auto">
+              <span className="text-[10px] text-muted-foreground font-normal ms-auto">
                 صحة الجداول الجديدة (شارات، حضور، سجل تدقيق، أعلام، أثر)
               </span>
             </h3>

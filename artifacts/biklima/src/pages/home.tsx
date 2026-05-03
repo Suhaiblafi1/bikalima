@@ -1028,7 +1028,7 @@ export default function Home() {
                         <motion.div key={globalIdx} className="bg-card border border-border rounded-2xl overflow-hidden">
                           <button
                             onClick={() => setExpandedFaq(expandedFaq === globalIdx ? null : globalIdx)}
-                            className="w-full flex items-center justify-between p-5 cursor-pointer font-serif text-base font-medium hover:bg-secondary/30 transition-colors text-left"
+                            className="w-full flex items-center justify-between p-5 cursor-pointer font-serif text-base font-medium hover:bg-secondary/30 transition-colors text-start"
                           >
                             {faq.q}
                             <motion.span animate={{ rotate: expandedFaq === globalIdx ? 180 : 0 }} transition={{ duration: 0.3 }} className="shrink-0 ms-4">

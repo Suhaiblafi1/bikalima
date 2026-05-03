@@ -388,8 +388,8 @@ export default function AdminCoursesPage() {
               <div>
                 <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">السعر والتصنيف</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="relative"><Input placeholder="السعر (JOD)" value={courseForm.price} onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })} type="number" /><span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
-                  <div className="relative"><Input placeholder="سعر بعد الخصم" value={courseForm.discountPrice} onChange={(e) => setCourseForm({ ...courseForm, discountPrice: e.target.value })} type="number" /><span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
+                  <div className="relative"><Input placeholder="السعر (JOD)" value={courseForm.price} onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })} type="number" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
+                  <div className="relative"><Input placeholder="سعر بعد الخصم" value={courseForm.discountPrice} onChange={(e) => setCourseForm({ ...courseForm, discountPrice: e.target.value })} type="number" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
                   <select value={courseForm.level} onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })} className="border rounded-lg p-2 text-sm bg-background">
                     <option value="">المستوى...</option>
                     <option value="beginner">مبتدئ</option>
