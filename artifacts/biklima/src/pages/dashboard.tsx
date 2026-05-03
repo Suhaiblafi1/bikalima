@@ -1757,50 +1757,49 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [errorToast]);
 
-  // Core fetch — only the 3 endpoints needed to determine tab visibility
-  // (courses, orders for hasOrders, next-lesson for the Continue tab) fire
-  // on every dashboard load. Everything else is split into per-tab effects
-  // below so we don't pay for data the user can't see yet.
-  const fetchCore = useCallback(async () => {
+  // Tab-driven refresh key — bumped by `fetchData()` (called after
+  // mutating actions like completing a lesson) so per-tab effects re-run.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const fetchData = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  // Core fetch — minimum needed to render the dashboard chrome itself
+  // (hero "continue learning" card + sidebar's enrolled-program badges).
+  // Everything tab-specific is fetched on tab activation below.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
     setDataLoading(true);
     let anyFailed = false;
-    try {
-      const [cRes, oRes, nextRes] = await Promise.all([
-        fetch(`${apiBase}/my/courses`, { credentials: "include" }),
-        fetch(`${apiBase}/my/orders`, { credentials: "include" }),
-        fetch(`${apiBase}/my/next-lesson`, { credentials: "include" }),
-      ]);
-      if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); } else anyFailed = true;
-      if (oRes.ok) { const d = await oRes.json(); setLmsOrders(d.orders || []); } else anyFailed = true;
-      if (nextRes.ok) { const d = await nextRes.json(); setNextLesson(d.nextLesson || null); } else anyFailed = true;
-    } catch {
-      anyFailed = true;
-    }
-    if (anyFailed) {
-      setErrorToast(
-        lang === "ar"
-          ? "تعذّر تحميل بعض البيانات. حاول التحديث."
-          : "Some data failed to load. Try refreshing.",
-      );
-    }
-    setDataLoading(false);
-  }, [apiBase, lang]);
-
-  // Backwards-compatible alias used by reload-on-action handlers below.
-  const fetchData = fetchCore;
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    fetchCore();
-  }, [isAuthenticated, fetchCore]);
+    (async () => {
+      try {
+        const [cRes, nextRes] = await Promise.all([
+          fetch(`${apiBase}/my/courses`, { credentials: "include" }),
+          fetch(`${apiBase}/my/next-lesson`, { credentials: "include" }),
+        ]);
+        if (cancelled) return;
+        if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); } else anyFailed = true;
+        if (nextRes.ok) { const d = await nextRes.json(); setNextLesson(d.nextLesson || null); } else anyFailed = true;
+      } catch {
+        anyFailed = true;
+      }
+      if (cancelled) return;
+      if (anyFailed) {
+        setErrorToast(
+          lang === "ar"
+            ? "تعذّر تحميل بعض البيانات. حاول التحديث."
+            : "Some data failed to load. Try refreshing.",
+        );
+      }
+      setDataLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, apiBase, lang, refreshKey]);
 
   // Tab-scoped fetch: enrollment requests + attendance only when the
-  // Courses or Continue tab is the active one. These are the heaviest
-  // payloads and the user almost never opens both back-to-back, so
-  // gating cuts the post-login waterfall.
+  // Courses tab is active. Both are needed only inside the courses pane.
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (activeTab !== "courses" && activeTab !== "continue") return;
+    if (activeTab !== "courses") return;
     let cancelled = false;
     (async () => {
       try {
@@ -1811,30 +1810,48 @@ export default function Dashboard() {
         if (cancelled) return;
         if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
         if (attRes.ok) { const d = await attRes.json(); setAttendanceByCourse(d.byCourse || {}); }
-      } catch { /* warm empty state shown by tab */ }
+      } catch { /* tab renders its own warm empty state */ }
     })();
     return () => { cancelled = true; };
-  }, [isAuthenticated, activeTab, apiBase]);
+  }, [isAuthenticated, activeTab, apiBase, refreshKey]);
 
-  // Tab-scoped fetch: workbook orders + owned workbooks only when the
-  // Workbooks or Orders tab is active.
+  // Tab-scoped fetch: LMS orders only when the Orders tab is active.
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (activeTab !== "workbooks" && activeTab !== "orders") return;
+    if (activeTab !== "orders") return;
     let cancelled = false;
     (async () => {
       try {
-        const [woRes, wbRes] = await Promise.all([
+        const [oRes, woRes] = await Promise.all([
+          fetch(`${apiBase}/my/orders`, { credentials: "include" }),
           fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
-          fetch(`${apiBase}/my/workbooks`, { credentials: "include" }),
         ]);
         if (cancelled) return;
+        if (oRes.ok) { const d = await oRes.json(); setLmsOrders(d.orders || []); }
         if (woRes.ok) { const d = await woRes.json(); setOrders(d.orders || []); }
-        if (wbRes.ok) { const d = await wbRes.json(); setOwnedWorkbooks(d.workbooks || []); }
-      } catch { /* warm empty state shown by tab */ }
+      } catch { /* warm empty state */ }
     })();
     return () => { cancelled = true; };
-  }, [isAuthenticated, activeTab, apiBase]);
+  }, [isAuthenticated, activeTab, apiBase, refreshKey]);
+
+  // Tab-scoped fetch: owned workbooks only when the Workbooks tab is active.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeTab !== "workbooks") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [wbRes, woRes] = await Promise.all([
+          fetch(`${apiBase}/my/workbooks`, { credentials: "include" }),
+          fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
+        ]);
+        if (cancelled) return;
+        if (wbRes.ok) { const d = await wbRes.json(); setOwnedWorkbooks(d.workbooks || []); }
+        if (woRes.ok) { const d = await woRes.json(); setOrders(d.orders || []); }
+      } catch { /* warm empty state */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, activeTab, apiBase, refreshKey]);
 
   // /admin/check only matters for the admin-link UI in the dashboard
   // chrome. Defer it past first paint so the dashboard becomes
@@ -1939,14 +1956,14 @@ export default function Dashboard() {
   // their own data (assignments/evaluations/certificates/achievements/
   // skills/schedule/account) stay visible — each renders its own warm
   // empty state.
-  // Note: `workbooks`, `orders`, and the `requests` part of `courses` are
-  // backed by tab-scoped fetches that don't run until the tab is opened,
-  // so we can't gate sidebar visibility on their data alone — that would
-  // hide the tab forever for a user who has data but hasn't clicked yet.
-  // Each of those tabs renders its own warm empty state when truly empty.
+  // `courses`, `workbooks`, `orders` are kept always-visible because
+  // their detail data is fetched lazily on tab activation. Hiding them
+  // when local data is empty would lock out users whose actual data
+  // simply hasn't been fetched yet (e.g., a user with pending enrollment
+  // requests but no active courses must still be able to open Courses).
+  // Each pane renders its own warm empty state when genuinely empty.
   const tabs: Tab[] = allTabs.filter((tab) => {
     if (tab === "continue") return !!nextLesson;
-    if (tab === "courses") return courses.length > 0;
     return true;
   });
   // While the first fetch is still running we don't yet know which tabs
