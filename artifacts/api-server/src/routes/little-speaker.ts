@@ -144,23 +144,72 @@ router.get("/my/live-sessions", async (req: Request, res: Response) => {
     const courses = await db.select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr })
       .from(coursesTable).where(inArray(coursesTable.id, courseIds));
     const courseMap = new Map(courses.map(c => [c.id, c]));
-    res.json({
-      sessions: sessions.map(s => {
-        const l = lessonMap.get(s.lessonId);
-        const c = l ? courseMap.get(l.courseId) : null;
-        return {
-          ...s,
-          lessonTitleAr: l?.lessonTitleAr ?? null,
-          courseTitleAr: c?.titleAr ?? null,
-          courseSlug: c?.slug ?? null,
-        };
-      }),
-    });
+    res.json({ sessions: sessions.map(s => decorateSession(s, lessonMap, courseMap)) });
   } catch (err) {
     req.log.error({ err }, "list my live-sessions failed");
     res.status(500).json({ error: "Failed" });
   }
 });
+
+// Parent: list upcoming/recent live sessions for all linked children's courses.
+router.get("/parent/live-sessions", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user?.id) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const me = req.user.id;
+  try {
+    const children = (await db.select({ studentUserId: parentLinksTable.studentUserId })
+      .from(parentLinksTable)
+      .where(and(eq(parentLinksTable.parentUserId, me), eq(parentLinksTable.status, "active"))))
+      .map(r => r.studentUserId);
+    if (children.length === 0) { res.json({ sessions: [] }); return; }
+    const enrolls = await db.select({ courseId: enrollmentsTable.courseId, userId: enrollmentsTable.userId })
+      .from(enrollmentsTable).where(inArray(enrollmentsTable.userId, children));
+    const courseIds = Array.from(new Set(enrolls.map(e => e.courseId)));
+    if (courseIds.length === 0) { res.json({ sessions: [] }); return; }
+    const lessons = await db.select({ id: lessonsTable.id, courseId: lessonsTable.courseId, lessonTitleAr: lessonsTable.titleAr })
+      .from(lessonsTable).where(inArray(lessonsTable.courseId, courseIds));
+    const lessonIds = lessons.map(l => l.id);
+    if (lessonIds.length === 0) { res.json({ sessions: [] }); return; }
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const sessions = await db.select().from(liveSessionsTable)
+      .where(and(inArray(liveSessionsTable.lessonId, lessonIds), gte(liveSessionsTable.scheduledAt, cutoff)))
+      .orderBy(asc(liveSessionsTable.scheduledAt))
+      .limit(20);
+    const lessonMap = new Map(lessons.map(l => [l.id, l]));
+    const courses = await db.select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr })
+      .from(coursesTable).where(inArray(coursesTable.id, courseIds));
+    const courseMap = new Map(courses.map(c => [c.id, c]));
+    res.json({ sessions: sessions.map(s => decorateSession(s, lessonMap, courseMap)) });
+  } catch (err) {
+    req.log.error({ err }, "list parent live-sessions failed");
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// Derive a live/ended status from scheduledAt+durationMinutes when the
+// stored status is still "scheduled". Trainers can also flip it manually.
+function decorateSession(
+  s: { lessonId: string; scheduledAt: Date; durationMinutes: number; status: string } & Record<string, unknown>,
+  lessonMap: Map<string, { lessonTitleAr: string | null; courseId: string }>,
+  courseMap: Map<string, { slug: string; titleAr: string }>,
+) {
+  const l = lessonMap.get(s.lessonId);
+  const c = l ? courseMap.get(l.courseId) : null;
+  let derivedStatus = s.status;
+  if (s.status === "scheduled") {
+    const startMs = new Date(s.scheduledAt).getTime();
+    const endMs = startMs + s.durationMinutes * 60_000;
+    const now = Date.now();
+    if (now >= startMs && now <= endMs) derivedStatus = "live";
+    else if (now > endMs) derivedStatus = "ended";
+  }
+  return {
+    ...s,
+    status: derivedStatus,
+    lessonTitleAr: l?.lessonTitleAr ?? null,
+    courseTitleAr: c?.titleAr ?? null,
+    courseSlug: c?.slug ?? null,
+  };
+}
 
 // --- PARENT LINKS (parent ↔ student) ---
 

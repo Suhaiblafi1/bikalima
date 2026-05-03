@@ -6,8 +6,14 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound } from "lucide-react";
 import { lazy, Suspense } from "react";
+import { Video, Clock, ExternalLink } from "lucide-react";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
-const StudentLiveSessionsTab = lazy(() => import("@/components/dashboard/student-live-sessions-tab"));
+
+interface LiveSession {
+  id: string; zoomJoinUrl: string; titleAr: string | null; scheduledAt: string;
+  durationMinutes: number; status: string; recordingUrl: string | null;
+  lessonTitleAr: string | null; courseTitleAr: string | null;
+}
 
 interface ChildSummary {
   linkId: string;
@@ -34,6 +40,7 @@ export default function ParentPage() {
   const { user } = useMe();
   const apiBase = getApiBase();
   const [children, setChildren] = useState<ChildSummary[] | null>(null);
+  const [liveSessions, setLiveSessions] = useState<LiveSession[] | null>(null);
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [redeeming, setRedeeming] = useState(false);
@@ -43,6 +50,10 @@ export default function ParentPage() {
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(d => setChildren(d.children ?? []))
       .catch(() => setChildren([]));
+    fetch(`${apiBase}/parent/live-sessions`, { credentials: "include" })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => setLiveSessions(d.sessions ?? []))
+      .catch(() => setLiveSessions([]));
   }, [apiBase]);
 
   useEffect(() => {
@@ -183,9 +194,51 @@ export default function ParentPage() {
           </CardContent>
         </Card>
 
-        <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
-          <StudentLiveSessionsTab lang="ar" />
-        </Suspense>
+        <Card className="rounded-2xl">
+          <CardContent className="p-6">
+            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+              <Video className="w-5 h-5 text-primary" />
+              الحصص المباشرة لأبنائي
+            </h2>
+            {liveSessions === null ? (
+              <div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>
+            ) : liveSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">لا توجد حصص مباشرة قادمة لأبنائك.</p>
+            ) : (
+              <ul className="space-y-3">
+                {liveSessions.map(s => {
+                  const when = new Date(s.scheduledAt);
+                  const isLive = s.status === "live";
+                  return (
+                    <li key={s.id} className="border border-border rounded-xl p-3 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLive ? "bg-rose-100 text-rose-600" : "bg-primary/10 text-primary"}`}>
+                        <Video className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm">{s.titleAr || s.lessonTitleAr || "حصة مباشرة"}</p>
+                        <p className="text-xs text-muted-foreground">{s.courseTitleAr ?? "—"}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3" />{when.toLocaleString("ar-SA")} • {s.durationMinutes} د
+                        </p>
+                      </div>
+                      {isLive && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white">مباشر الآن</span>}
+                      {s.status !== "ended" && s.status !== "cancelled" && (
+                        <a href={s.zoomJoinUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-xs px-3 py-1.5 rounded-lg bg-primary text-white font-bold inline-flex items-center gap-1.5">
+                          <ExternalLink className="w-3.5 h-3.5" />الانضمام
+                        </a>
+                      )}
+                      {s.recordingUrl && (
+                        <a href={s.recordingUrl} target="_blank" rel="noopener noreferrer"
+                          className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground">التسجيل</a>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
 
         <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
           <StudentMessagesTab lang="ar" currentUserId={user?.id ?? null} />

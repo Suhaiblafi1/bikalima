@@ -395,7 +395,10 @@ export function LessonRow({
   const [showLive, setShowLive] = useState(false);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveSaving, setLiveSaving] = useState(false);
-  const [liveData, setLiveData] = useState<{ joinUrl: string; startsAt: string; durationMinutes: string; provider: string }>({ joinUrl: "", startsAt: "", durationMinutes: "60", provider: "zoom" });
+  const [liveData, setLiveData] = useState<{
+    zoomJoinUrl: string; scheduledAt: string; durationMinutes: string;
+    titleAr: string; recordingUrl: string; status: "scheduled" | "live" | "ended" | "cancelled";
+  }>({ zoomJoinUrl: "", scheduledAt: "", durationMinutes: "60", titleAr: "", recordingUrl: "", status: "scheduled" });
   const [liveMsg, setLiveMsg] = useState("");
 
   const openLive = async () => {
@@ -406,26 +409,33 @@ export function LessonRow({
         const d = await r.json();
         if (d.session) {
           setLiveData({
-            joinUrl: d.session.joinUrl ?? "",
-            startsAt: d.session.startsAt ? new Date(d.session.startsAt).toISOString().slice(0, 16) : "",
+            zoomJoinUrl: d.session.zoomJoinUrl ?? "",
+            scheduledAt: d.session.scheduledAt ? new Date(d.session.scheduledAt).toISOString().slice(0, 16) : "",
             durationMinutes: String(d.session.durationMinutes ?? 60),
-            provider: d.session.provider ?? "zoom",
+            titleAr: d.session.titleAr ?? "",
+            recordingUrl: d.session.recordingUrl ?? "",
+            status: (d.session.status as "scheduled" | "live" | "ended" | "cancelled") ?? "scheduled",
           });
         }
       }
     } finally { setLiveLoading(false); }
   };
   const saveLive = async () => {
+    if (!liveData.zoomJoinUrl.trim() || !liveData.scheduledAt) {
+      setLiveMsg("الرابط والموعد مطلوبان"); return;
+    }
     setLiveSaving(true); setLiveMsg("");
     try {
       const r = await fetch(`${apiBase}/admin/lessons/${lesson.id}/live-session`, {
         method: "PUT", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          joinUrl: liveData.joinUrl.trim() || null,
-          startsAt: liveData.startsAt ? new Date(liveData.startsAt).toISOString() : null,
+          zoomJoinUrl: liveData.zoomJoinUrl.trim(),
+          scheduledAt: new Date(liveData.scheduledAt).toISOString(),
           durationMinutes: parseInt(liveData.durationMinutes) || 60,
-          provider: liveData.provider,
+          titleAr: liveData.titleAr.trim() || null,
+          recordingUrl: liveData.recordingUrl.trim() || null,
+          status: liveData.status,
         }),
       });
       setLiveMsg(r.ok ? "تم الحفظ" : "فشل الحفظ");
@@ -541,25 +551,29 @@ export function LessonRow({
               <div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
             ) : (
               <>
-                <label className="block text-xs font-bold">رابط الانضمام (Zoom/Meet)</label>
-                <Input value={liveData.joinUrl} onChange={(e) => setLiveData({ ...liveData, joinUrl: e.target.value })} placeholder="https://..." dir="ltr" />
+                <label className="block text-xs font-bold">عنوان الجلسة (اختياري)</label>
+                <Input value={liveData.titleAr} onChange={(e) => setLiveData({ ...liveData, titleAr: e.target.value })} placeholder="عنوان الحصة" />
+                <label className="block text-xs font-bold">رابط الانضمام (Zoom)</label>
+                <Input value={liveData.zoomJoinUrl} onChange={(e) => setLiveData({ ...liveData, zoomJoinUrl: e.target.value })} placeholder="https://zoom.us/j/..." dir="ltr" />
                 <label className="block text-xs font-bold">موعد البدء</label>
-                <Input type="datetime-local" value={liveData.startsAt} onChange={(e) => setLiveData({ ...liveData, startsAt: e.target.value })} />
+                <Input type="datetime-local" value={liveData.scheduledAt} onChange={(e) => setLiveData({ ...liveData, scheduledAt: e.target.value })} />
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs font-bold">المدة (دقائق)</label>
                     <Input type="number" value={liveData.durationMinutes} onChange={(e) => setLiveData({ ...liveData, durationMinutes: e.target.value })} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold">المنصّة</label>
-                    <select value={liveData.provider} onChange={(e) => setLiveData({ ...liveData, provider: e.target.value })} className="w-full border rounded p-1.5 text-sm bg-background">
-                      <option value="zoom">Zoom</option>
-                      <option value="meet">Google Meet</option>
-                      <option value="teams">Teams</option>
-                      <option value="other">أخرى</option>
+                    <label className="block text-xs font-bold">الحالة</label>
+                    <select value={liveData.status} onChange={(e) => setLiveData({ ...liveData, status: e.target.value as "scheduled" | "live" | "ended" | "cancelled" })} className="w-full border rounded p-1.5 text-sm bg-background">
+                      <option value="scheduled">مجدولة</option>
+                      <option value="live">مباشرة الآن</option>
+                      <option value="ended">انتهت</option>
+                      <option value="cancelled">ملغاة</option>
                     </select>
                   </div>
                 </div>
+                <label className="block text-xs font-bold">رابط التسجيل (بعد انتهاء الحصة)</label>
+                <Input value={liveData.recordingUrl} onChange={(e) => setLiveData({ ...liveData, recordingUrl: e.target.value })} placeholder="https://..." dir="ltr" />
                 <div className="flex justify-end gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => setShowLive(false)}>إغلاق</Button>
                   <Button size="sm" onClick={saveLive} disabled={liveSaving} className="bg-primary text-white">
