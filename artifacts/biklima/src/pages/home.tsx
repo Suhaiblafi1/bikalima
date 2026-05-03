@@ -819,12 +819,13 @@ export default function Home() {
                         <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
                         {lang === "ar" ? "احجز موعدك الآن" : "Book Your Slot Now"}
                       </a>
-                      <a
-                        href="mailto:info@bikalima.com"
+                      <button
+                        type="button"
+                        onClick={() => navigate("/consultation")}
                         className="inline-flex items-center justify-center gap-2 border-2 border-primary/30 text-primary hover:bg-primary/5 font-bold px-6 py-3 rounded-full text-base transition-colors w-full sm:flex-1"
                       >
                         {t.structure.startHelpContact}
-                      </a>
+                      </button>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
                       {lang === "ar" ? "ستصلك دعوة Zoom ودعوة التقويم تلقائياً فور الحجز" : "Zoom invite & calendar confirmation sent automatically on booking"}
