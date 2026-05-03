@@ -172,7 +172,19 @@ export const speechEvaluationsTable = pgTable("speech_evaluations", {
   transcriptText: text("transcript_text"),
   trainerScore: integer("trainer_score"),
   trainerFeedback: text("trainer_feedback"),
+  // Structured rubric (multi-criteria) and final report. Populated by the
+  // admin/trainer when grading. `overallScore` is recomputed server-side
+  // from `rubricScores` so it stays consistent.
+  rubricScores: jsonb("rubric_scores").$type<Record<string, number>>(),
+  overallScore: integer("overall_score"),
+  programRecommendation: varchar("program_recommendation").$type<"core" | "tot" | "teachers" | "children" | "none">(),
+  finalReportMd: text("final_report_md"),
+  reportPublishedAt: timestamp("report_published_at", { withTimezone: true }),
   assignedTrainerId: varchar("assigned_trainer_id").references(() => instructorsTable.id, { onDelete: "set null" }),
+  // Optional FK to a *user* trainer (separate from `instructors` records,
+  // which are public profiles). Used when assigning the evaluation to an
+  // internal trainer account for scoping.
+  assignedTrainerUserId: varchar("assigned_trainer_user_id").references(() => usersTable.id, { onDelete: "set null" }),
   leadSource: varchar("lead_source"),
   syncStatus: varchar("sync_status").$type<"pending" | "synced" | "error" | "skipped">().default("pending"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),

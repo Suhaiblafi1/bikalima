@@ -21,6 +21,7 @@ import automationsRouter from "./automations";
 import messageTemplatesRouter from "./message-templates";
 import funnelsRouter from "./funnels";
 import growthRouter from "./growth";
+import platformRouter from "./platform";
 
 const router: IRouter = Router();
 
@@ -46,5 +47,6 @@ router.use(automationsRouter);
 router.use(messageTemplatesRouter);
 router.use(funnelsRouter);
 router.use(growthRouter);
+router.use(platformRouter);
 
 export default router;

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Users, BookOpen, GraduationCap, FileText, ShoppingCart, DollarSign,
   Activity, TrendingUp, UserPlus, ListTodo, Zap, KanbanSquare, CalendarCheck,
+  Database,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import {
@@ -54,6 +55,10 @@ export default function AdminOverviewPage() {
   const [activities, setActivities] = useState<AdminActivityRecord[]>([]);
   const [topPrograms, setTopPrograms] = useState<TopProgramRecord[]>([]);
   const [growth, setGrowth] = useState<Growth | null>(null);
+  const [platformHealth, setPlatformHealth] = useState<{
+    badge_definitions: number; user_badges: number; feature_flags: number;
+    audit_log_entries: number; impact_stats_overrides: number; transformation_stories: number;
+  } | null>(null);
 
   const fetchGrowth = useCallback(async () => {
     const r = await apiFetch("/admin/growth/overview");
@@ -86,13 +91,22 @@ export default function AdminOverviewPage() {
     }
   }, [apiFetch]);
 
+  const fetchPlatformHealth = useCallback(async () => {
+    const r = await apiFetch("/admin/platform-health");
+    if (r.ok) {
+      const d = await r.json();
+      setPlatformHealth(d.counts ?? null);
+    }
+  }, [apiFetch]);
+
   useEffect(() => {
     fetchStats();
     fetchRevenue();
     fetchActivities();
     fetchTopPrograms();
     fetchGrowth();
-  }, [fetchStats, fetchRevenue, fetchActivities, fetchTopPrograms, fetchGrowth]);
+    fetchPlatformHealth();
+  }, [fetchStats, fetchRevenue, fetchActivities, fetchTopPrograms, fetchGrowth, fetchPlatformHealth]);
 
   return (
     <AdminLayout activeKey="overview">
@@ -264,6 +278,35 @@ export default function AdminOverviewPage() {
       </div>
 
       <RevenueTab revenue={revenue} onRefresh={fetchRevenue} />
+
+      {/* ─── Platform foundations health ─────────────────────────────── */}
+      {platformHealth && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-bold text-sm flex items-center gap-2 mb-3">
+              <Database className="w-4 h-4 text-primary" /> النظام الأساسي
+              <span className="text-[10px] text-muted-foreground font-normal mr-auto">
+                صحة الجداول الجديدة (شارات، حضور، سجل تدقيق، أعلام، أثر)
+              </span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+              {[
+                { label: "تعريفات الشارات", value: platformHealth.badge_definitions },
+                { label: "شارات الطلاب",   value: platformHealth.user_badges },
+                { label: "أعلام الميزات",  value: platformHealth.feature_flags },
+                { label: "سجل التدقيق",    value: platformHealth.audit_log_entries },
+                { label: "أرقام الأثر",    value: platformHealth.impact_stats_overrides },
+                { label: "قصص التحول",    value: platformHealth.transformation_stories },
+              ].map((s, i) => (
+                <div key={i} className="rounded-lg border bg-muted/20 p-2">
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                  <p className="text-base font-bold leading-none mt-1">{s.value}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </AdminLayout>
   );
 }

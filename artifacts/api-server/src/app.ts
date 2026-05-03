@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
+import { seedPlatformDefaults } from "./lib/platform";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,6 +44,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(authMiddleware);
 
 app.use("/api", router);
+
+// Seed badge definitions, feature flags, and impact-stat placeholders on
+// boot. Runs once per process and is idempotent (ON CONFLICT DO NOTHING).
+seedPlatformDefaults().catch((err) => logger.warn({ err }, "platform seed failed at boot"));
 
 if (process.env.NODE_ENV === "production") {
   const publicDir = path.join(__dirname, "public");
