@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useAuth } from "@workspace/replit-auth-web";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AdminRoute } from "@/components/route-guards";
@@ -95,13 +96,34 @@ function RouteFallback() {
   );
 }
 
+/**
+ * Route-level gate for /dashboard. Reads the shared React Query auth
+ * cache and short-circuits to /login BEFORE the heavy Dashboard chunk
+ * is requested, so anonymous users hitting /dashboard?redirect=... only
+ * download the small login chunk.
+ */
+function DashboardRoute() {
+  const { isLoading, isAuthenticated } = useAuth();
+  if (isLoading) return <RouteFallback />;
+  if (!isAuthenticated) {
+    const currentRedirect = typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("redirect")
+      : null;
+    const target = currentRedirect && currentRedirect.startsWith("/") && !currentRedirect.startsWith("//")
+      ? currentRedirect
+      : "/dashboard";
+    return <Redirect to={`/login?redirect=${encodeURIComponent(target)}`} replace />;
+  }
+  return <Dashboard />;
+}
+
 function AppRouter() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/login" component={LoginPage} />
-        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/dashboard" component={DashboardRoute} />
         <Route path="/admin">
           {() => <Redirect to="/admin/overview" />}
         </Route>

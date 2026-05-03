@@ -36,9 +36,10 @@ export function useAuth(): AuthState {
   const { data: user = null, isPending, isFetching } = useQuery({
     queryKey: AUTH_USER_QUERY_KEY,
     queryFn: fetchAuthUser,
-    // Short stale window covers the typical "burst" of mounts on a single
-    // page navigation without dragging stale identity across tabs.
-    staleTime: 5_000,
+    // 30s stale window dedupes the burst of mounts on a single page
+    // navigation (header, route guards, page itself, etc.) and keeps
+    // SPA navigations from re-fetching identity on every transition.
+    staleTime: 30_000,
     gcTime: 5 * 60_000,
     // Refocus revalidates so a tab that was open during another tab's
     // sign-out picks up the new state quickly. This is cheap because the

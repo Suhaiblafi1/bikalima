@@ -44,9 +44,9 @@ export function useMe(): MeState {
   const { data: user = null, isPending, isFetching } = useQuery({
     queryKey: ME_QUERY_KEY,
     queryFn: fetchMe,
-    // Short stale window: dedupe within a navigation burst, but let
-    // refetch-on-focus pick up role/email-verification changes promptly.
-    staleTime: 5_000,
+    // 30s stale window dedupes per-page mounts; refetch-on-focus picks up
+    // role / email-verification changes promptly across tabs.
+    staleTime: 30_000,
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: true,
     refetchOnMount: false,

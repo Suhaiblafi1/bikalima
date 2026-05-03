@@ -104,7 +104,7 @@ router.get("/auth/user", (req: Request, res: Response) => {
   // reads useAuth(). `Vary: Cookie` keeps cached responses keyed to the
   // session, so a logged-out tab can never see another user's cached
   // identity, and `must-revalidate` forces a 304 round-trip after expiry.
-  res.set("Cache-Control", "private, max-age=5, must-revalidate");
+  res.set("Cache-Control", "private, max-age=10, must-revalidate");
   res.set("Vary", "Cookie");
   res.json(
     GetCurrentAuthUserResponse.parse({

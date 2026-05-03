@@ -1757,26 +1757,22 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [errorToast]);
 
-  const fetchData = useCallback(async () => {
+  // Core fetch — only the 3 endpoints needed to determine tab visibility
+  // (courses, orders for hasOrders, next-lesson for the Continue tab) fire
+  // on every dashboard load. Everything else is split into per-tab effects
+  // below so we don't pay for data the user can't see yet.
+  const fetchCore = useCallback(async () => {
     setDataLoading(true);
     let anyFailed = false;
     try {
-      const [cRes, oRes, rRes, lmsRes, attRes, nextRes, wbRes] = await Promise.all([
+      const [cRes, oRes, nextRes] = await Promise.all([
         fetch(`${apiBase}/my/courses`, { credentials: "include" }),
-        fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
-        fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
         fetch(`${apiBase}/my/orders`, { credentials: "include" }),
-        fetch(`${apiBase}/my/attendance/summary`, { credentials: "include" }),
         fetch(`${apiBase}/my/next-lesson`, { credentials: "include" }),
-        fetch(`${apiBase}/my/workbooks`, { credentials: "include" }),
       ]);
       if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); } else anyFailed = true;
-      if (attRes.ok) { const d = await attRes.json(); setAttendanceByCourse(d.byCourse || {}); }
-      if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders || []); } else anyFailed = true;
-      if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
-      if (lmsRes.ok) { const d = await lmsRes.json(); setLmsOrders(d.orders || []); } else anyFailed = true;
+      if (oRes.ok) { const d = await oRes.json(); setLmsOrders(d.orders || []); } else anyFailed = true;
       if (nextRes.ok) { const d = await nextRes.json(); setNextLesson(d.nextLesson || null); } else anyFailed = true;
-      if (wbRes.ok) { const d = await wbRes.json(); setOwnedWorkbooks(d.workbooks || []); } else anyFailed = true;
     } catch {
       anyFailed = true;
     }
@@ -1790,15 +1786,79 @@ export default function Dashboard() {
     setDataLoading(false);
   }, [apiBase, lang]);
 
+  // Backwards-compatible alias used by reload-on-action handlers below.
+  const fetchData = fetchCore;
+
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchData();
+    if (!isAuthenticated) return;
+    fetchCore();
+  }, [isAuthenticated, fetchCore]);
+
+  // Tab-scoped fetch: enrollment requests + attendance only when the
+  // Courses or Continue tab is the active one. These are the heaviest
+  // payloads and the user almost never opens both back-to-back, so
+  // gating cuts the post-login waterfall.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeTab !== "courses" && activeTab !== "continue") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [rRes, attRes] = await Promise.all([
+          fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
+          fetch(`${apiBase}/my/attendance/summary`, { credentials: "include" }),
+        ]);
+        if (cancelled) return;
+        if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
+        if (attRes.ok) { const d = await attRes.json(); setAttendanceByCourse(d.byCourse || {}); }
+      } catch { /* warm empty state shown by tab */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, activeTab, apiBase]);
+
+  // Tab-scoped fetch: workbook orders + owned workbooks only when the
+  // Workbooks or Orders tab is active.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeTab !== "workbooks" && activeTab !== "orders") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [woRes, wbRes] = await Promise.all([
+          fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
+          fetch(`${apiBase}/my/workbooks`, { credentials: "include" }),
+        ]);
+        if (cancelled) return;
+        if (woRes.ok) { const d = await woRes.json(); setOrders(d.orders || []); }
+        if (wbRes.ok) { const d = await wbRes.json(); setOwnedWorkbooks(d.workbooks || []); }
+      } catch { /* warm empty state shown by tab */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, activeTab, apiBase]);
+
+  // /admin/check only matters for the admin-link UI in the dashboard
+  // chrome. Defer it past first paint so the dashboard becomes
+  // interactive without waiting on an admin probe most users don't need.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const idle = (cb: () => void) => {
+      type IdleScheduler = (cb: IdleRequestCallback) => number;
+      const ric = (window as unknown as { requestIdleCallback?: IdleScheduler }).requestIdleCallback;
+      if (typeof ric === "function") return ric(() => cb());
+      return window.setTimeout(cb, 200);
+    };
+    const handle = idle(() => {
       fetch(`${apiBase}/admin/check`, { credentials: "include" })
         .then(r => r.json())
         .then(d => setIsAdmin(!!d.isAdmin))
         .catch(() => setIsAdmin(false));
-    }
-  }, [isAuthenticated, fetchData, apiBase]);
+    });
+    return () => {
+      const cic = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
+      if (typeof cic === "function") cic(handle);
+      else window.clearTimeout(handle);
+    };
+  }, [isAuthenticated, apiBase]);
 
   const [badgeToast, setBadgeToast] = useState<{ titleAr: string; titleEn: string; icon: string; colorClass: string } | null>(null);
   useEffect(() => {
@@ -1879,18 +1939,20 @@ export default function Dashboard() {
   // their own data (assignments/evaluations/certificates/achievements/
   // skills/schedule/account) stay visible — each renders its own warm
   // empty state.
-  const hasOrders = lmsOrders.length > 0 || orders.length > 0;
+  // Note: `workbooks`, `orders`, and the `requests` part of `courses` are
+  // backed by tab-scoped fetches that don't run until the tab is opened,
+  // so we can't gate sidebar visibility on their data alone — that would
+  // hide the tab forever for a user who has data but hasn't clicked yet.
+  // Each of those tabs renders its own warm empty state when truly empty.
   const tabs: Tab[] = allTabs.filter((tab) => {
     if (tab === "continue") return !!nextLesson;
-    if (tab === "courses") return courses.length > 0 || requests.length > 0;
-    if (tab === "workbooks") return ownedWorkbooks.length > 0;
-    if (tab === "orders") return hasOrders;
+    if (tab === "courses") return courses.length > 0;
     return true;
   });
   // While the first fetch is still running we don't yet know which tabs
   // have data, so always show the static ones to avoid layout flicker.
   const visibleTabs: Tab[] = dataLoading
-    ? allTabs.filter((tab) => !["continue", "workbooks"].includes(tab))
+    ? allTabs.filter((tab) => tab !== "continue")
     : tabs;
 
   // If the current tab becomes hidden (e.g., user landed on ?tab=continue
