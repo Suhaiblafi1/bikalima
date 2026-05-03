@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Certificate } from "@/components/certificate";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { programPageSlugFromCourseSlug } from "@/lib/site-config";
 
 type Lang = "ar" | "en";
 
@@ -278,7 +279,7 @@ export default function LearnPage() {
         if (!isEnrolled) {
           const hasFreePreview = allLessons.some(l => l.isFreePreview);
           if (!hasFreePreview && !pending) {
-            navigate(`/courses/${slug}`);
+            navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`);
             return;
           }
         }
@@ -415,7 +416,7 @@ export default function LearnPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      navigate(`/courses/${slug}`);
+      navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`);
       return;
     }
     setCurrentIdx(idx);
@@ -534,7 +535,7 @@ export default function LearnPage() {
         <div className="text-center">
           <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-xl font-bold mb-4">{t.notFound}</p>
-          <button onClick={() => navigate(`/courses/${slug}`)} className="text-primary underline">{t.back}</button>
+          <button onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)} className="text-primary underline">{t.back}</button>
         </div>
       </AppShell>
     );
@@ -700,7 +701,7 @@ export default function LearnPage() {
       containerClassName="flex flex-col"
       breadcrumb={[
         { label: lang === "ar" ? "البرامج" : "Programs", href: "/#structure" },
-        { label: courseTitle, href: `/courses/${slug}` },
+        { label: courseTitle, href: `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}` },
         { label: lang === "ar" ? "تعلم" : "Learn" },
       ]}
     >
@@ -708,7 +709,7 @@ export default function LearnPage() {
       <div className="sticky top-14 z-30 bg-card border-b border-border shadow-sm">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
-            onClick={() => navigate(`/courses/${slug}`)}
+            onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             <ArrowStart className="w-4 h-4" />
@@ -808,7 +809,7 @@ export default function LearnPage() {
                         <Lock className="w-16 h-16 opacity-40" />
                         <p className="text-lg font-semibold opacity-80">{t.enrollToWatch}</p>
                         <button
-                          onClick={() => navigate(`/courses/${slug}`)}
+                          onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
                           className="px-6 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors"
                         >
                           {t.goToEnroll}
@@ -1004,7 +1005,7 @@ export default function LearnPage() {
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
                   <p className="text-sm text-muted-foreground mb-3">{t.loginToTrack}</p>
                   <button
-                    onClick={() => navigate(`/courses/${slug}`)}
+                    onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
                     className="text-sm text-primary font-semibold underline"
                   >
                     {t.goToEnroll}
@@ -1142,7 +1143,7 @@ export default function LearnPage() {
                     )}
                   </button>
                   <button
-                    onClick={() => navigate(`/courses/${slug}`)}
+                    onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
                     className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
                   >
                     {t.backToCourse}

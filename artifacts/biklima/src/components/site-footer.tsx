@@ -3,7 +3,7 @@ import { MessageCircle, Mail, Linkedin, Instagram } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { T } from "@/translations";
 import { programs, getLocalizedProgram } from "@/programsData";
-import { PROGRAM_SLUGS, getBaseUrl } from "@/lib/site-config";
+import { PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
 
 export function SiteFooter() {
   const { lang } = useLang();
@@ -28,8 +28,8 @@ export function SiteFooter() {
   };
 
   const goToProgram = (programId: string) => {
-    const slug = PROGRAM_SLUGS[programId];
-    if (slug) navigate(`/courses/${slug}`);
+    const slug = PROGRAM_PAGE_SLUGS[programId];
+    if (slug) navigate(`/programs/${slug}`);
   };
 
   return (

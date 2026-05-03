@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { User, Mail, Phone, AlertCircle, ArrowRight, Home } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { programPageSlugFromCourseSlug } from "@/lib/site-config";
 
 function getApiBase() {
   const base = import.meta.env.BASE_URL || "/";
@@ -196,14 +197,14 @@ export default function CheckoutPage() {
       containerClassName=""
       breadcrumb={[
         { label: lang === "ar" ? "البرامج" : "Programs", href: `/#structure` },
-        { label: courseTitle, href: `/courses/${slug}` },
+        { label: courseTitle, href: `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}` },
         { label: lang === "ar" ? "إتمام التسجيل" : "Checkout" },
       ]}
     >
       <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/courses/${slug}`)}
+            onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {isRtl ? <ArrowRight className="w-4 h-4" /> : null}

@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowRight, ArrowLeft, RefreshCw, Calendar, CheckCircle2 } from "lucide-react";
 import { programs, getLocalizedProgram } from "../programsData";
-import { PROGRAM_SLUGS } from "@/lib/site-config";
+import { PROGRAM_PAGE_SLUGS } from "@/lib/site-config";
 import type { Lang } from "../translations";
 
 type ProgramId = "core" | "tot" | "teachers" | "children";
@@ -346,7 +346,7 @@ export function ProgramQuiz({ lang }: { lang: Lang }) {
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button
                           size="lg"
-                          onClick={() => navigate(`/courses/${PROGRAM_SLUGS[winningProgram.id]}`)}
+                          onClick={() => navigate(`/programs/${PROGRAM_PAGE_SLUGS[winningProgram.id]}`)}
                           className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
                           data-testid="button-quiz-start-program"
                         >

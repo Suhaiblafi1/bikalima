@@ -78,21 +78,33 @@ export const PROGRAM_SLUGS: Record<string, string> = {
   children: "young-speaker",
 };
 
-// Inverse of PROGRAM_SLUGS: current /courses/:slug → program id.
+// Inverse of PROGRAM_SLUGS: legacy /courses/:slug → program id (kept so old
+// shared/bookmarked /courses/... links can redirect to the canonical
+// /programs/:slug page).
 export const COURSE_SLUG_TO_PROGRAM_ID: Record<string, string> = Object.fromEntries(
   Object.entries(PROGRAM_SLUGS).map(([id, slug]) => [slug, id]),
 );
 
-// Legacy /programs/:slug URLs map to program IDs via this table so we can
-// redirect old shared/bookmarked links to the unified /courses/:slug page.
-// It accepts both the current slugs (so the redirect handler can no-op
-// safely) and the historical ones.
+// Canonical /programs/:slug URLs (this is the public detail page now).
+export const PROGRAM_PAGE_SLUGS: Record<string, string> = {
+  core: "influential-speaker",
+  tot: "trainer-certification",
+  teachers: "teachers",
+  children: "kids",
+};
+
+// Maps any /programs/:slug — current or historical — to its program id so
+// the program page can resolve both forms and old links keep working.
 export const SLUG_TO_PROGRAM_ID: Record<string, string> = {
   ...COURSE_SLUG_TO_PROGRAM_ID,
-  "trainer-certification": "tot",
-  "teachers": "teachers",
-  "kids": "children",
+  ...Object.fromEntries(Object.entries(PROGRAM_PAGE_SLUGS).map(([id, slug]) => [slug, id])),
 };
+
+// Helper: given a /courses/:slug, return the matching /programs/:slug page slug.
+export function programPageSlugFromCourseSlug(courseSlug: string): string | null {
+  const id = COURSE_SLUG_TO_PROGRAM_ID[courseSlug];
+  return id ? PROGRAM_PAGE_SLUGS[id] ?? null : null;
+}
 
 export function getBaseUrl(): string {
   return import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
