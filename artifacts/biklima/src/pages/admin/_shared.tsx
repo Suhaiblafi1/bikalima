@@ -248,10 +248,45 @@ export type SpeechEvaluationRecord = {
   transcriptText: string | null;
   trainerScore: number | null;
   trainerFeedback: string | null;
+  rubricScores: Record<string, number> | null;
+  overallScore: number | null;
+  programRecommendation: "core" | "tot" | "teachers" | "children" | "none" | null;
+  finalReportMd: string | null;
+  reportPublishedAt: string | null;
+  assignedTrainerUserId: string | null;
   status: "pending" | "in_review" | "completed" | "converted" | "cancelled";
   leadSource: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export const RUBRIC_CRITERIA: { key: string; labelAr: string }[] = [
+  { key: "clarity", labelAr: "الوضوح" },
+  { key: "voice", labelAr: "الصوت" },
+  { key: "body_language", labelAr: "لغة الجسد" },
+  { key: "structure", labelAr: "الهيكلة" },
+  { key: "content", labelAr: "المحتوى" },
+  { key: "presence", labelAr: "الحضور" },
+  { key: "impact", labelAr: "التأثير" },
+];
+
+export const PROGRAM_RECOMMENDATION_OPTIONS: {
+  value: "core" | "tot" | "teachers" | "children" | "none";
+  labelAr: string;
+}[] = [
+  { value: "core", labelAr: "البرنامج الأساسي (Core)" },
+  { value: "tot", labelAr: "تدريب المدربين (ToT)" },
+  { value: "teachers", labelAr: "المعلمين والمربين" },
+  { value: "children", labelAr: "الأطفال" },
+  { value: "none", labelAr: "لا توصية محددة" },
+];
+
+export type TrainerOption = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
 };
 
 export const SPEECH_EVAL_STATUS_OPTIONS: { value: SpeechEvaluationRecord["status"]; labelAr: string }[] = [

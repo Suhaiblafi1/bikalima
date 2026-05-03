@@ -1,34 +1,282 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic2, ExternalLink, ChevronDown, ChevronUp, Mail, Phone, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Mic2, ExternalLink, ChevronDown, ChevronUp, Mail, Phone, Calendar, Send, Save, CheckCircle2, AlertCircle } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import {
   useApiFetch,
   StatusBadge,
   SPEECH_EVAL_STATUS_OPTIONS,
+  RUBRIC_CRITERIA,
+  PROGRAM_RECOMMENDATION_OPTIONS,
   type SpeechEvaluationRecord,
+  type TrainerOption,
 } from "./_shared";
+
+type Toast = { type: "success" | "error"; text: string } | null;
+
+function average(values: number[]): number {
+  if (values.length === 0) return 0;
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+}
+
+function RubricEditor({
+  evaluation,
+  trainers,
+  onSaved,
+  onToast,
+}: {
+  evaluation: SpeechEvaluationRecord;
+  trainers: TrainerOption[];
+  onSaved: (next: SpeechEvaluationRecord) => void;
+  onToast: (t: Toast) => void;
+}) {
+  const apiFetch = useApiFetch();
+  const initialRubric: Record<string, number> = {};
+  for (const c of RUBRIC_CRITERIA) {
+    const v = evaluation.rubricScores?.[c.key];
+    if (typeof v === "number") initialRubric[c.key] = v;
+  }
+  const [rubric, setRubric] = useState<Record<string, number | "">>(() => {
+    const seed: Record<string, number | ""> = {};
+    for (const c of RUBRIC_CRITERIA) {
+      seed[c.key] = typeof initialRubric[c.key] === "number" ? initialRubric[c.key] : "";
+    }
+    return seed;
+  });
+  const [recommendation, setRecommendation] = useState<string>(evaluation.programRecommendation ?? "");
+  const [reportMd, setReportMd] = useState<string>(evaluation.finalReportMd ?? "");
+  const [trainerId, setTrainerId] = useState<string>(evaluation.assignedTrainerUserId ?? "");
+  const [feedback, setFeedback] = useState<string>(evaluation.trainerFeedback ?? "");
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  const numericRubric = useMemo(() => {
+    const out: number[] = [];
+    for (const c of RUBRIC_CRITERIA) {
+      const v = rubric[c.key];
+      if (typeof v === "number" && Number.isFinite(v)) out.push(v);
+    }
+    return out;
+  }, [rubric]);
+
+  const liveOverall = numericRubric.length === RUBRIC_CRITERIA.length ? average(numericRubric) : null;
+  const rubricComplete = numericRubric.length === RUBRIC_CRITERIA.length;
+  const canPublish = rubricComplete && reportMd.trim().length > 0 && !!recommendation;
+
+  const collectRubricForSubmit = (): Record<string, number> => {
+    const out: Record<string, number> = {};
+    for (const c of RUBRIC_CRITERIA) {
+      const v = rubric[c.key];
+      if (typeof v === "number" && Number.isFinite(v)) out[c.key] = v;
+    }
+    return out;
+  };
+
+  const submit = async (publish: boolean) => {
+    if (publish) setPublishing(true);
+    else setSaving(true);
+    try {
+      const res = await apiFetch(`/admin/speech-evaluations/${evaluation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rubricScores: collectRubricForSubmit(),
+          programRecommendation: recommendation || null,
+          finalReportMd: reportMd,
+          assignedTrainerUserId: trainerId || null,
+          trainerFeedback: feedback,
+          publish,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { evaluation?: SpeechEvaluationRecord; error?: string };
+      if (!res.ok) {
+        onToast({ type: "error", text: data.error ?? "تعذّر الحفظ" });
+        return;
+      }
+      if (data.evaluation) onSaved(data.evaluation);
+      onToast({ type: "success", text: publish ? "تم نشر التقرير" : "تم الحفظ" });
+    } catch {
+      onToast({ type: "error", text: "حدث خطأ غير متوقع" });
+    } finally {
+      setSaving(false);
+      setPublishing(false);
+    }
+  };
+
+  const isPublished = !!evaluation.reportPublishedAt;
+
+  return (
+    <div className="space-y-4 text-xs" data-testid={`rubric-editor-${evaluation.id}`}>
+      {/* Trainer assignment + recommendation */}
+      <div className="grid md:grid-cols-2 gap-3">
+        <div>
+          <label className="block font-bold text-muted-foreground mb-1">المدرّب المسؤول</label>
+          <select
+            value={trainerId}
+            onChange={(e) => setTrainerId(e.target.value)}
+            className="w-full text-xs border rounded p-2 bg-background"
+            data-testid={`trainer-select-${evaluation.id}`}
+          >
+            <option value="">— لم يُعيَّن —</option>
+            {trainers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {(t.firstName || t.lastName) ? `${t.firstName ?? ""} ${t.lastName ?? ""}`.trim() : t.email}
+                {t.role === "admin" ? " (مدير)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block font-bold text-muted-foreground mb-1">توصية البرنامج</label>
+          <select
+            value={recommendation}
+            onChange={(e) => setRecommendation(e.target.value)}
+            className="w-full text-xs border rounded p-2 bg-background"
+            data-testid={`recommendation-select-${evaluation.id}`}
+          >
+            <option value="">— اختر التوصية —</option>
+            {PROGRAM_RECOMMENDATION_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.labelAr}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Rubric grid */}
+      <div className="bg-background border border-border rounded-lg p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-bold text-muted-foreground">المعايير (٠–١٠٠)</div>
+          <div className="font-bold text-foreground">
+            النتيجة الإجمالية: {liveOverall !== null ? <span className="text-primary text-base">{liveOverall}</span> : <span className="text-muted-foreground">—</span>}
+          </div>
+        </div>
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          {RUBRIC_CRITERIA.map((c) => (
+            <div key={c.key}>
+              <label className="block text-[11px] text-muted-foreground mb-0.5">{c.labelAr}</label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={rubric[c.key] === "" ? "" : String(rubric[c.key])}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setRubric((p) => ({ ...p, [c.key]: "" }));
+                    return;
+                  }
+                  const n = Number(raw);
+                  if (Number.isNaN(n)) return;
+                  setRubric((p) => ({ ...p, [c.key]: Math.max(0, Math.min(100, Math.round(n))) }));
+                }}
+                className="h-8 text-sm"
+                data-testid={`rubric-${c.key}-${evaluation.id}`}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Final report */}
+      <div>
+        <label className="block font-bold text-muted-foreground mb-1">
+          التقرير النهائي (Markdown){isPublished && <span className="ms-2 text-emerald-700">— منشور</span>}
+        </label>
+        <Textarea
+          value={reportMd}
+          onChange={(e) => setReportMd(e.target.value.slice(0, 50000))}
+          rows={8}
+          placeholder="اكتب تقريرًا واضحًا للمتدرّب: نقاط القوة، فرص التحسين، الخطوات التالية..."
+          className="text-sm font-mono"
+          data-testid={`report-md-${evaluation.id}`}
+        />
+        <div className="text-[11px] text-muted-foreground text-end mt-1">{reportMd.length} / 50000</div>
+      </div>
+
+      {/* Internal trainer feedback (private) */}
+      <div>
+        <label className="block font-bold text-muted-foreground mb-1">ملاحظات داخلية (لا تظهر للمتدرّب)</label>
+        <Textarea
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          rows={2}
+          className="text-sm"
+          data-testid={`feedback-${evaluation.id}`}
+        />
+      </div>
+
+      {!canPublish && (
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            للنشر يجب: إكمال كل المعايير السبعة، اختيار توصية البرنامج، وكتابة التقرير النهائي.
+          </span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 justify-end pt-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => submit(false)}
+          disabled={saving || publishing}
+          className="rounded-full"
+          data-testid={`save-eval-${evaluation.id}`}
+        >
+          <Save className="w-3.5 h-3.5 me-1" />
+          {saving ? "جارٍ الحفظ..." : "حفظ مسوّدة"}
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => submit(true)}
+          disabled={!canPublish || saving || publishing}
+          className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          data-testid={`publish-eval-${evaluation.id}`}
+        >
+          {isPublished ? <CheckCircle2 className="w-3.5 h-3.5 me-1" /> : <Send className="w-3.5 h-3.5 me-1" />}
+          {publishing ? "جارٍ النشر..." : isPublished ? "إعادة نشر" : "نشر التقرير"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminSpeechEvaluationsPage() {
   const apiFetch = useApiFetch();
   const [items, setItems] = useState<SpeechEvaluationRecord[]>([]);
+  const [trainers, setTrainers] = useState<TrainerOption[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<Toast>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const res = await apiFetch("/admin/speech-evaluations");
-    if (res.ok) {
-      const data = (await res.json()) as { evaluations: SpeechEvaluationRecord[] };
+    const [evalRes, trainerRes] = await Promise.all([
+      apiFetch("/admin/speech-evaluations"),
+      apiFetch("/admin/trainers"),
+    ]);
+    if (evalRes.ok) {
+      const data = (await evalRes.json()) as { evaluations: SpeechEvaluationRecord[] };
       setItems(data.evaluations);
+    }
+    if (trainerRes.ok) {
+      const data = (await trainerRes.json()) as { trainers: TrainerOption[] };
+      setTrainers(data.trainers);
     }
     setLoading(false);
   }, [apiFetch]);
 
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const updateStatus = async (id: string, status: SpeechEvaluationRecord["status"]) => {
     const res = await apiFetch(`/admin/speech-evaluations/${id}`, {
@@ -36,7 +284,12 @@ export default function AdminSpeechEvaluationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (res.ok) setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
+    if (res.ok) {
+      setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
+      setToast({ type: "success", text: "تم تحديث الحالة" });
+    } else {
+      setToast({ type: "error", text: "تعذّر تحديث الحالة" });
+    }
   };
 
   const filtered = useMemo(
@@ -89,6 +342,19 @@ export default function AdminSpeechEvaluationsPage() {
             </div>
           </div>
 
+          {toast && (
+            <div
+              className={`mb-3 px-3 py-2 rounded-lg text-xs font-medium border ${
+                toast.type === "success"
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                  : "bg-red-50 text-red-800 border-red-200"
+              }`}
+              data-testid="admin-eval-toast"
+            >
+              {toast.text}
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -97,6 +363,7 @@ export default function AdminSpeechEvaluationsPage() {
                   <th className="text-start py-2 px-3 font-medium">الاسم</th>
                   <th className="text-start py-2 px-3 font-medium">التواصل</th>
                   <th className="text-start py-2 px-3 font-medium">المحتوى</th>
+                  <th className="text-start py-2 px-3 font-medium">النتيجة</th>
                   <th className="text-start py-2 px-3 font-medium">الحالة</th>
                   <th className="text-start py-2 px-3 font-medium">التاريخ</th>
                   <th className="text-end py-2 px-3 font-medium">إجراء</th>
@@ -104,10 +371,10 @@ export default function AdminSpeechEvaluationsPage() {
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">جاري التحميل...</td></tr>
+                  <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">جاري التحميل...</td></tr>
                 )}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">لا توجد طلبات</td></tr>
+                  <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">لا توجد طلبات</td></tr>
                 )}
                 {!loading && filtered.map((i) => {
                   const isOpen = expandedId === i.id;
@@ -149,13 +416,27 @@ export default function AdminSpeechEvaluationsPage() {
                               </a>
                             )}
                             {i.transcriptText && (
-                              <span className="inline-flex items-center gap-1">
-                                نص ({i.transcriptText.length} حرف)
-                              </span>
+                              <span className="inline-flex items-center gap-1">نص ({i.transcriptText.length} حرف)</span>
                             )}
                           </div>
                         </td>
-                        <td className="py-2 px-3 align-top"><StatusBadge status={i.status} /></td>
+                        <td className="py-2 px-3 align-top">
+                          {typeof i.overallScore === "number" ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                              {i.overallScore}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-3 align-top">
+                          <StatusBadge status={i.status} />
+                          {i.reportPublishedAt && (
+                            <div className="mt-1 inline-flex items-center gap-1 text-[10px] text-emerald-700">
+                              <CheckCircle2 className="w-3 h-3" />منشور
+                            </div>
+                          )}
+                        </td>
                         <td className="py-2 px-3 text-xs text-muted-foreground align-top whitespace-nowrap">
                           <span className="inline-flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -178,45 +459,33 @@ export default function AdminSpeechEvaluationsPage() {
                       {isOpen && (
                         <tr key={`${i.id}-detail`} className="border-b border-border/30 bg-muted/10">
                           <td />
-                          <td colSpan={6} className="py-3 px-3">
-                            <div className="grid md:grid-cols-2 gap-4 text-xs">
-                              {i.transcriptText && (
-                                <div className="md:col-span-2">
-                                  <div className="font-bold text-muted-foreground mb-1">نص الخطاب</div>
-                                  <div className="bg-background border border-border rounded-lg p-3 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-                                    {i.transcriptText}
+                          <td colSpan={7} className="py-3 px-3">
+                            {(i.transcriptText || i.videoUrl) && (
+                              <div className="mb-3 grid md:grid-cols-2 gap-3 text-xs">
+                                {i.transcriptText && (
+                                  <div className="md:col-span-2">
+                                    <div className="font-bold text-muted-foreground mb-1">نص الخطاب الأصلي</div>
+                                    <div className="bg-background border border-border rounded-lg p-3 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+                                      {i.transcriptText}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                              {i.videoUrl && (
-                                <div>
-                                  <div className="font-bold text-muted-foreground mb-1">رابط الفيديو</div>
-                                  <a href={i.videoUrl} target="_blank" rel="noreferrer" className="break-all text-primary hover:underline">
-                                    {i.videoUrl}
-                                  </a>
-                                </div>
-                              )}
-                              {i.notes && !i.transcriptText && (
-                                <div className="md:col-span-2">
-                                  <div className="font-bold text-muted-foreground mb-1">ملاحظات</div>
-                                  <div className="bg-background border border-border rounded-lg p-3 whitespace-pre-wrap">
-                                    {i.notes}
+                                )}
+                                {i.videoUrl && (
+                                  <div>
+                                    <div className="font-bold text-muted-foreground mb-1">رابط الفيديو</div>
+                                    <a href={i.videoUrl} target="_blank" rel="noreferrer" className="break-all text-primary hover:underline">
+                                      {i.videoUrl}
+                                    </a>
                                   </div>
-                                </div>
-                              )}
-                              {i.leadSource && (
-                                <div>
-                                  <div className="font-bold text-muted-foreground mb-1">المصدر</div>
-                                  <div>{i.leadSource}</div>
-                                </div>
-                              )}
-                              {i.trainerFeedback && (
-                                <div className="md:col-span-2">
-                                  <div className="font-bold text-muted-foreground mb-1">تقييم المدرّب</div>
-                                  <div className="bg-background border border-border rounded-lg p-3 whitespace-pre-wrap">{i.trainerFeedback}</div>
-                                </div>
-                              )}
-                            </div>
+                                )}
+                              </div>
+                            )}
+                            <RubricEditor
+                              evaluation={i}
+                              trainers={trainers}
+                              onSaved={(next) => setItems((prev) => prev.map((p) => (p.id === next.id ? next : p)))}
+                              onToast={setToast}
+                            />
                           </td>
                         </tr>
                       )}

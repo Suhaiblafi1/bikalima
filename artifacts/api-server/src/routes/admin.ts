@@ -27,6 +27,7 @@ import {
   type Role,
 } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
+import { recordAuditLog, awardBadgeIfEligible } from "../lib/platform.js";
 
 const router: IRouter = Router();
 
@@ -1121,6 +1122,61 @@ router.patch("/admin/settings", async (req: Request, res: Response) => {
 const SPEECH_EVAL_STATUSES = ["pending", "in_review", "completed", "converted", "cancelled"] as const;
 type SpeechEvalStatus = (typeof SPEECH_EVAL_STATUSES)[number];
 
+const RUBRIC_CRITERIA = [
+  "clarity",
+  "voice",
+  "body_language",
+  "structure",
+  "content",
+  "presence",
+  "impact",
+] as const;
+type RubricCriterion = (typeof RUBRIC_CRITERIA)[number];
+
+const PROGRAM_RECOMMENDATIONS = ["core", "tot", "teachers", "children", "none"] as const;
+type ProgramRecommendation = (typeof PROGRAM_RECOMMENDATIONS)[number];
+
+function computeOverallScore(rubric: Record<string, number> | null | undefined): number | null {
+  if (!rubric) return null;
+  const vals: number[] = [];
+  for (const k of RUBRIC_CRITERIA) {
+    const v = rubric[k];
+    if (typeof v === "number" && Number.isFinite(v)) vals.push(Math.max(0, Math.min(100, v)));
+  }
+  if (vals.length === 0) return null;
+  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+}
+
+function isRubricComplete(rubric: Record<string, number> | null | undefined): boolean {
+  if (!rubric) return false;
+  return RUBRIC_CRITERIA.every((k) => {
+    const v = rubric[k];
+    return typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 100;
+  });
+}
+
+// List trainers + admins (used by the speech evaluation assignment dropdown)
+router.get("/admin/trainers", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const rows = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        firstName: usersTable.firstName,
+        lastName: usersTable.lastName,
+        role: usersTable.role,
+      })
+      .from(usersTable)
+      .where(sql`${usersTable.role} in ('admin','trainer')`)
+      .orderBy(asc(usersTable.email));
+    res.json({ trainers: rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list trainers");
+    res.status(500).json({ error: "Failed to list trainers" });
+  }
+});
+
 router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
@@ -1142,29 +1198,178 @@ router.patch("/admin/speech-evaluations/:id", async (req: Request, res: Response
       status?: unknown;
       trainerFeedback?: unknown;
       trainerScore?: unknown;
+      rubricScores?: unknown;
+      programRecommendation?: unknown;
+      finalReportMd?: unknown;
+      assignedTrainerUserId?: unknown;
+      publish?: unknown;
     };
     const update: Record<string, unknown> = {};
+
     if (typeof body.status === "string") {
       if (!SPEECH_EVAL_STATUSES.includes(body.status as SpeechEvalStatus)) {
         return res.status(400).json({ error: `Invalid status. Allowed: ${SPEECH_EVAL_STATUSES.join(", ")}` });
       }
       update.status = body.status;
     }
-    if (typeof body.trainerFeedback === "string") {
-      update.trainerFeedback = body.trainerFeedback;
-    }
+    if (typeof body.trainerFeedback === "string") update.trainerFeedback = body.trainerFeedback;
     if (typeof body.trainerScore === "number" && Number.isFinite(body.trainerScore)) {
       update.trainerScore = body.trainerScore;
     }
+
+    // ── Rubric (validated) ───────────────────────────────────────────
+    let nextRubric: Record<string, number> | null | undefined = undefined;
+    if (body.rubricScores !== undefined) {
+      if (body.rubricScores === null) {
+        nextRubric = null;
+      } else if (typeof body.rubricScores === "object") {
+        const sanitized: Record<string, number> = {};
+        for (const [k, v] of Object.entries(body.rubricScores as Record<string, unknown>)) {
+          if (!(RUBRIC_CRITERIA as readonly string[]).includes(k)) continue;
+          if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 100) {
+            return res.status(400).json({ error: `Rubric score "${k}" must be a number between 0 and 100` });
+          }
+          sanitized[k as RubricCriterion] = Math.round(v);
+        }
+        nextRubric = sanitized;
+      } else {
+        return res.status(400).json({ error: "rubricScores must be an object" });
+      }
+      update.rubricScores = nextRubric;
+      update.overallScore = computeOverallScore(nextRubric);
+    }
+
+    if (body.programRecommendation !== undefined) {
+      if (body.programRecommendation === null || body.programRecommendation === "") {
+        update.programRecommendation = null;
+      } else if (
+        typeof body.programRecommendation === "string" &&
+        (PROGRAM_RECOMMENDATIONS as readonly string[]).includes(body.programRecommendation)
+      ) {
+        update.programRecommendation = body.programRecommendation as ProgramRecommendation;
+      } else {
+        return res.status(400).json({
+          error: `programRecommendation must be one of ${PROGRAM_RECOMMENDATIONS.join(", ")}`,
+        });
+      }
+    }
+
+    if (body.finalReportMd !== undefined) {
+      if (body.finalReportMd === null || body.finalReportMd === "") {
+        update.finalReportMd = null;
+      } else if (typeof body.finalReportMd === "string") {
+        if (body.finalReportMd.length > 50000) {
+          return res.status(400).json({ error: "finalReportMd too long (max 50000 chars)" });
+        }
+        update.finalReportMd = body.finalReportMd;
+      } else {
+        return res.status(400).json({ error: "finalReportMd must be a string" });
+      }
+    }
+
+    if (body.assignedTrainerUserId !== undefined) {
+      if (body.assignedTrainerUserId === null || body.assignedTrainerUserId === "") {
+        update.assignedTrainerUserId = null;
+      } else if (typeof body.assignedTrainerUserId === "string") {
+        // Verify the user exists and is a trainer/admin
+        const [trainer] = await db
+          .select({ id: usersTable.id, role: usersTable.role })
+          .from(usersTable)
+          .where(eq(usersTable.id, body.assignedTrainerUserId));
+        if (!trainer) return res.status(400).json({ error: "Trainer user not found" });
+        if (trainer.role !== "trainer" && trainer.role !== "admin") {
+          return res.status(400).json({ error: "Assigned user must be a trainer or admin" });
+        }
+        update.assignedTrainerUserId = trainer.id;
+      } else {
+        return res.status(400).json({ error: "assignedTrainerUserId must be a string or null" });
+      }
+    }
+
+    // Need to know the existing record for publish gating + audit log diff
+    const [existing] = await db
+      .select()
+      .from(speechEvaluationsTable)
+      .where(eq(speechEvaluationsTable.id, req.params.id));
+    if (!existing) return res.status(404).json({ error: "Not found" });
+
+    // ── Publish gating ────────────────────────────────────────────────
+    const publishRequested = body.publish === true;
+    let isPublishingNow = false;
+    if (publishRequested) {
+      const effectiveRubric =
+        nextRubric !== undefined ? nextRubric : (existing.rubricScores as Record<string, number> | null);
+      const effectiveReport =
+        update.finalReportMd !== undefined ? (update.finalReportMd as string | null) : existing.finalReportMd;
+      const effectiveRecommendation =
+        update.programRecommendation !== undefined
+          ? (update.programRecommendation as string | null)
+          : existing.programRecommendation;
+      if (!isRubricComplete(effectiveRubric)) {
+        return res.status(400).json({
+          error: "Cannot publish: rubric is incomplete (all 7 criteria must have a score 0-100)",
+        });
+      }
+      if (!effectiveReport || !effectiveReport.trim()) {
+        return res.status(400).json({ error: "Cannot publish: finalReportMd is required" });
+      }
+      if (!effectiveRecommendation) {
+        return res.status(400).json({ error: "Cannot publish: programRecommendation is required" });
+      }
+      isPublishingNow = !existing.reportPublishedAt;
+      update.reportPublishedAt = new Date();
+      update.status = "completed";
+    }
+
     if (Object.keys(update).length === 0) {
       return res.status(400).json({ error: "No valid fields to update" });
     }
+
     const [updated] = await db
       .update(speechEvaluationsTable)
       .set(update)
       .where(eq(speechEvaluationsTable.id, req.params.id))
       .returning();
     if (!updated) return res.status(404).json({ error: "Not found" });
+
+    // ── Audit log + badges on first publish ──────────────────────────
+    if (isPublishingNow) {
+      try {
+        await recordAuditLog({
+          actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+          action: "speech_evaluation.published",
+          entityType: "speech_evaluation",
+          entityId: updated.id,
+          description: `Published evaluation for ${updated.fullName}`,
+          before: { reportPublishedAt: existing.reportPublishedAt, status: existing.status },
+          after: {
+            reportPublishedAt: updated.reportPublishedAt,
+            status: updated.status,
+            overallScore: updated.overallScore,
+            programRecommendation: updated.programRecommendation,
+          },
+        });
+      } catch (err) {
+        req.log.warn({ err }, "audit log failed for evaluation publish");
+      }
+      if (updated.userId) {
+        try {
+          await awardBadgeIfEligible(updated.userId, "evaluation_published", {
+            evaluationId: updated.id,
+            overallScore: updated.overallScore,
+          });
+          if (typeof updated.overallScore === "number" && updated.overallScore >= 85) {
+            await awardBadgeIfEligible(updated.userId, "evaluation_high_score", {
+              evaluationId: updated.id,
+              overallScore: updated.overallScore,
+            });
+          }
+        } catch (err) {
+          req.log.warn({ err }, "[BADGE] evaluation_published award failed");
+        }
+      }
+    }
+
     res.json({ evaluation: updated });
   } catch (err) {
     req.log.error({ err }, "Failed to update speech evaluation");

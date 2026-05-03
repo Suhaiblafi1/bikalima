@@ -1,6 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, speechEvaluationsTable } from "@workspace/db";
+import { eq, or, desc, sql } from "drizzle-orm";
 import { registerLeadFromForm } from "../lib/leads.js";
+import { awardBadgeIfEligible } from "../lib/platform.js";
 
 const router: IRouter = Router();
 
@@ -126,6 +128,15 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
 
     req.log.info({ id: inserted.id, email }, "speech-evaluation lead created");
 
+    // ── Badge: first speech uploaded (only when learner is signed in) ─────
+    if (userId) {
+      try {
+        await awardBadgeIfEligible(userId, "speech_submitted", { evaluationId: inserted.id });
+      } catch (err) {
+        req.log.warn({ err }, "[BADGE] speech_submitted award failed");
+      }
+    }
+
     // ── CRM: register/upsert as a lead ──────────────────────────────
     try {
       await registerLeadFromForm({
@@ -152,6 +163,51 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
   } catch (err) {
     req.log.error({ err }, "Failed to create speech evaluation");
     res.status(500).json({ error: "Failed to submit evaluation request" });
+  }
+});
+
+// ── Learner-facing list of own evaluations ─────────────────────────────
+// Matches by user_id when present, plus by case-insensitive email so that
+// evaluations submitted as a guest (before the learner created an account
+// or while logged out) still surface in their dashboard once they sign in.
+router.get("/me/speech-evaluations", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user?.id) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  try {
+    const userId = req.user.id;
+    const userEmail = (req.user.email ?? "").toLowerCase().trim();
+    const rows = await db
+      .select({
+        id: speechEvaluationsTable.id,
+        status: speechEvaluationsTable.status,
+        speechTopic: speechEvaluationsTable.speechTopic,
+        videoUrl: speechEvaluationsTable.videoUrl,
+        transcriptText: speechEvaluationsTable.transcriptText,
+        rubricScores: speechEvaluationsTable.rubricScores,
+        overallScore: speechEvaluationsTable.overallScore,
+        programRecommendation: speechEvaluationsTable.programRecommendation,
+        finalReportMd: speechEvaluationsTable.finalReportMd,
+        reportPublishedAt: speechEvaluationsTable.reportPublishedAt,
+        trainerFeedback: speechEvaluationsTable.trainerFeedback,
+        createdAt: speechEvaluationsTable.createdAt,
+        updatedAt: speechEvaluationsTable.updatedAt,
+      })
+      .from(speechEvaluationsTable)
+      .where(
+        userEmail
+          ? or(
+              eq(speechEvaluationsTable.userId, userId),
+              sql`lower(${speechEvaluationsTable.email}) = ${userEmail}`,
+            )
+          : eq(speechEvaluationsTable.userId, userId),
+      )
+      .orderBy(desc(speechEvaluationsTable.createdAt));
+    res.json({ evaluations: rows });
+  } catch (err) {
+    req.log.error({ err }, "Failed to load my speech evaluations");
+    res.status(500).json({ error: "Failed to load evaluations" });
   }
 });
 
