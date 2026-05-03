@@ -73,7 +73,8 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
         setShowCompose(false);
         setComposeTo(""); setComposeSubject(""); setComposeBody("");
         loadThreads();
-        if (d.threadId) openThread(d.threadId);
+        const newId = d.thread?.id ?? d.threadId;
+        if (newId) openThread(newId);
       } else {
         const d = await r.json().catch(() => ({}));
         alert(d.error ?? (isRtl ? "تعذّر إنشاء المحادثة" : "Could not create conversation"));

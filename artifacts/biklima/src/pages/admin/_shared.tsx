@@ -7,6 +7,7 @@ import {
   BarChart3, BookOpen, CheckCircle, Clock, DollarSign, TrendingUp, XCircle,
   Users,
   Layers,
+  Loader2,
 } from "lucide-react";
 import type { Role } from "@/hooks/use-me";
 import { AdminActivityEditor } from "@/components/admin-activity-editor";
@@ -391,6 +392,46 @@ export function LessonRow({
   const [newResType, setNewResType] = useState("link");
   const [resLoading, setResLoading] = useState(false);
   const [showActivities, setShowActivities] = useState(false);
+  const [showLive, setShowLive] = useState(false);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveSaving, setLiveSaving] = useState(false);
+  const [liveData, setLiveData] = useState<{ joinUrl: string; startsAt: string; durationMinutes: string; provider: string }>({ joinUrl: "", startsAt: "", durationMinutes: "60", provider: "zoom" });
+  const [liveMsg, setLiveMsg] = useState("");
+
+  const openLive = async () => {
+    setShowLive(true); setLiveLoading(true); setLiveMsg("");
+    try {
+      const r = await fetch(`${apiBase}/admin/lessons/${lesson.id}/live-session`, { credentials: "include" });
+      if (r.ok) {
+        const d = await r.json();
+        if (d.session) {
+          setLiveData({
+            joinUrl: d.session.joinUrl ?? "",
+            startsAt: d.session.startsAt ? new Date(d.session.startsAt).toISOString().slice(0, 16) : "",
+            durationMinutes: String(d.session.durationMinutes ?? 60),
+            provider: d.session.provider ?? "zoom",
+          });
+        }
+      }
+    } finally { setLiveLoading(false); }
+  };
+  const saveLive = async () => {
+    setLiveSaving(true); setLiveMsg("");
+    try {
+      const r = await fetch(`${apiBase}/admin/lessons/${lesson.id}/live-session`, {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          joinUrl: liveData.joinUrl.trim() || null,
+          startsAt: liveData.startsAt ? new Date(liveData.startsAt).toISOString() : null,
+          durationMinutes: parseInt(liveData.durationMinutes) || 60,
+          provider: liveData.provider,
+        }),
+      });
+      setLiveMsg(r.ok ? "تم الحفظ" : "فشل الحفظ");
+      if (r.ok) setTimeout(() => setLiveMsg(""), 2500);
+    } finally { setLiveSaving(false); }
+  };
 
   const addResource = async () => {
     if (!newResTitle.trim() || !newResUrl.trim()) return;
@@ -487,10 +528,50 @@ export function LessonRow({
         </div>
       </div>
       <AttendanceButton lesson={lesson} />
+      <Button variant="ghost" size="sm" onClick={openLive} className="h-6 px-1.5 text-[10px] text-sky-600 shrink-0 gap-0.5" title="جلسة مباشرة">▶ مباشر</Button>
       <Button variant="ghost" size="sm" onClick={() => setShowActivities(true)} className="h-6 px-1.5 text-[10px] text-violet-600 shrink-0 gap-0.5" title="الأنشطة التفاعلية"><Layers className="w-3 h-3" /> أنشطة</Button>
       <Button variant="ghost" size="sm" onClick={onEdit} className="h-6 w-6 p-0 text-blue-600 shrink-0"><Edit3 className="w-3 h-3" /></Button>
       <Button variant="ghost" size="sm" onClick={onDelete} className="h-6 w-6 p-0 text-destructive shrink-0"><Trash2 className="w-3 h-3" /></Button>
       {showActivities && <AdminActivityEditor lessonId={lesson.id} onClose={() => setShowActivities(false)} />}
+      {showLive && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowLive(false)}>
+          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-3" onClick={(e) => e.stopPropagation()} dir="rtl">
+            <h3 className="font-bold text-lg">جلسة مباشرة — {lesson.titleAr}</h3>
+            {liveLoading ? (
+              <div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>
+            ) : (
+              <>
+                <label className="block text-xs font-bold">رابط الانضمام (Zoom/Meet)</label>
+                <Input value={liveData.joinUrl} onChange={(e) => setLiveData({ ...liveData, joinUrl: e.target.value })} placeholder="https://..." dir="ltr" />
+                <label className="block text-xs font-bold">موعد البدء</label>
+                <Input type="datetime-local" value={liveData.startsAt} onChange={(e) => setLiveData({ ...liveData, startsAt: e.target.value })} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-bold">المدة (دقائق)</label>
+                    <Input type="number" value={liveData.durationMinutes} onChange={(e) => setLiveData({ ...liveData, durationMinutes: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold">المنصّة</label>
+                    <select value={liveData.provider} onChange={(e) => setLiveData({ ...liveData, provider: e.target.value })} className="w-full border rounded p-1.5 text-sm bg-background">
+                      <option value="zoom">Zoom</option>
+                      <option value="meet">Google Meet</option>
+                      <option value="teams">Teams</option>
+                      <option value="other">أخرى</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => setShowLive(false)}>إغلاق</Button>
+                  <Button size="sm" onClick={saveLive} disabled={liveSaving} className="bg-primary text-white">
+                    {liveSaving ? <Loader2 className="w-3 h-3 animate-spin me-1" /> : null}حفظ
+                  </Button>
+                </div>
+                {liveMsg && <p className={`text-xs text-center ${liveMsg === "تم الحفظ" ? "text-emerald-600" : "text-rose-600"}`}>{liveMsg}</p>}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 import { useApiFetch } from "@/pages/admin/_shared";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
+import { lazy, Suspense } from "react";
+const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
 import {
   BookOpen, GraduationCap, Mic2, ClipboardList, CalendarCheck, Loader2,
   FileText, AlertTriangle, StickyNote, Megaphone, Send,
@@ -320,6 +322,10 @@ export default function TrainerDashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
+          <StudentMessagesTab lang="ar" currentUserId={user?.id ?? null} />
+        </Suspense>
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3 text-sm">

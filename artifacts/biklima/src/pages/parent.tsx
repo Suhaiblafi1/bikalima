@@ -1,9 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { Redirect } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
+import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound } from "lucide-react";
+import { lazy, Suspense } from "react";
+const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
+const StudentLiveSessionsTab = lazy(() => import("@/components/dashboard/student-live-sessions-tab"));
 
 interface ChildSummary {
   linkId: string;
@@ -27,6 +31,7 @@ function getApiBase(): string {
 
 export default function ParentPage() {
   const { isLoading: authLoading, isAuthenticated } = useAuth();
+  const { user } = useMe();
   const apiBase = getApiBase();
   const [children, setChildren] = useState<ChildSummary[] | null>(null);
   const [code, setCode] = useState("");
@@ -177,6 +182,14 @@ export default function ParentPage() {
             )}
           </CardContent>
         </Card>
+
+        <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
+          <StudentLiveSessionsTab lang="ar" />
+        </Suspense>
+
+        <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
+          <StudentMessagesTab lang="ar" currentUserId={user?.id ?? null} />
+        </Suspense>
       </div>
     </AppShell>
   );
