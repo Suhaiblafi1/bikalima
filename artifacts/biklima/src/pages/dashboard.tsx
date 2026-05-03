@@ -44,6 +44,10 @@ import {
   Award,
   Mic,
   Users,
+  BookMarked,
+  Download,
+  AlertCircle,
+  X,
 } from "lucide-react";
 
 type Lang = "ar" | "en";
@@ -62,6 +66,8 @@ const dashT = {
       certificates: "شهاداتي واعتماداتي",
       achievements: "إنجازاتي",
       skills: "مهاراتي وشاراتي",
+      workbooks: "مكتباتي",
+      continue: "أكمل التعلم",
     },
     account: {
       heading: "معلومات الحساب",
@@ -152,6 +158,8 @@ const dashT = {
       certificates: "My Certificates",
       achievements: "My Achievements",
       skills: "Skills & Badges",
+      workbooks: "My Workbooks",
+      continue: "Continue Learning",
     },
     account: {
       heading: "Account Information",
@@ -241,9 +249,42 @@ const tabIcons = {
   certificates: ShieldCheck,
   achievements: Award,
   skills: Sparkles,
+  workbooks: BookMarked,
+  continue: Play,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements" | "skills";
+type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements" | "skills" | "workbooks" | "continue";
+
+type NextLessonData = {
+  courseId: string;
+  courseSlug: string | null;
+  courseTitleAr: string;
+  courseTitleEn: string | null;
+  courseImageUrl: string | null;
+  lessonId: string;
+  lessonTitleAr: string;
+  lessonTitleEn: string | null;
+  durationMinutes: number | null;
+  completedCount: number;
+  totalLessons: number;
+  progressPct: number;
+  deepLink: string;
+};
+
+type OwnedWorkbookData = {
+  orderId: string;
+  workbookId: string;
+  format: "pdf" | "print";
+  status: string;
+  purchasedAt: string;
+  slug: string | null;
+  titleAr: string | null;
+  titleEn: string | null;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  coverImageUrl: string | null;
+  samplePdfUrl: string | null;
+};
 
 type MyCert = {
   id: string;
@@ -1686,8 +1727,8 @@ export default function Dashboard() {
   const readTabFromUrl = (): Tab => {
     if (typeof window === "undefined") return "account";
     const t = new URLSearchParams(window.location.search).get("tab");
-    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule", "skills"];
-    return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "account";
+    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule", "skills", "workbooks", "continue"];
+    return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "courses";
   };
   const [activeTab, setActiveTab] = useState<Tab>(readTabFromUrl());
   useEffect(() => {
@@ -1701,30 +1742,53 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [lmsOrders, setLmsOrders] = useState<LmsOrderData[]>([]);
   const [requests, setRequests] = useState<RequestData[]>([]);
+  const [nextLesson, setNextLesson] = useState<NextLessonData | null>(null);
+  const [ownedWorkbooks, setOwnedWorkbooks] = useState<OwnedWorkbookData[]>([]);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
   const [viewingCourse, setViewingCourse] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const apiBase = getApiBase();
 
+  useEffect(() => {
+    if (!errorToast) return;
+    const t = setTimeout(() => setErrorToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [errorToast]);
+
   const fetchData = useCallback(async () => {
     setDataLoading(true);
+    let anyFailed = false;
     try {
-      const [cRes, oRes, rRes, lmsRes, attRes] = await Promise.all([
+      const [cRes, oRes, rRes, lmsRes, attRes, nextRes, wbRes] = await Promise.all([
         fetch(`${apiBase}/my/courses`, { credentials: "include" }),
         fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
         fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
         fetch(`${apiBase}/my/orders`, { credentials: "include" }),
         fetch(`${apiBase}/my/attendance/summary`, { credentials: "include" }),
+        fetch(`${apiBase}/my/next-lesson`, { credentials: "include" }),
+        fetch(`${apiBase}/my/workbooks`, { credentials: "include" }),
       ]);
-      if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); }
+      if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); } else anyFailed = true;
       if (attRes.ok) { const d = await attRes.json(); setAttendanceByCourse(d.byCourse || {}); }
-      if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders || []); }
+      if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders || []); } else anyFailed = true;
       if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
-      if (lmsRes.ok) { const d = await lmsRes.json(); setLmsOrders(d.orders || []); }
-    } catch {}
+      if (lmsRes.ok) { const d = await lmsRes.json(); setLmsOrders(d.orders || []); } else anyFailed = true;
+      if (nextRes.ok) { const d = await nextRes.json(); setNextLesson(d.nextLesson || null); } else anyFailed = true;
+      if (wbRes.ok) { const d = await wbRes.json(); setOwnedWorkbooks(d.workbooks || []); } else anyFailed = true;
+    } catch {
+      anyFailed = true;
+    }
+    if (anyFailed) {
+      setErrorToast(
+        lang === "ar"
+          ? "تعذّر تحميل بعض البيانات. حاول التحديث."
+          : "Some data failed to load. Try refreshing.",
+      );
+    }
     setDataLoading(false);
-  }, [apiBase]);
+  }, [apiBase, lang]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -1803,7 +1867,45 @@ export default function Dashboard() {
     );
   }
 
-  const tabs: Tab[] = ["account", "courses", "assignments", "evaluations", "achievements", "skills", "certificates", "orders", "schedule"];
+  // Spec order: Courses · Continue · Assignments · Speech Evaluations ·
+  // Workbooks · Certificates · Orders · Schedule · Account.
+  // Achievements/skills are kept after certificates so badges still show.
+  const allTabs: Tab[] = ["courses", "continue", "assignments", "evaluations", "workbooks", "certificates", "achievements", "skills", "orders", "schedule", "account"];
+  // Hide tabs we know are empty from parent-level data. Tabs that fetch
+  // their own data (assignments/evaluations/certificates/achievements/
+  // skills/schedule/account) stay visible — each renders its own warm
+  // empty state.
+  const hasOrders = lmsOrders.length > 0 || orders.length > 0;
+  const tabs: Tab[] = allTabs.filter((tab) => {
+    if (tab === "continue") return !!nextLesson;
+    if (tab === "courses") return courses.length > 0 || requests.length > 0;
+    if (tab === "workbooks") return ownedWorkbooks.length > 0;
+    if (tab === "orders") return hasOrders;
+    return true;
+  });
+  // While the first fetch is still running we don't yet know which tabs
+  // have data, so always show the static ones to avoid layout flicker.
+  const visibleTabs: Tab[] = dataLoading
+    ? allTabs.filter((tab) => !["continue", "workbooks"].includes(tab))
+    : tabs;
+
+  // If the current tab becomes hidden (e.g., user landed on ?tab=continue
+  // but has no in-progress lesson), rebase to the first visible tab and
+  // sync the URL so we never render hidden-tab content.
+  useEffect(() => {
+    if (dataLoading) return;
+    if (visibleTabs.length === 0) return;
+    if (!visibleTabs.includes(activeTab)) {
+      const fallback = visibleTabs[0];
+      setActiveTab(fallback);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", fallback);
+        window.history.replaceState({}, "", url.toString());
+      } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataLoading, visibleTabs.join(","), activeTab]);
 
   const currentCourse = viewingCourse ? courses.find(c => c.courseId === viewingCourse) : null;
   const currentLesson = currentCourse && activeLesson ? currentCourse.lessons.find(l => l.id === activeLesson) : null;
@@ -1981,9 +2083,88 @@ export default function Dashboard() {
       breadcrumb={[{ label: lang === "ar" ? "منصتي" : "My Platform" }]}
     >
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h2 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h2>
         </div>
+
+        {/* Hero "أكمل التعلم" CTA — visible on every tab */}
+        {dataLoading ? (
+          <div
+            className="mb-6 rounded-2xl border border-border bg-card p-5 md:p-6 animate-pulse"
+            data-testid="hero-skeleton"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-muted shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-24 bg-muted rounded" />
+                <div className="h-5 w-3/4 bg-muted rounded" />
+                <div className="h-2 w-full bg-muted rounded" />
+              </div>
+              <div className="h-10 w-28 bg-muted rounded-full hidden sm:block" />
+            </div>
+          </div>
+        ) : nextLesson ? (
+          <div
+            className="mb-6 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-amber-50 to-card p-5 md:p-6 shadow-sm"
+            data-testid="hero-continue-cta"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <Play className="w-8 h-8 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-primary uppercase tracking-wide">
+                  {isRtl ? "أكمل التعلم" : "Continue learning"}
+                </p>
+                <p className="font-bold text-base md:text-lg mt-0.5 truncate">
+                  {isRtl ? nextLesson.lessonTitleAr : (nextLesson.lessonTitleEn || nextLesson.lessonTitleAr)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {isRtl ? nextLesson.courseTitleAr : (nextLesson.courseTitleEn || nextLesson.courseTitleAr)}
+                  {nextLesson.durationMinutes ? ` • ${nextLesson.durationMinutes} ${isRtl ? "دقيقة" : "min"}` : ""}
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-xs">
+                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${nextLesson.progressPct}%` }} />
+                  </div>
+                  <span className="text-[11px] font-bold text-primary">{nextLesson.progressPct}%</span>
+                </div>
+              </div>
+              <Button
+                onClick={() => navigate(nextLesson.deepLink)}
+                className="rounded-full bg-primary text-white gap-2 shrink-0 px-5"
+                data-testid="hero-continue-button"
+              >
+                <Play className="w-4 h-4" />
+                {isRtl ? "تابع الآن" : "Resume"}
+              </Button>
+            </div>
+          </div>
+        ) : courses.length === 0 ? (
+          <div
+            className="mb-6 rounded-2xl border border-border bg-gradient-to-br from-amber-50 to-card p-5 md:p-6"
+            data-testid="hero-empty"
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <BookOpen className="w-8 h-8 text-primary/70" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base md:text-lg">
+                  {isRtl ? "ابدأ رحلتك التدريبية" : "Start your learning journey"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {isRtl
+                    ? "تصفّح برامج بكلمة وسجّل في أول دورة لك."
+                    : "Browse Bikalima's programs and enroll in your first course."}
+                </p>
+              </div>
+              <Button onClick={() => navigate("/courses")} className="rounded-full bg-primary text-white shrink-0">
+                {isRtl ? "تصفّح الدورات" : "Browse courses"}
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         {meUser && meUser.emailVerified === false && (
           <div
@@ -2025,12 +2206,22 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row gap-6">
           <nav className="md:w-64 shrink-0">
             <div className="bg-card rounded-2xl border border-border p-2 space-y-1 sticky top-24">
-              {tabs.map((tab) => {
+              {visibleTabs.map((tab) => {
                 const Icon = tabIcons[tab];
                 return (
                   <button
                     key={tab}
-                    onClick={() => { setActiveTab(tab); setViewingCourse(null); setActiveLesson(null); }}
+                    data-testid={`dashboard-tab-${tab}`}
+                    onClick={() => {
+                      setActiveTab(tab);
+                      setViewingCourse(null);
+                      setActiveLesson(null);
+                      try {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set("tab", tab);
+                        window.history.replaceState({}, "", url.toString());
+                      } catch {}
+                    }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-start ${
                       activeTab === tab
                         ? "bg-primary text-white font-bold shadow-md"
@@ -2283,9 +2474,183 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             )}
+
+            {activeTab === "continue" && (
+              <Card className="rounded-2xl" data-testid="continue-tab">
+                <CardContent className="p-6 md:p-8 space-y-4">
+                  <h3 className="font-bold text-xl flex items-center gap-2">
+                    <Play className="w-5 h-5 text-primary" />
+                    {t.tabs.continue}
+                  </h3>
+                  {dataLoading ? (
+                    <div className="space-y-3">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className="h-20 bg-muted/50 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (() => {
+                    const inProgress = courses
+                      .map((c) => {
+                        const total = c.lessons.length;
+                        const done = c.progress.filter((p) => p.completed).length;
+                        const next = c.lessons.find((l) => !c.progress.some((p) => p.lessonId === l.id && p.completed));
+                        return { course: c, total, done, next, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
+                      })
+                      .filter((r) => r.next && r.total > 0);
+                    if (inProgress.length === 0) {
+                      return (
+                        <div className="text-center py-10 space-y-3">
+                          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                            <CheckCircle className="w-8 h-8 text-primary/60" />
+                          </div>
+                          <p className="text-muted-foreground">
+                            {isRtl ? "أحسنت! لا توجد دروس متبقية حالياً." : "Great work! No lessons left to continue."}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-3">
+                        {inProgress.map(({ course, total, done, next, pct }) => (
+                          <div key={course.courseId} className="border border-border rounded-xl p-4 flex items-center gap-4 bg-background">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                              <Play className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm truncate">{getTitle(course)}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {isRtl ? "التالي:" : "Next:"} {next ? getTitle(next) : ""}
+                              </p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-xs">
+                                  <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className="text-[11px] text-muted-foreground">{done}/{total}</span>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => course.slug && next && navigate(`/courses/${course.slug}/learn?lesson=${encodeURIComponent(next.id)}`)}
+                              className="rounded-full bg-primary text-white shrink-0 gap-1"
+                              data-testid={`continue-resume-${course.courseId}`}
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                              {isRtl ? "تابع" : "Resume"}
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "workbooks" && (
+              <Card className="rounded-2xl" data-testid="workbooks-tab">
+                <CardContent className="p-6 md:p-8 space-y-4">
+                  <h3 className="font-bold text-xl flex items-center gap-2">
+                    <BookMarked className="w-5 h-5 text-primary" />
+                    {t.tabs.workbooks}
+                  </h3>
+                  {dataLoading ? (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {[0, 1].map((i) => (
+                        <div key={i} className="h-32 bg-muted/50 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  ) : ownedWorkbooks.length === 0 ? (
+                    <div className="text-center py-12 space-y-3">
+                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                        <BookMarked className="w-10 h-10 text-primary/50" />
+                      </div>
+                      <p className="text-muted-foreground">
+                        {isRtl ? "لا توجد كرّاسات في مكتبتك بعد." : "Your library is empty for now."}
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                        {isRtl
+                          ? "اطلب أول كرّاسة من متجرنا وستظهر هنا فور تأكيد الطلب."
+                          : "Order your first workbook — it will appear here once your order is confirmed."}
+                      </p>
+                      <Button onClick={() => navigate("/workbooks")} className="rounded-full bg-primary text-white text-sm">
+                        {isRtl ? "تصفّح الكرّاسات" : "Browse Workbooks"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {ownedWorkbooks.map((w) => {
+                        const title = isRtl ? (w.titleAr || w.titleEn) : (w.titleEn || w.titleAr);
+                        const desc = isRtl ? (w.descriptionAr || w.descriptionEn) : (w.descriptionEn || w.descriptionAr);
+                        return (
+                          <div key={w.orderId} className="border border-border rounded-xl overflow-hidden bg-background flex flex-col" data-testid={`owned-workbook-${w.workbookId}`}>
+                            <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+                              {w.coverImageUrl ? (
+                                <img src={w.coverImageUrl} alt={title || ""} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <BookMarked className="w-10 h-10 text-primary/30" />
+                                </div>
+                              )}
+                              <span className={`absolute top-2 ${isRtl ? "start-2" : "end-2"} text-[10px] font-bold px-2 py-0.5 rounded-full ${w.format === "pdf" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}>
+                                {w.format === "pdf" ? (isRtl ? "رقمية" : "PDF") : (isRtl ? "مطبوعة" : "Print")}
+                              </span>
+                            </div>
+                            <div className="p-4 flex-1 flex flex-col">
+                              <p className="font-bold text-sm">{title || (isRtl ? "كرّاسة" : "Workbook")}</p>
+                              {desc && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{desc}</p>}
+                              <div className="mt-auto pt-3 flex items-center gap-2">
+                                {w.samplePdfUrl && (
+                                  <a
+                                    href={w.samplePdfUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-1.5 font-medium"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    {isRtl ? "تنزيل" : "Download"}
+                                  </a>
+                                )}
+                                {w.slug && (
+                                  <button
+                                    onClick={() => navigate(`/workbooks/${w.slug}`)}
+                                    className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground"
+                                  >
+                                    {isRtl ? "التفاصيل" : "Details"}
+                                  </button>
+                                )}
+                                <span className={`ms-auto text-[10px] px-2 py-0.5 rounded-full ${statusColor(w.status)}`}>{statusLabel(w.status)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </main>
         </div>
       </div>
+      {errorToast && (
+        <div
+          className={`fixed bottom-6 ${isRtl ? "right-6" : "left-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-rose-200 bg-rose-50 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
+          role="alert"
+          data-testid="dashboard-error-toast"
+        >
+          <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-5 h-5 text-rose-700" />
+          </div>
+          <p className="flex-1 text-sm text-rose-900 leading-relaxed">{errorToast}</p>
+          <button
+            onClick={() => setErrorToast(null)}
+            className="text-rose-700 hover:text-rose-900 shrink-0"
+            aria-label={isRtl ? "إغلاق" : "Dismiss"}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       {badgeToast && (() => {
         const Icon = BADGE_ICONS[badgeToast.icon] ?? Award;
         return (

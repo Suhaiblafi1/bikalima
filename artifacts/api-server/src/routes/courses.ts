@@ -357,4 +357,105 @@ router.delete("/my/lessons/:lessonId/note", async (req: Request, res: Response) 
   }
 });
 
+// ── Hero CTA: most recent in-progress lesson across all enrollments ──
+// Returns the next lesson the learner should resume:
+//   1. Among active enrollments, find the course with the most recently
+//      completed lesson (or fall back to most recent enrollment).
+//   2. Pick the first lesson (by sortOrder) that isn't yet completed.
+//   3. If everything is completed in that course, fall back to any other
+//      active enrollment with incomplete lessons.
+router.get("/my/next-lesson", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const userId = req.user.id;
+    const enrollments = await db
+      .select({
+        courseId: enrollmentsTable.courseId,
+        enrolledAt: enrollmentsTable.enrolledAt,
+        slug: coursesTable.slug,
+        titleAr: coursesTable.titleAr,
+        titleEn: coursesTable.titleEn,
+        imageUrl: coursesTable.imageUrl,
+      })
+      .from(enrollmentsTable)
+      .innerJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
+      .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.status, "active")));
+
+    if (enrollments.length === 0) {
+      res.json({ nextLesson: null });
+      return;
+    }
+
+    const courseIds = enrollments.map((e) => e.courseId);
+    const lessons = await db
+      .select()
+      .from(lessonsTable)
+      .where(inArray(lessonsTable.courseId, courseIds))
+      .orderBy(asc(lessonsTable.sortOrder));
+    const progress = await db
+      .select()
+      .from(lessonProgressTable)
+      .where(eq(lessonProgressTable.userId, userId));
+
+    const completedSet = new Set(progress.filter((p) => p.completed).map((p) => p.lessonId));
+    const lastCompletedAtByCourse = new Map<string, number>();
+    for (const p of progress) {
+      if (!p.completed || !p.completedAt) continue;
+      const lesson = lessons.find((l) => l.id === p.lessonId);
+      if (!lesson) continue;
+      const ts = new Date(p.completedAt).getTime();
+      const prev = lastCompletedAtByCourse.get(lesson.courseId) ?? 0;
+      if (ts > prev) lastCompletedAtByCourse.set(lesson.courseId, ts);
+    }
+
+    const ranked = enrollments
+      .map((e) => {
+        const courseLessons = lessons.filter((l) => l.courseId === e.courseId);
+        const totalLessons = courseLessons.length;
+        const completedCount = courseLessons.filter((l) => completedSet.has(l.id)).length;
+        const nextLesson = courseLessons.find((l) => !completedSet.has(l.id)) ?? null;
+        const lastTs =
+          lastCompletedAtByCourse.get(e.courseId) ??
+          (e.enrolledAt ? new Date(e.enrolledAt).getTime() : 0);
+        return { enrollment: e, nextLesson, lastTs, totalLessons, completedCount };
+      })
+      .filter((r) => r.nextLesson !== null && r.totalLessons > 0)
+      .sort((a, b) => b.lastTs - a.lastTs);
+
+    if (ranked.length === 0) {
+      res.json({ nextLesson: null });
+      return;
+    }
+
+    const top = ranked[0];
+    const lesson = top.nextLesson!;
+    res.json({
+      nextLesson: {
+        courseId: top.enrollment.courseId,
+        courseSlug: top.enrollment.slug,
+        courseTitleAr: top.enrollment.titleAr,
+        courseTitleEn: top.enrollment.titleEn,
+        courseImageUrl: top.enrollment.imageUrl,
+        lessonId: lesson.id,
+        lessonTitleAr: lesson.titleAr,
+        lessonTitleEn: lesson.titleEn,
+        durationMinutes: lesson.durationMinutes,
+        completedCount: top.completedCount,
+        totalLessons: top.totalLessons,
+        progressPct:
+          top.totalLessons > 0 ? Math.round((top.completedCount / top.totalLessons) * 100) : 0,
+        deepLink: top.enrollment.slug
+          ? `/courses/${top.enrollment.slug}/learn?lesson=${encodeURIComponent(lesson.id)}`
+          : `/dashboard?tab=courses`,
+      },
+    });
+  } catch (err) {
+    req.log.error({ err }, "GET /my/next-lesson failed");
+    res.status(500).json({ error: "Failed to fetch next lesson" });
+  }
+});
+
 export default router;

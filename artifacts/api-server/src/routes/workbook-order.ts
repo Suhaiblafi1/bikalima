@@ -479,4 +479,69 @@ workbookOrderRouter.get("/my/workbook-orders", async (req: Request, res: Respons
   }
 });
 
+// ── Owned workbooks (the "مكتباتي" tab) ──────────────────────────────
+// Returns the catalog entry for every workbook the learner has actually
+// purchased — i.e. workbook_orders that are fulfilled (confirmed for
+// digital/PDF, or shipped/delivered for print). Rows are de-duplicated by
+// workbook so multiple orders of the same title appear once with the
+// most recent fulfillment metadata.
+workbookOrderRouter.get("/my/workbooks", async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  try {
+    const { eq, and, desc, inArray } = await import("drizzle-orm");
+    const { workbooksTable } = await import("@workspace/db");
+    const orders = await db
+      .select()
+      .from(workbookOrdersTable)
+      .where(
+        and(
+          eq(workbookOrdersTable.userId, req.user.id),
+          inArray(workbookOrdersTable.status, ["confirmed", "shipped", "delivered"] as const),
+        ),
+      )
+      .orderBy(desc(workbookOrdersTable.createdAt));
+
+    if (orders.length === 0) {
+      res.json({ workbooks: [] });
+      return;
+    }
+
+    const workbookIds = Array.from(new Set(orders.map((o) => o.workbookId).filter(Boolean)));
+    const catalog = workbookIds.length
+      ? await db.select().from(workbooksTable).where(inArray(workbooksTable.id, workbookIds))
+      : [];
+    const catalogById = new Map(catalog.map((w) => [w.id, w]));
+
+    const seen = new Set<string>();
+    const items: Array<Record<string, unknown>> = [];
+    for (const o of orders) {
+      if (seen.has(o.workbookId)) continue;
+      seen.add(o.workbookId);
+      const wb = catalogById.get(o.workbookId);
+      items.push({
+        orderId: o.id,
+        workbookId: o.workbookId,
+        format: o.format,
+        status: o.status,
+        purchasedAt: o.createdAt,
+        slug: wb?.slug ?? null,
+        titleAr: wb?.titleAr ?? null,
+        titleEn: wb?.titleEn ?? null,
+        descriptionAr: wb?.descriptionAr ?? null,
+        descriptionEn: wb?.descriptionEn ?? null,
+        coverImageUrl: wb?.coverImageUrl ?? null,
+        samplePdfUrl: wb?.samplePdfUrl ?? null,
+      });
+    }
+
+    res.json({ workbooks: items });
+  } catch (err) {
+    req.log.error({ err }, "GET /my/workbooks failed");
+    res.status(500).json({ error: "Failed to fetch owned workbooks" });
+  }
+});
+
 export default workbookOrderRouter;
