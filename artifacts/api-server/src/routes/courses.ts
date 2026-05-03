@@ -8,8 +8,9 @@ import {
   lessonProgressTable,
   lessonNotesTable,
   usersTable,
+  ordersTable,
 } from "@workspace/db";
-import { eq, and, asc, inArray } from "drizzle-orm";
+import { eq, and, asc, desc, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -89,11 +90,26 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
 
     const isLoggedIn = req.isAuthenticated() && !!req.user;
     let enrolled = false;
+    let pendingOrder: { id: string; createdAt: Date | null } | null = null;
     let progressMap: Record<string, boolean> = {};
 
     if (isLoggedIn && req.user) {
       const enrollment = await getEnrollmentStatus(req.user.id, course.id);
       enrolled = !!enrollment && enrollment.status === "active";
+
+      if (!enrolled) {
+        const [pending] = await db
+          .select({ id: ordersTable.id, createdAt: ordersTable.createdAt })
+          .from(ordersTable)
+          .where(and(
+            eq(ordersTable.userId, req.user.id),
+            eq(ordersTable.courseId, course.id),
+            eq(ordersTable.status, "pending"),
+          ))
+          .orderBy(desc(ordersTable.createdAt))
+          .limit(1);
+        if (pending) pendingOrder = { id: pending.id, createdAt: pending.createdAt };
+      }
 
       if (enrolled) {
         const allLessons = await db.select({ id: lessonsTable.id }).from(lessonsTable)
@@ -126,7 +142,7 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
       return l;
     });
 
-    res.json({ course, sections, lessons, progressMap, enrolled });
+    res.json({ course, sections, lessons, progressMap, enrolled, pendingOrder });
   } catch {
     res.status(500).json({ error: "Failed to load course" });
   }

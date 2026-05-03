@@ -6,9 +6,10 @@ import { useLang } from "@/hooks/useLang";
 import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
-  StickyNote, Save, Trash2, Award, Sparkles,
+  StickyNote, Save, Trash2, Award, Sparkles, Mail, MessageCircle, Hourglass,
 } from "lucide-react";
 import { Certificate } from "@/components/certificate";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 
 type Lang = "ar" | "en";
 
@@ -95,6 +96,12 @@ const T = {
     backToCourse: "العودة إلى الدورة",
     completedBadge: "مكتمل",
     reviewLessons: "مراجعة الدروس",
+    pendingTitle: "تم استلام طلب الدفع",
+    pendingBody: "سنفعّل وصولك إلى الدورة قريبًا بعد تأكيد الدفع. سيصلك بريد إلكتروني عند التفعيل، أو يمكنك التواصل معنا عبر واتساب لتسريع المراجعة.",
+    pendingShort: "طلب الدفع قيد المراجعة — سيتم تفعيل وصولك قريبًا.",
+    pendingEmail: "راسلنا عبر البريد",
+    pendingWhatsapp: "تواصل عبر واتساب",
+    pendingSubmittedAt: "تم تقديم الطلب",
   },
   en: {
     back: "Back to Course",
@@ -139,6 +146,12 @@ const T = {
     backToCourse: "Back to Course",
     completedBadge: "Completed",
     reviewLessons: "Review Lessons",
+    pendingTitle: "We received your payment request",
+    pendingBody: "Your access will be activated shortly after we confirm the payment. You'll receive an email once it's ready, or you can reach out on WhatsApp to speed things up.",
+    pendingShort: "Your payment is being reviewed — access will unlock soon.",
+    pendingEmail: "Email us",
+    pendingWhatsapp: "Chat on WhatsApp",
+    pendingSubmittedAt: "Request submitted",
   },
 };
 
@@ -205,12 +218,15 @@ export default function LearnPage() {
   const { lang } = useLang();
   const t = T[lang];
   const isRtl = lang === "ar";
+  const { data: siteSettingsData } = useSiteSettings();
+  const settings = siteSettingsData?.settings ?? null;
 
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, boolean>>({});
   const [enrolled, setEnrolled] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState<{ id: string; createdAt: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -257,10 +273,11 @@ export default function LearnPage() {
         setCourse(data.course);
         const allLessons: Lesson[] = (data.lessons ?? []).filter((l: Lesson) => l.isPublished !== false);
         const isEnrolled = !!data.enrolled;
+        const pending = data.pendingOrder ?? null;
 
         if (!isEnrolled) {
           const hasFreePreview = allLessons.some(l => l.isFreePreview);
-          if (!hasFreePreview) {
+          if (!hasFreePreview && !pending) {
             navigate(`/courses/${slug}`);
             return;
           }
@@ -270,6 +287,7 @@ export default function LearnPage() {
         setLessons(allLessons);
         setProgressMap(data.progressMap ?? {});
         setEnrolled(isEnrolled);
+        setPendingOrder(pending);
 
         const saved = parseInt(localStorage.getItem(lastKey(slug)) ?? "0", 10);
         const savedLesson = allLessons[saved];
@@ -389,6 +407,14 @@ export default function LearnPage() {
     if (idx < 0 || idx >= lessons.length) return;
     const lesson = lessons[idx];
     if (!enrolled && !lesson.isFreePreview) {
+      if (pendingOrder) {
+        // Stay on the learn page so the pending banner remains visible;
+        // the lesson body itself shows a pending-specific locked state.
+        setCurrentIdx(idx);
+        try { localStorage.setItem(lastKey(slug ?? ""), String(idx)); } catch {}
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       navigate(`/courses/${slug}`);
       return;
     }
@@ -400,7 +426,7 @@ export default function LearnPage() {
       setExpandedSections(prev => ({ ...prev, [sectionGroup.id ?? "0"]: true }));
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [lessons, enrolled, sections, slug, navigate]);
+  }, [lessons, enrolled, pendingOrder, sections, slug, navigate]);
 
   const completedCount = lessons.filter(l => progressMap[l.id]).length;
   const totalCount = lessons.length;
@@ -519,6 +545,66 @@ export default function LearnPage() {
   const ArrowEnd = isRtl ? ArrowLeft : ArrowRight;
   const ArrowStart = isRtl ? ArrowRight : ArrowLeft;
   const resources = currentLesson?.resources ?? [];
+  const showPending = !enrolled && !!pendingOrder;
+  const contactEmail = settings?.contactEmail ?? null;
+  const whatsappNumber = settings?.whatsappNumber ?? null;
+  const whatsappHref = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.replace(/[^\d]/g, "")}`
+    : null;
+  const submittedAtText = (() => {
+    if (!pendingOrder?.createdAt) return null;
+    try {
+      return new Date(pendingOrder.createdAt).toLocaleString(lang === "ar" ? "ar" : "en", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch {
+      return null;
+    }
+  })();
+
+  const PendingBanner = showPending ? (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-6 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+          <Hourglass className="w-5 h-5 text-amber-700" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-base md:text-lg font-bold text-amber-900">{t.pendingTitle}</h2>
+          <p className="text-sm text-amber-900/80 mt-1 leading-relaxed">{t.pendingBody}</p>
+          {submittedAtText && (
+            <p className="text-xs text-amber-900/70 mt-2">
+              {t.pendingSubmittedAt}: <span className="font-medium">{submittedAtText}</span>
+            </p>
+          )}
+          {(contactEmail || whatsappHref) && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 transition-colors"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  {t.pendingWhatsapp}
+                </a>
+              )}
+              {contactEmail && (
+                <a
+                  href={`mailto:${contactEmail}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-xs font-semibold hover:bg-amber-100 transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  {t.pendingEmail}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   const SidebarContent = (
     <div className="h-full flex flex-col bg-card">
@@ -707,18 +793,28 @@ export default function LearnPage() {
         <main className="flex-1 min-w-0 overflow-y-auto pb-24">
           {currentLesson ? (
             <div className="max-w-4xl mx-auto px-4 py-6">
+              {PendingBanner}
               {/* Video player or locked state */}
               <div className="w-full bg-black rounded-xl overflow-hidden mb-6 shadow-lg" style={{ aspectRatio: "16/9" }}>
                 {isLocked ? (
                   <div className="w-full h-full flex flex-col items-center justify-center text-white gap-4 px-4 text-center">
-                    <Lock className="w-16 h-16 opacity-40" />
-                    <p className="text-lg font-semibold opacity-80">{t.enrollToWatch}</p>
-                    <button
-                      onClick={() => navigate(`/courses/${slug}`)}
-                      className="px-6 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-                    >
-                      {t.goToEnroll}
-                    </button>
+                    {showPending ? (
+                      <>
+                        <Hourglass className="w-16 h-16 opacity-50 text-amber-300" />
+                        <p className="text-lg font-semibold opacity-90">{t.pendingShort}</p>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-16 h-16 opacity-40" />
+                        <p className="text-lg font-semibold opacity-80">{t.enrollToWatch}</p>
+                        <button
+                          onClick={() => navigate(`/courses/${slug}`)}
+                          className="px-6 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                        >
+                          {t.goToEnroll}
+                        </button>
+                      </>
+                    )}
                   </div>
                 ) : embedUrl ? (
                   <iframe
@@ -917,11 +1013,16 @@ export default function LearnPage() {
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
-              <BookOpen className="w-12 h-12 text-muted-foreground/40" />
-              <p className="text-muted-foreground">
-                {lang === "ar" ? "لا توجد دروس في هذه الدورة بعد." : "No lessons have been added to this course yet."}
-              </p>
+            <div className="max-w-4xl mx-auto px-4 py-6">
+              {PendingBanner}
+              {!showPending && (
+                <div className="flex flex-col items-center justify-center h-64 gap-4 text-center px-4">
+                  <BookOpen className="w-12 h-12 text-muted-foreground/40" />
+                  <p className="text-muted-foreground">
+                    {lang === "ar" ? "لا توجد دروس في هذه الدورة بعد." : "No lessons have been added to this course yet."}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </main>
