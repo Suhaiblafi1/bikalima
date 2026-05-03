@@ -762,7 +762,7 @@ function getVimeoId(url: string): string | null {
   return m ? m[1] : null;
 }
 
-function AccountTab({ apiBase, lang: _lang, t, user }: { apiBase: string; lang: Lang; t: typeof dashT.ar; user: { firstName?: string | null; lastName?: string | null; email?: string | null; profileImageUrl?: string | null } | null | undefined }) {
+function AccountTab({ apiBase, lang, t, user }: { apiBase: string; lang: Lang; t: typeof dashT.ar; user: { firstName?: string | null; lastName?: string | null; email?: string | null; profileImageUrl?: string | null } | null | undefined }) {
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
   const [phone, setPhone] = useState("");
@@ -1136,9 +1136,21 @@ export default function Dashboard() {
       setTimeout(() => setResendState("idle"), 4000);
     }
   };
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { lang } = useLang();
-  const [activeTab, setActiveTab] = useState<Tab>("account");
+  const readTabFromUrl = (): Tab => {
+    if (typeof window === "undefined") return "account";
+    const t = new URLSearchParams(window.location.search).get("tab");
+    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "certificates", "schedule"];
+    return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "account";
+  };
+  const [activeTab, setActiveTab] = useState<Tab>(readTabFromUrl());
+  useEffect(() => {
+    const handler = () => setActiveTab(readTabFromUrl());
+    window.addEventListener("popstate", handler);
+    setActiveTab(readTabFromUrl());
+    return () => window.removeEventListener("popstate", handler);
+  }, [location]);
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [lmsOrders, setLmsOrders] = useState<LmsOrderData[]>([]);

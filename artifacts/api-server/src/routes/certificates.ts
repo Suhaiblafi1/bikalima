@@ -7,6 +7,7 @@ import {
 } from "@workspace/db";
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { requireAdmin, requireRole, isAdmin } from "../lib/admin.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router: IRouter = Router();
 
@@ -336,6 +337,17 @@ router.post("/admin/certificates", async (req: Request, res: Response) => {
       })
       .returning();
     await logActivity(req, "create", "certificate", row.id, `Issued certificate ${row.code} to ${row.fullName}`);
+    if (row.userId) {
+      await createNotification({
+        userId: row.userId,
+        type: "certificate_issued",
+        titleAr: "صدرت شهادتك 🎓",
+        titleEn: "Your certificate is ready 🎓",
+        bodyAr: `تم إصدار شهادة برقم ${row.code}. يمكنك تحميلها من قسم شهاداتي.`,
+        bodyEn: `Certificate ${row.code} has been issued. Download it from My Certificates.`,
+        link: "/dashboard?tab=certificates",
+      });
+    }
     res.status(201).json({ certificate: row });
   } catch (err) {
     const code = (err as { code?: string }).code;

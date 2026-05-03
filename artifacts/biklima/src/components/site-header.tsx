@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown, User, LogOut, Shield, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notification-bell";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
 import { useCurrency, CURRENCIES, CURRENCY_ORDER, getBaseUrl } from "@/lib/site-config";
@@ -208,6 +209,9 @@ export function SiteHeader() {
                 </div>
               )}
             </div>
+
+            {/* Notifications */}
+            {!authLoading && isAuthenticated && <NotificationBell />}
 
             {/* Auth */}
             {!authLoading && (isAuthenticated ? (

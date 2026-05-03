@@ -14,6 +14,7 @@ import siteSettingsRouter from "./site-settings";
 import cmsRouter from "./cms";
 import certificatesRouter from "./certificates";
 import chatRouter from "./chat";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(siteSettingsRouter);
 router.use(cmsRouter);
 router.use(certificatesRouter);
 router.use(chatRouter);
+router.use(notificationsRouter);
 
 export default router;

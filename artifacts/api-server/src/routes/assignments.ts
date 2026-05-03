@@ -10,6 +10,7 @@ import {
 } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { requireRole, isAdmin } from "../lib/admin.js";
+import { createNotification } from "../lib/notifications.js";
 
 // Returns the set of courseIds this user can administer assignments for.
 // Admins get null (= unrestricted). Trainers get their assigned course list.
@@ -589,6 +590,26 @@ router.post("/admin/submissions/:id/evaluate", async (req: Request, res: Respons
     if (!updated) {
       res.status(404).json({ error: "Submission not found" });
       return;
+    }
+    // Notify the student that their submission was reviewed.
+    try {
+      const [a] = await db
+        .select({ id: assignmentsTable.id, titleAr: assignmentsTable.titleAr, titleEn: assignmentsTable.titleEn })
+        .from(assignmentsTable)
+        .where(eq(assignmentsTable.id, updated.assignmentId));
+      const aTitleAr = a?.titleAr ?? "تكليفك";
+      const aTitleEn = a?.titleEn ?? "your assignment";
+      await createNotification({
+        userId: updated.userId,
+        type: "assignment_reviewed",
+        titleAr: "تم تقييم تكليفك",
+        titleEn: "Your assignment was reviewed",
+        bodyAr: `حصلت على ${updated.totalScore ?? 0}/100 في «${aTitleAr}». اطّلع على ملاحظات المدرّب.`,
+        bodyEn: `You scored ${updated.totalScore ?? 0}/100 on "${aTitleEn}". See trainer feedback.`,
+        link: "/dashboard?tab=assignments",
+      });
+    } catch (err) {
+      req.log.warn({ err }, "notify-on-grade failed");
     }
     res.json({ submission: updated });
   } catch (err) {

@@ -26,6 +26,7 @@ import {
   countAdmins,
   type Role,
 } from "../lib/admin.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router: IRouter = Router();
 
@@ -616,6 +617,22 @@ router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Respons
     if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [updated] = await db.update(enrollmentRequestsTable).set(updates).where(eq(enrollmentRequestsTable.id, req.params.id)).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+    if (updated.userId && (updates.status === "approved" || updates.status === "rejected")) {
+      const approved = updates.status === "approved";
+      await createNotification({
+        userId: updated.userId,
+        type: approved ? "enrollment_approved" : "enrollment_rejected",
+        titleAr: approved ? "تم قبول طلب تسجيلك ✅" : "تم رفض طلب تسجيلك",
+        titleEn: approved ? "Your enrollment was approved ✅" : "Your enrollment was rejected",
+        bodyAr: approved
+          ? "يمكنك الآن متابعة دورتك من لوحة التحكم."
+          : "يرجى التواصل معنا للمزيد من التفاصيل.",
+        bodyEn: approved
+          ? "You can now follow your course from the dashboard."
+          : "Please contact us for more details.",
+        link: "/dashboard?tab=courses",
+      });
+    }
     res.json({ request: updated });
   } catch (err) {
     res.status(500).json({ error: "Failed to update request" });
