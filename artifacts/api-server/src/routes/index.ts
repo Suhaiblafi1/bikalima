@@ -22,6 +22,7 @@ import messageTemplatesRouter from "./message-templates";
 import funnelsRouter from "./funnels";
 import growthRouter from "./growth";
 import platformRouter from "./platform";
+import attendanceRouter from "./attendance";
 
 const router: IRouter = Router();
 
@@ -48,5 +49,6 @@ router.use(messageTemplatesRouter);
 router.use(funnelsRouter);
 router.use(growthRouter);
 router.use(platformRouter);
+router.use(attendanceRouter);
 
 export default router;

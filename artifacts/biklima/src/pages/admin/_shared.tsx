@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import {
   Video, FileText, ChevronUp, ChevronDown, Edit3, Trash2, X, Plus,
   BarChart3, BookOpen, CheckCircle, Clock, DollarSign, TrendingUp, XCircle,
+  Users,
 } from "lucide-react";
 import type { Role } from "@/hooks/use-me";
 
@@ -470,9 +471,166 @@ export function LessonRow({
           {(lesson.resources ?? []).length > 0 && <span className="text-[9px] text-muted-foreground flex items-center gap-0.5"><FileText className="w-2.5 h-2.5" />{(lesson.resources ?? []).length} مرفق</span>}
         </div>
       </div>
+      <AttendanceButton lesson={lesson} />
       <Button variant="ghost" size="sm" onClick={onEdit} className="h-6 w-6 p-0 text-blue-600 shrink-0"><Edit3 className="w-3 h-3" /></Button>
       <Button variant="ghost" size="sm" onClick={onDelete} className="h-6 w-6 p-0 text-destructive shrink-0"><Trash2 className="w-3 h-3" /></Button>
     </div>
+  );
+}
+
+// ── Attendance modal ────────────────────────────────────────────────────
+type AttStatus = "present" | "absent" | "excused";
+type LearnerRow = { userId: string; firstName: string | null; lastName: string | null; email: string };
+type AttendanceEntry = { id: string; lessonId: string; userId: string; status: AttStatus; note: string | null };
+
+export function AttendanceButton({ lesson }: { lesson: LessonRecord }) {
+  const apiBase = getApiBase();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [learners, setLearners] = useState<LearnerRow[]>([]);
+  const [draft, setDraft] = useState<Record<string, { status: AttStatus; note: string }>>({});
+  const [savedMsg, setSavedMsg] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${apiBase}/admin/courses/${lesson.courseId}/attendance`, { credentials: "include" });
+      if (!r.ok) { setLearners([]); return; }
+      const d = await r.json();
+      const lr: LearnerRow[] = d.learners ?? [];
+      const att: AttendanceEntry[] = (d.attendance ?? []).filter((a: AttendanceEntry) => a.lessonId === lesson.id);
+      const map: Record<string, { status: AttStatus; note: string }> = {};
+      for (const u of lr) {
+        const found = att.find((a) => a.userId === u.userId);
+        map[u.userId] = { status: (found?.status ?? "present") as AttStatus, note: found?.note ?? "" };
+      }
+      setLearners(lr);
+      setDraft(map);
+    } finally { setLoading(false); }
+  }, [apiBase, lesson.courseId, lesson.id]);
+
+  const handleOpen = () => { setOpen(true); setSavedMsg(""); load(); };
+
+  const setStatus = (uid: string, status: AttStatus) => setDraft((d) => ({ ...d, [uid]: { ...(d[uid] ?? { status: "present", note: "" }), status } }));
+  const setNote = (uid: string, note: string) => setDraft((d) => ({ ...d, [uid]: { ...(d[uid] ?? { status: "present", note: "" }), note } }));
+  const setAll = (status: AttStatus) => setDraft((d) => {
+    const next = { ...d };
+    for (const u of learners) next[u.userId] = { ...(next[u.userId] ?? { status: "present", note: "" }), status };
+    return next;
+  });
+
+  const save = async () => {
+    setSaving(true);
+    setSavedMsg("");
+    try {
+      const entries = learners.map((u) => ({
+        userId: u.userId,
+        status: draft[u.userId]?.status ?? "present",
+        note: draft[u.userId]?.note || null,
+      }));
+      const r = await fetch(`${apiBase}/admin/lessons/${lesson.id}/attendance`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      });
+      if (r.ok) {
+        const d = await r.json();
+        setSavedMsg(`تم حفظ ${d.written ?? 0} تغيير`);
+        setTimeout(() => setSavedMsg(""), 3000);
+      } else {
+        setSavedMsg("فشل الحفظ");
+      }
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleOpen}
+        className="h-6 w-6 p-0 text-emerald-600 shrink-0"
+        title="حضور الجلسة"
+        data-testid={`attendance-btn-${lesson.id}`}
+      >
+        <Users className="w-3 h-3" />
+      </Button>
+      {open && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()} dir="rtl">
+            <div className="flex items-center justify-between p-4 border-b">
+              <div>
+                <h3 className="font-bold text-base flex items-center gap-2"><Users className="w-4 h-4 text-emerald-600" /> حضور الجلسة</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{lesson.titleAr}</p>
+              </div>
+              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {loading ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">جاري التحميل…</div>
+              ) : learners.length === 0 ? (
+                <div className="text-center py-12 space-y-2" data-testid="attendance-empty">
+                  <Users className="w-12 h-12 text-muted-foreground/30 mx-auto" />
+                  <p className="text-sm text-muted-foreground">لا يوجد متعلمون مسجّلون في هذه الدورة بعد.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-3 text-xs">
+                    <span className="text-muted-foreground">تحديد الكل:</span>
+                    <button onClick={() => setAll("present")} className="px-2 py-1 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100">حاضر</button>
+                    <button onClick={() => setAll("absent")} className="px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">غائب</button>
+                    <button onClick={() => setAll("excused")} className="px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100">معذور</button>
+                  </div>
+                  <div className="space-y-2">
+                    {learners.map((u) => {
+                      const d = draft[u.userId] ?? { status: "present" as AttStatus, note: "" };
+                      const fullName = [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email;
+                      return (
+                        <div key={u.userId} className="border rounded-lg p-2 space-y-2" data-testid={`attendance-row-${u.userId}`}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{fullName}</p>
+                              <p className="text-[10px] text-muted-foreground truncate" dir="ltr">{u.email}</p>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              {(["present", "absent", "excused"] as AttStatus[]).map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => setStatus(u.userId, s)}
+                                  className={`text-xs px-2 py-1 rounded font-bold border ${d.status === s
+                                    ? s === "present" ? "bg-emerald-600 text-white border-emerald-600"
+                                    : s === "absent" ? "bg-red-600 text-white border-red-600"
+                                    : "bg-amber-500 text-white border-amber-500"
+                                    : "bg-background text-muted-foreground border-border hover:bg-muted"}`}
+                                  data-testid={`attendance-status-${u.userId}-${s}`}
+                                >
+                                  {s === "present" ? "حاضر" : s === "absent" ? "غائب" : "معذور"}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <Input value={d.note} onChange={(e) => setNote(u.userId, e.target.value)} placeholder="ملاحظة (اختياري)" className="text-xs h-7" />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex items-center justify-between gap-2 p-4 border-t">
+              <span className="text-xs text-emerald-600">{savedMsg}</span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>إغلاق</Button>
+                <Button size="sm" onClick={save} disabled={saving || learners.length === 0} data-testid="attendance-save">
+                  {saving ? "جاري الحفظ…" : "حفظ"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

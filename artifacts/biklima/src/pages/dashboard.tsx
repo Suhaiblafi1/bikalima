@@ -1597,6 +1597,7 @@ export default function Dashboard() {
     return () => window.removeEventListener("popstate", handler);
   }, [location]);
   const [courses, setCourses] = useState<CourseData[]>([]);
+  const [attendanceByCourse, setAttendanceByCourse] = useState<Record<string, { present: number; absent: number; excused: number; tracked: number }>>({});
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [lmsOrders, setLmsOrders] = useState<LmsOrderData[]>([]);
   const [requests, setRequests] = useState<RequestData[]>([]);
@@ -1609,13 +1610,15 @@ export default function Dashboard() {
   const fetchData = useCallback(async () => {
     setDataLoading(true);
     try {
-      const [cRes, oRes, rRes, lmsRes] = await Promise.all([
+      const [cRes, oRes, rRes, lmsRes, attRes] = await Promise.all([
         fetch(`${apiBase}/my/courses`, { credentials: "include" }),
         fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
         fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
         fetch(`${apiBase}/my/orders`, { credentials: "include" }),
+        fetch(`${apiBase}/my/attendance/summary`, { credentials: "include" }),
       ]);
       if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); }
+      if (attRes.ok) { const d = await attRes.json(); setAttendanceByCourse(d.byCourse || {}); }
       if (oRes.ok) { const d = await oRes.json(); setOrders(d.orders || []); }
       if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
       if (lmsRes.ok) { const d = await lmsRes.json(); setLmsOrders(d.orders || []); }
@@ -1990,6 +1993,21 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground text-start">{totalLessons} {isRtl ? "درس" : "lessons"} • {pct}% {t.courses.progress.toLowerCase()}</p>
+                              {(() => {
+                                const att = attendanceByCourse[course.courseId];
+                                if (!att || att.tracked === 0) return null;
+                                const attended = att.present + att.excused;
+                                return (
+                                  <p className="text-xs text-emerald-700 text-start mt-0.5" data-testid={`attendance-summary-${course.courseId}`}>
+                                    {isRtl
+                                      ? `حضرت ${attended} من ${att.tracked} جلسات`
+                                      : `Attended ${attended} of ${att.tracked} sessions`}
+                                    {att.absent > 0 && (
+                                      <span className="text-red-600"> • {isRtl ? `${att.absent} غياب` : `${att.absent} absent`}</span>
+                                    )}
+                                  </p>
+                                );
+                              })()}
                               <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-primary"}`} style={{ width: `${pct}%` }} />
                               </div>
