@@ -20,6 +20,7 @@ import {
   getCoursePageData,
   type DbLesson,
 } from "./course-components";
+import { COURSE_SLUG_TO_PROGRAM_ID } from "@/lib/site-config";
 
 interface WorkbookStructureSectionProps {
   programId: string;
@@ -97,13 +98,6 @@ function WorkbookStructureSection({ programId, workbookTitle, workbookDescriptio
   );
 }
 
-const SLUG_TO_ID: Record<string, string> = {
-  "influential-speaker": "core",
-  "certified-trainer": "tot",
-  "educators-program": "teachers",
-  "young-speaker": "children",
-};
-
 const HERO_COLORS: Record<string, string> = {
   core: "from-primary to-primary/80",
   tot: "from-amber-800 to-amber-700",
@@ -128,7 +122,7 @@ export default function CourseDetailPage() {
   const isRtl = lang === "ar";
   const apiBase = getApiBase();
 
-  const programId = SLUG_TO_ID[slug];
+  const programId = COURSE_SLUG_TO_PROGRAM_ID[slug];
   const program = programs.find((p) => p.id === programId);
 
   useEffect(() => {

@@ -68,6 +68,9 @@ export function useCurrency() {
   return { currency, currencyKey, setCurrencyKey, format };
 }
 
+// Single source of truth: program id → public web address (slug used in
+// /courses/:slug URLs). Every other map below is derived from this one so
+// renaming a slug here updates the whole site automatically.
 export const PROGRAM_SLUGS: Record<string, string> = {
   core: "influential-speaker",
   tot: "certified-trainer",
@@ -75,17 +78,20 @@ export const PROGRAM_SLUGS: Record<string, string> = {
   children: "young-speaker",
 };
 
+// Inverse of PROGRAM_SLUGS: current /courses/:slug → program id.
+export const COURSE_SLUG_TO_PROGRAM_ID: Record<string, string> = Object.fromEntries(
+  Object.entries(PROGRAM_SLUGS).map(([id, slug]) => [slug, id]),
+);
+
 // Legacy /programs/:slug URLs map to program IDs via this table so we can
 // redirect old shared/bookmarked links to the unified /courses/:slug page.
+// It accepts both the current slugs (so the redirect handler can no-op
+// safely) and the historical ones.
 export const SLUG_TO_PROGRAM_ID: Record<string, string> = {
-  "influential-speaker": "core",
+  ...COURSE_SLUG_TO_PROGRAM_ID,
   "trainer-certification": "tot",
   "teachers": "teachers",
   "kids": "children",
-  // Also accept the new /courses slugs so the redirect handler can no-op safely.
-  "certified-trainer": "tot",
-  "educators-program": "teachers",
-  "young-speaker": "children",
 };
 
 export function getBaseUrl(): string {
