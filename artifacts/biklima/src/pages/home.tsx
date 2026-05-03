@@ -74,6 +74,7 @@ import { JourneyCta } from "@/components/journey-cta";
 import { EnrollmentWizard } from "@/components/enrollment-wizard";
 import { ExternalLinkDialog } from "@/components/external-link-dialog";
 import { useHomeSections } from "@/hooks/use-home-sections";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { getSectionContent } from "@/cms/sections-schema";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -152,6 +153,7 @@ function MiniCalendar({ lang }: { lang: Lang }) {
 }
 
 export default function Home() {
+  const consultationEnabled = useFeatureFlag("consultation_booking");
   const { toast } = useToast();
   const { format: formatPrice, currency, currencyKey, setCurrencyKey } = useCurrency();
   const { lang, switchLang, dir } = useLang();
@@ -790,6 +792,7 @@ export default function Home() {
               </div>
             )}
             {/* ── FREE CONSULTATION BOOKING ── */}
+            {consultationEnabled && (
             <div className="mt-12 max-w-2xl mx-auto">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
                 <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 rounded-3xl p-6 overflow-hidden">
@@ -834,6 +837,7 @@ export default function Home() {
                 </div>
               </motion.div>
             </div>
+            )}
           </div>
         </section>
         )}

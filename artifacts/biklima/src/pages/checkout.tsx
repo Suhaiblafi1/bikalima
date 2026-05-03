@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { User, Mail, Phone, AlertCircle, ArrowRight, Home } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { programPageSlugFromCourseSlug } from "@/lib/site-config";
 
 function getApiBase() {
@@ -16,6 +17,7 @@ function getApiBase() {
 }
 
 export default function CheckoutPage() {
+  const paymentsEnabled = useFeatureFlag("payments");
   const [, navigate] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { lang } = useLang();
@@ -318,9 +320,16 @@ export default function CheckoutPage() {
                 />
               </div>
 
+              {!paymentsEnabled && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm p-3" data-testid="checkout-payments-disabled">
+                  {lang === "ar"
+                    ? "خدمة الدفع متوقفة مؤقتاً. يرجى المحاولة لاحقاً أو التواصل معنا."
+                    : "Payments are temporarily disabled. Please try again later or contact us."}
+                </div>
+              )}
               <Button
                 type="submit"
-                disabled={submitting || courseLoading || !!courseError || !courseId}
+                disabled={submitting || courseLoading || !!courseError || !courseId || !paymentsEnabled}
                 className="w-full rounded-xl py-6 font-bold text-base gap-2"
               >
                 {submitting

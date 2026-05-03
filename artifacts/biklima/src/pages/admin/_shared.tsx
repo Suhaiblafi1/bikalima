@@ -137,7 +137,8 @@ export type AdminPageKey =
   | "speech-evaluations" | "home-page" | "workbooks" | "field-media"
   | "certificates" | "chat" | "settings"
   | "leads" | "pipeline" | "tasks" | "automations"
-  | "message-templates" | "funnels";
+  | "message-templates" | "funnels"
+  | "audit-log" | "feature-flags";
 
 // Per-role page visibility. Admin always sees everything.
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
@@ -166,6 +167,9 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   automations: ["admin"],
   "message-templates": ["admin", "sales"],
   funnels: ["admin", "sales"],
+  // Platform governance — admin only.
+  "audit-log": ["admin"],
+  "feature-flags": ["admin"],
 };
 
 export const LEAD_STATUS_OPTIONS: { value: string; labelAr: string; color: string }[] = [

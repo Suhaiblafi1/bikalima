@@ -8,7 +8,7 @@ import {
 import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { requireAdmin, requireRole, isAdmin } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
-import { awardBadgeIfEligible } from "../lib/platform.js";
+import { awardBadgeIfEligible, recordAuditLog } from "../lib/platform.js";
 
 const router: IRouter = Router();
 
@@ -396,6 +396,7 @@ router.patch("/admin/certificates/:id", async (req: Request, res: Response) => {
     if ("issueDate" in body) update.issueDate = body.issueDate ? new Date(body.issueDate) : null;
     if ("expiryDate" in body) update.expiryDate = body.expiryDate ? new Date(body.expiryDate) : null;
 
+    const [before] = await db.select().from(certificatesTable).where(eq(certificatesTable.id, id));
     const [row] = await db
       .update(certificatesTable)
       .set(update)
@@ -403,6 +404,27 @@ router.patch("/admin/certificates/:id", async (req: Request, res: Response) => {
       .returning();
     if (!row) return res.status(404).json({ error: "not-found" });
     await logActivity(req, "update", "certificate", row.id, `Updated certificate ${row.code} (${row.fullName})`);
+    try {
+      const beforeDiff: Record<string, unknown> = {};
+      const afterDiff: Record<string, unknown> = {};
+      if (before) {
+        for (const k of Object.keys(update)) {
+          beforeDiff[k] = (before as Record<string, unknown>)[k];
+          afterDiff[k] = (row as Record<string, unknown>)[k];
+        }
+      }
+      await recordAuditLog({
+        actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+        action: "certificate.update",
+        entityType: "certificate",
+        entityId: row.id,
+        description: `Edited certificate ${row.code} (${row.fullName})`,
+        before: beforeDiff,
+        after: afterDiff,
+      });
+    } catch (err) {
+      req.log.warn({ err }, "audit log failed for certificate update");
+    }
     res.json({ certificate: row });
   } catch (err) {
     const code = (err as { code?: string }).code;
@@ -434,6 +456,18 @@ router.delete("/admin/certificates/:id", async (req: Request, res: Response) => 
       .returning();
     if (!row) return res.status(404).json({ error: "not-found" });
     await logActivity(req, "delete", "certificate", row.id, `Deleted certificate ${row.code} (${row.fullName})`);
+    try {
+      await recordAuditLog({
+        actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+        action: "certificate.delete",
+        entityType: "certificate",
+        entityId: row.id,
+        description: `Deleted certificate ${row.code} (${row.fullName})`,
+        before: { code: row.code, fullName: row.fullName, certType: row.certType, status: row.status },
+      });
+    } catch (err) {
+      req.log.warn({ err }, "audit log failed for certificate delete");
+    }
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err, id }, "delete certificate failed");

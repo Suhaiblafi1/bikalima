@@ -6,6 +6,7 @@ import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic2, Video, FileText, CheckCircle2, Send, Clock, Loader2 } from "lucide-react";
 import type { Lang } from "../translations";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
@@ -103,6 +104,7 @@ const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
   const t = TEXT[lang];
+  const videoEnabled = useFeatureFlag("video_upload");
   const [mode, setMode] = useState<Mode>("text");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -264,19 +266,21 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                     <FileText className="w-3.5 h-3.5" />
                     {t.modeText}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("video")}
-                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
-                      mode === "video"
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    data-testid="speech-eval-mode-video"
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    {t.modeVideo}
-                  </button>
+                  {videoEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setMode("video")}
+                      className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
+                        mode === "video"
+                          ? "bg-background shadow-sm text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      data-testid="speech-eval-mode-video"
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      {t.modeVideo}
+                    </button>
+                  )}
                 </div>
 
                 {/* Content input */}

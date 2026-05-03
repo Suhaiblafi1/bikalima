@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ function formatDate(s: string | null): string {
 }
 
 export function CertificateCard({ cert }: { cert: PublicCert }) {
+  const pdfEnabled = useFeatureFlag("certificate_pdf");
   const [, navigate] = useLocation();
   const verifyUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/certificates/${encodeURIComponent(cert.code)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encodeURIComponent(verifyUrl)}`;
@@ -130,12 +132,13 @@ export function CertificateCard({ cert }: { cert: PublicCert }) {
           </div>
 
           <div className="flex flex-wrap gap-2 pt-3 border-t">
-            {cert.certificateFileUrl && (
+            {cert.certificateFileUrl && pdfEnabled && (
               <a
                 href={cert.certificateFileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full bg-primary text-white hover:bg-primary/90 transition"
+                data-testid="cert-pdf-download"
               >
                 <ExternalLink className="w-3.5 h-3.5" /> تحميل الشهادة
               </a>

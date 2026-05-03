@@ -11,6 +11,7 @@ import {
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { requireRole, isAdmin } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
+import { recordAuditLog } from "../lib/platform.js";
 
 // Returns the set of courseIds this user can administer assignments for.
 // Admins get null (= unrestricted). Trainers get their assigned course list.
@@ -575,6 +576,10 @@ router.post("/admin/submissions/:id/evaluate", async (req: Request, res: Respons
     const trainerFeedback =
       typeof body.trainerFeedback === "string" ? body.trainerFeedback.trim() || null : null;
 
+    const [previous] = await db
+      .select()
+      .from(assignmentSubmissionsTable)
+      .where(eq(assignmentSubmissionsTable.id, id));
     const [updated] = await db
       .update(assignmentSubmissionsTable)
       .set({
@@ -590,6 +595,21 @@ router.post("/admin/submissions/:id/evaluate", async (req: Request, res: Respons
     if (!updated) {
       res.status(404).json({ error: "Submission not found" });
       return;
+    }
+    try {
+      await recordAuditLog({
+        actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+        action: "assignment.grade",
+        entityType: "assignment_submission",
+        entityId: updated.id,
+        description: `Graded submission ${updated.id.slice(0, 8)} → ${updated.totalScore ?? 0}/100`,
+        before: previous
+          ? { totalScore: previous.totalScore, status: previous.status, trainerFeedback: previous.trainerFeedback }
+          : undefined,
+        after: { totalScore: updated.totalScore, status: updated.status, trainerFeedback: updated.trainerFeedback, scores },
+      });
+    } catch (err) {
+      req.log.warn({ err }, "audit log failed for assignment grade");
     }
     // Notify the student that their submission was reviewed.
     try {

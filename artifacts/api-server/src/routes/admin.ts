@@ -149,7 +149,7 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
     }
 
     type UpdateOutcome =
-      | { ok: true; user: { id: string; email: string; role: string; firstName: string | null; lastName: string | null } }
+      | { ok: true; user: { id: string; email: string; role: string; firstName: string | null; lastName: string | null }; previousRole: string }
       | { ok: false; status: number; error: string };
 
     const outcome: UpdateOutcome = await db.transaction(async (tx) => {
@@ -193,12 +193,25 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
           id: usersTable.id, email: usersTable.email, role: usersTable.role,
           firstName: usersTable.firstName, lastName: usersTable.lastName,
         });
-      return { ok: true, user: updated };
+      return { ok: true, user: updated, previousRole: targetRow.role };
     });
 
     if (!outcome.ok) {
       res.status(outcome.status).json({ error: outcome.error });
       return;
+    }
+    try {
+      await recordAuditLog({
+        actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+        action: "user.role_change",
+        entityType: "user",
+        entityId: outcome.user.id,
+        description: `Changed role of ${outcome.user.email}: ${outcome.previousRole} → ${outcome.user.role}`,
+        before: { role: outcome.previousRole },
+        after: { role: outcome.user.role },
+      });
+    } catch (err) {
+      req.log.warn({ err }, "audit log failed for role change");
     }
     res.json({ user: outcome.user });
   } catch (err) {
@@ -398,7 +411,22 @@ router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
 router.delete("/admin/courses/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
+    const [existing] = await db.select().from(coursesTable).where(eq(coursesTable.id, req.params.id));
     await db.delete(coursesTable).where(eq(coursesTable.id, req.params.id));
+    if (existing) {
+      try {
+        await recordAuditLog({
+          actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+          action: "course.delete",
+          entityType: "course",
+          entityId: existing.id,
+          description: `Deleted course "${existing.titleAr}"`,
+          before: { titleAr: existing.titleAr, titleEn: existing.titleEn, slug: existing.slug, isPublished: existing.isPublished },
+        });
+      } catch (err) {
+        req.log.warn({ err }, "audit log failed for course delete");
+      }
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete course" });
@@ -561,7 +589,22 @@ router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) 
 router.delete("/admin/lessons/:id", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   try {
+    const [existing] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, req.params.id));
     await db.delete(lessonsTable).where(eq(lessonsTable.id, req.params.id));
+    if (existing) {
+      try {
+        await recordAuditLog({
+          actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+          action: "lesson.delete",
+          entityType: "lesson",
+          entityId: existing.id,
+          description: `Deleted lesson "${existing.titleAr}"`,
+          before: { titleAr: existing.titleAr, titleEn: existing.titleEn, courseId: existing.courseId, isPublished: existing.isPublished },
+        });
+      } catch (err) {
+        req.log.warn({ err }, "audit log failed for lesson delete");
+      }
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete lesson" });
@@ -700,8 +743,24 @@ router.patch("/admin/workbook-orders/:id", async (req: Request, res: Response) =
     // Sales role is restricted to status + notes, never the order contents.
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
+    const [existing] = await db.select().from(workbookOrdersTable).where(eq(workbookOrdersTable.id, req.params.id));
     const [updated] = await db.update(workbookOrdersTable).set(updates).where(eq(workbookOrdersTable.id, req.params.id)).returning();
     if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+    if (existing && updates.status !== undefined && existing.status !== updates.status) {
+      try {
+        await recordAuditLog({
+          actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+          action: "workbook_order.status_change",
+          entityType: "workbook_order",
+          entityId: updated.id,
+          description: `Order ${updated.id.slice(0, 8)} status: ${existing.status} → ${updated.status}`,
+          before: { status: existing.status, adminNotes: existing.adminNotes },
+          after: { status: updated.status, adminNotes: updated.adminNotes },
+        });
+      } catch (err) {
+        req.log.warn({ err }, "audit log failed for workbook-order update");
+      }
+    }
     res.json({ order: updated });
   } catch (err) {
     res.status(500).json({ error: "Failed to update order" });

@@ -45,7 +45,10 @@ import AdminTasksPage from "@/pages/admin/tasks";
 import AdminAutomationsPage from "@/pages/admin/automations";
 import AdminMessageTemplatesPage from "@/pages/admin/message-templates";
 import AdminFunnelsPage from "@/pages/admin/funnels";
+import AdminAuditLogPage from "@/pages/admin/audit-log";
+import AdminFeatureFlagsPage from "@/pages/admin/feature-flags";
 import ConsultationPage from "@/pages/consultation";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { SLUG_TO_PROGRAM_ID, PROGRAM_PAGE_SLUGS } from "@/lib/site-config";
 
 const queryClient = new QueryClient();
@@ -140,6 +143,12 @@ function AnimatedRouter() {
           <Route path="/admin/funnels">
             {() => (<AdminRoute><AdminFunnelsPage /></AdminRoute>)}
           </Route>
+          <Route path="/admin/audit-log">
+            {() => (<AdminRoute><AdminAuditLogPage /></AdminRoute>)}
+          </Route>
+          <Route path="/admin/feature-flags">
+            {() => (<AdminRoute><AdminFeatureFlagsPage /></AdminRoute>)}
+          </Route>
           <Route path="/consultation" component={ConsultationPage} />
           <Route path="/admin/settings">
             {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
@@ -151,7 +160,9 @@ function AnimatedRouter() {
           <Route path="/verify" component={VerifyPage} />
           <Route path="/verify-email" component={VerifyEmailPage} />
           <Route path="/certificates/:code" component={CertificateDetailPage} />
-          <Route path="/graduates" component={GraduatesPage} />
+          <Route path="/graduates">
+            {() => <GraduatesRouteGate />}
+          </Route>
           <Route path="/checkout" component={CheckoutPage} />
           <Route path="/confirmation" component={ConfirmationPage} />
           <Route path="/courses/:slug/learn" component={LearnPage} />
@@ -177,6 +188,18 @@ function AnimatedRouter() {
   );
 }
 
+function GraduatesRouteGate() {
+  const enabled = useFeatureFlag("graduates_page");
+  if (!enabled) return <Redirect to="/" />;
+  return <GraduatesPage />;
+}
+
+function LiveChatGate() {
+  const enabled = useFeatureFlag("live_chat");
+  if (!enabled) return null;
+  return <LiveChatWidget />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -184,7 +207,7 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <ScrollToTop />
           <AnimatedRouter />
-          <LiveChatWidget />
+          <LiveChatGate />
           <MobileStickyCta />
         </WouterRouter>
         <Toaster />
