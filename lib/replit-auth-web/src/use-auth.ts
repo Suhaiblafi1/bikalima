@@ -18,7 +18,7 @@ export function useAuth(): AuthState {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchUser = useCallback(() => {
-    fetch("/api/auth/user", { credentials: "include" })
+    fetch("/api/auth/user", { credentials: "include", cache: "no-store" })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<{ user: AuthUser | null }>;
