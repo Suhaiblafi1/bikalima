@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { MessageCircle, Sparkles, CalendarClock } from "lucide-react";
+import { Sparkles, CalendarClock } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { trackWhatsappClick, trackZoomBookingClick } from "@/lib/analytics";
 import { OPEN_CHAT_EVENT } from "@/components/live-chat-widget";
@@ -86,7 +86,7 @@ export function MobileStickyCta() {
           className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-[#25D366] text-white py-2 font-bold text-[11px] active:scale-95 transition-transform"
           data-testid="mobile-sticky-whatsapp"
         >
-          <MessageCircle className="w-4 h-4" />
+          <span className="text-base leading-none" aria-hidden>🐨</span>
           <span>{t.chat}</span>
         </button>
         <button

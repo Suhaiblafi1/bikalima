@@ -474,8 +474,8 @@ export function LiveChatWidget() {
             {/* Header */}
             <div className="bg-gradient-to-l from-[#128C7E] to-[#25D366] text-white px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl leading-none" aria-hidden>
+                  🐨
                 </div>
                 <div className="leading-tight">
                   <p className="font-bold text-sm">{t.headerTitle}</p>
@@ -685,7 +685,7 @@ export function LiveChatWidget() {
         {open ? (
           <X className="w-6 h-6 relative" strokeWidth={2.4} />
         ) : (
-          <MessageCircle className="w-7 h-7 relative" strokeWidth={2.2} />
+          <span className="relative text-[28px] leading-none" aria-hidden>🐨</span>
         )}
         {unread > 0 && !open && (
           <span
