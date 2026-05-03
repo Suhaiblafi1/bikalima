@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useLocation, Redirect } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,39 @@ import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
-import StudentAssignmentsTab from "@/components/student-assignments-tab";
 import { SkillsAndBadgesSection } from "@/components/skills-section";
 import { useLang } from "@/hooks/useLang";
+import {
+  useMyCourses,
+  useMyNextLesson,
+  useMyEnrollmentRequests,
+  useMyAttendanceSummary,
+  useMyLmsOrders,
+  useMyWorkbookOrders,
+  useMyBadges,
+  useAdminCheck,
+  useInvalidateDashboard,
+} from "@/hooks/use-dashboard-data";
+
+// Heavier dashboard panes are split into their own chunks so a sign-in
+// landing on the default Courses tab doesn't pay for assignments,
+// certificates, evaluations, or the workbook library bundle until the
+// user actually navigates there.
+const StudentAssignmentsTab = lazy(() => import("@/components/student-assignments-tab"));
+const StudentCertificatesTab = lazy(() => import("@/components/dashboard/student-certificates-tab"));
+const StudentAchievementsTab = lazy(() => import("@/components/dashboard/student-achievements-tab"));
+const StudentEvaluationsTab = lazy(() => import("@/components/dashboard/student-evaluations-tab"));
+const StudentWorkbooksTab = lazy(() => import("@/components/dashboard/student-workbooks-tab"));
+
+function TabSuspenseFallback() {
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-6 md:p-8 flex justify-center py-10">
+        <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
+      </CardContent>
+    </Card>
+  );
+}
 import { upcomingEvents, programs, getLocalizedProgram } from "@/programsData";
 import { ExternalLinkDialog } from "@/components/external-link-dialog";
 import { Wifi, MapPin, UserCheck, Phone, Save, KeyRound } from "lucide-react";
@@ -239,597 +269,10 @@ type NextLessonData = {
   deepLink: string;
 };
 
-type OwnedWorkbookData = {
-  orderId: string;
-  workbookId: string;
-  format: "pdf" | "print";
-  status: string;
-  purchasedAt: string;
-  slug: string | null;
-  titleAr: string | null;
-  titleEn: string | null;
-  descriptionAr: string | null;
-  descriptionEn: string | null;
-  coverImageUrl: string | null;
-  samplePdfUrl: string | null;
-};
+// Certificates / achievements / evaluations / workbooks panes have moved to
+// their own lazy-loaded modules under `@/components/dashboard/`. The types
+// and constants that used to live here moved with them.
 
-type MyCert = {
-  id: string;
-  code: string;
-  fullName: string;
-  certType: string;
-  programName: string | null;
-  issueDate: string;
-  expiryDate: string | null;
-  status: string;
-  certificateFileUrl: string | null;
-};
-
-const CERT_TYPE_LABELS: Record<string, { ar: string; en: string }> = {
-  "trainee": { ar: "متدرب مجتاز", en: "Graduated Trainee" },
-  "trainer": { ar: "مدرب معتمد", en: "Certified Trainer" },
-  "teacher": { ar: "معلم معتمد", en: "Certified Teacher" },
-  "child-facilitator": { ar: "ميسر برنامج الأطفال", en: "Children's Program Facilitator" },
-  "ambassador": { ar: "سفير بكلمة", en: "Bikalima Ambassador" },
-  "partner-institution": { ar: "مؤسسة شريكة معتمدة", en: "Accredited Partner Institution" },
-};
-const CERT_STATUS_LABELS: Record<string, { ar: string; en: string }> = {
-  active: { ar: "فعالة", en: "Active" },
-  expired: { ar: "منتهية", en: "Expired" },
-  "under-review": { ar: "قيد المراجعة", en: "Under review" },
-  suspended: { ar: "موقوفة", en: "Suspended" },
-  revoked: { ar: "ملغاة", en: "Revoked" },
-};
-const CERT_STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-800",
-  expired: "bg-amber-100 text-amber-800",
-  "under-review": "bg-sky-100 text-sky-800",
-  suspended: "bg-orange-100 text-orange-800",
-  revoked: "bg-rose-100 text-rose-800",
-};
-
-function StudentCertificatesTab({ apiBase, lang }: { apiBase: string; lang: Lang }) {
-  const [, navigate] = useLocation();
-  const [items, setItems] = useState<MyCert[]>([]);
-  const [loading, setLoading] = useState(true);
-  const isAr = lang === "ar";
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`${apiBase}/me/certificates`, { credentials: "include" })
-      .then(async (r) => (r.ok ? (await r.json()).certificates ?? [] : []))
-      .then((d: MyCert[]) => { if (!cancelled) { setItems(d); setLoading(false); } })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [apiBase]);
-
-  const copyLink = async (code: string) => {
-    const url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/certificates/${encodeURIComponent(code)}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      alert(isAr ? "تم نسخ رابط التحقق" : "Verification link copied");
-    } catch {
-      prompt(isAr ? "انسخ الرابط:" : "Copy the link:", url);
-    }
-  };
-
-  return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-6 md:p-8 space-y-4">
-        <h3 className="font-bold text-xl flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-primary" />
-          {isAr ? "شهاداتي واعتماداتي" : "My Certificates"}
-        </h3>
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-12 space-y-3">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-              <ShieldCheck className="w-10 h-10 text-primary/50" />
-            </div>
-            <p className="text-muted-foreground">
-              {isAr ? "لا توجد شهادات بعد." : "No certificates yet."}
-            </p>
-            <p className="text-xs text-muted-foreground max-w-md mx-auto">
-              {isAr
-                ? "تظهر هنا شهاداتك واعتماداتك الصادرة من بكلمة بمجرد إصدارها."
-                : "Your Bikalima certificates and accreditations will appear here once issued."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {items.map((c) => (
-              <div key={c.id} className="border border-border rounded-xl p-4 flex flex-wrap items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <code className="text-xs bg-muted px-2 py-0.5 rounded" dir="ltr">{c.code}</code>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${CERT_STATUS_COLORS[c.status] || "bg-gray-100 text-gray-700"}`}>
-                      {CERT_STATUS_LABELS[c.status]?.[lang] ?? c.status}
-                    </span>
-                  </div>
-                  <p className="font-bold mt-1">
-                    {(CERT_TYPE_LABELS[c.certType]?.[lang]) ?? c.certType}
-                    {c.programName ? <span className="text-muted-foreground font-normal"> · {c.programName}</span> : null}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {isAr ? "صدرت في: " : "Issued: "}
-                    {(() => { try { return new Date(c.issueDate).toLocaleDateString(isAr ? "ar-EG" : "en-US"); } catch { return c.issueDate; } })()}
-                    {c.expiryDate && (
-                      <>
-                        {isAr ? " · تنتهي في: " : " · Expires: "}
-                        {(() => { try { return new Date(c.expiryDate!).toLocaleDateString(isAr ? "ar-EG" : "en-US"); } catch { return c.expiryDate; } })()}
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {c.certificateFileUrl && (
-                    <a
-                      href={c.certificateFileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-border hover:bg-muted transition"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      {isAr ? "تحميل" : "Download"}
-                    </a>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyLink(c.code)}
-                    className="rounded-full gap-1.5 h-9"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    {isAr ? "نسخ رابط التحقق" : "Copy verify link"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate(`/certificates/${encodeURIComponent(c.code)}`)}
-                    className="rounded-full gap-1.5 h-9 bg-primary hover:bg-primary/90 text-white"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    {isAr ? "صفحة التحقق" : "Verify page"}
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-type BadgeCard = {
-  key: string;
-  titleAr: string;
-  titleEn: string;
-  descriptionAr: string | null;
-  descriptionEn: string | null;
-  icon: string;
-  colorClass: string;
-  earnedAt?: string;
-};
-
-const BADGE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  "play-circle": Play,
-  "mic": Mic,
-  "clipboard-check": ClipboardList,
-  "trending-up": Star,
-  "graduation-cap": Award,
-  "sparkles": Sparkles,
-  "shield-check": ShieldCheck,
-  "award": Award,
-};
-
-type BadgesResponse = {
-  badges: Array<BadgeCard & { earned: boolean; earnedAt: string | null }>;
-  earnedCount: number;
-  totalCount: number;
-};
-
-function StudentAchievementsTab({ apiBase, lang }: { apiBase: string; lang: Lang }) {
-  const [earned, setEarned] = useState<BadgeCard[]>([]);
-  const [locked, setLocked] = useState<BadgeCard[]>([]);
-  const [loading, setLoading] = useState(true);
-  const isAr = lang === "ar";
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetch(`${apiBase}/my/badges`, { credentials: "include" })
-      .then(async (r) => (r.ok ? (await r.json()) as BadgesResponse : { badges: [], earnedCount: 0, totalCount: 0 }))
-      .then((d) => {
-        if (cancelled) return;
-        const e: BadgeCard[] = [];
-        const l: BadgeCard[] = [];
-        for (const b of d.badges || []) {
-          const card: BadgeCard = {
-            key: b.key, titleAr: b.titleAr, titleEn: b.titleEn,
-            descriptionAr: b.descriptionAr, descriptionEn: b.descriptionEn,
-            icon: b.icon, colorClass: b.colorClass,
-            earnedAt: b.earnedAt ?? undefined,
-          };
-          if (b.earned) e.push(card); else l.push(card);
-        }
-        e.sort((a, b) => {
-          const ta = a.earnedAt ? new Date(a.earnedAt).getTime() : 0;
-          const tb = b.earnedAt ? new Date(b.earnedAt).getTime() : 0;
-          return tb - ta;
-        });
-        setEarned(e);
-        setLocked(l);
-        setLoading(false);
-      })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [apiBase]);
-  const renderCard = (b: BadgeCard, isEarned: boolean) => {
-    const Icon = BADGE_ICONS[b.icon] ?? Award;
-    return (
-      <div
-        key={b.key}
-        className={`rounded-2xl p-5 border ${isEarned ? "border-border bg-card" : "border-dashed border-border/60 bg-muted/30 opacity-70"}`}
-        data-testid={`badge-${b.key}-${isEarned ? "earned" : "locked"}`}
-      >
-        <div className="flex items-start gap-3">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isEarned ? b.colorClass : "bg-muted text-muted-foreground"}`}>
-            {isEarned ? <Icon className="w-6 h-6" /> : <Lock className="w-5 h-5" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-sm">{isAr ? b.titleAr : b.titleEn}</h4>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              {isAr ? (b.descriptionAr ?? "") : (b.descriptionEn ?? "")}
-            </p>
-            {isEarned && b.earnedAt && (
-              <p className="text-[10px] text-muted-foreground mt-2">
-                {isAr ? "حصلت عليها في " : "Earned on "}
-                {(() => { try { return new Date(b.earnedAt!).toLocaleDateString(isAr ? "ar-EG" : "en-US"); } catch { return b.earnedAt; } })()}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-  return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-6 md:p-8 space-y-6">
-        <div>
-          <h3 className="font-bold text-xl flex items-center gap-2">
-            <Award className="w-5 h-5 text-primary" />
-            {isAr ? "إنجازاتي" : "My Achievements"}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isAr
-              ? "اجمع شارات بكلمة كلما تقدّمت في رحلتك التعليمية."
-              : "Collect Bikalima badges as you progress in your learning journey."}
-          </p>
-        </div>
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : (
-          <>
-            {earned.length === 0 ? (
-              <div className="text-center py-10 space-y-3" data-testid="badges-empty">
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                  <Award className="w-10 h-10 text-primary/50" />
-                </div>
-                <p className="text-sm font-medium">
-                  {isAr ? "لم تحصل على أي شارة بعد." : "You haven't earned any badges yet."}
-                </p>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  {isAr
-                    ? "أكمل أول درس أو ارفع أول خطاب لك للحصول على شارتك الأولى."
-                    : "Complete your first lesson or upload your first speech to earn your first badge."}
-                </p>
-              </div>
-            ) : (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">
-                  {isAr ? `محصّلة (${earned.length})` : `Earned (${earned.length})`}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {earned.map((b) => renderCard(b, true))}
-                </div>
-              </div>
-            )}
-            {locked.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">
-                  {isAr ? `لم تُكتسب بعد (${locked.length})` : `Not earned yet (${locked.length})`}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {locked.map((b) => renderCard(b, false))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-type MyEvaluation = {
-  id: string;
-  status: "pending" | "in_review" | "completed" | "converted" | "cancelled";
-  speechTopic: string | null;
-  videoUrl: string | null;
-  transcriptText: string | null;
-  rubricScores: Record<string, number> | null;
-  rubricNotes: Record<string, string> | null;
-  overallScore: number | null;
-  programRecommendation: "core" | "tot" | "teachers" | "children" | "none" | null;
-  finalReportMd: string | null;
-  reportPublishedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-const EVAL_STATUS_LABELS: Record<MyEvaluation["status"], { ar: string; en: string; cls: string }> = {
-  pending:    { ar: "بانتظار التقييم",      en: "Pending review",       cls: "bg-amber-100 text-amber-800" },
-  in_review:  { ar: "قيد التقييم",          en: "Under review",         cls: "bg-sky-100 text-sky-800" },
-  completed:  { ar: "تم التقييم",           en: "Completed",            cls: "bg-emerald-100 text-emerald-800" },
-  converted:  { ar: "تحوّل إلى مسار تعلّم", en: "Converted to program", cls: "bg-violet-100 text-violet-800" },
-  cancelled:  { ar: "ملغى",                 en: "Cancelled",            cls: "bg-red-100 text-red-800" },
-};
-
-const RUBRIC_LABELS: { key: string; ar: string; en: string }[] = [
-  { key: "clarity", ar: "الوضوح", en: "Clarity" },
-  { key: "voice", ar: "الصوت", en: "Voice" },
-  { key: "body_language", ar: "لغة الجسد", en: "Body language" },
-  { key: "structure", ar: "الهيكلة", en: "Structure" },
-  { key: "content", ar: "المحتوى", en: "Content" },
-  { key: "presence", ar: "الحضور", en: "Presence" },
-  { key: "impact", ar: "التأثير", en: "Impact" },
-];
-
-const PROGRAM_LABELS: Record<string, { ar: string; en: string; slug: string | null }> = {
-  core:     { ar: "البرنامج الأساسي",       en: "Core Program",          slug: "core" },
-  tot:      { ar: "تدريب المدربين (ToT)",   en: "Train the Trainer",     slug: "tot" },
-  teachers: { ar: "المعلمين والمربين",      en: "Educators & Parents",   slug: "teachers" },
-  children: { ar: "برنامج الأطفال",         en: "Children's Program",    slug: "children" },
-  none:     { ar: "لا توصية محددة",         en: "No specific program",   slug: null },
-};
-
-function MarkdownLite({ text }: { text: string }) {
-  // Lightweight Markdown-ish renderer: keeps the report readable without
-  // pulling in a heavy parser. Handles paragraphs, blank-line breaks, and
-  // simple `## heading` / `- bullet` / `**bold**` patterns.
-  const lines = text.split(/\r?\n/);
-  const blocks: React.ReactNode[] = [];
-  let buf: string[] = [];
-  const flushPara = (i: number) => {
-    if (buf.length === 0) return;
-    blocks.push(
-      <p key={`p-${i}`} className="leading-relaxed whitespace-pre-wrap">
-        {renderInline(buf.join("\n"))}
-      </p>,
-    );
-    buf = [];
-  };
-  function renderInline(s: string): React.ReactNode[] {
-    const parts: React.ReactNode[] = [];
-    const re = /\*\*(.+?)\*\*/g;
-    let last = 0; let m: RegExpExecArray | null; let i = 0;
-    while ((m = re.exec(s)) !== null) {
-      if (m.index > last) parts.push(<span key={i++}>{s.slice(last, m.index)}</span>);
-      parts.push(<strong key={i++}>{m[1]}</strong>);
-      last = m.index + m[0].length;
-    }
-    if (last < s.length) parts.push(<span key={i++}>{s.slice(last)}</span>);
-    return parts;
-  }
-  let bullets: string[] = [];
-  const flushBullets = (i: number) => {
-    if (bullets.length === 0) return;
-    blocks.push(
-      <ul key={`ul-${i}`} className="list-disc ms-6 space-y-1">
-        {bullets.map((b, j) => <li key={j}>{renderInline(b)}</li>)}
-      </ul>,
-    );
-    bullets = [];
-  };
-  lines.forEach((raw, i) => {
-    const line = raw.trimEnd();
-    if (line === "") { flushPara(i); flushBullets(i); return; }
-    if (/^##\s+/.test(line)) {
-      flushPara(i); flushBullets(i);
-      blocks.push(<h4 key={`h-${i}`} className="font-bold text-base mt-3">{line.replace(/^##\s+/, "")}</h4>);
-    } else if (/^-\s+/.test(line)) {
-      flushPara(i);
-      bullets.push(line.replace(/^-\s+/, ""));
-    } else {
-      flushBullets(i);
-      buf.push(line);
-    }
-  });
-  flushPara(lines.length); flushBullets(lines.length);
-  return <div className="space-y-3 text-sm text-foreground">{blocks}</div>;
-}
-
-function StudentEvaluationsTab({ apiBase, lang }: { apiBase: string; lang: Lang }) {
-  const [, navigate] = useLocation();
-  const [items, setItems] = useState<MyEvaluation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isAr = lang === "ar";
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetch(`${apiBase}/me/speech-evaluations`, { credentials: "include" })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return (await r.json()) as { evaluations: MyEvaluation[] };
-      })
-      .then((d) => { if (!cancelled) { setItems(d.evaluations ?? []); setLoading(false); } })
-      .catch(() => { if (!cancelled) { setError(isAr ? "تعذّر تحميل التقييمات." : "Failed to load evaluations."); setLoading(false); } });
-    return () => { cancelled = true; };
-  }, [apiBase, isAr]);
-
-  return (
-    <Card className="rounded-2xl">
-      <CardContent className="p-6 md:p-8 space-y-4">
-        <h3 className="font-bold text-xl flex items-center gap-2">
-          <Mic className="w-5 h-5 text-primary" />
-          {isAr ? "تقييمات الخطاب" : "Speech Evaluations"}
-        </h3>
-
-        {loading ? (
-          <div className="flex justify-center py-10" data-testid="evaluations-loading">
-            <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : error ? (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3" data-testid="evaluations-error">
-            {error}
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-12 space-y-3" data-testid="evaluations-empty">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-              <Mic className="w-10 h-10 text-primary/50" />
-            </div>
-            <p className="text-muted-foreground">
-              {isAr ? "لم تُرسل أي خطاب للتقييم بعد." : "You haven't submitted any speech for evaluation yet."}
-            </p>
-            <Button
-              onClick={() => navigate("/#speech-evaluation")}
-              className="rounded-full bg-primary text-white hover:bg-primary/90"
-              data-testid="evaluations-submit-cta"
-            >
-              {isAr ? "أرسل خطابك للتقييم" : "Submit a speech"}
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4" data-testid="evaluations-list">
-            {items.map((ev) => {
-              const statusMeta = EVAL_STATUS_LABELS[ev.status];
-              const isPublished = !!ev.reportPublishedAt && !!ev.finalReportMd;
-              const recoMeta = ev.programRecommendation ? PROGRAM_LABELS[ev.programRecommendation] : null;
-              return (
-                <div
-                  key={ev.id}
-                  className="border border-border rounded-2xl p-5 space-y-3 bg-background"
-                  data-testid={`evaluation-card-${ev.id}`}
-                >
-                  <div className="flex flex-wrap items-center gap-3 justify-between">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${statusMeta.cls}`}>
-                        {statusMeta[lang]}
-                      </span>
-                      {isPublished && (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          {isAr ? "التقرير منشور" : "Report published"}
-                        </span>
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {isAr ? "أُرسل في" : "Submitted"}{" "}
-                        {(() => { try { return new Date(ev.createdAt).toLocaleDateString(isAr ? "ar-EG" : "en-US"); } catch { return ev.createdAt; } })()}
-                      </span>
-                    </div>
-                    {typeof ev.overallScore === "number" && isPublished && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{isAr ? "النتيجة" : "Score"}</span>
-                        <span className="px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-base">
-                          {ev.overallScore}/100
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {isPublished ? (
-                    <>
-                      {/* Rubric breakdown */}
-                      {ev.rubricScores && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          {RUBRIC_LABELS.map((r) => {
-                            const v = ev.rubricScores?.[r.key];
-                            if (typeof v !== "number") return null;
-                            const note = ev.rubricNotes?.[r.key];
-                            return (
-                              <div key={r.key} className="bg-muted/40 rounded-lg p-2">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-muted-foreground">{r[lang]}</span>
-                                  <span className="font-bold text-foreground">{v}</span>
-                                </div>
-                                {note && (
-                                  <p
-                                    className="mt-1 text-[11px] text-muted-foreground leading-relaxed whitespace-pre-wrap"
-                                    data-testid={`rubric-note-${r.key}-${ev.id}`}
-                                  >
-                                    {note}
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Recommendation + CTA */}
-                      {recoMeta && (
-                        <div className="flex flex-wrap items-center gap-3 bg-primary/5 border border-primary/20 rounded-xl p-3">
-                          <div className="flex-1 min-w-[200px]">
-                            <div className="text-[11px] text-muted-foreground">
-                              {isAr ? "البرنامج الموصى به" : "Recommended program"}
-                            </div>
-                            <div className="font-bold text-primary">{recoMeta[lang]}</div>
-                          </div>
-                          {recoMeta.slug && (
-                            <Button
-                              size="sm"
-                              onClick={() => navigate(`/courses/${recoMeta.slug}`)}
-                              className="rounded-full bg-primary text-white hover:bg-primary/90"
-                              data-testid={`enroll-cta-${ev.id}`}
-                            >
-                              {isAr ? "سجّل في هذا البرنامج" : "Enroll in this program"}
-                              {isAr ? <ArrowLeft className="w-3.5 h-3.5 ms-1" /> : <ArrowRight className="w-3.5 h-3.5 ms-1" />}
-                            </Button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Final report */}
-                      {ev.finalReportMd && (
-                        <div className="bg-card border border-border rounded-xl p-4" data-testid={`evaluation-report-${ev.id}`}>
-                          <div className="font-bold text-sm mb-2 text-muted-foreground">
-                            {isAr ? "التقرير النهائي" : "Final report"}
-                          </div>
-                          <MarkdownLite text={ev.finalReportMd} />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {isAr
-                        ? "سيظهر تقريرك الكامل هنا بمجرد أن يكمل المدرّب التقييم."
-                        : "Your full report will appear here once a trainer publishes it."}
-                    </p>
-                  )}
-
-                  {ev.speechTopic && (
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-bold">{isAr ? "موضوع الخطاب: " : "Topic: "}</span>{ev.speechTopic}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 function getApiBase() {
   const base = import.meta.env.BASE_URL || "/";
@@ -1331,18 +774,9 @@ export default function Dashboard() {
     setActiveTab(readTabFromUrl());
     return () => window.removeEventListener("popstate", handler);
   }, [location]);
-  const [courses, setCourses] = useState<CourseData[]>([]);
-  const [attendanceByCourse, setAttendanceByCourse] = useState<Record<string, { present: number; absent: number; excused: number; tracked: number }>>({});
-  const [orders, setOrders] = useState<OrderData[]>([]);
-  const [lmsOrders, setLmsOrders] = useState<LmsOrderData[]>([]);
-  const [requests, setRequests] = useState<RequestData[]>([]);
-  const [nextLesson, setNextLesson] = useState<NextLessonData | null>(null);
-  const [ownedWorkbooks, setOwnedWorkbooks] = useState<OwnedWorkbookData[]>([]);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [viewingCourse, setViewingCourse] = useState<string | null>(null);
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const apiBase = getApiBase();
 
   useEffect(() => {
@@ -1351,105 +785,54 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [errorToast]);
 
-  // Tab-driven refresh key — bumped by `fetchData()` (called after
-  // mutating actions like completing a lesson) so per-tab effects re-run.
-  const [refreshKey, setRefreshKey] = useState(0);
-  const fetchData = useCallback(() => setRefreshKey(k => k + 1), []);
+  // Shared React Query layer. Every /my/* and /me/* call below dedupes
+  // automatically across components and stays parallel — RQ kicks each
+  // request off as soon as `enabled` flips on, instead of awaiting the
+  // previous one inside a sequential async block.
+  // Prefer the auth context's user.id so dashboard fetches can start as
+  // soon as the session is known, without waiting on /me to resolve.
+  const userId = user?.id ?? meUser?.id ?? null;
+  const invalidateDashboard = useInvalidateDashboard(userId);
+  const fetchData = useCallback(() => invalidateDashboard(), [invalidateDashboard]);
 
-  // Core fetch — minimum needed to render the dashboard chrome itself
-  // (hero "continue learning" card + sidebar's enrolled-program badges).
-  // Everything tab-specific is fetched on tab activation below.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    let cancelled = false;
-    setDataLoading(true);
-    let anyFailed = false;
-    (async () => {
-      try {
-        const [cRes, nextRes] = await Promise.all([
-          fetch(`${apiBase}/my/courses`, { credentials: "include" }),
-          fetch(`${apiBase}/my/next-lesson`, { credentials: "include" }),
-        ]);
-        if (cancelled) return;
-        if (cRes.ok) { const d = await cRes.json(); setCourses(d.courses || []); } else anyFailed = true;
-        if (nextRes.ok) { const d = await nextRes.json(); setNextLesson(d.nextLesson || null); } else anyFailed = true;
-      } catch {
-        anyFailed = true;
-      }
-      if (cancelled) return;
-      if (anyFailed) {
-        setErrorToast(
-          lang === "ar"
-            ? "تعذّر تحميل بعض البيانات. حاول التحديث."
-            : "Some data failed to load. Try refreshing.",
-        );
-      }
-      setDataLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [isAuthenticated, apiBase, lang, refreshKey]);
+  // Core data — needed for the dashboard chrome itself (continue card,
+  // sidebar program badges) so it's loaded as soon as the user authenticates.
+  const coursesQuery = useMyCourses(userId, isAuthenticated);
+  const nextLessonQuery = useMyNextLesson(userId, isAuthenticated);
+  const courses = (coursesQuery.data ?? []) as CourseData[];
+  const nextLesson = (nextLessonQuery.data ?? null) as NextLessonData | null;
+  const dataLoading = coursesQuery.isLoading || nextLessonQuery.isLoading;
 
-  // Tab-scoped fetch: enrollment requests + attendance only when the
-  // Courses tab is active. Both are needed only inside the courses pane.
   useEffect(() => {
-    if (!isAuthenticated) return;
-    if (activeTab !== "courses") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const [rRes, attRes] = await Promise.all([
-          fetch(`${apiBase}/my/enrollment-requests`, { credentials: "include" }),
-          fetch(`${apiBase}/my/attendance/summary`, { credentials: "include" }),
-        ]);
-        if (cancelled) return;
-        if (rRes.ok) { const d = await rRes.json(); setRequests(d.requests || []); }
-        if (attRes.ok) { const d = await attRes.json(); setAttendanceByCourse(d.byCourse || {}); }
-      } catch { /* tab renders its own warm empty state */ }
-    })();
-    return () => { cancelled = true; };
-  }, [isAuthenticated, activeTab, apiBase, refreshKey]);
+    if (coursesQuery.isError || nextLessonQuery.isError) {
+      setErrorToast(
+        lang === "ar"
+          ? "تعذّر تحميل بعض البيانات. حاول التحديث."
+          : "Some data failed to load. Try refreshing.",
+      );
+    }
+  }, [coursesQuery.isError, nextLessonQuery.isError, lang]);
 
-  // Tab-scoped fetch: LMS orders only when the Orders tab is active.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (activeTab !== "orders") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const [oRes, woRes] = await Promise.all([
-          fetch(`${apiBase}/my/orders`, { credentials: "include" }),
-          fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
-        ]);
-        if (cancelled) return;
-        if (oRes.ok) { const d = await oRes.json(); setLmsOrders(d.orders || []); }
-        if (woRes.ok) { const d = await woRes.json(); setOrders(d.orders || []); }
-      } catch { /* warm empty state */ }
-    })();
-    return () => { cancelled = true; };
-  }, [isAuthenticated, activeTab, apiBase, refreshKey]);
-
-  // Tab-scoped fetch: owned workbooks only when the Workbooks tab is active.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (activeTab !== "workbooks") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const [wbRes, woRes] = await Promise.all([
-          fetch(`${apiBase}/my/workbooks`, { credentials: "include" }),
-          fetch(`${apiBase}/my/workbook-orders`, { credentials: "include" }),
-        ]);
-        if (cancelled) return;
-        if (wbRes.ok) { const d = await wbRes.json(); setOwnedWorkbooks(d.workbooks || []); }
-        if (woRes.ok) { const d = await woRes.json(); setOrders(d.orders || []); }
-      } catch { /* warm empty state */ }
-    })();
-    return () => { cancelled = true; };
-  }, [isAuthenticated, activeTab, apiBase, refreshKey]);
+  // Tab-scoped queries — only run when the relevant tab is active. The
+  // shared cache means switching back later is instant.
+  const enrollmentRequestsQuery = useMyEnrollmentRequests(userId, isAuthenticated && activeTab === "courses");
+  const attendanceQuery = useMyAttendanceSummary(userId, isAuthenticated && activeTab === "courses");
+  const lmsOrdersQuery = useMyLmsOrders(userId, isAuthenticated && activeTab === "orders");
+  // Workbook orders are needed inside both the Orders pane and the Workbooks
+  // pane (status badges); enable for either.
+  const workbookOrdersQuery = useMyWorkbookOrders(
+    userId,
+    isAuthenticated && (activeTab === "orders" || activeTab === "workbooks"),
+  );
+  const requests = (enrollmentRequestsQuery.data ?? []) as RequestData[];
+  const attendanceByCourse = attendanceQuery.data ?? {};
+  const lmsOrders = (lmsOrdersQuery.data ?? []) as LmsOrderData[];
+  const orders = (workbookOrdersQuery.data ?? []) as OrderData[];
 
   // /admin/check only matters for the admin-link UI in the dashboard
   // chrome. Defer it past first paint so the dashboard becomes
   // interactive without waiting on an admin probe most users don't need.
+  const [adminCheckEnabled, setAdminCheckEnabled] = useState(false);
   useEffect(() => {
     if (!isAuthenticated) return;
     const idle = (cb: () => void) => {
@@ -1458,18 +841,15 @@ export default function Dashboard() {
       if (typeof ric === "function") return ric(() => cb());
       return window.setTimeout(cb, 200);
     };
-    const handle = idle(() => {
-      fetch(`${apiBase}/admin/check`, { credentials: "include" })
-        .then(r => r.json())
-        .then(d => setIsAdmin(!!d.isAdmin))
-        .catch(() => setIsAdmin(false));
-    });
+    const handle = idle(() => setAdminCheckEnabled(true));
     return () => {
       const cic = (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback;
       if (typeof cic === "function") cic(handle);
       else window.clearTimeout(handle);
     };
-  }, [isAuthenticated, apiBase]);
+  }, [isAuthenticated]);
+  const adminCheckQuery = useAdminCheck(userId, adminCheckEnabled);
+  const isAdmin = !!adminCheckQuery.data;
 
   const [badgeToast, setBadgeToast] = useState<{ titleAr: string; titleEn: string; icon: string; colorClass: string } | null>(null);
   useEffect(() => {
@@ -1478,30 +858,28 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [badgeToast]);
 
+  // Badges drive both the Achievements tab and a "fresh badge" toast.
+  // Sharing the query means visiting the tab afterwards costs zero extra
+  // round-trips.
+  const badgesQuery = useMyBadges(userId, isAuthenticated && !!meUser?.id);
   useEffect(() => {
     if (!isAuthenticated || !meUser?.id) return;
-    let cancelled = false;
+    const d = badgesQuery.data;
+    if (!d?.badges) return;
     const seenKey = `bikalima:seen-badges:${meUser.id}`;
-    fetch(`${apiBase}/my/badges`, { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled || !d?.badges) return;
-        let seen: string[] = [];
-        try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch {}
-        const seenSet = new Set(seen);
-        const earned = d.badges.filter((b: { earned: boolean }) => b.earned);
-        const fresh = earned.filter((b: { key: string }) => !seenSet.has(b.key));
-        if (fresh.length > 0) {
-          const newest = fresh.slice().sort((a: { earnedAt: string | null }, b: { earnedAt: string | null }) =>
-            (b.earnedAt ? new Date(b.earnedAt).getTime() : 0) - (a.earnedAt ? new Date(a.earnedAt).getTime() : 0))[0];
-          setBadgeToast({ titleAr: newest.titleAr, titleEn: newest.titleEn, icon: newest.icon, colorClass: newest.colorClass });
-        }
-        const allKeys = earned.map((b: { key: string }) => b.key);
-        try { localStorage.setItem(seenKey, JSON.stringify(allKeys)); } catch {}
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [isAuthenticated, meUser?.id, apiBase]);
+    let seen: string[] = [];
+    try { seen = JSON.parse(localStorage.getItem(seenKey) || "[]"); } catch {}
+    const seenSet = new Set(seen);
+    const earned = d.badges.filter((b) => b.earned);
+    const fresh = earned.filter((b) => !seenSet.has(b.key));
+    if (fresh.length > 0) {
+      const newest = fresh.slice().sort((a, b) =>
+        (b.earnedAt ? new Date(b.earnedAt).getTime() : 0) - (a.earnedAt ? new Date(a.earnedAt).getTime() : 0))[0];
+      setBadgeToast({ titleAr: newest.titleAr, titleEn: newest.titleEn, icon: newest.icon, colorClass: newest.colorClass });
+    }
+    const allKeys = earned.map((b) => b.key);
+    try { localStorage.setItem(seenKey, JSON.stringify(allKeys)); } catch {}
+  }, [isAuthenticated, meUser?.id, badgesQuery.data]);
 
   const markComplete = async (lessonId: string) => {
     try {
@@ -2121,19 +1499,27 @@ export default function Dashboard() {
             )}
 
             {activeTab === "evaluations" && (
-              <StudentEvaluationsTab apiBase={apiBase} lang={lang} />
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentEvaluationsTab lang={lang} />
+              </Suspense>
             )}
 
             {activeTab === "assignments" && (
-              <StudentAssignmentsTab apiBase={apiBase} lang={lang} />
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentAssignmentsTab apiBase={apiBase} lang={lang} />
+              </Suspense>
             )}
 
             {activeTab === "certificates" && (
-              <StudentCertificatesTab apiBase={apiBase} lang={lang} />
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentCertificatesTab lang={lang} />
+              </Suspense>
             )}
 
             {activeTab === "achievements" && (
-              <StudentAchievementsTab apiBase={apiBase} lang={lang} />
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentAchievementsTab lang={lang} />
+              </Suspense>
             )}
 
             {activeTab === "schedule" && (
@@ -2224,87 +1610,9 @@ export default function Dashboard() {
             )}
 
             {activeTab === "workbooks" && (
-              <Card className="rounded-2xl" data-testid="workbooks-tab">
-                <CardContent className="p-6 md:p-8 space-y-4">
-                  <h3 className="font-bold text-xl flex items-center gap-2">
-                    <BookMarked className="w-5 h-5 text-primary" />
-                    {t.tabs.workbooks}
-                  </h3>
-                  {dataLoading ? (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {[0, 1].map((i) => (
-                        <div key={i} className="h-32 bg-muted/50 rounded-xl animate-pulse" />
-                      ))}
-                    </div>
-                  ) : ownedWorkbooks.length === 0 ? (
-                    <div className="text-center py-12 space-y-3">
-                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-                        <BookMarked className="w-10 h-10 text-primary/50" />
-                      </div>
-                      <p className="text-muted-foreground">
-                        {isRtl ? "لا توجد كرّاسات في مكتبتك بعد." : "Your library is empty for now."}
-                      </p>
-                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                        {isRtl
-                          ? "اطلب أول كرّاسة من متجرنا وستظهر هنا فور تأكيد الطلب."
-                          : "Order your first workbook — it will appear here once your order is confirmed."}
-                      </p>
-                      <Button onClick={() => navigate("/workbooks")} className="rounded-full bg-primary text-white text-sm">
-                        {isRtl ? "تصفّح الكرّاسات" : "Browse Workbooks"}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      {ownedWorkbooks.map((w) => {
-                        const title = isRtl ? (w.titleAr || w.titleEn) : (w.titleEn || w.titleAr);
-                        const desc = isRtl ? (w.descriptionAr || w.descriptionEn) : (w.descriptionEn || w.descriptionAr);
-                        return (
-                          <div key={w.orderId} className="border border-border rounded-xl overflow-hidden bg-background flex flex-col" data-testid={`owned-workbook-${w.workbookId}`}>
-                            <div className="aspect-[4/3] bg-muted relative overflow-hidden">
-                              {w.coverImageUrl ? (
-                                <img src={w.coverImageUrl} alt={title || ""} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <BookMarked className="w-10 h-10 text-primary/30" />
-                                </div>
-                              )}
-                              <span className={`absolute top-2 ${isRtl ? "start-2" : "end-2"} text-[10px] font-bold px-2 py-0.5 rounded-full ${w.format === "pdf" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}>
-                                {w.format === "pdf" ? (isRtl ? "رقمية" : "PDF") : (isRtl ? "مطبوعة" : "Print")}
-                              </span>
-                            </div>
-                            <div className="p-4 flex-1 flex flex-col">
-                              <p className="font-bold text-sm">{title || (isRtl ? "كرّاسة" : "Workbook")}</p>
-                              {desc && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{desc}</p>}
-                              <div className="mt-auto pt-3 flex items-center gap-2">
-                                {w.samplePdfUrl && (
-                                  <a
-                                    href={w.samplePdfUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-xs px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-1.5 font-medium"
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                    {isRtl ? "تنزيل" : "Download"}
-                                  </a>
-                                )}
-                                {w.slug && (
-                                  <button
-                                    onClick={() => navigate(`/workbooks/${w.slug}`)}
-                                    className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground"
-                                  >
-                                    {isRtl ? "التفاصيل" : "Details"}
-                                  </button>
-                                )}
-                                <span className={`ms-auto text-[10px] px-2 py-0.5 rounded-full ${statusColor(w.status)}`}>{statusLabel(w.status)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <Suspense fallback={<TabSuspenseFallback />}>
+                <StudentWorkbooksTab lang={lang} heading={t.tabs.workbooks} />
+              </Suspense>
             )}
           </main>
         </div>
@@ -2329,7 +1637,17 @@ export default function Dashboard() {
         </div>
       )}
       {badgeToast && (() => {
-        const Icon = BADGE_ICONS[badgeToast.icon] ?? Award;
+        const BADGE_TOAST_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+          "play-circle": Play,
+          "mic": Mic,
+          "clipboard-check": ClipboardList,
+          "trending-up": Star,
+          "graduation-cap": Award,
+          "sparkles": Sparkles,
+          "shield-check": ShieldCheck,
+          "award": Award,
+        };
+        const Icon = BADGE_TOAST_ICONS[badgeToast.icon] ?? Award;
         return (
           <div
             className={`fixed bottom-6 ${isRtl ? "left-6" : "right-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-border bg-card p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
