@@ -712,8 +712,12 @@ router.get("/parent/dashboard", async (req: Request, res: Response) => {
       .where(and(eq(parentLinksTable.parentUserId, me), eq(parentLinksTable.status, "active")));
     if (links.length === 0) { res.json({ children: [] }); return; }
     const studentIds = links.map(l => l.studentUserId);
-    const students = await db.select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
-      .from(usersTable).where(inArray(usersTable.id, studentIds));
+    const students = await db.select({
+      id: usersTable.id,
+      firstName: usersTable.firstName,
+      lastName: usersTable.lastName,
+      email: usersTable.email,
+    }).from(usersTable).where(inArray(usersTable.id, studentIds));
     const studentMap = new Map(students.map(s => [s.id, s]));
 
     // Latest 5 trainer reviews per child (joined with submission to get userId).
@@ -745,6 +749,7 @@ router.get("/parent/dashboard", async (req: Request, res: Response) => {
 
     const children = links.map(l => {
       const s = studentMap.get(l.studentUserId);
+      const name = s ? [s.firstName, s.lastName].filter(Boolean).join(" ").trim() || null : null;
       const myReviews = reviews.filter(r => r.userId === l.studentUserId).slice(0, 5).map(r => ({
         id: r.id,
         decision: r.decision,
@@ -760,7 +765,7 @@ router.get("/parent/dashboard", async (req: Request, res: Response) => {
       return {
         linkId: l.linkId,
         studentUserId: l.studentUserId,
-        name: s?.name ?? null,
+        name,
         email: s?.email ?? null,
         relationshipAr: l.relationshipAr,
         recentReviews: myReviews,
