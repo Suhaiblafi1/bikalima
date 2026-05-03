@@ -6,10 +6,9 @@ import {
   enrollmentsTable,
   usersTable,
   lessonSessionAttendanceTable,
-  courseTrainersTable,
 } from "@workspace/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { isAdmin, requireRole } from "../lib/admin.js";
+import { requireRole } from "../lib/admin.js";
 import { recordAuditLog } from "../lib/platform.js";
 import { createNotification } from "../lib/notifications.js";
 
@@ -18,31 +17,12 @@ const router: IRouter = Router();
 type AttStatus = "present" | "absent" | "excused";
 const VALID_STATUSES: AttStatus[] = ["present", "absent", "excused"];
 
-async function userIsTrainerOfCourse(userId: string, courseId: string): Promise<boolean> {
-  const rows = await db
-    .select({ id: courseTrainersTable.id })
-    .from(courseTrainersTable)
-    .where(and(eq(courseTrainersTable.courseId, courseId), eq(courseTrainersTable.userId, userId)))
-    .limit(1);
-  return rows.length > 0;
-}
-
-async function canManageCourse(req: Request, courseId: string): Promise<boolean> {
-  if (isAdmin(req)) return true;
-  if (!req.isAuthenticated() || !req.user) return false;
-  if (req.user.role === "trainer") {
-    return userIsTrainerOfCourse(req.user.id, courseId);
-  }
-  return false;
-}
-
 // ── ADMIN/TRAINER: course attendance overview ───────────────────────────
 router.get("/admin/courses/:id/attendance", async (req: Request, res: Response) => {
   if (!requireRole(req, res, "trainer")) return;
   const courseId = req.params.id;
   const [course] = await db.select().from(coursesTable).where(eq(coursesTable.id, courseId)).limit(1);
   if (!course) return res.status(404).json({ error: "Course not found" });
-  if (!(await canManageCourse(req, courseId))) return res.status(403).json({ error: "Forbidden" });
 
   const lessons = await db
     .select({ id: lessonsTable.id, titleAr: lessonsTable.titleAr, titleEn: lessonsTable.titleEn, sortOrder: lessonsTable.sortOrder })
@@ -79,7 +59,6 @@ router.post("/admin/lessons/:id/attendance", async (req: Request, res: Response)
   const lessonId = req.params.id;
   const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId)).limit(1);
   if (!lesson) return res.status(404).json({ error: "Lesson not found" });
-  if (!(await canManageCourse(req, lesson.courseId))) return res.status(403).json({ error: "Forbidden" });
 
   const entries = Array.isArray(req.body?.entries) ? req.body.entries : [];
   if (!entries.length) return res.status(400).json({ error: "entries required" });

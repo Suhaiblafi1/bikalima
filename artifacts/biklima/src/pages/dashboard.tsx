@@ -1536,7 +1536,14 @@ function CourseAttendanceLine({
   };
 
   if (tracked === 0) {
-    return null;
+    return (
+      <div
+        className="mt-0.5 text-xs text-muted-foreground text-start"
+        data-testid={`attendance-empty-${courseId}`}
+      >
+        {isRtl ? "لم تُسجَّل أي جلسات حضور بعد." : "No attendance recorded yet."}
+      </div>
+    );
   }
 
   return (
