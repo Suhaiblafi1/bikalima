@@ -37,6 +37,8 @@ const router: IRouter = Router();
 async function getScopedCourseIds(req: Request): Promise<string[] | null> {
   if (isAdmin(req)) return null;
   if (!req.user) return [];
+  // Sales/support can see all data (read-only via UI) — treated as unscoped for reads.
+  if (req.user.role === "sales") return null;
   if (req.user.role !== "trainer") return [];
   const rows = await db
     .select({ courseId: courseTrainersTable.courseId })
@@ -208,12 +210,14 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
 // ---- Course trainers (many-to-many between courses and trainer users) ----
 
 router.get("/admin/courses/:id/trainers", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "trainer", "sales")) return;
   try {
     // A trainer may only inspect the trainer roster of a course they're
     // assigned to. Admins are unrestricted. We treat a non-membership lookup
     // as 404 to avoid leaking which course IDs exist.
-    if (!isAdmin(req)) {
+    // Admins and sales/support are unrestricted. Trainers may only inspect the
+    // trainer roster of a course they're assigned to (404 to avoid leaking ids).
+    if (!isAdmin(req) && req.user?.role !== "sales") {
       const userId = req.user?.id;
       if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
       const [own] = await db.select({ id: courseTrainersTable.id })
@@ -324,7 +328,7 @@ router.delete("/admin/users/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/courses", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "trainer", "sales")) return;
   try {
     const scope = await getScopedCourseIds(req);
     const baseCourses = scope === null
@@ -589,7 +593,7 @@ router.delete("/admin/enrollments/:id", async (req: Request, res: Response) => {
 });
 
 router.get("/admin/enrollments", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "trainer", "sales")) return;
   try {
     const scope = await getScopedCourseIds(req);
     if (scope !== null && scope.length === 0) {
@@ -1100,7 +1104,7 @@ router.patch("/admin/orders/:id", adminPatchLmsOrder);
 
 // ===== Reviews moderation =====
 router.get("/admin/reviews", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "trainer", "sales")) return;
   try {
     const scope = await getScopedCourseIds(req);
     if (scope !== null && scope.length === 0) {
@@ -1273,7 +1277,7 @@ router.get("/admin/trainer/overview", async (req: Request, res: Response) => {
     const scope = await getScopedCourseIds(req);
     const courseIds = scope ?? [];
     if (scope !== null && courseIds.length === 0) {
-      return res.json({ pendingSubmissions: [], lessonsNeedingAttendance: [] });
+      return res.json({ pendingSubmissions: [], lessonsNeedingAttendance: [], upcomingLessons: [] });
     }
 
     const assignmentsQ = db
@@ -1346,7 +1350,13 @@ router.get("/admin/trainer/overview", async (req: Request, res: Response) => {
       .filter((l) => l.attendanceCount === 0)
       .slice(0, 20);
 
-    res.json({ pendingSubmissions, lessonsNeedingAttendance });
+    // "Upcoming lessons" — next published lessons across the trainer's courses.
+    const upcomingLessons = lessons
+      .filter((l) => true)
+      .slice(0, 10)
+      .map((l) => ({ id: l.id, titleAr: l.titleAr, courseId: l.courseId, courseTitleAr: l.courseTitleAr }));
+
+    res.json({ pendingSubmissions, lessonsNeedingAttendance, upcomingLessons });
   } catch (err) {
     req.log.error({ err }, "Failed to load trainer overview");
     res.status(500).json({ error: "Failed to load overview" });
@@ -1444,9 +1454,12 @@ router.delete("/admin/trainer-notes/:id", async (req: Request, res: Response) =>
 });
 
 router.get("/admin/speech-evaluations", async (req: Request, res: Response) => {
-  if (!requireRole(req, res, "trainer")) return;
+  if (!requireRole(req, res, "trainer", "sales")) return;
   try {
-    const rows = isAdmin(req)
+    // Admin and sales/support get unscoped read access; trainers see only
+    // evaluations explicitly assigned to them.
+    const unscoped = isAdmin(req) || req.user?.role === "sales";
+    const rows = unscoped
       ? await db
           .select()
           .from(speechEvaluationsTable)

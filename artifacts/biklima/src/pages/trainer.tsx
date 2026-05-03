@@ -23,6 +23,9 @@ type PendingSubmission = {
 type LessonNeedingAttendance = {
   id: string; titleAr: string; courseId: string; courseTitleAr: string | null;
 };
+type UpcomingLesson = {
+  id: string; titleAr: string; courseId: string | null; courseTitleAr: string | null;
+};
 
 export default function TrainerDashboardPage() {
   const apiFetch = useApiFetch();
@@ -33,6 +36,7 @@ export default function TrainerDashboardPage() {
   const [evals, setEvals] = useState<SpeechEvalRow[]>([]);
   const [pendingSubs, setPendingSubs] = useState<PendingSubmission[]>([]);
   const [lessonsNeed, setLessonsNeed] = useState<LessonNeedingAttendance[]>([]);
+  const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [openLearnerNotes, setOpenLearnerNotes] = useState<string | null>(null);
 
@@ -42,13 +46,14 @@ export default function TrainerDashboardPage() {
       apiFetch("/admin/courses").then((r) => (r.ok ? r.json() : { courses: [] })),
       apiFetch("/admin/enrollments").then((r) => (r.ok ? r.json() : { enrollments: [] })),
       apiFetch("/admin/speech-evaluations").then((r) => (r.ok ? r.json() : { evaluations: [] })),
-      apiFetch("/admin/trainer/overview").then((r) => (r.ok ? r.json() : { pendingSubmissions: [], lessonsNeedingAttendance: [] })),
+      apiFetch("/admin/trainer/overview").then((r) => (r.ok ? r.json() : { pendingSubmissions: [], lessonsNeedingAttendance: [], upcomingLessons: [] })),
     ]);
     setCourses(c.courses ?? []);
     setLearners(e.enrollments ?? []);
     setEvals(sp.evaluations ?? []);
     setPendingSubs(ov.pendingSubmissions ?? []);
     setLessonsNeed(ov.lessonsNeedingAttendance ?? []);
+    setUpcomingLessons(ov.upcomingLessons ?? []);
     setLoading(false);
   }, [apiFetch]);
 
@@ -133,6 +138,27 @@ export default function TrainerDashboardPage() {
                       <Button size="sm" variant="outline" onClick={() => navigate(`/admin/courses`)}>
                         <AlertTriangle className="w-3 h-3 ms-1" /> تسجيل
                       </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <h2 className="font-semibold flex items-center gap-2"><CalendarCheck className="w-4 h-4 text-primary" /> حصصي القادمة</h2>
+              {upcomingLessons.length === 0 ? (
+                <p className="text-sm text-muted-foreground">لا توجد حصص قادمة في دوراتك.</p>
+              ) : (
+                <ul className="space-y-2" data-testid="trainer-upcoming-lessons">
+                  {upcomingLessons.map((l) => (
+                    <li key={l.id} className="flex items-center justify-between border border-border rounded-xl px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{l.titleAr}</div>
+                        <div className="text-xs text-muted-foreground truncate">{l.courseTitleAr ?? "—"}</div>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/courses`)}>فتح</Button>
                     </li>
                   ))}
                 </ul>
