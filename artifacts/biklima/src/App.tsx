@@ -28,6 +28,7 @@ import GalleryPage from "@/pages/gallery";
 import WorkbooksPage from "@/pages/workbooks";
 import ProgramPage from "@/pages/program";
 import LearnPage from "@/pages/learn";
+import InstructorReviewsPage from "@/pages/instructor-reviews";
 import CheckoutPage from "@/pages/checkout";
 import ConfirmationPage from "@/pages/confirmation";
 import PrivacyPage from "@/pages/privacy";
@@ -150,6 +151,7 @@ function AnimatedRouter() {
           <Route path="/checkout" component={CheckoutPage} />
           <Route path="/confirmation" component={ConfirmationPage} />
           <Route path="/courses/:slug/learn" component={LearnPage} />
+          <Route path="/instructor/reviews" component={InstructorReviewsPage} />
           <Route path="/courses/:slug">
             {(params) => {
               const programId = SLUG_TO_PROGRAM_ID[params.slug];

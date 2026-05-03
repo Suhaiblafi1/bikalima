@@ -23,6 +23,7 @@ import funnelsRouter from "./funnels";
 import growthRouter from "./growth";
 import platformRouter from "./platform";
 import attendanceRouter from "./attendance";
+import activitiesRouter, { bootstrapActivities } from "./activities";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,9 @@ router.use(funnelsRouter);
 router.use(growthRouter);
 router.use(platformRouter);
 router.use(attendanceRouter);
+router.use(activitiesRouter);
+
+// Run idempotent activities bootstrap (seed badges, convert legacy lessons)
+void bootstrapActivities();
 
 export default router;

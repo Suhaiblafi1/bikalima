@@ -733,6 +733,24 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
     const enrollment = await db.select().from(enrollmentsTable)
       .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, lesson.courseId)));
     if (enrollment.length === 0) { res.status(403).json({ error: "Not enrolled in this course" }); return; }
+
+    // Gate: when the lesson has any required+published interactive activity,
+    // completion must be derived from those activities (auto-flipped by the
+    // activities route). Manual completion is rejected so students can't bypass.
+    const requiredActs = await db.execute(sql`
+      SELECT id FROM lesson_activities
+      WHERE lesson_id = ${lessonId} AND is_required = true AND is_published = true
+      LIMIT 1
+    `);
+    if (requiredActs.rows.length > 0) {
+      res.status(409).json({
+        error: "lesson_requires_activities",
+        message: "أكمل جميع الأنشطة المطلوبة لهذا الدرس أولاً",
+        messageEn: "Complete all required activities for this lesson first",
+      });
+      return;
+    }
+
     const existing = await db.select().from(lessonProgressTable)
       .where(and(eq(lessonProgressTable.userId, userId), eq(lessonProgressTable.lessonId, lessonId)));
     const wasAlreadyCompleted = existing.length > 0 && existing[0].completed === true;

@@ -8,6 +8,7 @@ import { PhoneInput } from "@/components/phone-input";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
 import StudentAssignmentsTab from "@/components/student-assignments-tab";
+import { SkillsAndBadgesSection } from "@/components/skills-section";
 import { useLang } from "@/hooks/useLang";
 import { upcomingEvents, programs, getLocalizedProgram } from "@/programsData";
 import { ExternalLinkDialog } from "@/components/external-link-dialog";
@@ -60,6 +61,7 @@ const dashT = {
       evaluations: "تقييمات الخطاب",
       certificates: "شهاداتي واعتماداتي",
       achievements: "إنجازاتي",
+      skills: "مهاراتي وشاراتي",
     },
     account: {
       heading: "معلومات الحساب",
@@ -149,6 +151,7 @@ const dashT = {
       evaluations: "Speech Evaluations",
       certificates: "My Certificates",
       achievements: "My Achievements",
+      skills: "Skills & Badges",
     },
     account: {
       heading: "Account Information",
@@ -237,9 +240,10 @@ const tabIcons = {
   evaluations: Mic,
   certificates: ShieldCheck,
   achievements: Award,
+  skills: Sparkles,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements";
+type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements" | "skills";
 
 type MyCert = {
   id: string;
@@ -1682,7 +1686,7 @@ export default function Dashboard() {
   const readTabFromUrl = (): Tab => {
     if (typeof window === "undefined") return "account";
     const t = new URLSearchParams(window.location.search).get("tab");
-    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule"];
+    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule", "skills"];
     return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "account";
   };
   const [activeTab, setActiveTab] = useState<Tab>(readTabFromUrl());
@@ -1799,7 +1803,7 @@ export default function Dashboard() {
     );
   }
 
-  const tabs: Tab[] = ["account", "courses", "assignments", "evaluations", "achievements", "certificates", "orders", "schedule"];
+  const tabs: Tab[] = ["account", "courses", "assignments", "evaluations", "achievements", "skills", "certificates", "orders", "schedule"];
 
   const currentCourse = viewingCourse ? courses.find(c => c.courseId === viewingCourse) : null;
   const currentLesson = currentCourse && activeLesson ? currentCourse.lessons.find(l => l.id === activeLesson) : null;
@@ -2266,6 +2270,18 @@ export default function Dashboard() {
 
             {activeTab === "schedule" && (
               <ScheduleTab lang={lang} t={t} courses={courses} />
+            )}
+
+            {activeTab === "skills" && (
+              <Card className="rounded-2xl">
+                <CardContent className="p-6 md:p-8">
+                  <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary" />
+                    {t.tabs.skills}
+                  </h3>
+                  <SkillsAndBadgesSection />
+                </CardContent>
+              </Card>
             )}
           </main>
         </div>

@@ -422,6 +422,147 @@ export const certificatesTable = pgTable("certificates", {
 ]);
 
 // ── Admin Activity Log (for Overview "Recent Activities") ───────────────
+// ── Interactive Activities (Task #48) ───────────────────────────────────
+// Each lesson has an ordered list of "activities". A lesson is considered
+// completed once all required activities for that lesson are completed by the
+// student. Existing video-only lessons get auto-converted to a single `video`
+// activity so legacy progress keeps working.
+
+export const ACTIVITY_TYPES = [
+  "video",
+  "text",
+  "quiz",
+  "reflection",
+  "speech_builder",
+  "voice_recording",
+  "video_submission",
+  "drag_drop",
+  "scenario",
+  "self_assessment",
+  "coach_feedback",
+  "challenge",
+] as const;
+
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
+export const lessonActivitiesTable = pgTable(
+  "lesson_activities",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    lessonId: varchar("lesson_id").notNull().references(() => lessonsTable.id, { onDelete: "cascade" }),
+    type: varchar("type", { length: 32 }).$type<ActivityType>().notNull(),
+    titleAr: varchar("title_ar").notNull(),
+    titleEn: varchar("title_en"),
+    instructionsAr: text("instructions_ar"),
+    instructionsEn: text("instructions_en"),
+    // Free-form per-type config (questions list, video url, drag pairs, scenario steps, etc.)
+    config: jsonb("config").$type<Record<string, unknown>>().notNull().default({}),
+    sortOrder: integer("sort_order").notNull().default(0),
+    isRequired: boolean("is_required").notNull().default(true),
+    // Skill keys awarded on successful completion
+    skillKeys: jsonb("skill_keys").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    pointsReward: integer("points_reward").notNull().default(10),
+    isPublished: boolean("is_published").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [index("idx_lesson_activities_lesson").on(t.lessonId, t.sortOrder)],
+);
+
+export const activitySubmissionsTable = pgTable(
+  "activity_submissions",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    activityId: varchar("activity_id").notNull().references(() => lessonActivitiesTable.id, { onDelete: "cascade" }),
+    lessonId: varchar("lesson_id").notNull().references(() => lessonsTable.id, { onDelete: "cascade" }),
+    attemptNumber: integer("attempt_number").notNull().default(1),
+    // pending = awaiting trainer review, completed = passed, needs_revision = trainer asked to retry
+    status: varchar("status", { length: 24 }).$type<"pending" | "completed" | "needs_revision">().notNull().default("completed"),
+    // Auto-graded score (quiz/drag-drop/self-assessment) — 0..100
+    autoScore: integer("auto_score"),
+    // For voice/video submissions
+    mediaUrl: varchar("media_url"),
+    // Free-form student-provided answer (text answers, drag mappings, etc.)
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_act_subs_user_act").on(t.userId, t.activityId),
+    index("idx_act_subs_status").on(t.status),
+  ],
+);
+
+export const activityReviewsTable = pgTable("activity_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId: varchar("submission_id").notNull().references(() => activitySubmissionsTable.id, { onDelete: "cascade" }),
+  reviewerId: varchar("reviewer_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  // 10-criterion rubric, each 0..10
+  rubricScores: jsonb("rubric_scores").$type<Record<string, number>>().notNull().default({}),
+  totalScore: integer("total_score"),
+  feedbackAr: text("feedback_ar"),
+  feedbackEn: text("feedback_en"),
+  // pass | needs_revision
+  decision: varchar("decision", { length: 24 }).$type<"pass" | "needs_revision">().notNull().default("pass"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// 8 public-speaking skills, each user has cumulative points
+export const studentSkillScoresTable = pgTable(
+  "student_skill_scores",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    skillKey: varchar("skill_key", { length: 32 }).notNull(),
+    points: integer("points").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [uniqueIndex("uq_skill_user").on(t.userId, t.skillKey)],
+);
+
+// "Fear meter" measurements: 0..100, lower is better
+export const studentFearMeterTable = pgTable("student_fear_meter", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  level: integer("level").notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const badgesTable = pgTable("badges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 64 }).notNull().unique(),
+  titleAr: varchar("title_ar").notNull(),
+  titleEn: varchar("title_en").notNull(),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
+  icon: varchar("icon", { length: 64 }),
+  // simple criteria: { type: "activities_completed" | "course_completed" | "skill_points", value: number, skillKey?: string, courseId?: string }
+  criteria: jsonb("criteria").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const studentBadgesTable = pgTable(
+  "student_badges",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    badgeId: varchar("badge_id").notNull().references(() => badgesTable.id, { onDelete: "cascade" }),
+    awardedAt: timestamp("awarded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("uq_user_badge").on(t.userId, t.badgeId)],
+);
+
+export type LessonActivity = typeof lessonActivitiesTable.$inferSelect;
+export type NewLessonActivity = typeof lessonActivitiesTable.$inferInsert;
+export type ActivitySubmission = typeof activitySubmissionsTable.$inferSelect;
+export type NewActivitySubmission = typeof activitySubmissionsTable.$inferInsert;
+export type ActivityReview = typeof activityReviewsTable.$inferSelect;
+export type StudentSkillScore = typeof studentSkillScoresTable.$inferSelect;
+export type StudentFearMeter = typeof studentFearMeterTable.$inferSelect;
+export type Badge = typeof badgesTable.$inferSelect;
+export type StudentBadge = typeof studentBadgesTable.$inferSelect;
+
 export const adminActivitiesTable = pgTable("admin_activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   actorUserId: varchar("actor_user_id").references(() => usersTable.id, { onDelete: "set null" }),

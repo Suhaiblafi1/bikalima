@@ -9,6 +9,7 @@ import {
   StickyNote, Save, Trash2, Award, Sparkles, Mail, MessageCircle, Hourglass,
 } from "lucide-react";
 import { Certificate } from "@/components/certificate";
+import { ActivityPlayer, type Activity, type SubmissionStatus } from "@/components/activity-player";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { programPageSlugFromCourseSlug } from "@/lib/site-config";
 
@@ -188,6 +189,66 @@ type SectionGroup = {
   titleEn: string;
   lessons: Lesson[];
 };
+
+function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
+  lessonId: string; apiBase: string; enrolled: boolean; onAnyChange: () => void | Promise<void>;
+}) {
+  const [acts, setActs] = useState<Activity[]>([]);
+  const [progress, setProgress] = useState<Record<string, { status: SubmissionStatus }>>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${apiBase}/lessons/${lessonId}/activities`, { credentials: "include" });
+      if (r.ok) {
+        const d = await r.json();
+        setActs(d.activities ?? []);
+        const pm: Record<string, { status: SubmissionStatus }> = {};
+        for (const k of Object.keys(d.myProgress ?? {})) {
+          pm[k] = { status: d.myProgress[k].status as SubmissionStatus };
+        }
+        setProgress(pm);
+      }
+    } finally { setLoading(false); }
+  }, [apiBase, lessonId]);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const handleSubmit = async (activityId: string, data: { payload?: Record<string, unknown>; mediaUrl?: string; autoScore?: number }) => {
+    setSubmitting(activityId);
+    try {
+      const r = await fetch(`${apiBase}/activities/${activityId}/submit`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (r.ok) {
+        await reload();
+        await onAnyChange();
+      }
+    } finally { setSubmitting(null); }
+  };
+
+  if (loading) return null;
+  if (acts.length === 0) return null;
+
+  return (
+    <div className="space-y-3 mb-5">
+      {acts.map(a => (
+        <ActivityPlayer
+          key={a.id}
+          activity={a}
+          status={progress[a.id]?.status ?? null}
+          onSubmit={(d) => handleSubmit(a.id, d)}
+          isSubmitting={submitting === a.id}
+          enrolled={enrolled}
+        />
+      ))}
+    </div>
+  );
+}
 
 function buildSectionGroups(sections: Section[], lessons: Lesson[]): SectionGroup[] {
   if (sections.length > 0) {
@@ -907,6 +968,25 @@ export default function LearnPage() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1.5">{completedCount} {t.of} {totalCount}</p>
                 </div>
+              )}
+
+              {/* Interactive activities */}
+              {!isLocked && currentLesson && (
+                <ActivityList
+                  lessonId={currentLesson.id}
+                  apiBase={`${base}/api`}
+                  enrolled={enrolled}
+                  onAnyChange={async () => {
+                    // Re-fetch lesson progress so the lesson auto-completes when all required done.
+                    try {
+                      const r = await fetch(`${base}/api/courses/${slug}/learn`, { credentials: "include" });
+                      if (r.ok) {
+                        const d = await r.json();
+                        setProgressMap(d.progressMap ?? {});
+                      }
+                    } catch {}
+                  }}
+                />
               )}
 
               {/* Downloadable resources */}

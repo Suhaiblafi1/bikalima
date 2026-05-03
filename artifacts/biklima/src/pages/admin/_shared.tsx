@@ -6,8 +6,10 @@ import {
   Video, FileText, ChevronUp, ChevronDown, Edit3, Trash2, X, Plus,
   BarChart3, BookOpen, CheckCircle, Clock, DollarSign, TrendingUp, XCircle,
   Users,
+  Layers,
 } from "lucide-react";
 import type { Role } from "@/hooks/use-me";
+import { AdminActivityEditor } from "@/components/admin-activity-editor";
 
 // ── Types ───────────────────────────────────────────────────────────────
 export type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; role: Role; createdAt: string };
@@ -376,6 +378,7 @@ export function LessonRow({
   const [newResUrl, setNewResUrl] = useState("");
   const [newResType, setNewResType] = useState("link");
   const [resLoading, setResLoading] = useState(false);
+  const [showActivities, setShowActivities] = useState(false);
 
   const addResource = async () => {
     if (!newResTitle.trim() || !newResUrl.trim()) return;
@@ -472,8 +475,10 @@ export function LessonRow({
         </div>
       </div>
       <AttendanceButton lesson={lesson} />
+      <Button variant="ghost" size="sm" onClick={() => setShowActivities(true)} className="h-6 px-1.5 text-[10px] text-violet-600 shrink-0 gap-0.5" title="الأنشطة التفاعلية"><Layers className="w-3 h-3" /> أنشطة</Button>
       <Button variant="ghost" size="sm" onClick={onEdit} className="h-6 w-6 p-0 text-blue-600 shrink-0"><Edit3 className="w-3 h-3" /></Button>
       <Button variant="ghost" size="sm" onClick={onDelete} className="h-6 w-6 p-0 text-destructive shrink-0"><Trash2 className="w-3 h-3" /></Button>
+      {showActivities && <AdminActivityEditor lessonId={lesson.id} onClose={() => setShowActivities(false)} />}
     </div>
   );
 }
