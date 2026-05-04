@@ -1,0 +1,244 @@
+أنت مهندس Full‑Stack Senior وخبير Production، Security، Performance، SEO، Accessibility، وتجربة المستخدم. لديك مشروع موقع "بكلمة" على Replit. المطلوب: افحص المشروع بالكامل ثم نفّذ تعديلات شاملة تجعل الموقع ممتازًا جدًا من كافة النواحي، مع الحفاظ على أقل تكلفة تشغيل ممكنة على Replit.
+
+الهدف:
+تحويل الموقع من نسخة تطوير/معاينة إلى موقع إنتاجي احترافي وآمن وسريع وواضح للمستخدم، خصوصًا صفحات البرامج، تسجيل الدخول، والدفع/التسجيل.
+
+نفّذ التالي بالكامل:
+
+1. Production Deployment
+- حوّل الموقع من Vite/Replit development preview إلى production build حقيقي.
+- أزل Replit dev banner من الإنتاج.
+- أزل React DevTools/HMR و/@vite/client من الإنتاج.
+- امنع كشف ملفات /src وsource maps في بيئة الإنتاج.
+- اضبط package.json و.replit وملفات التشغيل بحيث يتم build مرة واحدة ثم serve للـ dist فقط.
+- لا تستخدم vite dev server في الإنتاج.
+- استخدم static serving للملفات المبنية.
+- أضف cache headers طويلة للملفات المبنية hashed assets.
+- اجعل HTML بدون cache طويل حتى تظهر التحديثات بسرعة.
+- تأكد أن production server خفيف جدًا ولا يعمل watch mode أو عمليات تطوير مستمرة.
+
+2. Security
+- أصلح CORS فورًا:
+  - لا تعكس أي Origin بشكل تلقائي.
+  - اسمح فقط بالدومينات الرسمية الموثوقة مثل:
+    - https://bikalima.com
+    - https://www.bikalima.com
+    - ودومين Replit الموثوق فقط إذا كان ضروريًا للمعاينة.
+  - لا تستخدم Access-Control-Allow-Credentials إلا مع origins مسموحة صراحة.
+- أضف حماية CSRF للطلبات الحساسة، ومنها:
+  - login
+  - register
+  - logout
+  - orders
+  - chat
+  - admin APIs
+- أضف security headers مناسبة:
+  - Content-Security-Policy
+  - Strict-Transport-Security
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options أو frame-ancestors داخل CSP
+  - Referrer-Policy
+  - Permissions-Policy
+- أزل X-Powered-By: Express.
+- راجع كل مسارات admin/API وتأكد أنها محمية server-side وليس فقط frontend.
+- تأكد أن المستخدم غير المصرح له يحصل على 401/403 مناسب.
+- لا تكشف stack traces أو تفاصيل داخلية في أخطاء الإنتاج.
+- لا تكشف أسرار أو API keys أو source maps في الواجهة.
+- أضف rate limiting خفيف للطلبات الحساسة مثل login/register/chat/orders لتقليل الإساءة والتكلفة.
+- راجع cookies واجعلها آمنة:
+  - HttpOnly
+  - Secure في production
+  - SameSite مناسب
+  - مدة صلاحية واضحة
+
+3. Checkout & Auth UX
+- في صفحة /checkout?slug=... اعرض اسم الدورة والسعر وملخص بسيط قبل تسجيل الدخول.
+- لا تجعل صفحة checkout تبدو مغلقة بالكامل قبل عرض معلومات الدورة.
+- إذا لم يكن المستخدم مسجلًا، اعرض CTA واضح:
+  "تسجيل الدخول / إنشاء حساب لإكمال الطلب"
+- اجعل زر تسجيل الدخول من checkout يذهب مباشرة إلى:
+  /login?redirect=/checkout?slug=COURSE_SLUG
+  بدون المرور عبر /dashboard.
+- بعد التسجيل أو الدخول، أعد المستخدم تلقائيًا إلى صفحة checkout الأصلية.
+- تأكد أن redirect آمن ولا يسمح بروابط خارجية أو //.
+- وحّد مسار التسجيل:
+  - أزرار البرامج القابلة للبيع يجب أن تقود إلى /checkout?slug=...
+  - لا تستخدم mailto كمسار أساسي إذا كان checkout متاحًا.
+- إذا كان برنامج معين يحتاج تواصل يدوي فقط، اجعل ذلك واضحًا للمستخدم بدل خلط checkout وmailto.
+- عند إلغاء الدفع، اعرض رسالة واضحة وخيار إعادة المحاولة.
+- عند نجاح الطلب، اجعل صفحة confirmation واضحة وتعرض الخطوة التالية.
+- تأكد أن course slug القديم والجديد يعملان بدون كسر الروابط.
+
+4. Forms & Validation
+- اربط كل label مع input عبر htmlFor/id في جميع النماذج.
+- أضف aria-describedby للأخطاء والملاحظات.
+- أضف role="alert" لرسائل الأخطاء المهمة.
+- حسّن تحقق رقم الهاتف:
+  - تحقق من وجود رقم.
+  - تحقق من الطول حسب الدولة قدر الإمكان.
+  - خزّن الرقم بصيغة دولية واضحة.
+  - امنع الأرقام القصيرة جدًا.
+- أضف رسائل أخطاء واضحة بالعربية والإنجليزية.
+- امنع إرسال نماذج فارغة أو ناقصة من الواجهة والخادم.
+- لا تعتمد على تحقق الواجهة فقط؛ أضف تحقق server-side.
+- تأكد من autocomplete المناسب:
+  - email
+  - current-password
+  - new-password
+  - given-name
+  - family-name
+  - tel
+- اجعل أزرار الإرسال تظهر loading state وتمنع الإرسال المكرر.
+- حسّن رسائل login/register بحيث لا تكشف معلومات حساسة بشكل زائد.
+
+5. Performance & Lowest Replit Cost
+- قلل حجم JavaScript وCSS قدر الإمكان.
+- استخدم code splitting وlazy loading للصفحات الثقيلة.
+- لا تحمل admin/dashboard/gallery/video/chat code في الصفحة الرئيسية إلا عند الحاجة.
+- اجعل صفحات admin lazy loaded فقط بعد الدخول والصلاحية.
+- حسّن الصور:
+  - ضغط الصور الكبيرة.
+  - استخدم WebP/AVIF إن كان مناسبًا.
+  - استخدم أحجام responsive.
+  - استخدم lazy loading للصور خارج أول شاشة.
+  - استخدم preload فقط لأهم صورة في hero.
+- حسّن تحميل الخطوط:
+  - قلل عدد الأوزان.
+  - استخدم font-display: swap.
+- قلل polling في live chat:
+  - لا يعمل polling إذا لم توجد session.
+  - اجعل polling فقط عند فتح الدردشة أو بفاصل أطول.
+  - أوقف polling عند إغلاق الصفحة أو عدم النشاط.
+- Cache بيانات عامة مثل:
+  - feature flags
+  - courses
+  - public CMS content
+- لا تستخدم intervals غير ضرورية.
+- اضبط Replit config لاستخدام أرخص نمط تشغيل مناسب:
+  - build static assets مرة واحدة
+  - server خفيف يخدم dist وAPI فقط
+  - بدون dev server
+  - بدون watch mode
+- أضف healthcheck بسيط وخفيف.
+- تأكد أن server لا يستهلك CPU في وضع الخمول.
+- لا تضف خدمات مدفوعة جديدة إلا إذا كانت ضرورية جدًا، وإن احتجتها اشرح السبب.
+
+6. SEO
+- اجعل meta title وdescription وcanonical وOpen Graph ديناميكية لكل صفحة مهمة.
+- لا تجعل كل الصفحات تشير canonical إلى الصفحة الرئيسية.
+- صفحة كل برنامج يجب أن يكون لها:
+  - title خاص
+  - description خاص
+  - canonical خاص
+  - OG title/description/image خاصة
+- صفحة checkout يفضل أن تكون noindex إذا لم تكن صفحة تسويقية.
+- تأكد أن robots/noindex لا يظهر في production على الدومين الرسمي للصفحات العامة.
+- أضف sitemap.xml مناسب.
+- أضف robots.txt مناسب.
+- أضف structured data للبرامج/الدورات إن أمكن:
+  - Course
+  - Organization
+  - WebSite
+- حسّن hreflang أو lang/dir إن كان الموقع عربي/إنجليزي.
+- تأكد أن document.title يتغير حسب الصفحة.
+
+7. Accessibility & Mobile
+- اختبر RTL وLTR.
+- أصلح أي تداخل بين live chat وصفحات login/checkout على الموبايل.
+- اجعل chat widget لا يغطي أزرار الدفع أو الإرسال.
+- اجعل الأزرار والحقول قابلة للتركيز بالكيبورد.
+- أضف aria-label للأزرار الأيقونية.
+- تأكد من contrast جيد للنصوص والأزرار.
+- تأكد أن touch targets مناسبة للموبايل.
+- اجعل رسائل الأخطاء واضحة لقارئات الشاشة.
+- لا تستخدم نصوص صغيرة جدًا داخل بطاقات أو أزرار.
+- تأكد أن الصفحة لا تحتوي scroll أفقي على الموبايل.
+- اختبر مقاسات:
+  - 390px mobile
+  - 768px tablet
+  - 1280px desktop
+
+8. Content & UX Polish
+- حافظ على هوية "بكلمة" البصرية واللغة العربية الراقية.
+- اجعل مسار المستخدم واضحًا:
+  - التعرف على البرنامج
+  - مشاهدة السعر/القيمة
+  - التسجيل/الدفع
+  - التأكيد
+  - الوصول للتعلم أو انتظار التواصل
+- حسّن النصوص الصغيرة في checkout/login لتكون مطمئنة وواضحة.
+- اجعل الأسعار واضحة بالعملة المناسبة.
+- لا تخلط بين “طلب تسجيل” و“دفع مباشر” إلا إذا كان هذا مقصودًا ومشروحًا.
+- تأكد أن الروابط الخارجية تفتح بأمان مع rel="noopener noreferrer".
+- راجع صفحة privacy وterms وتأكد أنها قابلة للوصول من الفوتر.
+
+9. API & Backend
+- راجع API routes العامة والخاصة.
+- أضف validation schemas لكل body مهم.
+- أعد status codes صحيحة:
+  - 400 للمدخلات الخاطئة
+  - 401 لغير المسجل
+  - 403 لغير المصرح
+  - 404 لغير الموجود
+  - 429 عند rate limit
+  - 500 لأخطاء الخادم العامة بدون تفاصيل
+- أضف logging خفيف في الإنتاج بدون كشف بيانات حساسة.
+- لا تسجل كلمات مرور أو tokens أو بيانات دفع.
+- تأكد أن /api/courses/:slug لا يكشف بيانات إدارية غير لازمة.
+- تأكد أن /api/orders لا ينشئ طلبًا إلا لمستخدم مصرح ومع بيانات صحيحة.
+- تأكد أن verify-session لا يمنح صلاحية إلا بعد تحقق حقيقي من الدفع.
+- إن كان الدفع غير مفعل أو gateway غير مضبوط، اعرض manual review بوضوح ولا توهم المستخدم أن الدفع تم.
+
+10. Testing & Verification
+- أضف أو حدّث اختبارات أساسية لما يلي:
+  - checkout كزائر غير مسجل
+  - login redirect إلى checkout
+  - register redirect إلى checkout
+  - CORS يرفض origin غير مسموح
+  - protected admin routes ترجع 401/403
+  - course API للدورة certified-trainer
+  - form validation في login/register/checkout
+  - payments disabled state إن وجد
+  - confirmation success/failure/manual states
+- شغّل:
+  - lint
+  - typecheck
+  - tests
+  - production build
+- أصلح أي أخطاء تظهر.
+- اختبر يدويًا أو آليًا الصفحات التالية على desktop/mobile:
+  - /
+  - /programs/trainer-certification
+  - /checkout?slug=certified-trainer
+  - /login?redirect=/checkout?slug=certified-trainer
+  - /confirmation
+  - /privacy
+  - /terms
+  - /admin
+- تأكد أن production build لا يحتوي:
+  - /@vite/client
+  - React refresh
+  - Replit dev banner
+  - source maps مكشوفة
+  - console logs غير ضرورية
+
+11. Deliverables
+في نهاية العمل، قدّم تقريرًا مختصرًا يحتوي:
+- الملفات التي تم تعديلها.
+- أهم التحسينات المنفذة.
+- كيف أصبحت النسخة أقل تكلفة على Replit.
+- ما الذي تم إصلاحه أمنيًا.
+- نتائج build/test/lint.
+- أي نقاط بقيت اختيارية أو تحتاج إعدادات خارجية مثل الدومين الرسمي أو مفاتيح الدفع.
+
+قيود مهمة:
+- لا تكسر التصميم الحالي أو الهوية البصرية.
+- لا تحذف ميزات موجودة إلا إذا كانت خطرة أو غير مستخدمة، واشرح السبب.
+- لا تضف اعتماديات ثقيلة بلا ضرورة.
+- لا تضف خدمات مدفوعة جديدة.
+- لا تضع أسرار في الكود.
+- حافظ على العربية RTL والإنجليزية LTR.
+- إن وجدت تعارضًا بين أقل تكلفة وأفضل تجربة، اختر الحل المتوازن واشرح القرار.
+- قبل التعديل، افحص الملفات أولًا ثم نفّذ بخطوات مرتبة.
+- بعد كل تعديل كبير، شغّل الاختبارات المناسبة.
+- لا تعتبر المهمة مكتملة حتى يعمل production build بنجاح.
