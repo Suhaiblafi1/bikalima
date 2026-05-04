@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { programs, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_FACTS } from "@/programsData";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { T as Translations } from "@/translations";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { useCurrency, SLUG_TO_PROGRAM_ID, PROGRAM_SLUGS } from "@/lib/site-config";
 import { useSiteSettings } from "@/hooks/use-site-settings";
@@ -34,107 +35,6 @@ const HERO_GRADIENT: Record<string, string> = {
 
 const ADMIN_EMAIL = "info@bikalima.com";
 
-const T = {
-  ar: {
-    breadcrumbPrograms: "البرامج",
-    backToPrograms: "العودة للبرامج",
-    sectionAudience: "لمن هذا البرنامج؟",
-    sectionProblem: "المشكلة التي يحلّها",
-    sectionMeta: "تفاصيل البرنامج",
-    metaDuration: "المدة",
-    metaSessions: "عدد الجلسات",
-    metaPrice: "السعر",
-    metaHoursUnit: "ساعة",
-    metaSessionsUnit: "جلسة",
-    metaSchoolsOnly: "للمدارس فقط",
-    sectionOutcomes: "مخرجات البرنامج",
-    sectionModules: "الجلسات والمحاور",
-    sectionWorkbook: "الكراسة المرافقة",
-    sectionWorkbookStructure: "بنية الكراسة",
-    workbookSectionsLabel: "قسم تدريبي",
-    workbookUnitsLabel: "وحدة رئيسية",
-    workbookFactsIntro: "مبني على كراسة تدريبية مُحكمة، بهيكل واضح وتمارين مُتدرّجة:",
-    sectionFaq: "أسئلة شائعة",
-    shareBtn: "مشاركة",
-    shareCopied: "تم نسخ الرابط",
-    transformationLabel: "التحوّل",
-    primaryCta: "احجز مقعدك الآن",
-    secondaryCta: "لدي سؤال قبل الحجز",
-    schoolPrimaryCta: "اطلب عرضًا للمدرسة",
-    schoolNote: "هذا البرنامج يُقدَّم للمدارس والمؤسسات حصراً عبر مدرّبين معتمدين، وليس للشراء الفردي المباشر.",
-    finalCtaHeading: "خطوتك القادمة",
-    finalCtaSub: "خطوة واحدة تفصلك عن أن تبدأ رحلتك مع",
-    notFound: "لم نعثر على هذا البرنامج",
-    backHome: "العودة للرئيسية",
-    reassure: "سيتم إنشاء حسابك أو تسجيل دخولك أولًا، ثم إكمال طلب التسجيل والدفع بأمان.",
-    schoolMailSubject: "طلب عرض مدرسة لبرنامج",
-    schoolMailBody: "السلام عليكم،%0D%0A%0D%0Aأودّ ترتيب البرنامج التالي لمدرستنا/مؤسستنا: ",
-    schoolMailBody2: "%0D%0A%0D%0Aاسم المدرسة: %0D%0Aالمسؤول للتواصل: %0D%0Aعدد الطلاب: %0D%0Aرقم التواصل: %0D%0Aملاحظات: %0D%0A",
-    waBookingMsg: (title: string) => `السلام عليكم، لدي سؤال قبل الحجز في برنامج «${title}». أرجو التواصل معي.`,
-    waSchoolMsg: (title: string) => `السلام عليكم، نودّ ترتيب برنامج «${title}» لمدرستنا. أرجو التواصل لمعرفة التفاصيل.`,
-    tabs: {
-      overview: "نظرة عامة",
-      audience: "لمن هذا البرنامج؟",
-      outcomes: "ماذا ستتعلم؟",
-      modules: "المحاور والجلسات",
-      workbook: "الكراسة والمواد",
-      booking: "السعر والحجز",
-      faq: "الأسئلة الشائعة",
-    },
-    bookingHeading: "السعر والحجز",
-    bookingSub: "كل التفاصيل التي تحتاجها قبل أن تحجز مقعدك.",
-  },
-  en: {
-    breadcrumbPrograms: "Programs",
-    backToPrograms: "Back to Programs",
-    sectionAudience: "Who Is This Program For?",
-    sectionProblem: "The Problem It Solves",
-    sectionMeta: "Program Details",
-    metaDuration: "Duration",
-    metaSessions: "Sessions",
-    metaPrice: "Price",
-    metaHoursUnit: "hours",
-    metaSessionsUnit: "sessions",
-    metaSchoolsOnly: "Schools only",
-    sectionOutcomes: "Program Outcomes",
-    sectionModules: "Sessions & Modules",
-    sectionWorkbook: "The Companion Workbook",
-    sectionWorkbookStructure: "Workbook Structure",
-    workbookSectionsLabel: "training sections",
-    workbookUnitsLabel: "core units",
-    workbookFactsIntro: "Built on a rigorously structured training workbook with progressive exercises:",
-    sectionFaq: "Frequently Asked Questions",
-    shareBtn: "Share",
-    shareCopied: "Link copied",
-    transformationLabel: "Transformation",
-    primaryCta: "Reserve Your Seat",
-    secondaryCta: "I have a question",
-    schoolPrimaryCta: "Request a school proposal",
-    schoolNote: "This program is delivered exclusively to schools and institutions through certified trainers — not as an individual purchase.",
-    finalCtaHeading: "Your Next Step",
-    finalCtaSub: "One step away from starting your journey with",
-    notFound: "Program not found",
-    backHome: "Back to Home",
-    reassure: "We'll create your account or sign you in first, then complete enrollment and payment securely.",
-    schoolMailSubject: "School proposal request for program",
-    schoolMailBody: "Hello,%0D%0A%0D%0AWe'd like to arrange the following program for our school/institution: ",
-    schoolMailBody2: "%0D%0A%0D%0ASchool name: %0D%0AContact person: %0D%0AStudent count: %0D%0APhone: %0D%0ANotes: %0D%0A",
-    waBookingMsg: (title: string) => `Hello, I have a question before booking the "${title}" program. Please get in touch.`,
-    waSchoolMsg: (title: string) => `Hello, we'd like to arrange the "${title}" program for our school. Please get in touch with the details.`,
-    tabs: {
-      overview: "Overview",
-      audience: "Who It's For",
-      outcomes: "What You'll Learn",
-      modules: "Modules & Sessions",
-      workbook: "Workbook & Materials",
-      booking: "Price & Booking",
-      faq: "FAQ",
-    },
-    bookingHeading: "Price & Booking",
-    bookingSub: "Everything you need before reserving your seat.",
-  },
-};
-
 type TabId = "overview" | "audience" | "outcomes" | "modules" | "workbook" | "booking" | "faq";
 const TAB_ORDER: TabId[] = ["overview", "audience", "outcomes", "modules", "workbook", "booking", "faq"];
 
@@ -149,7 +49,7 @@ export default function ProgramPage() {
   const { lang } = useLang();
   const { format: formatPrice } = useCurrency();
   const isRtl = lang === "ar";
-  const t = T[lang === "ar" ? "ar" : "en"];
+  const t = Translations[lang === "ar" ? "ar" : "en"].programPage;
 
   const programId = SLUG_TO_PROGRAM_ID[slug];
   const program = programs.find((p) => p.id === programId);
@@ -172,7 +72,7 @@ export default function ProgramPage() {
 
   const handleShare = async () => {
     const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-    const shareTitle = program ? getLocalizedProgram(program, lang).shortTitle + " — بكلمة" : "بكلمة";
+    const shareTitle = program ? getLocalizedProgram(program, lang).shortTitle + t.shareTitleSuffix : t.shareSiteName;
     if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (data: ShareData) => Promise<void> }).share) {
       try {
         await (navigator as Navigator & { share: (data: ShareData) => Promise<void> }).share({ title: shareTitle, url: shareUrl });
@@ -268,7 +168,7 @@ export default function ProgramPage() {
     if (openWhatsapp(t.waBookingMsg(loc.shortTitle))) return;
     window.location.href =
       `mailto:${ADMIN_EMAIL}` +
-      `?subject=${encodeURIComponent("Question before booking — " + loc.shortTitle)}`;
+      `?subject=${encodeURIComponent(t.questionMailSubject + loc.shortTitle)}`;
   };
 
   // Schools-only primary CTA — chat → WhatsApp → mailto.
