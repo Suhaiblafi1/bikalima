@@ -272,33 +272,59 @@ export function LiveChatWidget() {
   // Poll while session exists, but pause when the tab is hidden so we don't
   // burn API quota on background tabs. We also extend the interval when the
   // panel is closed (only need to refresh the unread badge occasionally).
+  // After 15 minutes of no user activity (no mouse / key / touch / message
+  // send) we stop polling entirely; any user gesture or tab refocus resumes
+  // it. This caps long-tab cost on idle marketing pages.
   useEffect(() => {
     if (!session) return;
+    const INACTIVITY_MS = 15 * 60_000;
     let interval: number | null = null;
-    const start = () => {
-      if (interval !== null) return;
-      const ms = open ? POLL_INTERVAL_MS : POLL_INTERVAL_MS * 4;
-      interval = window.setInterval(() => fetchMessages(false), ms);
-    };
+    let lastActivity = Date.now();
     const stop = () => {
       if (interval !== null) {
         window.clearInterval(interval);
         interval = null;
       }
     };
+    const start = () => {
+      if (interval !== null) return;
+      if (Date.now() - lastActivity > INACTIVITY_MS) return;
+      const ms = open ? POLL_INTERVAL_MS : POLL_INTERVAL_MS * 4;
+      interval = window.setInterval(() => {
+        if (Date.now() - lastActivity > INACTIVITY_MS) {
+          stop();
+          return;
+        }
+        fetchMessages(false);
+      }, ms);
+    };
+    const bumpActivity = () => {
+      const wasIdle = Date.now() - lastActivity > INACTIVITY_MS;
+      lastActivity = Date.now();
+      if (wasIdle && !document.hidden) {
+        start();
+        fetchMessages(false);
+      }
+    };
     const onVis = () => {
       if (document.hidden) stop();
       else {
+        bumpActivity();
         start();
-        // Catch up immediately on tab focus.
         fetchMessages(false);
       }
     };
     if (!document.hidden) start();
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("mousemove", bumpActivity, { passive: true });
+    window.addEventListener("keydown", bumpActivity);
+    window.addEventListener("touchstart", bumpActivity, { passive: true });
     return () => {
       stop();
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("mousemove", bumpActivity);
+      window.removeEventListener("keydown", bumpActivity);
+      window.removeEventListener("touchstart", bumpActivity);
     };
   }, [session, open, fetchMessages]);
 

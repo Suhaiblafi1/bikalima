@@ -76,8 +76,19 @@ const t = {
 function getRedirectTarget(): string {
   if (typeof window === "undefined") return "/dashboard";
   const r = new URLSearchParams(window.location.search).get("redirect");
-  if (r && r.startsWith("/") && !r.startsWith("//")) return r;
-  return "/dashboard";
+  if (!r) return "/dashboard";
+  // Reject:
+  //  - protocol-relative URLs ("//evil.com") — these escape origin
+  //  - absolute URLs ("http://...", "https://...", "javascript:")
+  //  - non-page internal prefixes (/api, /auth, /webhooks) — never
+  //    a useful destination for a browser navigation after login
+  if (!r.startsWith("/") || r.startsWith("//")) return "/dashboard";
+  const lower = r.toLowerCase();
+  const denied = ["/api/", "/api?", "/auth/", "/webhooks/"];
+  if (denied.some((p) => lower === p.replace(/[/?]$/, "") || lower.startsWith(p))) {
+    return "/dashboard";
+  }
+  return r;
 }
 
 export default function LoginPage() {
