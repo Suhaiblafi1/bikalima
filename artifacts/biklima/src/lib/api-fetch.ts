@@ -53,6 +53,43 @@ async function ensureCsrfToken(): Promise<string> {
 
 export type ApiFetchInit = RequestInit & { rawPath?: boolean };
 
+// Bilingual user-facing messages for the most common auth/policy
+// failure paths. Components can read `error.userMessage` to surface
+// a consistent Arabic/English notice instead of inventing their own.
+function getLang(): "ar" | "en" {
+  if (typeof document === "undefined") return "ar";
+  const html = document.documentElement.getAttribute("lang");
+  return html === "en" ? "en" : "ar";
+}
+const STATUS_MESSAGES: Record<number, { ar: string; en: string }> = {
+  401: {
+    ar: "يجب تسجيل الدخول للمتابعة.",
+    en: "You need to sign in to continue.",
+  },
+  403: {
+    ar: "لا تملك صلاحية الوصول إلى هذا المورد.",
+    en: "You don't have permission to access this resource.",
+  },
+  429: {
+    ar: "محاولات كثيرة. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.",
+    en: "Too many requests. Please wait a moment and try again.",
+  },
+};
+export type ApiError = Error & {
+  status: number;
+  userMessage: string;
+  retryAfterSec?: number;
+};
+
+/**
+ * `apiFetch` returns the raw Response so callers can inspect the body
+ * shape. For 401/403/429 we additionally attach a `userMessage` to a
+ * thrown ApiError so any layer that prefers throw-based flow gets
+ * uniform Arabic/English messaging without re-implementing it.
+ *
+ * Listeners can subscribe to the `bikalima:auth-failure` window event
+ * for global handling (e.g. redirect to /login on 401).
+ */
 export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
   const url = init.rawPath ? path : `${getApiBase()}${path.startsWith("/") ? "" : "/"}${path}`;
   const method = (init.method ?? "GET").toUpperCase();
@@ -62,12 +99,33 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     const token = await ensureCsrfToken();
     if (token && !headers.has("x-csrf-token")) headers.set("x-csrf-token", token);
   }
-  return fetch(url, {
+  const res = await fetch(url, {
     credentials: "include",
     ...init,
     method,
     headers,
   });
+  // Centralised handling for the three policy-style statuses.
+  if (res.status === 401 || res.status === 403 || res.status === 429) {
+    const lang = getLang();
+    const userMessage = STATUS_MESSAGES[res.status][lang];
+    const retryHeader = res.headers.get("retry-after");
+    const retryAfterSec = retryHeader ? Number(retryHeader) : undefined;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("bikalima:auth-failure", {
+          detail: { status: res.status, userMessage, retryAfterSec, url },
+        }),
+      );
+    }
+    // Stash the message on the response object so callers that use the
+    // raw Response can read it without re-importing the table.
+    (res as Response & { userMessage?: string }).userMessage = userMessage;
+    if (retryAfterSec !== undefined) {
+      (res as Response & { retryAfterSec?: number }).retryAfterSec = retryAfterSec;
+    }
+  }
+  return res;
 }
 
 /** Call once on app boot so the CSRF cookie is set before any mutation. */
