@@ -116,6 +116,14 @@ test.describe("production hardening", () => {
     await ctx.close();
   });
 
+  test("checkout page emits noindex robots meta (SEO hardening)", async ({ page }) => {
+    await page.goto("/checkout?slug=influential-speaker");
+    // usePageMeta sets the meta tag in a useEffect after mount; wait for it.
+    await expect
+      .poll(async () => page.locator('meta[name="robots"]').getAttribute("content"), { timeout: 5000 })
+      .toMatch(/noindex/i);
+  });
+
   test("login redirect sanitizer rejects /api/ and protocol-relative targets", async ({ page }) => {
     // Open login with a malicious /api/ redirect; the page must NOT navigate
     // to /api/* on success — it should fall back to /dashboard. We assert

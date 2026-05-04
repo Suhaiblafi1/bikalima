@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Home, LayoutDashboard, GraduationCap, AlertCircle, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 const REDIRECT_SECONDS = 6;
 
@@ -21,6 +22,7 @@ type VerifyState =
   | { kind: "error"; message: string };
 
 export default function ConfirmationPage() {
+  usePageMeta({ title: "تأكيد الطلب", noindex: true, canonicalPath: "/confirmation" });
   const [, navigate] = useLocation();
   const { lang } = useLang();
   const apiBase = getApiBase();

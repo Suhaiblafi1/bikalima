@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { AppShell } from "@/components/app-shell";
 import { useMe, type Role } from "@/hooks/use-me";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { PAGE_VISIBILITY, type AdminPageKey } from "./_shared";
 import {
   BarChart3, Users, BookOpen, GraduationCap, ShoppingCart,
@@ -89,6 +90,7 @@ export function AdminLayout({
   activeKey: AdminPageKey;
   children: ReactNode;
 }) {
+  usePageMeta({ title: "لوحة الإدارة", noindex: true });
   const { role } = useMe();
   const [, navigate] = useLocation();
 
