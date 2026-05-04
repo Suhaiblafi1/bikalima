@@ -261,7 +261,14 @@ function GraduatesRouteGate() {
 
 function LiveChatGate() {
   const enabled = useFeatureFlag("live_chat");
+  const [location] = useLocation();
   if (!enabled) return null;
+  // Hide chat on conversion / auth routes — the bubble overlaps the
+  // primary CTAs on mobile and adds visual noise during checkout / login.
+  const HIDDEN_PREFIXES = ["/checkout", "/confirmation", "/login", "/verify-email", "/admin", "/dashboard"];
+  if (HIDDEN_PREFIXES.some((p) => location === p || location.startsWith(`${p}/`) || location.startsWith(`${p}?`))) {
+    return null;
+  }
   return <LiveChatWidget />;
 }
 

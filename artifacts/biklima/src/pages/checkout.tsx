@@ -5,16 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Mail, Phone, AlertCircle, ArrowRight, Home } from "lucide-react";
+import { User, Mail, Phone, AlertCircle, ArrowRight, Home, LogIn } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { programPageSlugFromCourseSlug } from "@/lib/site-config";
-
-function getApiBase() {
-  const base = import.meta.env.BASE_URL || "/";
-  return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
-}
+import { apiFetch } from "@/lib/api-fetch";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 export default function CheckoutPage() {
   const paymentsEnabled = useFeatureFlag("payments");
@@ -22,11 +19,17 @@ export default function CheckoutPage() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { lang } = useLang();
   const isRtl = lang === "ar";
-  const apiBase = getApiBase();
 
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug") || "";
   const paymentCancelled = params.get("payment") === "cancelled";
+
+  // Checkout pages are user-private — never index them, never list them in
+  // the sitemap. Title still updates so the browser tab is meaningful.
+  usePageMeta({
+    title: lang === "ar" ? "إتمام التسجيل" : "Checkout",
+    noindex: true,
+  });
 
   const [courseId, setCourseId] = useState<string>("");
   const [courseTitleAr, setCourseTitleAr] = useState<string>("");
@@ -41,11 +44,13 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Always load course details, even when not authenticated, so visitors
+  // can see exactly what they're about to buy before being asked to log in.
   useEffect(() => {
     if (!slug) return;
     setCourseLoading(true);
     setCourseError("");
-    fetch(`${apiBase}/courses/${slug}`)
+    apiFetch(`/courses/${slug}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.course) {
@@ -61,7 +66,7 @@ export default function CheckoutPage() {
         setCourseError(lang === "ar" ? "تعذّر تحميل بيانات الدورة." : "Could not load course data.");
       })
       .finally(() => setCourseLoading(false));
-  }, [slug, apiBase, lang]);
+  }, [slug, lang]);
 
   useEffect(() => {
     if (user) {
@@ -76,13 +81,12 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!courseId) return;
+    if (!courseId || submitting) return;
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`${apiBase}/orders`, {
+      const res = await apiFetch(`/orders`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId,
@@ -92,7 +96,12 @@ export default function CheckoutPage() {
         }),
       });
       if (res.status === 401) {
-        setError(lang === "ar" ? "يجب تسجيل الدخول أولاً لإتمام الطلب." : "You must be logged in to complete the request.");
+        // Session expired between page load and submit — bounce back to login.
+        navigate(`/login?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`);
+        return;
+      }
+      if (res.status === 429) {
+        setError(lang === "ar" ? "محاولات كثيرة. يرجى الانتظار قليلاً ثم المحاولة." : "Too many attempts. Please wait a moment and try again.");
         return;
       }
       if (!res.ok) {
@@ -101,9 +110,6 @@ export default function CheckoutPage() {
         return;
       }
       const data = await res.json().catch(() => ({}));
-      // If a payment gateway is configured, the API returns a checkout URL
-      // we should redirect the buyer to. After paying they come back to
-      // /confirmation, which verifies the session and grants access.
       if (data?.checkoutUrl) {
         window.location.href = data.checkoutUrl;
         return;
@@ -124,39 +130,40 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6" dir={isRtl ? "rtl" : "ltr"}>
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 space-y-6 text-center">
-            <div className="logo-biklima text-5xl text-primary">بكلمة</div>
-            <h1 className="text-2xl font-bold">
-              {lang === "ar" ? "يجب تسجيل الدخول أولاً" : "Login Required"}
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {lang === "ar"
-                ? "يجب أن تكون مسجلاً للمتابعة في إتمام طلبك."
-                : "You must be logged in to complete your order."}
-            </p>
-            <Button
-              className="w-full rounded-full font-bold"
-              onClick={() => navigate(`/dashboard?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`)}
-            >
-              {lang === "ar" ? "تسجيل الدخول / إنشاء حساب" : "Sign In / Create Account"}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/`)}
-              className="w-full"
-            >
-              <Home className="w-4 h-4 me-2" />
-              {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
-            </Button>
-          </CardContent>
-        </Card>
+  // Reusable: course summary card the visitor sees regardless of auth state.
+  const programPage = `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`;
+  const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
+
+  const courseSummary = courseLoading ? (
+    <div className="h-20 bg-muted/40 rounded-xl animate-pulse" />
+  ) : courseError ? (
+    <div role="alert" className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 text-destructive text-sm flex items-center gap-2">
+      <AlertCircle className="w-4 h-4 shrink-0" />
+      {courseError}
+    </div>
+  ) : (
+    <div
+      data-testid="checkout-course-summary"
+      className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start justify-between gap-4"
+    >
+      <div>
+        <p className="text-xs text-muted-foreground mb-1">
+          {lang === "ar" ? "الدورة المختارة" : "Selected Course"}
+        </p>
+        <p className="font-bold text-foreground" data-testid="checkout-course-title">{courseTitle}</p>
       </div>
-    );
-  }
+      {coursePrice !== null && (
+        <div className="text-end shrink-0">
+          <p className="text-xs text-muted-foreground mb-1">
+            {lang === "ar" ? "الرسوم" : "Fee"}
+          </p>
+          <p className="font-black text-primary text-xl" data-testid="checkout-course-price">
+            {coursePrice} <span className="text-sm font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span>
+          </p>
+        </div>
+      )}
+    </div>
+  );
 
   if (!slug) {
     return (
@@ -178,11 +185,7 @@ export default function CheckoutPage() {
             >
               {lang === "ar" ? "عرض الدورات" : "Browse Courses"}
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/`)}
-              className="w-full"
-            >
+            <Button variant="ghost" onClick={() => navigate(`/`)} className="w-full">
               <Home className="w-4 h-4 me-2" />
               {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
             </Button>
@@ -192,21 +195,21 @@ export default function CheckoutPage() {
     );
   }
 
-  const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
+  const loginRedirect = `/login?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`;
 
   return (
     <AppShell
       containerClassName=""
       breadcrumb={[
         { label: lang === "ar" ? "البرامج" : "Programs", href: `/#structure` },
-        { label: courseTitle, href: `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}` },
+        { label: courseTitle, href: programPage },
         { label: lang === "ar" ? "إتمام التسجيل" : "Checkout" },
       ]}
     >
-      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-8 sm:py-12 space-y-6" data-testid="checkout-root">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
+            onClick={() => navigate(programPage)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {isRtl ? <ArrowRight className="w-4 h-4" /> : null}
@@ -224,127 +227,133 @@ export default function CheckoutPage() {
           </h1>
         </div>
 
-        {courseLoading ? (
-          <div className="h-20 bg-muted/40 rounded-xl animate-pulse" />
-        ) : courseError ? (
-          <div className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 text-destructive text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {courseError}
-          </div>
-        ) : (
-          <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">
-                {lang === "ar" ? "الدورة المختارة" : "Selected Course"}
-              </p>
-              <p className="font-bold text-foreground">{courseTitle}</p>
-            </div>
-            {coursePrice !== null && (
-              <div className="text-end shrink-0">
-                <p className="text-xs text-muted-foreground mb-1">
-                  {lang === "ar" ? "الرسوم" : "Fee"}
-                </p>
-                <p className="font-black text-primary text-xl">
-                  {coursePrice} <span className="text-sm font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span>
-                </p>
+        {courseSummary}
+
+        {!isAuthenticated ? (
+          <Card data-testid="checkout-login-gate">
+            <CardContent className="p-6 sm:p-8 space-y-5 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <LogIn className="w-6 h-6 text-primary" />
               </div>
-            )}
-          </div>
-        )}
-
-        <Card>
-          <CardContent className="p-6 space-y-5">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {lang === "ar"
-                ? "أكمل بياناتك وسيتواصل معك فريق بكلمة لتأكيد الدفع وتفعيل حسابك."
-                : "Complete your details and the Bikalima team will contact you to confirm payment and activate your account."}
-            </p>
-
-            {paymentCancelled && !error && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <h2 className="text-lg sm:text-xl font-bold">
+                {lang === "ar" ? "خطوة واحدة قبل الدفع" : "One step before payment"}
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {lang === "ar"
-                  ? "تم إلغاء عملية الدفع. يمكنك المحاولة مرة أخرى."
-                  : "Payment was cancelled. You can try again."}
-              </div>
-            )}
+                  ? "سجّل الدخول أو أنشئ حسابك لإتمام التسجيل في هذه الدورة. سنُعيدك إلى نفس الصفحة فورًا بعد الدخول."
+                  : "Sign in or create your account to complete enrollment. We'll bring you right back to this page after login."}
+              </p>
+              <Button
+                className="w-full rounded-full font-bold"
+                onClick={() => navigate(loginRedirect)}
+                data-testid="checkout-login-cta"
+              >
+                {lang === "ar" ? "تسجيل الدخول لإكمال الطلب" : "Sign in to complete order"}
+              </Button>
+              <Button variant="ghost" onClick={() => navigate(programPage)} className="w-full">
+                {lang === "ar" ? "العودة للدورة" : "Back to course"}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {lang === "ar"
+                  ? "أكمل بياناتك وسيتواصل معك فريق بكلمة لتأكيد الدفع وتفعيل حسابك."
+                  : "Complete your details and the Bikalima team will contact you to confirm payment and activate your account."}
+              </p>
 
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 text-destructive text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
-                  <User className="w-4 h-4 text-primary" />
-                  {lang === "ar" ? "الاسم الكامل" : "Full Name"}
-                </label>
-                <Input
-                  required
-                  value={form.buyerName}
-                  onChange={(e) => setForm(f => ({ ...f, buyerName: e.target.value }))}
-                  className="rounded-xl"
-                  placeholder={lang === "ar" ? "محمد أحمد" : "John Smith"}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
-                  <Mail className="w-4 h-4 text-primary" />
-                  {lang === "ar" ? "البريد الإلكتروني" : "Email Address"}
-                </label>
-                <Input
-                  type="email"
-                  required
-                  dir="ltr"
-                  value={form.buyerEmail}
-                  onChange={(e) => setForm(f => ({ ...f, buyerEmail: e.target.value }))}
-                  className="rounded-xl"
-                  placeholder="name@example.com"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium flex items-center gap-1.5 text-foreground">
-                  <Phone className="w-4 h-4 text-primary" />
-                  {lang === "ar" ? "رقم الهاتف" : "Phone Number"}
-                </label>
-                <PhoneInput
-                  required
-                  lang={lang}
-                  value={form.buyerPhone}
-                  onChange={(v) => setForm((f) => ({ ...f, buyerPhone: v }))}
-                />
-              </div>
-
-              {!paymentsEnabled && (
-                <div className="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm p-3" data-testid="checkout-payments-disabled">
+              {paymentCancelled && !error && (
+                <div role="status" className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-amber-800 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
                   {lang === "ar"
-                    ? "خدمة الدفع متوقفة مؤقتاً. يرجى المحاولة لاحقاً أو التواصل معنا."
-                    : "Payments are temporarily disabled. Please try again later or contact us."}
+                    ? "تم إلغاء عملية الدفع. يمكنك المحاولة مرة أخرى."
+                    : "Payment was cancelled. You can try again."}
                 </div>
               )}
-              <Button
-                type="submit"
-                disabled={submitting || courseLoading || !!courseError || !courseId || !paymentsEnabled}
-                className="w-full rounded-xl py-6 font-bold text-base gap-2"
-              >
-                {submitting
-                  ? (lang === "ar" ? "جاري الإرسال..." : "Submitting...")
-                  : (lang === "ar" ? "إرسال الطلب" : "Submit Request")}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
 
-        <Button
-          variant="ghost"
-          onClick={() => navigate(`/`)}
-          className="w-full"
-        >
+              {error && (
+                <div role="alert" id="checkout-error" className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 text-destructive text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={error ? "checkout-error" : undefined}>
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-name" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <User className="w-4 h-4 text-primary" />
+                    {lang === "ar" ? "الاسم الكامل" : "Full Name"}
+                  </label>
+                  <Input
+                    id="checkout-name"
+                    name="name"
+                    autoComplete="name"
+                    required
+                    value={form.buyerName}
+                    onChange={(e) => setForm(f => ({ ...f, buyerName: e.target.value }))}
+                    className="rounded-xl"
+                    placeholder={lang === "ar" ? "محمد أحمد" : "John Smith"}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-email" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <Mail className="w-4 h-4 text-primary" />
+                    {lang === "ar" ? "البريد الإلكتروني" : "Email Address"}
+                  </label>
+                  <Input
+                    id="checkout-email"
+                    name="email"
+                    autoComplete="email"
+                    type="email"
+                    required
+                    dir="ltr"
+                    value={form.buyerEmail}
+                    onChange={(e) => setForm(f => ({ ...f, buyerEmail: e.target.value }))}
+                    className="rounded-xl"
+                    placeholder="name@example.com"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="checkout-phone" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <Phone className="w-4 h-4 text-primary" />
+                    {lang === "ar" ? "رقم الهاتف" : "Phone Number"}
+                  </label>
+                  <PhoneInput
+                    id="checkout-phone"
+                    required
+                    lang={lang}
+                    value={form.buyerPhone}
+                    onChange={(v) => setForm((f) => ({ ...f, buyerPhone: v }))}
+                  />
+                </div>
+
+                {!paymentsEnabled && (
+                  <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm p-3" data-testid="checkout-payments-disabled">
+                    {lang === "ar"
+                      ? "خدمة الدفع متوقفة مؤقتاً. يرجى المحاولة لاحقاً أو التواصل معنا."
+                      : "Payments are temporarily disabled. Please try again later or contact us."}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  disabled={submitting || courseLoading || !!courseError || !courseId || !paymentsEnabled}
+                  className="w-full rounded-xl py-6 font-bold text-base gap-2"
+                  data-testid="checkout-submit"
+                >
+                  {submitting
+                    ? (lang === "ar" ? "جاري الإرسال..." : "Submitting...")
+                    : (lang === "ar" ? "إرسال الطلب" : "Submit Request")}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        <Button variant="ghost" onClick={() => navigate(`/`)} className="w-full">
           <Home className="w-4 h-4 me-2" />
           {lang === "ar" ? "العودة للرئيسية" : "Back to Home"}
         </Button>

@@ -1,15 +1,16 @@
-import express, { type Express } from "express";
-import cors from "cors";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
-import path from "path";
-import { fileURLToPath } from "url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
+import {
+  securityHeaders,
+  strictCors,
+  globalRateLimit,
+  csrfProtection,
+} from "./middlewares/security";
 import { seedPlatformDefaults } from "./lib/platform";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
@@ -17,7 +18,11 @@ const app: Express = express();
 // inner-most proxy for `req.ip` / `req.ips`. Do NOT use `true` (any-hop
 // trust enables IP spoofing via X-Forwarded-For).
 app.set("trust proxy", 1);
+// Strip the default `X-Powered-By: Express` header.
+app.disable("x-powered-by");
 
+app.use(securityHeaders);
+app.use(strictCors);
 app.use(
   pinoHttp({
     logger,
@@ -37,11 +42,12 @@ app.use(
     },
   }),
 );
-app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+app.use(globalRateLimit);
 app.use(authMiddleware);
+app.use(csrfProtection);
 
 app.use("/api", router);
 
@@ -49,12 +55,22 @@ app.use("/api", router);
 // boot. Runs once per process and is idempotent (ON CONFLICT DO NOTHING).
 seedPlatformDefaults().catch((err) => logger.warn({ err }, "platform seed failed at boot"));
 
-if (process.env.NODE_ENV === "production") {
-  const publicDir = path.join(__dirname, "public");
-  app.use(express.static(publicDir));
-  app.get("/*splat", (_req, res) => {
-    res.sendFile(path.join(publicDir, "index.html"));
+// Centralised JSON error handler. Production responses NEVER leak stack
+// traces; everything is logged server-side via req.log instead.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  const e = err as { status?: number; statusCode?: number; message?: string };
+  const status = e?.status ?? e?.statusCode ?? 500;
+  if (req.log) {
+    req.log.error({ err }, "unhandled error");
+  } else {
+    logger.error({ err }, "unhandled error");
+  }
+  if (res.headersSent) return;
+  const isProd = process.env.NODE_ENV === "production";
+  res.status(status).json({
+    error: status >= 500 || isProd ? "Internal server error" : (e?.message ?? "Error"),
   });
-}
+});
 
 export default app;

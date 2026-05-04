@@ -15,6 +15,11 @@ import {
   SESSION_TTL,
   type SessionData,
 } from "../lib/auth";
+import { authRateLimit } from "../middlewares/security";
+
+// 6 attempts per minute per IP for the most-attacked endpoints.
+const loginLimiter = authRateLimit(6, 60_000);
+const registerLimiter = authRateLimit(8, 60_000);
 
 const router: IRouter = Router();
 
@@ -142,7 +147,7 @@ router.get("/me", async (req: Request, res: Response) => {
   });
 });
 
-router.post("/auth/register", async (req: Request, res: Response) => {
+router.post("/auth/register", registerLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password, firstName, lastName } = req.body;
 
@@ -273,7 +278,7 @@ router.post("/auth/resend-verification", async (req: Request, res: Response) => 
   }
 });
 
-router.post("/auth/login", async (req: Request, res: Response) => {
+router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 

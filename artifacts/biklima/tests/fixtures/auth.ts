@@ -13,9 +13,16 @@ async function loginAs(
   password: string,
 ): Promise<void> {
   const apiContext: APIRequestContext = await request.newContext({ baseURL });
+  // Prime the CSRF cookie before login so the production-hardening CSRF
+  // middleware can be satisfied. /api/csrf is a safe (GET) endpoint and the
+  // returned token is double-submitted as the `x-csrf-token` header on all
+  // subsequent unsafe writes.
+  const csrfRes = await apiContext.get("/api/csrf");
+  const csrfBody = (await csrfRes.json().catch(() => ({}))) as { token?: string };
+  const csrfToken = csrfBody.token ?? "";
   const res = await apiContext.post("/api/auth/login", {
     data: { email, password },
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
   });
   if (!res.ok()) {
     const body = await res.text().catch(() => "");
@@ -24,6 +31,10 @@ async function loginAs(
   const cookies = await apiContext.storageState();
   await context.addCookies(cookies.cookies);
   await apiContext.dispose();
+  // Echo the CSRF token on every request the browser context makes from
+  // here on, so cookie-authenticated POST / PATCH / DELETE calls (orders,
+  // assignments, etc.) pass the double-submit check.
+  await context.setExtraHTTPHeaders({ "x-csrf-token": csrfToken });
 
   // Defensive: verify the session cookie is actually being sent on
   // subsequent requests from the browser context. The api-server sets

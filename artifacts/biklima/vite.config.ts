@@ -57,6 +57,13 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Production hardening: never ship source maps to the browser, and
+    // strip console/debugger statements from the bundle.
+    sourcemap: false,
+    minify: "esbuild",
+  },
+  esbuild: {
+    drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
   },
   server: {
     port,

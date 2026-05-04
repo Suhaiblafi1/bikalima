@@ -269,12 +269,38 @@ export function LiveChatWidget() {
     fetchMessages(true);
   }, [session, fetchMessages]);
 
-  // Poll while session exists (regardless of open state, so unread count works)
+  // Poll while session exists, but pause when the tab is hidden so we don't
+  // burn API quota on background tabs. We also extend the interval when the
+  // panel is closed (only need to refresh the unread badge occasionally).
   useEffect(() => {
     if (!session) return;
-    const interval = window.setInterval(() => fetchMessages(false), POLL_INTERVAL_MS);
-    return () => window.clearInterval(interval);
-  }, [session, fetchMessages]);
+    let interval: number | null = null;
+    const start = () => {
+      if (interval !== null) return;
+      const ms = open ? POLL_INTERVAL_MS : POLL_INTERVAL_MS * 4;
+      interval = window.setInterval(() => fetchMessages(false), ms);
+    };
+    const stop = () => {
+      if (interval !== null) {
+        window.clearInterval(interval);
+        interval = null;
+      }
+    };
+    const onVis = () => {
+      if (document.hidden) stop();
+      else {
+        start();
+        // Catch up immediately on tab focus.
+        fetchMessages(false);
+      }
+    };
+    if (!document.hidden) start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [session, open, fetchMessages]);
 
   // Clear unread when opened
   useEffect(() => {

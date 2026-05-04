@@ -26,10 +26,12 @@ import attendanceRouter from "./attendance";
 import activitiesRouter, { bootstrapActivities } from "./activities";
 import littleSpeakerRouter from "./little-speaker";
 import accreditationsRouter from "./accreditations";
+import csrfRouter from "./csrf";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(csrfRouter);
 router.use(authRouter);
 router.use(enrollRouter);
 router.use(workbookOrderRouter);
