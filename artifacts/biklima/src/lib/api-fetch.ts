@@ -27,18 +27,27 @@ function readCookie(name: string): string {
 }
 
 const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
-let csrfPrimed = false;
+// Shared in-flight promise (see install-csrf-fetch.ts) to prevent a race
+// where multiple concurrent unsafe requests skip waiting after one of
+// them flips a primed boolean.
+let csrfPrimePromise: Promise<void> | null = null;
+
+function primeCsrfOnce(): Promise<void> {
+  if (csrfPrimePromise) return csrfPrimePromise;
+  csrfPrimePromise = (async () => {
+    try {
+      await fetch(`${getApiBase()}/csrf`, { credentials: "include" });
+    } catch {
+      csrfPrimePromise = null;
+    }
+  })();
+  return csrfPrimePromise;
+}
 
 async function ensureCsrfToken(): Promise<string> {
   let token = readCookie("csrf");
   if (token) return token;
-  if (csrfPrimed) return "";
-  csrfPrimed = true;
-  try {
-    await fetch(`${getApiBase()}/csrf`, { credentials: "include" });
-  } catch {
-    /* network blip — try anyway */
-  }
+  await primeCsrfOnce();
   return readCookie("csrf");
 }
 

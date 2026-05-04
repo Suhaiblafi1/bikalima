@@ -25,13 +25,10 @@ function checkRateLimit(ip: string): boolean {
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 router.post("/speech-evaluation", async (req: Request, res: Response) => {
-  const clientIp = (
-    (req.headers["x-forwarded-for"] as string) ||
-    req.socket?.remoteAddress ||
-    "unknown"
-  )
-    .split(",")[0]
-    .trim();
+  // Use req.ip — populated by Express via `app.set("trust proxy", 1)` so it
+  // is the client IP after the trusted Replit edge proxy, not the
+  // spoofable raw x-forwarded-for header.
+  const clientIp = req.ip ?? "unknown";
   if (!checkRateLimit(clientIp)) {
     res.status(429).json({ error: "Too many requests. Please try again later." });
     return;

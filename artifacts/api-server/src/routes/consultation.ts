@@ -8,6 +8,9 @@ const consultationRouter = Router();
 
 const ADMIN_EMAIL = "info@bikalima.com";
 
+// Rate-limit key uses Express's req.ip, which under `app.set("trust proxy",
+// 1)` returns the client IP from x-forwarded-for after the trusted edge
+// proxy — instead of the spoofable raw header. Callers pass req.ip in.
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
@@ -290,7 +293,9 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
     lang?: string;
   };
 
-  const clientIp = (req.headers["x-forwarded-for"] as string || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
+  // req.ip is populated from x-forwarded-for under `trust proxy = 1`,
+  // i.e. the client IP after the trusted Replit edge proxy.
+  const clientIp = req.ip ?? "unknown";
   if (!checkRateLimit(clientIp)) {
     res.status(429).json({ error: "Too many requests. Please try again later." });
     return;

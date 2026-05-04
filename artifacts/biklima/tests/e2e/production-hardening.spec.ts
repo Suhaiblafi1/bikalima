@@ -105,8 +105,9 @@ test.describe("production hardening", () => {
     const page = await ctx.newPage();
     await page.goto(baseURL!);
     await page.waitForLoadState("domcontentloaded");
-    // Give the install-csrf-fetch primer a tick.
-    await page.waitForTimeout(500);
+    // No artificial wait: install-csrf-fetch uses a shared in-flight
+    // promise so the very first unsafe request awaits the priming
+    // /api/csrf call instead of racing past it.
     const status = await page.evaluate(async () => {
       const r = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       return r.status;

@@ -199,10 +199,14 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function isExemptPath(p: string): boolean {
+  // Stripe / payment webhooks: signed by provider, no cookie surface.
   if (p.startsWith("/api/webhooks/")) return true;
-  // Chat per-thread mutations carry their own opaque token.
-  if (/^\/api\/chat\/threads\/[^/]+/.test(p)) return true;
   return false;
+  // Note: /api/chat/threads/* used to be exempt because each thread
+  // carries its own X-Chat-Token. We now require CSRF on top for
+  // defense-in-depth and to satisfy the universal "all unsafe writes
+  // require CSRF" policy. The browser SPA acquires the token
+  // transparently via install-csrf-fetch.
 }
 
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {

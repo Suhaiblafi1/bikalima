@@ -38,15 +38,23 @@ function getApiBase(): string {
   return base.replace(/\/$/, "") + "/api";
 }
 
-let primed = false;
-async function primeCsrf(originalFetch: typeof fetch): Promise<void> {
-  if (primed) return;
-  primed = true;
-  try {
-    await originalFetch(`${getApiBase()}/csrf`, { credentials: "include" });
-  } catch {
-    /* network blip — caller will retry */
-  }
+// In-flight singleton promise so concurrent unsafe requests fired before
+// the priming fetch resolves all wait for the same network call. A boolean
+// would let the second caller see "already primed" while the cookie wasn't
+// actually set yet, leading to a race where the first real POST goes out
+// without x-csrf-token and gets 403.
+let primePromise: Promise<void> | null = null;
+function primeCsrf(originalFetch: typeof fetch): Promise<void> {
+  if (primePromise) return primePromise;
+  primePromise = (async () => {
+    try {
+      await originalFetch(`${getApiBase()}/csrf`, { credentials: "include" });
+    } catch {
+      // Allow a retry on the next unsafe request if the network blipped.
+      primePromise = null;
+    }
+  })();
+  return primePromise;
 }
 
 export function installCsrfFetch(): void {
@@ -68,6 +76,9 @@ export function installCsrfFetch(): void {
       return originalFetch(input as RequestInfo, init);
     }
 
+    // Always wait on the priming promise if it's still in flight, so the
+    // first burst of unsafe requests doesn't lose the race.
+    if (primePromise) await primePromise;
     let token = readCookie(CSRF_COOKIE);
     if (!token) {
       await primeCsrf(originalFetch);
