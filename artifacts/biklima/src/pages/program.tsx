@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { programs, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_FACTS } from "@/programsData";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { useCurrency, SLUG_TO_PROGRAM_ID } from "@/lib/site-config";
 import {
   AudienceSection, OutcomesSection, SessionsAccordion,
@@ -157,13 +158,19 @@ export default function ProgramPage() {
   }, [slug]);
 
   useEffect(() => {
-    if (program) {
-      const loc = getLocalizedProgram(program, lang);
-      document.title = `${loc.shortTitle} — بكلمة`;
-    }
     document.documentElement.dir = isRtl ? "rtl" : "ltr";
     document.documentElement.lang = lang;
-  }, [lang, isRtl, program]);
+  }, [lang, isRtl]);
+
+  // Per-page SEO. Called unconditionally (Rules of Hooks) — falls back
+  // to a generic title when the slug doesn't match a known program.
+  const pageLoc = program ? getLocalizedProgram(program, lang) : null;
+  usePageMeta({
+    title: pageLoc?.shortTitle,
+    description: pageLoc?.hook ?? pageLoc?.description,
+    canonicalPath: program ? `/programs/${slug}` : undefined,
+    ogImage: program?.image,
+  });
 
   if (!program) {
     return (
@@ -183,16 +190,19 @@ export default function ProgramPage() {
 
   const Arrow = isRtl ? ArrowRight : ArrowLeft;
 
-  // Build mailto links
+  // Unified CTAs: sellable programs route to /checkout (which handles
+  // preview + login gate + Stripe). Schools-only "children" stays on
+  // mailto because it's a B2B engagement, not a self-serve purchase.
+  // Consultation CTA points to the on-site /consultation form so leads
+  // are captured in the CRM instead of disappearing into an inbox.
   const interestMailto =
     `mailto:${ADMIN_EMAIL}` +
     `?subject=${encodeURIComponent(t.interestSubject + " — " + loc.shortTitle)}` +
     `&body=${t.interestBody}${encodeURIComponent(loc.shortTitle)}${t.interestBodyPart2}`;
-
-  const consultationMailto =
-    `mailto:${ADMIN_EMAIL}` +
-    `?subject=${encodeURIComponent(t.consultationSubject + " — " + loc.shortTitle)}` +
-    `&body=${t.consultationBody}${encodeURIComponent(loc.shortTitle)}${t.consultationBodyPart2}`;
+  const interestHref = isSchoolsOnly
+    ? interestMailto
+    : `/checkout?slug=${encodeURIComponent(slug)}`;
+  const consultationHref = `/consultation?topic=${encodeURIComponent(loc.shortTitle)}`;
 
   return (
     <AppShell
@@ -260,7 +270,7 @@ export default function ProgramPage() {
                 size="lg"
                 className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-8 shadow-lg"
               >
-                <a href={interestMailto} data-testid="button-register-interest-hero">
+                <a href={interestHref} data-testid="button-register-interest-hero">
                   <Mail className="w-4 h-4 me-2" />
                   {t.primaryCta}
                 </a>
@@ -271,7 +281,7 @@ export default function ProgramPage() {
                 variant="outline"
                 className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold rounded-full px-8"
               >
-                <a href={consultationMailto} data-testid="button-request-consultation-hero">
+                <a href={consultationHref} data-testid="button-request-consultation-hero">
                   <MessageSquare className="w-4 h-4 me-2" />
                   {t.secondaryCta}
                 </a>
@@ -316,13 +326,13 @@ export default function ProgramPage() {
             {/* Mobile CTAs */}
             <div className="lg:hidden mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button asChild className="w-full rounded-xl font-bold py-6">
-                <a href={interestMailto} data-testid="button-register-interest-mobile">
+                <a href={interestHref} data-testid="button-register-interest-mobile">
                   <Mail className="w-4 h-4 me-2" />
                   {t.primaryCta}
                 </a>
               </Button>
               <Button asChild variant="outline" className="w-full rounded-xl font-bold py-6">
-                <a href={consultationMailto} data-testid="button-request-consultation-mobile">
+                <a href={consultationHref} data-testid="button-request-consultation-mobile">
                   <MessageSquare className="w-4 h-4 me-2" />
                   {t.secondaryCta}
                 </a>
@@ -488,7 +498,7 @@ export default function ProgramPage() {
                     size="lg"
                     className="bg-white text-gray-900 hover:bg-white/90 font-bold rounded-full px-8 shadow-lg"
                   >
-                    <a href={interestMailto} data-testid="button-register-interest-final">
+                    <a href={interestHref} data-testid="button-register-interest-final">
                       <Mail className="w-4 h-4 me-2" />
                       {t.primaryCta}
                     </a>
@@ -499,7 +509,7 @@ export default function ProgramPage() {
                     variant="outline"
                     className="bg-transparent border-white/40 text-white hover:bg-white/10 font-bold rounded-full px-8"
                   >
-                    <a href={consultationMailto} data-testid="button-request-consultation-final">
+                    <a href={consultationHref} data-testid="button-request-consultation-final">
                       <MessageSquare className="w-4 h-4 me-2" />
                       {t.secondaryCta}
                     </a>
@@ -547,14 +557,14 @@ export default function ProgramPage() {
                 </div>
                 <div className="border-t border-border pt-4 space-y-3">
                   <Button asChild className="w-full rounded-xl font-bold py-6">
-                    <a href={interestMailto} data-testid="button-register-interest-sidebar">
+                    <a href={interestHref} data-testid="button-register-interest-sidebar">
                       <Mail className="w-4 h-4 me-2" />
                       {t.primaryCta}
                     </a>
                   </Button>
                   <p className="text-[11px] text-center text-muted-foreground">{t.primaryCtaSub}</p>
                   <Button asChild variant="outline" className="w-full rounded-xl font-bold py-5">
-                    <a href={consultationMailto} data-testid="button-request-consultation-sidebar">
+                    <a href={consultationHref} data-testid="button-request-consultation-sidebar">
                       <MessageSquare className="w-4 h-4 me-2" />
                       {t.secondaryCta}
                     </a>

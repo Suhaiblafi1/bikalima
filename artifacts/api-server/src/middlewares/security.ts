@@ -233,11 +233,12 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     next();
     return;
   }
-  // No session cookie at all → nothing to protect against.
-  if (!req.cookies?.["sid"]) {
-    next();
-    return;
-  }
+  // Enforce CSRF on every unsafe request that isn't explicitly exempt,
+  // including unauthenticated POSTs (login/register/forgot-password).
+  // Browsers always carry the `csrf` cookie back once /api/csrf — or any
+  // earlier safe request — has been seen, and the SPA primes it on boot
+  // via install-csrf-fetch. Non-browser clients (curl, native mobile)
+  // can either set Authorization: Bearer or fetch /api/csrf first.
   const headerToken = req.headers[CSRF_HEADER];
   if (typeof headerToken !== "string" || !safeEqual(headerToken, token)) {
     res.status(403).json({ error: "Invalid or missing CSRF token" });

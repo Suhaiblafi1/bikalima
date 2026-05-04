@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -80,6 +81,7 @@ function getRedirectTarget(): string {
 }
 
 export default function LoginPage() {
+  usePageMeta({ title: "تسجيل الدخول", noindex: true, canonicalPath: "/login" });
   const { lang } = useLang() as { lang: Lang };
   const tr = t[lang];
   const isAr = lang === "ar";

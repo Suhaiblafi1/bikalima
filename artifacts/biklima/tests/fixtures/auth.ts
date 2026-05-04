@@ -72,8 +72,19 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
-  anon: async ({ browser }, use) => {
+  anon: async ({ browser, baseURL }, use) => {
     const ctx = await browser.newContext();
+    // Even anonymous flows now need a CSRF token for unsafe writes
+    // (speech-evaluation, consultation, lead capture). Prime once per
+    // test context so individual specs don't have to know about it.
+    const apiCtx = await request.newContext({ baseURL });
+    const csrfRes = await apiCtx.get("/api/csrf");
+    const csrfBody = (await csrfRes.json().catch(() => ({}))) as { token?: string };
+    const csrfToken = csrfBody.token ?? "";
+    const cookies = await apiCtx.storageState();
+    if (cookies.cookies.length > 0) await ctx.addCookies(cookies.cookies);
+    await apiCtx.dispose();
+    if (csrfToken) await ctx.setExtraHTTPHeaders({ "x-csrf-token": csrfToken });
     await use(ctx);
     await ctx.close();
   },

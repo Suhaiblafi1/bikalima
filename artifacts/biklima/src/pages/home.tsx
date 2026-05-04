@@ -75,6 +75,7 @@ import { EnrollmentWizard } from "@/components/enrollment-wizard";
 import { ExternalLinkDialog } from "@/components/external-link-dialog";
 import { useHomeSections } from "@/hooks/use-home-sections";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { getSectionContent } from "@/cms/sections-schema";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -153,6 +154,12 @@ function MiniCalendar({ lang }: { lang: Lang }) {
 }
 
 export default function Home() {
+  usePageMeta({
+    title: undefined,
+    description:
+      "بكلمة — منهجية شاملة لصناعة الأثر وفن الإلقاء والخطابة. برامج للأفراد والمدربين والمعلمين والأطفال.",
+    canonicalPath: "/",
+  });
   const consultationEnabled = useFeatureFlag("consultation_booking");
   const { toast } = useToast();
   const { format: formatPrice, currency, currencyKey, setCurrencyKey } = useCurrency();

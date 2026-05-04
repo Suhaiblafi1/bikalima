@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useLocation, Redirect } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -753,6 +754,7 @@ type RequestData = {
 };
 
 export default function Dashboard() {
+  usePageMeta({ title: "لوحة التحكم", noindex: true, canonicalPath: "/dashboard" });
   const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth();
   const { user: meUser, refresh: refreshMe } = useMe();
   const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");

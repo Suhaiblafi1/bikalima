@@ -9,8 +9,12 @@ import {
 import { eq, desc, and } from "drizzle-orm";
 import { paymentService, toMinorUnits as toStripeMinorUnits } from "../integrations/paymentService.js";
 import { isFeatureEnabled } from "../lib/platform.js";
+import { authRateLimit } from "../middlewares/security.js";
 
 const router: IRouter = Router();
+// Tight per-IP ceiling on checkout creation: prevents Stripe-session abuse
+// and accidental floods from a misbehaving client. 12 attempts / 5 min.
+const orderCreateLimiter = authRateLimit(12, 5 * 60_000);
 
 const SMTP_FROM =
   process.env.SMTP_FROM ?? `"بكلمة" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
@@ -48,7 +52,7 @@ async function ensureEnrollment(userId: string, courseId: string): Promise<void>
   await db.insert(enrollmentsTable).values({ userId, courseId, status: "active" });
 }
 
-router.post("/orders", async (req: Request, res: Response) => {
+router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) => {
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "يجب تسجيل الدخول أولاً لإتمام الطلب" });
     return;
