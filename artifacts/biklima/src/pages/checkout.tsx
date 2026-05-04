@@ -44,8 +44,19 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Unauthenticated visitors are redirected immediately to /login with a
+  // safe internal redirect param so they return to the same checkout URL
+  // after signing in.
+  useEffect(() => {
+    if (isLoading) return;
+    if (isAuthenticated) return;
+    if (!slug) return;
+    navigate(`/login?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`);
+  }, [isLoading, isAuthenticated, slug, navigate]);
+
   // Always load course details, even when not authenticated, so visitors
-  // can see exactly what they're about to buy before being asked to log in.
+  // can see exactly what they're about to buy before being asked to log in
+  // (in cases where the redirect above is delayed by slow auth resolution).
   useEffect(() => {
     if (!slug) return;
     setCourseLoading(true);

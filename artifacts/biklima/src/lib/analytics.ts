@@ -13,7 +13,10 @@ export type BikalimaEvent =
   | "submit_interest_form"
   | "click_zoom_booking"
   | "click_program_details"
-  | "click_external_registration";
+  | "click_external_registration"
+  | "reserve_seat_click"
+  | "question_before_booking_click"
+  | "tab_change";
 
 export function track(event: BikalimaEvent, params: AnyDict = {}): void {
   if (typeof window === "undefined") return;
@@ -62,3 +65,12 @@ export const trackProgramDetailsClick = (programId: string, source: string, extr
 
 export const trackExternalRegistrationClick = (href: string, partner: string, extra: AnyDict = {}) =>
   track("click_external_registration", { href, partner, ...extra });
+
+export const trackReserveSeatClick = (programId: string, source: string, extra: AnyDict = {}) =>
+  track("reserve_seat_click", { programId, source, ...extra });
+
+export const trackQuestionBeforeBookingClick = (programId: string, source: string, extra: AnyDict = {}) =>
+  track("question_before_booking_click", { programId, source, ...extra });
+
+export const trackTabChange = (programId: string, tab: string, extra: AnyDict = {}) =>
+  track("tab_change", { programId, tab, ...extra });

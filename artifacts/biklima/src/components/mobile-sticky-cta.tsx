@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Sparkles, CalendarClock } from "lucide-react";
+import { Ticket, MessageSquare } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
-import { trackWhatsappClick, trackZoomBookingClick } from "@/lib/analytics";
+import { trackWhatsappClick, trackReserveSeatClick } from "@/lib/analytics";
 import { OPEN_CHAT_EVENT } from "@/components/live-chat-widget";
+import { PROGRAM_SLUGS } from "@/lib/site-config";
+import { useSiteSettings } from "@/hooks/use-site-settings";
+import { useFeatureFlag } from "@/hooks/use-feature-flag";
+
+const FALLBACK_WHATSAPP = "97455377065";
 
 const TEXT = {
   ar: {
-    register: "سجّل اهتمامك",
-    consult: "احجز جلسة",
+    reserve: "احجز مقعدك",
     chat: "محادثة",
   },
   en: {
-    register: "Register interest",
-    consult: "Book a call",
+    reserve: "Reserve seat",
     chat: "Chat",
   },
 } as const;
@@ -23,6 +26,10 @@ export function MobileStickyCta() {
   const t = TEXT[lang];
   const [location, navigate] = useLocation();
   const [visible, setVisible] = useState(false);
+  const liveChatEnabled = useFeatureFlag("live_chat");
+  const { data: settingsResp } = useSiteSettings();
+  const whatsappRaw = settingsResp?.settings?.whatsappNumber ?? null;
+  const whatsappDigits = (whatsappRaw ?? FALLBACK_WHATSAPP).replace(/[^\d]/g, "");
 
   // Show after the user has scrolled past the hero (~400px) so it doesn't
   // compete with first impressions. Hide on admin / dashboard routes.
@@ -32,6 +39,7 @@ export function MobileStickyCta() {
       location.startsWith("/dashboard") ||
       location.startsWith("/checkout") ||
       location.startsWith("/learn") ||
+      location.startsWith("/programs/") ||
       location.startsWith("/courses/") && location.includes("/learn");
     if (isHidden) {
       setVisible(false);
@@ -45,29 +53,33 @@ export function MobileStickyCta() {
 
   if (!visible) return null;
 
-  const goEnroll = () => {
-    const isHome = location === "/" || location === "";
-    if (isHome) {
-      const el = document.getElementById("structure");
-      if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-        return;
-      }
-    }
-    navigate("/#structure");
+  // Site-wide reserve flow goes to checkout for the foundational program.
+  // Per-program pages own their own sticky CTA via /programs/* (this bar
+  // is hidden there) and route to the program-specific course slug.
+  const goReserve = () => {
+    trackReserveSeatClick("core", "mobile_sticky_cta");
+    navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`);
   };
 
-  const goConsult = () => {
-    trackZoomBookingClick("mobile_sticky_cta");
-    const isHome = location === "/" || location === "";
-    if (isHome) {
-      const el = document.getElementById("speech-evaluation") || document.getElementById("structure");
-      if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-        return;
-      }
+  const goChat = () => {
+    trackWhatsappClick("mobile_sticky_cta");
+    // Try the in-page chat widget first, but only if it's actually mounted.
+    // Otherwise fall back to WhatsApp so the user always reaches us.
+    if (liveChatEnabled && typeof document !== "undefined" &&
+        document.querySelector('[data-testid="live-chat-widget"]')) {
+      window.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT));
+      return;
     }
-    navigate("/#structure");
+    if (whatsappDigits) {
+      const msg = lang === "ar"
+        ? "السلام عليكم، أودّ الاستفسار عن برامج بكلمة."
+        : "Hello, I'd like to ask about Bikalima's programs.";
+      window.open(
+        `https://wa.me/${whatsappDigits}?text=${encodeURIComponent(msg)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    }
   };
 
   return (
@@ -76,39 +88,24 @@ export function MobileStickyCta() {
       data-testid="mobile-sticky-cta"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0px)" }}
     >
-      <div className="grid grid-cols-3 gap-1.5 px-2 py-2">
+      <div className="grid grid-cols-2 gap-2 px-2 py-2">
         <button
           type="button"
-          onClick={() => {
-            trackWhatsappClick("mobile_sticky_cta");
-            window.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT));
-          }}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-primary text-primary-foreground py-2 font-bold text-[11px] active:scale-95 transition-transform"
+          onClick={goChat}
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-secondary text-secondary-foreground py-2.5 font-bold text-xs active:scale-95 transition-transform"
           data-testid="mobile-sticky-whatsapp"
         >
-          <span className="relative inline-block leading-none" aria-hidden>
-            <span className="text-base">🐨</span>
-            <span className="absolute -bottom-0.5 -end-1 text-[10px]">🎤</span>
-          </span>
+          <MessageSquare className="w-4 h-4" />
           <span>{t.chat}</span>
         </button>
         <button
           type="button"
-          onClick={goEnroll}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-primary text-primary-foreground py-2 font-bold text-[11px] active:scale-95 transition-transform"
+          onClick={goReserve}
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground py-2.5 font-bold text-xs active:scale-95 transition-transform"
           data-testid="mobile-sticky-register"
         >
-          <Sparkles className="w-4 h-4" />
-          <span>{t.register}</span>
-        </button>
-        <button
-          type="button"
-          onClick={goConsult}
-          className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-accent text-accent-foreground py-2 font-bold text-[11px] active:scale-95 transition-transform"
-          data-testid="mobile-sticky-consult"
-        >
-          <CalendarClock className="w-4 h-4" />
-          <span>{t.consult}</span>
+          <Ticket className="w-4 h-4" />
+          <span>{t.reserve}</span>
         </button>
       </div>
     </div>
