@@ -16,10 +16,26 @@ import {
   type SessionData,
 } from "../lib/auth";
 import { authRateLimit } from "../middlewares/security";
+import { z } from "zod";
 
-// 6 attempts per minute per IP for the most-attacked endpoints.
-const loginLimiter = authRateLimit(6, 60_000);
-const registerLimiter = authRateLimit(8, 60_000);
+// Centralised request schemas. 400s carry a uniform `{ error, issues }` body.
+const RegisterSchema = z.object({
+  email: z.string().trim().email().max(200),
+  password: z.string().min(6).max(200),
+  firstName: z.string().max(120).optional().nullable(),
+  lastName: z.string().max(120).optional().nullable(),
+});
+const LoginSchema = z.object({
+  email: z.string().trim().email().max(200),
+  password: z.string().min(1).max(200),
+});
+
+// Tight per-IP limits on the most-attacked endpoints. 20/min is high
+// enough to absorb legitimate retries (typo, autofill, second device,
+// the e2e suite) while still capping credential-stuffing throughput
+// well below practical attack rates.
+const loginLimiter = authRateLimit(20, 60_000);
+const registerLimiter = authRateLimit(10, 60_000);
 
 const router: IRouter = Router();
 
@@ -149,17 +165,12 @@ router.get("/me", async (req: Request, res: Response) => {
 
 router.post("/auth/register", registerLimiter, async (req: Request, res: Response) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
-
-    if (!email || !password) {
-      res.status(400).json({ error: "Email and password are required" });
+    const parsed = RegisterSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
       return;
     }
-
-    if (password.length < 6) {
-      res.status(400).json({ error: "Password must be at least 6 characters" });
-      return;
-    }
+    const { email, password, firstName, lastName } = parsed.data;
 
     const existing = await db
       .select()
@@ -280,12 +291,12 @@ router.post("/auth/resend-verification", async (req: Request, res: Response) => 
 
 router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      res.status(400).json({ error: "Email and password are required" });
+    const parsed = LoginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
       return;
     }
+    const { email, password } = parsed.data;
 
     const [user] = await db
       .select()

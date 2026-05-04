@@ -1,101 +1,76 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { z } from "zod";
 import { db, speechEvaluationsTable } from "@workspace/db";
 import { eq, or, desc, sql } from "drizzle-orm";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { awardBadgeIfEligible } from "../lib/platform.js";
+import { applyAdHocLimit } from "../middlewares/security.js";
 
 const router: IRouter = Router();
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+// Zod schema centralises shape + length limits. `whatsapp` and `phone` are
+// interchangeable so we accept either; `speechText` OR `videoUrl` is
+// required (refined below). Values are trimmed by .transform.
+const trimmed = (min: number, max: number) =>
+  z.string().transform((s) => s.trim()).pipe(z.string().min(min).max(max));
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
-}
-
-const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SpeechEvaluationSchema = z
+  .object({
+    fullName: trimmed(2, 120),
+    email: trimmed(3, 200).pipe(z.string().email()),
+    phone: z.string().optional(),
+    whatsapp: z.string().optional(),
+    speechText: z.string().max(5000).optional(),
+    videoUrl: z.string().max(2000).optional(),
+    speechTopic: z.string().max(200).optional(),
+    speechLanguage: z.string().max(50).optional(),
+    notes: z.string().max(2000).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const phone = (data.whatsapp ?? data.phone ?? "").trim();
+    if (phone.length < 6 || phone.length > 40) {
+      ctx.addIssue({ code: "custom", path: ["whatsapp"], message: "WhatsApp number is required (6-40 chars)" });
+    }
+    const hasText = (data.speechText ?? "").trim().length > 0;
+    const hasUrl = (data.videoUrl ?? "").trim().length > 0;
+    if (!hasText && !hasUrl) {
+      ctx.addIssue({ code: "custom", path: ["speechText"], message: "Provide either speechText or videoUrl" });
+    }
+    if (hasUrl) {
+      try {
+        const u = new URL(data.videoUrl!.trim());
+        if (u.protocol !== "http:" && u.protocol !== "https:") {
+          ctx.addIssue({ code: "custom", path: ["videoUrl"], message: "videoUrl must be http(s)" });
+        }
+      } catch {
+        ctx.addIssue({ code: "custom", path: ["videoUrl"], message: "Invalid videoUrl" });
+      }
+    }
+  });
 
 router.post("/speech-evaluation", async (req: Request, res: Response) => {
   // Use req.ip — populated by Express via `app.set("trust proxy", 1)` so it
   // is the client IP after the trusted Replit edge proxy, not the
-  // spoofable raw x-forwarded-for header.
+  // spoofable raw x-forwarded-for header. applyAdHocLimit emits the
+  // Retry-After header on 429 for us.
   const clientIp = req.ip ?? "unknown";
-  if (!checkRateLimit(clientIp)) {
-    res.status(429).json({ error: "Too many requests. Please try again later." });
-    return;
-  }
+  if (!applyAdHocLimit(res, `speech-eval:${clientIp}`, 5, 60 * 60 * 1000)) return;
 
-  const body = (req.body ?? {}) as {
-    fullName?: unknown;
-    email?: unknown;
-    phone?: unknown;
-    whatsapp?: unknown;
-    speechText?: unknown;
-    videoUrl?: unknown;
-    speechTopic?: unknown;
-    speechLanguage?: unknown;
-    notes?: unknown;
-  };
-
-  const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
-  const email = typeof body.email === "string" ? body.email.trim() : "";
-  const phoneRaw =
-    typeof body.whatsapp === "string"
-      ? body.whatsapp
-      : typeof body.phone === "string"
-        ? body.phone
-        : "";
-  const phone = phoneRaw.trim();
-  const speechText = typeof body.speechText === "string" ? body.speechText.trim() : "";
-  const videoUrlRaw = typeof body.videoUrl === "string" ? body.videoUrl.trim() : "";
-  const speechTopic = typeof body.speechTopic === "string" ? body.speechTopic.trim() : "";
-  const speechLanguage = typeof body.speechLanguage === "string" ? body.speechLanguage.trim() : "";
-  const userNotes = typeof body.notes === "string" ? body.notes.trim() : "";
-
-  if (!fullName || fullName.length < 2 || fullName.length > 120) {
-    res.status(400).json({ error: "fullName is required (2-120 chars)" });
+  const parsed = SpeechEvaluationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
     return;
   }
-  if (!email || !EMAIL_RX.test(email)) {
-    res.status(400).json({ error: "valid email is required" });
-    return;
-  }
-  if (!phone || phone.length < 6 || phone.length > 40) {
-    res.status(400).json({ error: "WhatsApp number is required" });
-    return;
-  }
-  if (!speechText && !videoUrlRaw) {
-    res.status(400).json({ error: "Provide either speechText or videoUrl" });
-    return;
-  }
-  if (speechText && speechText.length > 5000) {
-    res.status(400).json({ error: "speechText too long (max 5000 chars)" });
-    return;
-  }
-
-  let videoUrl: string | null = null;
-  if (videoUrlRaw) {
-    try {
-      const u = new URL(videoUrlRaw);
-      if (u.protocol !== "http:" && u.protocol !== "https:") {
-        res.status(400).json({ error: "videoUrl must be http(s)" });
-        return;
-      }
-      videoUrl = u.toString();
-    } catch {
-      res.status(400).json({ error: "Invalid videoUrl" });
-      return;
-    }
-  }
+  const data = parsed.data;
+  const fullName = data.fullName;
+  const email = data.email;
+  const phone = (data.whatsapp ?? data.phone ?? "").trim();
+  const speechText = (data.speechText ?? "").trim();
+  const videoUrlRaw = (data.videoUrl ?? "").trim();
+  const speechTopic = (data.speechTopic ?? "").trim();
+  const speechLanguage = (data.speechLanguage ?? "").trim();
+  const userNotes = (data.notes ?? "").trim();
+  const videoUrl: string | null = videoUrlRaw ? new URL(videoUrlRaw).toString() : null;
 
   try {
     const userId = req.isAuthenticated() ? (req.user?.id ?? null) : null;

@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { z } from "zod";
 import {
   db,
   ordersTable,
@@ -52,6 +53,23 @@ async function ensureEnrollment(userId: string, courseId: string): Promise<void>
   await db.insert(enrollmentsTable).values({ userId, courseId, status: "active" });
 }
 
+// Strict zod schema for the order-create request. Centralises shape +
+// length limits and produces a uniform 400 response on failure.
+const CreateOrderSchema = z.object({
+  courseId: z.string().trim().min(1).max(80),
+  buyerName: z.string().trim().min(1).max(120),
+  buyerEmail: z.string().trim().email().max(200),
+  buyerPhone: z
+    .string()
+    .trim()
+    .min(1)
+    .max(40)
+    .refine((v) => /^\d{7,15}$/.test(v.replace(/[\s\-().+]/g, "")), {
+      message: "Invalid phone number",
+    }),
+  paymentNotes: z.string().max(500).optional().nullable(),
+});
+
 router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) => {
   if (!req.isAuthenticated() || !req.user) {
     res.status(401).json({ error: "يجب تسجيل الدخول أولاً لإتمام الطلب" });
@@ -62,29 +80,12 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
     // courses (chargeAmount <= 0) are still allowed below since they
     // never touch the payment gateway.
     const paymentsEnabled = await isFeatureEnabled("payments");
-    const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = req.body;
-    if (!courseId || !buyerName?.trim() || !buyerEmail?.trim() || !buyerPhone?.trim()) {
-      res.status(400).json({ error: "Missing required fields" });
+    const parsed = CreateOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
       return;
     }
-    if (buyerName.trim().length > 120) {
-      res.status(400).json({ error: "Name too long (max 120 characters)" });
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(buyerEmail.trim())) {
-      res.status(400).json({ error: "Invalid email address" });
-      return;
-    }
-    const phoneClean = buyerPhone.trim().replace(/[\s\-().+]/g, "");
-    if (!/^\d{7,15}$/.test(phoneClean)) {
-      res.status(400).json({ error: "Invalid phone number" });
-      return;
-    }
-    if (paymentNotes && paymentNotes.length > 500) {
-      res.status(400).json({ error: "Notes too long (max 500 characters)" });
-      return;
-    }
+    const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = parsed.data;
 
     const [course] = await db
       .select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr, titleEn: coursesTable.titleEn, price: coursesTable.price, discountPrice: coursesTable.discountPrice })

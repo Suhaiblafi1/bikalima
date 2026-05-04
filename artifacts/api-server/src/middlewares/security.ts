@@ -112,10 +112,12 @@ export function strictCors(req: Request, res: Response, next: NextFunction) {
 const RATE_MAX_KEYS = 10_000;
 type Bucket = { count: number; resetAt: number };
 
+type BumpResult = { ok: true } | { ok: false; retryAfterSec: number };
+
 function makeBucketStore() {
   const map = new Map<string, Bucket>();
   return {
-    bump(key: string, max: number, windowMs: number): boolean {
+    bump(key: string, max: number, windowMs: number): BumpResult {
       const now = Date.now();
       const entry = map.get(key);
       if (!entry || entry.resetAt < now) {
@@ -128,24 +130,50 @@ function makeBucketStore() {
           }
         }
         map.set(key, { count: 1, resetAt: now + windowMs });
-        return true;
+        return { ok: true };
       }
-      if (entry.count >= max) return false;
+      if (entry.count >= max) {
+        return { ok: false, retryAfterSec: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)) };
+      }
       entry.count++;
-      return true;
+      return { ok: true };
     },
   };
 }
 
 const globalStore = makeBucketStore();
 const authStore = makeBucketStore();
+const adHocStore = makeBucketStore();
+
+/**
+ * Helper for ad-hoc per-route limiters (consultation, speech-evaluation).
+ * Sets the standards-track Retry-After header on 429 so clients can
+ * back off intelligently. Returns true if the request was allowed.
+ */
+export function applyAdHocLimit(
+  res: Response,
+  key: string,
+  max: number,
+  windowMs: number,
+  message = "Too many requests. Please try again later.",
+): boolean {
+  const result = adHocStore.bump(key, max, windowMs);
+  if (result.ok) return true;
+  res.setHeader("Retry-After", String(result.retryAfterSec));
+  res.status(429).json({ error: message, retryAfterSec: result.retryAfterSec });
+  return false;
+}
 
 /** Per-IP global limiter for the whole API surface. Generous default. */
 export function globalRateLimit(req: Request, res: Response, next: NextFunction) {
   const ip = req.ip ?? "unknown";
-  const ok = globalStore.bump(`g:${ip}`, 600, 60_000); // 600 req / minute / IP
-  if (!ok) {
-    res.status(429).json({ error: "Too many requests. Please slow down." });
+  const result = globalStore.bump(`g:${ip}`, 600, 60_000); // 600 req / minute / IP
+  if (!result.ok) {
+    res.setHeader("Retry-After", String(result.retryAfterSec));
+    res.status(429).json({
+      error: "Too many requests. Please slow down.",
+      retryAfterSec: result.retryAfterSec,
+    });
     return;
   }
   next();
@@ -155,10 +183,12 @@ export function globalRateLimit(req: Request, res: Response, next: NextFunction)
 export function authRateLimit(max: number, windowMs: number): RequestHandler {
   return (req, res, next) => {
     const ip = req.ip ?? "unknown";
-    const ok = authStore.bump(`${req.path}:${ip}`, max, windowMs);
-    if (!ok) {
+    const result = authStore.bump(`${req.path}:${ip}`, max, windowMs);
+    if (!result.ok) {
+      res.setHeader("Retry-After", String(result.retryAfterSec));
       res.status(429).json({
         error: "محاولات كثيرة. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.",
+        retryAfterSec: result.retryAfterSec,
       });
       return;
     }

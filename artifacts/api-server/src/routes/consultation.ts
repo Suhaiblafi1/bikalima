@@ -1,31 +1,17 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db, consultationBookingsTable } from "@workspace/db";
 import { registerLeadFromForm } from "../lib/leads.js";
+import { applyAdHocLimit } from "../middlewares/security.js";
 
 const consultationRouter = Router();
 
 const ADMIN_EMAIL = "info@bikalima.com";
 
-// Rate-limit key uses Express's req.ip, which under `app.set("trust proxy",
-// 1)` returns the client IP from x-forwarded-for after the trusted edge
-// proxy — instead of the spoofable raw header. Callers pass req.ip in.
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 3;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
-}
+// Rate-limit + zod validation is shared via the security middleware so
+// every 429 response carries Retry-After consistently.
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 
 function esc(str: string): string {
@@ -282,35 +268,31 @@ function buildAdminHtml(opts: {
 </body></html>`;
 }
 
+const BookConsultationSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().max(40).optional(),
+  date: z.string().trim().min(1).max(20),
+  time: z.string().trim().min(1).max(20),
+  notes: z.string().max(2000).optional(),
+  lang: z.string().max(10).optional(),
+  consultationType: z.string().max(60).optional(),
+  programId: z.string().max(80).optional(),
+  programTitle: z.string().max(200).optional(),
+});
+
 consultationRouter.post("/book-consultation", async (req: Request, res: Response) => {
-  const { name, email, phone, date, time, notes, lang } = req.body as {
-    name: string;
-    email: string;
-    phone?: string;
-    date: string;
-    time: string;
-    notes?: string;
-    lang?: string;
-  };
-
-  // req.ip is populated from x-forwarded-for under `trust proxy = 1`,
-  // i.e. the client IP after the trusted Replit edge proxy.
+  // req.ip is populated from x-forwarded-for under `trust proxy = 1`.
+  // applyAdHocLimit handles the 429 + Retry-After response for us.
   const clientIp = req.ip ?? "unknown";
-  if (!checkRateLimit(clientIp)) {
-    res.status(429).json({ error: "Too many requests. Please try again later." });
-    return;
-  }
+  if (!applyAdHocLimit(res, `book-consultation:${clientIp}`, 3, 60 * 60 * 1000)) return;
 
-  if (!name || !email || !date || !time) {
-    res.status(400).json({ error: "name, email, date, and time are required" });
+  const parsed = BookConsultationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
     return;
   }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    res.status(400).json({ error: "Invalid email address" });
-    return;
-  }
+  const { name, email, phone, date, time, notes, lang, consultationType, programId, programTitle } = parsed.data;
 
   const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const usedLang = lang ?? "ar";
@@ -339,9 +321,9 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
         preferredDate: date,
         preferredTime: time,
         notes: notesText || null,
-        consultationType: (req.body as { consultationType?: string })?.consultationType ?? null,
-        interestProgramId: (req.body as { programId?: string })?.programId ?? null,
-        interestProgramTitle: (req.body as { programTitle?: string })?.programTitle ?? null,
+        consultationType: consultationType ?? null,
+        interestProgramId: programId ?? null,
+        interestProgramTitle: programTitle ?? null,
         status: "requested",
       })
       .returning({ id: consultationBookingsTable.id });
@@ -353,7 +335,7 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
         phone: phoneText || null,
         email,
         source: "consultation",
-        interestProgramTitle: (req.body as { programTitle?: string })?.programTitle ?? null,
+        interestProgramTitle: programTitle ?? null,
       },
       activity: {
         type: "linked_consultation",

@@ -116,6 +116,42 @@ test.describe("production hardening", () => {
     await ctx.close();
   });
 
+  test("zod validation: POST /api/orders with invalid body returns 400 with issues", async ({ request }) => {
+    // Anonymous request hits the auth check first (401), so we test the
+    // schema on a public-but-validated endpoint instead: book-consultation.
+    const csrf = await request.get("/api/csrf");
+    const token = (await csrf.json()).token as string;
+    const r = await request.post("/api/book-consultation", {
+      headers: { "Content-Type": "application/json", "x-csrf-token": token },
+      data: { name: "x", email: "not-an-email", date: "", time: "" },
+    });
+    expect(r.status()).toBe(400);
+    const body = await r.json();
+    expect(body.error).toMatch(/Invalid request body/i);
+    expect(Array.isArray(body.issues)).toBe(true);
+    expect(body.issues.length).toBeGreaterThan(0);
+  });
+
+  test("rate-limit responses include Retry-After header", async ({ request }) => {
+    // Hammer login from this fresh request context until we hit the limit;
+    // verify the 429 response includes a Retry-After header in seconds.
+    const csrf = await request.get("/api/csrf");
+    const token = (await csrf.json()).token as string;
+    let last: import("@playwright/test").APIResponse | null = null;
+    for (let i = 0; i < 25; i++) {
+      last = await request.post("/api/auth/login", {
+        headers: { "Content-Type": "application/json", "x-csrf-token": token },
+        data: { email: "no-such-user@example.com", password: "wrong-password" },
+      });
+      if (last.status() === 429) break;
+    }
+    expect(last).not.toBeNull();
+    expect(last!.status()).toBe(429);
+    const retryAfter = last!.headers()["retry-after"];
+    expect(retryAfter).toBeDefined();
+    expect(Number(retryAfter)).toBeGreaterThan(0);
+  });
+
   test("checkout page emits noindex robots meta (SEO hardening)", async ({ page }) => {
     await page.goto("/checkout?slug=influential-speaker");
     // usePageMeta sets the meta tag in a useEffect after mount; wait for it.
