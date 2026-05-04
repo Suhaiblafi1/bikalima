@@ -2,6 +2,7 @@ import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 const FALLBACK = {
   ar: `# سياسة الخصوصية
@@ -97,6 +98,15 @@ export default function PrivacyPage() {
   const { data, isLoading } = useSiteSettings();
 
   const heading = lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy";
+  // Per-page SEO: indexable, stable canonical, language-aware description.
+  usePageMeta({
+    title: heading,
+    description:
+      lang === "ar"
+        ? "كيف نجمع بياناتك ونحميها في منصة بكلمة، وما هي حقوقك."
+        : "How we collect and protect your data on the Bikalima platform, and what your rights are.",
+    canonicalPath: "/privacy",
+  });
   const settings = data?.settings;
   const fromDb = lang === "ar" ? settings?.privacyPolicyAr : settings?.privacyPolicyEn;
   const content = (fromDb && fromDb.trim().length > 0) ? fromDb : FALLBACK[lang];

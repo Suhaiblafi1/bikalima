@@ -146,6 +146,49 @@ const authStore = makeBucketStore();
 const adHocStore = makeBucketStore();
 
 /**
+ * Failure-only counter pair. Used by /api/auth/login so that
+ * successful logins don't consume the bucket — only wrong-password
+ * attempts do. That keeps the limit tight (6 failed/min/IP) without
+ * breaking legitimate burst use (e.g. e2e suite logging multiple
+ * users in, or a household sharing a NAT).
+ *
+ * `checkFailureBudget` is called BEFORE the credentials check and
+ * returns false (with 429 + Retry-After already written) when the IP
+ * is already over budget. `recordFailure` is called from the handler
+ * AFTER the credentials check fails.
+ */
+const failBucket = new Map<string, { count: number; resetAt: number }>();
+export function checkFailureBudget(
+  res: Response,
+  key: string,
+  max: number,
+  windowMs: number,
+  message = "محاولات كثيرة. يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.",
+): boolean {
+  const now = Date.now();
+  const e = failBucket.get(key);
+  if (e && e.resetAt > now && e.count >= max) {
+    const retry = Math.max(1, Math.ceil((e.resetAt - now) / 1000));
+    res.setHeader("Retry-After", String(retry));
+    res.status(429).json({ error: message, retryAfterSec: retry });
+    return false;
+  }
+  return true;
+}
+export function recordFailure(key: string, windowMs: number): void {
+  const now = Date.now();
+  const e = failBucket.get(key);
+  if (!e || e.resetAt <= now) {
+    if (failBucket.size > RATE_MAX_KEYS) {
+      for (const [k, v] of failBucket) if (v.resetAt <= now) failBucket.delete(k);
+    }
+    failBucket.set(key, { count: 1, resetAt: now + windowMs });
+  } else {
+    e.count++;
+  }
+}
+
+/**
  * Helper for ad-hoc per-route limiters (consultation, speech-evaluation).
  * Sets the standards-track Retry-After header on 429 so clients can
  * back off intelligently. Returns true if the request was allowed.

@@ -2,6 +2,7 @@ import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 const FALLBACK = {
   ar: `# الشروط والأحكام
@@ -97,6 +98,15 @@ export default function TermsPage() {
   const { data, isLoading } = useSiteSettings();
 
   const heading = lang === "ar" ? "الشروط والأحكام" : "Terms & Conditions";
+  // Per-page SEO: indexable, stable canonical, language-aware description.
+  usePageMeta({
+    title: heading,
+    description:
+      lang === "ar"
+        ? "الشروط التي تحكم استخدامك لخدمات بكلمة، التسجيل، والدفع، والاسترداد."
+        : "The terms governing your use of Bikalima — registration, payment, and refunds.",
+    canonicalPath: "/terms",
+  });
   const settings = data?.settings;
   const fromDb = lang === "ar" ? settings?.termsAr : settings?.termsEn;
   const content = (fromDb && fromDb.trim().length > 0) ? fromDb : FALLBACK[lang];

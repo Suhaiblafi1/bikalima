@@ -178,9 +178,12 @@ function ensureToken(req: Request, threadToken: string): boolean {
 router.post("/chat/threads", async (req: Request, res: Response) => {
   const ip = clientIp(req);
   if (!bumpRate(newThreadRateLimit, ip, NEW_THREAD_MAX, NEW_THREAD_WINDOW)) {
+    // Standards-track Retry-After (seconds) so clients can back off.
+    const retryAfterSec = Math.ceil(NEW_THREAD_WINDOW / 1000);
+    res.setHeader("Retry-After", String(retryAfterSec));
     return res
       .status(429)
-      .json({ error: "too_many_requests", retryAfter: NEW_THREAD_WINDOW });
+      .json({ error: "too_many_requests", retryAfterSec });
   }
 
   const body = req.body as {
@@ -284,7 +287,9 @@ router.post(
       }
       // Rate-limit only AFTER auth so random IDs cannot grow the map.
       if (!bumpRate(messageRateLimit, id, MESSAGE_MAX, MESSAGE_WINDOW)) {
-        return res.status(429).json({ error: "too_many_requests" });
+        const retryAfterSec = Math.ceil(MESSAGE_WINDOW / 1000);
+        res.setHeader("Retry-After", String(retryAfterSec));
+        return res.status(429).json({ error: "too_many_requests", retryAfterSec });
       }
 
       const [msg] = await db

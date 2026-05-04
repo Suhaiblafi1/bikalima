@@ -15,7 +15,7 @@ import {
   SESSION_TTL,
   type SessionData,
 } from "../lib/auth";
-import { authRateLimit } from "../middlewares/security";
+import { authRateLimit, checkFailureBudget, recordFailure } from "../middlewares/security";
 import { z } from "zod";
 
 // Centralised request schemas. 400s carry a uniform `{ error, issues }` body.
@@ -30,11 +30,13 @@ const LoginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
-// Tight per-IP limits on the most-attacked endpoints. 20/min is high
-// enough to absorb legitimate retries (typo, autofill, second device,
-// the e2e suite) while still capping credential-stuffing throughput
-// well below practical attack rates.
-const loginLimiter = authRateLimit(20, 60_000);
+// Brief requires "6 failed login attempts per minute → 429 with clear
+// Arabic messaging". We track *failed* attempts only via
+// checkFailureBudget/recordFailure, so legitimate logins (and the e2e
+// suite) never trip the limiter. /api/auth/register stays on a small
+// per-attempt cap because register attempts are inherently rare.
+const LOGIN_FAIL_MAX = 6;
+const LOGIN_FAIL_WINDOW = 60_000;
 const registerLimiter = authRateLimit(10, 60_000);
 
 const router: IRouter = Router();
@@ -289,7 +291,12 @@ router.post("/auth/resend-verification", async (req: Request, res: Response) => 
   }
 });
 
-router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => {
+router.post("/auth/login", async (req: Request, res: Response) => {
+  // Per-IP failure-only limiter: 6 wrong-password attempts per minute.
+  // Successful logins do not consume budget.
+  const ip = req.ip ?? "unknown";
+  const failKey = `login:${ip}`;
+  if (!checkFailureBudget(res, failKey, LOGIN_FAIL_MAX, LOGIN_FAIL_WINDOW)) return;
   try {
     const parsed = LoginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -304,12 +311,14 @@ router.post("/auth/login", loginLimiter, async (req: Request, res: Response) => 
       .where(eq(usersTable.email, email.toLowerCase().trim()));
 
     if (!user) {
+      recordFailure(failKey, LOGIN_FAIL_WINDOW);
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
+      recordFailure(failKey, LOGIN_FAIL_WINDOW);
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, ExternalLink, Calendar, Building2, FileCheck2, Award, Loader2 } from "lucide-react";
@@ -50,6 +51,16 @@ export default function AccreditationsPage() {
   const { lang } = useLang();
   const [items, setItems] = useState<Accreditation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Per-page SEO. Public, indexable page with a stable canonical.
+  usePageMeta({
+    title: lang === "ar" ? "اعتماداتنا وشراكاتنا" : "Our Accreditations & Partnerships",
+    description:
+      lang === "ar"
+        ? "اعتمادات بكلمة الرسمية من جهات موثوقة محلياً ودولياً. كل شهادة قابلة للتحقق."
+        : "Bikalima's official accreditations from trusted local and international bodies — every certificate is verifiable.",
+    canonicalPath: "/accreditations",
+  });
 
   useEffect(() => {
     fetch(`${getApiBase()}/accreditations`, { credentials: "include" })

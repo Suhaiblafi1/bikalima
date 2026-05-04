@@ -67,10 +67,14 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     logger.error({ err }, "unhandled error");
   }
   if (res.headersSent) return;
+  // Only 5xx responses are genericised in production — explicit 4xx
+  // messages (validation failures, 401/403/404, etc.) are preserved so
+  // clients can show actionable, intent-revealing errors. Dev returns
+  // the raw message for everything to aid debugging.
   const isProd = process.env.NODE_ENV === "production";
-  res.status(status).json({
-    error: status >= 500 || isProd ? "Internal server error" : (e?.message ?? "Error"),
-  });
+  const message =
+    isProd && status >= 500 ? "Internal server error" : (e?.message ?? "Error");
+  res.status(status).json({ error: message });
 });
 
 export default app;

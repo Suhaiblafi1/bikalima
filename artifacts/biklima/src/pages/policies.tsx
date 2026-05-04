@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -48,6 +49,32 @@ export default function PoliciesPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [single, setSingle] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Per-page SEO: list page is generic, detail page reflects the loaded
+  // policy slug + title. Both are public + indexable.
+  const policyTitle = single
+    ? lang === "ar"
+      ? single.titleAr
+      : single.titleEn || single.titleAr
+    : null;
+  usePageMeta({
+    title:
+      slug && policyTitle
+        ? policyTitle
+        : lang === "ar"
+        ? "الشروط والسياسات"
+        : "Terms & Policies",
+    description:
+      slug && single
+        ? (lang === "ar" ? single.summaryAr : single.summaryEn || single.summaryAr) ??
+          (lang === "ar"
+            ? "النص الكامل لسياسة بكلمة."
+            : "Full text of the Bikalima policy.")
+        : lang === "ar"
+        ? "كل ما يتعلق بحقوقك والتزاماتك على منصة بكلمة."
+        : "Everything about your rights and obligations on the Bikalima platform.",
+    canonicalPath: slug ? `/policies/${slug}` : "/policies",
+  });
 
   useEffect(() => {
     setLoading(true);
