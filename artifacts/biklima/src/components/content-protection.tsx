@@ -16,7 +16,7 @@ export function ContentProtection({ children }: Props) {
     (user?.id ? ` • ${user.id.slice(0, 8)}` : "") || "محتوى محمي • بكلمة";
 
   useEffect(() => {
-    const block = (e: Event) => { e.preventDefault(); return false; };
+    const block = (e: Event) => { e.preventDefault(); };
 
     const onKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
@@ -34,7 +34,7 @@ export function ContentProtection({ children }: Props) {
         if (k === "printscreen" && navigator.clipboard?.writeText) {
           navigator.clipboard.writeText("").catch(() => {});
         }
-        return false;
+        return;
       }
     };
 

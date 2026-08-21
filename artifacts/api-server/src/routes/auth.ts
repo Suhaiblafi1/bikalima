@@ -723,7 +723,8 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
       },
     );
     const claims = tokens.claims();
-    const email = claims?.email?.toLowerCase().trim();
+    const rawEmail = claims?.email;
+    const email = typeof rawEmail === "string" ? rawEmail.toLowerCase().trim() : "";
     if (!email) {
       res.redirect("/login?oauth_error=no_email");
       return;
@@ -739,12 +740,12 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
         .values({
           email,
           passwordHash,
-          firstName: claims.given_name ?? null,
-          lastName: claims.family_name ?? null,
-          emailVerified: claims.email_verified === true,
+          firstName: typeof claims?.given_name === "string" ? claims.given_name : null,
+          lastName: typeof claims?.family_name === "string" ? claims.family_name : null,
+          emailVerified: claims?.email_verified === true,
         })
         .returning();
-    } else if (!user.emailVerified && claims.email_verified === true) {
+    } else if (!user.emailVerified && claims?.email_verified === true) {
       // Google already verified this mailbox — trust that and clear any
       // pending verification token.
       await db

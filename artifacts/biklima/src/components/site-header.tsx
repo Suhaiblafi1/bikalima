@@ -47,7 +47,7 @@ export function SiteHeader() {
   }, [isRtl, lang]);
 
   useEffect(() => {
-    if (!isAuthenticated) { setIsAdmin(false); return; }
+    if (!isAuthenticated) { setIsAdmin(false); return undefined; }
     let cancelled = false;
     // The header "Admin Panel" link should appear for any non-student staff
     // role (admin, trainer, sales) so the role-aware page can take over.
@@ -65,6 +65,7 @@ export function SiteHeader() {
       document.body.style.overflow = "hidden";
       return () => { document.body.style.overflow = prev; };
     }
+    return undefined;
   }, [mobileOpen]);
 
   const navItems: NavTarget[] = [

@@ -88,7 +88,7 @@ router.post("/admin/lessons/:id/attendance", async (req: Request, res: Response)
     .where(eq(enrollmentsTable.courseId, lesson.courseId));
   const allowedIds = new Set(enrolledRows.map((r) => r.userId));
 
-  const actor = { id: req.user!.id, email: req.user!.email };
+  const actor = { id: req.user!.id, email: req.user!.email ?? null };
   const [course] = await db
     .select({ titleAr: coursesTable.titleAr, slug: coursesTable.slug })
     .from(coursesTable)

@@ -480,13 +480,15 @@ router.get("/me/certificates", async (req: Request, res: Response) => {
   if (!req.isAuthenticated() || !req.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
+  const email = req.user.email;
+  if (!email) return res.status(400).json({ error: "Account email is missing" });
   try {
     const rows = await db
       .select()
       .from(certificatesTable)
       .where(or(
         eq(certificatesTable.userId, req.user.id),
-        eq(certificatesTable.email, req.user.email),
+        eq(certificatesTable.email, email),
       ))
       .orderBy(desc(certificatesTable.issueDate));
     res.json({

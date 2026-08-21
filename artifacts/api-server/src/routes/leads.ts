@@ -183,8 +183,8 @@ router.get("/admin/leads/:id", async (req: Request, res: Response) => {
       linked.enrollments = await db
         .select({
           id: enrollmentRequestsTable.id,
-          program: enrollmentRequestsTable.program,
-          mode: enrollmentRequestsTable.mode,
+          program: enrollmentRequestsTable.programId,
+          mode: enrollmentRequestsTable.trainingType,
           createdAt: enrollmentRequestsTable.createdAt,
         })
         .from(enrollmentRequestsTable)
@@ -265,7 +265,7 @@ router.patch("/admin/leads/:id", async (req: Request, res: Response) => {
     if (body.status && body.status !== current.status) {
       await setLeadStatus(id, body.status, {
         userId: req.user?.id,
-        email: req.user?.email,
+        email: req.user?.email ?? undefined,
       });
     }
 
@@ -318,7 +318,7 @@ router.post("/admin/leads/:id/activities", async (req: Request, res: Response) =
       summaryAr: summary || undefined,
       payload: body.payload ?? undefined,
       actorUserId: req.user?.id,
-      actorEmail: req.user?.email,
+      actorEmail: req.user?.email ?? undefined,
     });
     res.json({ ok: true });
   } catch (err) {
@@ -353,7 +353,7 @@ router.post("/admin/leads/:id/convert", async (req: Request, res: Response) => {
       .where(eq(leadsTable.id, id));
     await setLeadStatus(id, "student", {
       userId: req.user?.id,
-      email: req.user?.email,
+      email: req.user?.email ?? undefined,
     });
     await recordLeadActivity({
       leadId: id,
@@ -362,7 +362,7 @@ router.post("/admin/leads/:id/convert", async (req: Request, res: Response) => {
         ? "تم تحويل العميل إلى طالب وربطه بالحساب الموجود"
         : "تم تحويل العميل إلى طالب (لا يوجد حساب مطابق بالبريد)",
       actorUserId: req.user?.id,
-      actorEmail: req.user?.email,
+      actorEmail: req.user?.email ?? undefined,
     });
     res.json({ ok: true, linkedUserId: userId });
   } catch (err) {
@@ -379,7 +379,7 @@ router.get("/admin/leads-meta/owners", async (req: Request, res: Response) => {
       .select({
         id: usersTable.id,
         email: usersTable.email,
-        fullName: usersTable.fullName,
+        fullName: sql<string>`coalesce(nullif(trim(concat_ws(' ', ${usersTable.firstName}, ${usersTable.lastName})), ''), ${usersTable.email})`,
         role: usersTable.role,
       })
       .from(usersTable)

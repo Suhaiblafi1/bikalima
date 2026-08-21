@@ -162,11 +162,11 @@ function ActivityBody({ activity, isDone, isPending, enrolled, isSubmitting, onS
     case "reflection":       return <ReflectionActivity activity={activity} isDone={isDone} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
     case "speech_builder":   return <SpeechBuilderActivity activity={activity} isDone={isDone} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
     case "voice_recording":  return <VoiceActivity activity={activity} isDone={isDone} isPending={isPending} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
-    case "video_submission": return <VideoSubmitActivity activity={activity} isDone={isDone} isPending={isPending} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
+    case "video_submission": return <VideoSubmitActivity isDone={isDone} isPending={isPending} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
     case "drag_drop":        return <DragDropActivity activity={activity} isDone={isDone} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
     case "scenario":         return <ScenarioActivity activity={activity} isDone={isDone} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
     case "self_assessment":  return <SelfAssessmentActivity activity={activity} isDone={isDone} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
-    case "coach_feedback":   return <CoachFeedbackActivity activity={activity} isDone={isDone} isPending={isPending} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
+    case "coach_feedback":   return <CoachFeedbackActivity isDone={isDone} isPending={isPending} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
     case "challenge":        return <ChallengeActivity activity={activity} isDone={isDone} isSubmitting={isSubmitting} onSubmit={onSubmit} />;
   }
 }

@@ -201,17 +201,18 @@ router.get("/admin/audit-log", async (req: Request, res: Response) => {
   const q = parseQuery(AuditQuerySchema, req, res);
   if (!q) return;
   try {
-    const { limit, offset } = q;
-    const actor = q.actor.trim();
-    const entityType = q.entityType.trim();
-    const action = q.action.trim();
+    const limit = q.limit ?? 100;
+    const offset = q.offset ?? 0;
+    const actor = q.actor?.trim() ?? "";
+    const entityType = q.entityType?.trim() ?? "";
+    const action = q.action?.trim() ?? "";
 
     const conds = [];
     if (actor) conds.push(ilike(auditLogEntriesTable.actorEmail, `%${actor}%`));
     if (entityType) conds.push(eq(auditLogEntriesTable.entityType, entityType));
     if (action) conds.push(eq(auditLogEntriesTable.action, action));
-    const start = q.startDate.trim();
-    const end = q.endDate.trim();
+    const start = q.startDate?.trim() ?? "";
+    const end = q.endDate?.trim() ?? "";
     if (start) {
       const d = new Date(start);
       if (!isNaN(d.getTime())) conds.push(gte(auditLogEntriesTable.createdAt, d));

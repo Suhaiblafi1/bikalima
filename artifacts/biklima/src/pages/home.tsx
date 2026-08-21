@@ -264,7 +264,6 @@ export default function Home() {
   }, []);
 
   const scrollTo = (id: string) => {
-    setMobileMenuOpen(false);
     const el = document.getElementById(id);
     if (el) {
       window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });

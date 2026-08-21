@@ -195,7 +195,7 @@ router.get("/parent/live-sessions", async (req: Request, res: Response) => {
 function decorateSession(
   s: { lessonId: string; scheduledAt: Date; durationMinutes: number; status: string } & Record<string, unknown>,
   lessonMap: Map<string, { lessonTitleAr: string | null; courseId: string }>,
-  courseMap: Map<string, { slug: string; titleAr: string }>,
+  courseMap: Map<string, { slug: string | null; titleAr: string }>,
 ) {
   const l = lessonMap.get(s.lessonId);
   const c = l ? courseMap.get(l.courseId) : null;

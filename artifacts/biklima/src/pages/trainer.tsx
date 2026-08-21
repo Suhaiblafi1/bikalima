@@ -106,7 +106,7 @@ export default function TrainerDashboardPage() {
   for (const en of learners) if (!uniqueLearners.has(en.userId)) uniqueLearners.set(en.userId, en);
 
   return (
-    <AppShell containerClassName="container mx-auto px-4 py-6" breadcrumb={[{ labelAr: "لوحة المدرّب", href: "/trainer" }]}>
+    <AppShell containerClassName="container mx-auto px-4 py-6" breadcrumb={[{ label: "لوحة المدرّب", href: "/trainer" }]}>
       <div className="space-y-6" dir="rtl" data-testid="trainer-dashboard">
         <header className="flex items-start justify-between gap-4 flex-wrap">
           <div>

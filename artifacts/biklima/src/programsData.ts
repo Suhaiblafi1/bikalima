@@ -123,6 +123,7 @@ export const upcomingEvents: UpcomingEvent[] = [
 ];
 
 export type ProgramLocale = {
+  title?: string;
   role: string;
   shortTitle: string;
   subtitle?: string;
@@ -311,18 +312,18 @@ const programsBase: Program[] = [
   },
 ];
 
-export function getLocalizedProgram(p: Program, lang: Lang): ProgramLocale & Pick<Program, "id" | "hours" | "sessions" | "image" | "accentColor" | "borderColor" | "tagColor"> {
+export function getLocalizedProgram(p: Program, lang: Lang): ProgramLocale & Pick<Program, "id" | "hours" | "sessions" | "image" | "accentColor" | "borderColor" | "tagColor" | "samplePdf" | "introVideo"> {
   if (lang === "ar") {
     const { i18n, ...rest } = p;
     return rest;
   }
-  const locale = (lang === "fr" ? (p.i18n["fr"] ?? p.i18n["en"]) : p.i18n["en"]);
+  const locale = p.i18n[lang];
   return { ...p, ...locale };
 }
 
 export const programs = programsBase;
 
-export const testimonials: Record<Lang, { name: string; role: string; quote: string }[]> = {
+export const testimonials: Record<Lang | "fr", { name: string; role: string; quote: string }[]> = {
   ar: [
     { name: "أم ريم الكسواني", role: "أم لطفلين — عمّان، الأردن", quote: "ابنتي كانت ترتجف عند الإلقاء أمام صفها. بعد أسابيع قليلة في البرنامج، أصبحت تطلب أن تكون أول من يتحدث! شكراً بكلمة." },
     { name: "مريم واعش", role: "مدير تسويق", quote: "برنامج المتحدث المؤثر غيّر طريقة تعاملي مع العملاء. أصبحت أعرف كيف أوصل فكرتي في ثوانٍ وأترك أثراً حقيقياً في أي اجتماع." },

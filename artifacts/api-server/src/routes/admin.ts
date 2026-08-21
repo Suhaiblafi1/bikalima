@@ -50,28 +50,9 @@ async function getScopedCourseIds(req: Request): Promise<string[] | null> {
   return rows.map((r) => r.courseId);
 }
 
-type CourseInsert = {
-  titleAr: string; titleEn: string; titleFr: string;
-  subtitleAr?: string; subtitleEn?: string;
-  descriptionAr?: string; descriptionEn?: string; descriptionFr?: string;
-  programId?: string; slug?: string; imageUrl?: string; trailerUrl?: string;
-  price?: number; discountPrice?: number; level?: string; language?: string;
-  category?: string; instructorId?: string;
-  whatYouLearnAr?: string[]; whatYouLearnEn?: string[];
-  requirementsAr?: string[]; requirementsEn?: string[];
-  targetAudienceAr?: string; targetAudienceEn?: string;
-  seoTitle?: string; seoDescription?: string;
-  isPublished?: boolean; isFeatured?: boolean;
-};
+type CourseInsert = typeof coursesTable.$inferInsert;
 
-type LessonUpdate = {
-  titleAr?: string; titleEn?: string; titleFr?: string;
-  descriptionAr?: string; descriptionEn?: string;
-  videoUrl?: string; videoType?: string; durationMinutes?: number;
-  sortOrder?: number; sectionId?: string | null;
-  isFreePreview?: boolean; isPublished?: boolean;
-  resources?: LessonResource[];
-};
+type LessonUpdate = Partial<typeof lessonsTable.$inferInsert>;
 
 type LessonResource = { titleAr: string; titleEn: string; url: string; type: string };
 
@@ -172,7 +153,7 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
         WHERE id = ${id}
         FOR UPDATE
       `);
-      const targetRow = (lockedTargets as { rows?: Array<{ id: string; email: string; role: string }> }).rows?.[0]
+      const targetRow = (lockedTargets as unknown as { rows?: Array<{ id: string; email: string; role: string }> }).rows?.[0]
         ?? (lockedTargets as unknown as Array<{ id: string; email: string; role: string }>)[0];
       if (!targetRow) return { ok: false, status: 404, error: "Not found" };
 
@@ -689,13 +670,15 @@ router.get("/admin/enrollment-requests", async (req: Request, res: Response) => 
   }
 });
 
+const ENROLLMENT_REQUEST_STATUSES = ["new", "pending", "contacted", "approved", "rejected"] as const;
+
 router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Response) => {
   if (!requireRole(req, res, "sales")) return;
   try {
     const { status, adminNotes } = req.body;
-    const updates: { status?: string; adminNotes?: string } = {};
+    const updates: Partial<typeof enrollmentRequestsTable.$inferInsert> = {};
     if (status !== undefined) {
-      if (!ORDER_STATUSES.includes(status) && !["approved", "rejected"].includes(status)) {
+      if (!ENROLLMENT_REQUEST_STATUSES.includes(status)) {
         res.status(400).json({ error: "Invalid status" });
         return;
       }
@@ -728,9 +711,7 @@ router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Respons
 });
 
 // Sales/support staff need read access + status updates for the order pipeline.
-const ORDER_STATUSES = ["new", "contacted", "paid", "completed", "cancelled",
-  // Legacy values kept for backward compatibility with rows already in the DB.
-  "pending", "confirmed", "shipped", "delivered"] as const;
+const WORKBOOK_ORDER_STATUSES = ["pending", "confirmed", "shipped", "delivered"] as const;
 
 router.get("/admin/workbook-orders", async (req: Request, res: Response) => {
   if (!requireRole(req, res, "supervisor", "sales")) return;
@@ -746,13 +727,14 @@ router.patch("/admin/workbook-orders/:id", async (req: Request, res: Response) =
   if (!requireRole(req, res, "supervisor", "sales")) return;
   try {
     const { status, adminNotes } = req.body;
-    const updates: { status?: string; adminNotes?: string } = {};
+    const updates: Partial<typeof workbookOrdersTable.$inferInsert> = {};
     if (status !== undefined) {
-      if (!ORDER_STATUSES.includes(status)) {
-        res.status(400).json({ error: "Invalid status", allowed: ORDER_STATUSES });
+      const workbookStatus = status as (typeof WORKBOOK_ORDER_STATUSES)[number];
+      if (!WORKBOOK_ORDER_STATUSES.includes(workbookStatus)) {
+        res.status(400).json({ error: "Invalid status", allowed: WORKBOOK_ORDER_STATUSES });
         return;
       }
-      updates.status = status;
+      updates.status = workbookStatus;
     }
     // Sales role is restricted to status + notes, never the order contents.
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;

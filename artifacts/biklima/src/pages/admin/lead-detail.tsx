@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ReactElement } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ type Linked = {
   chatThreads: Array<{ id: string; status: string; lastMessageAt: string | null }>;
 };
 
-const ACTIVITY_ICONS: Record<string, JSX.Element> = {
+const ACTIVITY_ICONS: Record<string, ReactElement> = {
   linked_enrollment: <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />,
   linked_workbook_order: <FileText className="w-3.5 h-3.5 text-purple-600" />,
   linked_speech_evaluation: <Mic2 className="w-3.5 h-3.5 text-blue-600" />,
@@ -291,7 +291,7 @@ export default function AdminLeadDetailPage({ id }: { id: string }) {
   );
 }
 
-function LinkedRow({ icon, label, count }: { icon: JSX.Element; label: string; count: number }) {
+function LinkedRow({ icon, label, count }: { icon: ReactElement; label: string; count: number }) {
   return (
     <div className="flex items-center justify-between p-1.5 rounded bg-muted/20">
       <span className="flex items-center gap-1.5 text-foreground/80">{icon} {label}</span>

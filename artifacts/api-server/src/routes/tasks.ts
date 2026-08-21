@@ -105,7 +105,7 @@ router.post("/admin/tasks", async (req: Request, res: Response) => {
         relatedEntityType: "task",
         relatedEntityId: task.id,
         actorUserId: req.user?.id,
-        actorEmail: req.user?.email,
+        actorEmail: req.user?.email ?? undefined,
       });
     }
     res.json({ task });
@@ -156,7 +156,7 @@ router.patch("/admin/tasks/:id", async (req: Request, res: Response) => {
         relatedEntityType: "task",
         relatedEntityId: id,
         actorUserId: req.user?.id,
-        actorEmail: req.user?.email,
+        actorEmail: req.user?.email ?? undefined,
       });
     }
 
