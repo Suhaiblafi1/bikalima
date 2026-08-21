@@ -24,6 +24,12 @@ type WhatsAppCreds = {
   teamNumber: string | null;
 };
 
+type FetchResponse = {
+  json(): Promise<unknown>;
+  ok: boolean;
+  status: number;
+};
+
 function readCreds(): WhatsAppCreds | null {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -64,7 +70,7 @@ export async function sendWhatsAppText(
   }
   try {
     const url = `https://graph.facebook.com/v20.0/${creds.phoneNumberId}/messages`;
-    const res = await fetch(url, {
+    const res = (await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${creds.accessToken}`,
@@ -76,7 +82,7 @@ export async function sendWhatsAppText(
         type: "text",
         text: { body: body.slice(0, 4000) },
       }),
-    });
+    })) as FetchResponse;
     const data = (await res.json().catch(() => ({}))) as {
       messages?: { id: string }[];
       error?: { message?: string };
