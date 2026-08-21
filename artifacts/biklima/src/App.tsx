@@ -53,6 +53,7 @@ const AdminAssignments = lazy(() => import("@/pages/admin/assignments"));
 const AdminReviews = lazy(() => import("@/pages/admin/reviews"));
 const AdminSpeechEvaluations = lazy(() => import("@/pages/admin/speech-evaluations"));
 const AdminSettings = lazy(() => import("@/pages/admin/settings"));
+const AdminDiscountCodes = lazy(() => import("@/pages/admin/discount-codes"));
 const AdminHomePage = lazy(() => import("@/pages/admin/home-page"));
 const AdminWorkbooksCms = lazy(() => import("@/pages/admin/workbooks"));
 const AdminFieldMedia = lazy(() => import("@/pages/admin/field-media"));
@@ -213,6 +214,9 @@ function AppRouter() {
         <Route path="/consultation" component={ConsultationPage} />
         <Route path="/admin/settings">
           {() => (<AdminRoute><AdminSettings /></AdminRoute>)}
+        </Route>
+        <Route path="/admin/discount-codes">
+          {() => (<AdminRoute><AdminDiscountCodes /></AdminRoute>)}
         </Route>
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/terms" component={TermsPage} />

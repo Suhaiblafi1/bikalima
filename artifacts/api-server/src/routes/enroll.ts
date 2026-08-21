@@ -424,7 +424,6 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
       formData: normalizedFormData,
       leadSource: payload.leadSource || "website",
       syncStatus: "pending",
-      aiAnalysisStatus: "none",
     });
 
     dbStored = true;

@@ -63,8 +63,7 @@ test.describe.serial("learner happy path", () => {
         fullName: "زائر اختبار",
         email: `e2e.speech+${Date.now()}@bikalima.test`,
         whatsapp: "0790000000",
-        speechText:
-          "هذا نص خطاب اختباري أرسل عبر مجموعة اختبارات النهاية إلى النهاية للتحقق من المسار.",
+        videoUrl: "https://youtu.be/dQw4w9WgXcQ",
         speechTopic: "Test",
         speechLanguage: "ar",
       },

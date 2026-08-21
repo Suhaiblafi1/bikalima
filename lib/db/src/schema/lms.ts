@@ -195,6 +195,25 @@ export const speechEvaluationsTable = pgTable("speech_evaluations", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const discountCodesTable = pgTable("discount_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 64 }).notNull(),
+  discountType: varchar("discount_type", { length: 16 }).$type<"percent" | "fixed">().notNull(),
+  discountValue: integer("discount_value").notNull(),
+  courseId: varchar("course_id").references(() => coursesTable.id, { onDelete: "cascade" }),
+  isActive: boolean("is_active").notNull().default(true),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  maxUses: integer("max_uses"),
+  usedCount: integer("used_count").notNull().default(0),
+  createdById: varchar("created_by_id").references(() => usersTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  uniqueIndex("discount_codes_code_unique").on(table.code),
+  index("discount_codes_course_idx").on(table.courseId),
+]);
+
 export const ordersTable = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
@@ -203,6 +222,10 @@ export const ordersTable = pgTable("orders", {
   buyerEmail: varchar("buyer_email").notNull(),
   buyerPhone: varchar("buyer_phone").notNull(),
   amount: integer("amount"),
+  originalAmount: integer("original_amount"),
+  discountAmount: integer("discount_amount").notNull().default(0),
+  discountCodeId: varchar("discount_code_id").references(() => discountCodesTable.id, { onDelete: "set null" }),
+  discountCode: varchar("discount_code", { length: 64 }),
   currency: varchar("currency").default("JOD"),
   status: varchar("status").notNull().default("pending"),
   paymentNotes: text("payment_notes"),
@@ -600,6 +623,7 @@ export type Review = typeof reviewsTable.$inferSelect;
 export type Assignment = typeof assignmentsTable.$inferSelect;
 export type AssignmentSubmission = typeof assignmentSubmissionsTable.$inferSelect;
 export type SiteSettings = typeof siteSettingsTable.$inferSelect;
+export type DiscountCode = typeof discountCodesTable.$inferSelect;
 export type HomePageSection = typeof homePageSectionsTable.$inferSelect;
 export type Workbook = typeof workbooksTable.$inferSelect;
 export type FieldMedia = typeof fieldMediaTable.$inferSelect;

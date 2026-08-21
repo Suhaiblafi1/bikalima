@@ -9,8 +9,8 @@ import { applyAdHocLimit } from "../middlewares/security.js";
 const router: IRouter = Router();
 
 // Zod schema centralises shape + length limits. `whatsapp` and `phone` are
-// interchangeable so we accept either; `speechText` OR `videoUrl` is
-// required (refined below). Values are trimmed by .transform.
+// interchangeable so we accept either. This public request is intentionally
+// video-link only; evaluation is performed by the Bikalima team, not AI.
 const trimmed = (min: number, max: number) =>
   z.string().transform((s) => s.trim()).pipe(z.string().min(min).max(max));
 
@@ -20,8 +20,7 @@ const SpeechEvaluationSchema = z
     email: trimmed(3, 200).pipe(z.string().email()),
     phone: z.string().optional(),
     whatsapp: z.string().optional(),
-    speechText: z.string().max(5000).optional(),
-    videoUrl: z.string().max(2000).optional(),
+    videoUrl: trimmed(8, 2000),
     speechTopic: z.string().max(200).optional(),
     speechLanguage: z.string().max(50).optional(),
     notes: z.string().max(2000).optional(),
@@ -31,20 +30,13 @@ const SpeechEvaluationSchema = z
     if (phone.length < 6 || phone.length > 40) {
       ctx.addIssue({ code: "custom", path: ["whatsapp"], message: "WhatsApp number is required (6-40 chars)" });
     }
-    const hasText = (data.speechText ?? "").trim().length > 0;
-    const hasUrl = (data.videoUrl ?? "").trim().length > 0;
-    if (!hasText && !hasUrl) {
-      ctx.addIssue({ code: "custom", path: ["speechText"], message: "Provide either speechText or videoUrl" });
-    }
-    if (hasUrl) {
-      try {
-        const u = new URL(data.videoUrl!.trim());
-        if (u.protocol !== "http:" && u.protocol !== "https:") {
-          ctx.addIssue({ code: "custom", path: ["videoUrl"], message: "videoUrl must be http(s)" });
-        }
-      } catch {
-        ctx.addIssue({ code: "custom", path: ["videoUrl"], message: "Invalid videoUrl" });
+    try {
+      const u = new URL(data.videoUrl);
+      if (u.protocol !== "http:" && u.protocol !== "https:") {
+        ctx.addIssue({ code: "custom", path: ["videoUrl"], message: "videoUrl must be http(s)" });
       }
+    } catch {
+      ctx.addIssue({ code: "custom", path: ["videoUrl"], message: "Invalid videoUrl" });
     }
   });
 
@@ -65,8 +57,7 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
   const fullName = data.fullName;
   const email = data.email;
   const phone = (data.whatsapp ?? data.phone ?? "").trim();
-  const speechText = (data.speechText ?? "").trim();
-  const videoUrlRaw = (data.videoUrl ?? "").trim();
+  const videoUrlRaw = data.videoUrl;
   const speechTopic = (data.speechTopic ?? "").trim();
   const speechLanguage = (data.speechLanguage ?? "").trim();
   const userNotes = (data.notes ?? "").trim();
@@ -74,12 +65,7 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
 
   try {
     const userId = req.isAuthenticated() ? (req.user?.id ?? null) : null;
-    const combinedNotes = [
-      speechText ? `[Speech text]\n${speechText}` : "",
-      userNotes ? `[Notes]\n${userNotes}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
+    const combinedNotes = userNotes ? `[Notes]\n${userNotes}` : "";
 
     const [inserted] = await db
       .insert(speechEvaluationsTable)
@@ -92,7 +78,7 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
         speechTopic: speechTopic || null,
         speechLanguage: speechLanguage || null,
         notes: combinedNotes || null,
-        transcriptText: speechText || null,
+        transcriptText: null,
         leadSource: "home_60sec_evaluation",
         status: "pending",
       })

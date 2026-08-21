@@ -63,7 +63,6 @@ import { useLang } from "@/hooks/useLang";
 import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { ProgramQuiz } from "@/components/program-quiz";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
 import { StatsSection } from "@/components/stats-section";
 import { trackProgramDetailsClick } from "@/lib/analytics";
@@ -72,7 +71,7 @@ import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
 import { JourneyCta } from "@/components/journey-cta";
 import { EnrollmentWizard } from "@/components/enrollment-wizard";
-import { ExternalLinkDialog } from "@/components/external-link-dialog";
+import { UpcomingCourseRegistration } from "@/components/upcoming-course-registration";
 import { useHomeSections } from "@/hooks/use-home-sections";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { usePageMeta } from "@/hooks/use-page-meta";
@@ -151,6 +150,16 @@ function MiniCalendar({ lang }: { lang: Lang }) {
       </div>
     </div>
   );
+}
+
+function isUpcomingDate(dateValue: string) {
+  const [day, month, year] = dateValue.split("/").map(Number);
+  if (!day || !month || !year) return false;
+
+  const eventEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return eventEnd >= today;
 }
 
 export default function Home() {
@@ -350,6 +359,13 @@ export default function Home() {
 
   const coreProgram = localizedPrograms.find((p) => p.id === "core")!;
   const branchPrograms = localizedPrograms.filter((p) => p.id !== "core");
+  const upcomingInPersonCourses = upcomingEvents.filter(
+    (event) => event.type === "inPerson" && isUpcomingDate(event.endDate),
+  );
+  const cmsEventsHeading = getSectionContent(cms, "events", lang, "heading", t.structure.upcomingEventsHeading);
+  const eventsHeading = cmsEventsHeading === "الفعاليات القادمة" || cmsEventsHeading === "Upcoming Events"
+    ? t.structure.upcomingEventsHeading
+    : cmsEventsHeading;
 
   const baseUrl = getBaseUrl();
 
@@ -408,11 +424,11 @@ export default function Home() {
                   </div>
                 </motion.div>
               </div>
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:block">
-                <div className="aspect-[5/4] rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative mt-2 lg:mt-0">
+                <div className="aspect-[4/3] lg:aspect-[5/4] rounded-[1.5rem] lg:rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
                   <img src={imgTedx} alt={t.hero.h1a} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
-                  <div className="absolute bottom-6 left-6 right-6 z-20">
+                  <div className="absolute bottom-6 left-6 right-6 z-20 hidden lg:block">
                     <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/40">
                       <AnimatePresence mode="wait">
                         <motion.div key={heroQuoteIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.5 }}>
@@ -627,7 +643,10 @@ export default function Home() {
                         <span>·</span>
                         <span>{coreProgram.sessions} {t.structure.sessionsUnit}</span>
                         <span>·</span>
-                        <span className="font-bold text-white">{formatPrice(RECORDED_PRICES.core)} <span className="font-normal text-white/60 text-xs">{t.structure.priceUnit}</span></span>
+                        <span className="font-bold text-white">{formatPrice(RECORDED_PRICES.core)}</span>
+                      </div>
+                      <div className="mt-2 inline-flex items-center rounded-full bg-black/25 px-3 py-1 text-xs text-white/90 backdrop-blur-sm">
+                        {t.structure.deliveryOptions}
                       </div>
                     </div>
                   </div>
@@ -675,9 +694,14 @@ export default function Home() {
                               <span>·</span>
                               {program.id === "children"
                                 ? <span className="font-bold text-white/80">{lang === "ar" ? "للمدارس فقط" : "Schools only"}</span>
-                                : <span className="font-bold text-white">{formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])} <span className="font-normal text-white/60 text-[10px]">{t.structure.priceUnit}</span></span>
+                                : <span className="font-bold text-white">{formatPrice(RECORDED_PRICES[program.id as keyof typeof RECORDED_PRICES])}</span>
                               }
                             </div>
+                            {program.id !== "children" && (
+                              <div className="mt-2 inline-flex items-center rounded-full bg-black/30 px-2.5 py-1 text-[10px] text-white/90 backdrop-blur-sm">
+                                {t.structure.deliveryOptions}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <CardContent className="p-5 flex flex-col flex-1">
@@ -709,9 +733,6 @@ export default function Home() {
         </section>
 
 
-        {/* ── PROGRAM QUIZ ── */}
-        <ProgramQuiz lang={lang} />
-
         {/* ── BEFORE / AFTER ── */}
         <BeforeAfterSection />
 
@@ -724,26 +745,25 @@ export default function Home() {
           <div className="container mx-auto px-6">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-3xl mx-auto mb-6">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium mb-4 text-sm">
-                <Calendar className="w-4 h-4" />{getSectionContent(cms, "events", lang, "heading", t.structure.upcomingEventsHeading)}
+                <Calendar className="w-4 h-4" />{eventsHeading}
               </div>
               <p className="text-muted-foreground">{getSectionContent(cms, "events", lang, "subheading", t.structure.upcomingEventsSub)}</p>
             </motion.div>
 
-            {upcomingEvents.length > 0 ? (
+            {upcomingInPersonCourses.length > 0 ? (
               <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
-                {upcomingEvents.map((ev) => {
+                {upcomingInPersonCourses.map((ev) => {
                   const prog = programs.find(p => p.id === ev.programId);
                   const lp = prog ? getLocalizedProgram(prog, lang) : null;
-                  const isOnline = ev.type === "online";
                   const l = lang as "ar" | "en";
                   return (
-                    <Card key={ev.id} className={`border-2 hover:shadow-lg transition-all duration-300 overflow-hidden ${isOnline ? "border-blue-200 hover:border-blue-400" : "border-primary/20 hover:border-primary/40"}`}>
+                    <Card key={ev.id} className="border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 overflow-hidden">
                       <CardContent className="p-5 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
                           {lp && <span className="text-xs font-bold text-primary uppercase tracking-wide">{lp.shortTitle}</span>}
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${isOnline ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                            {isOnline ? <Wifi className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                            {isOnline ? (lang === "ar" ? "أونلاين" : "Online") : (lang === "ar" ? "وجاهي" : "In-person")}
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <MapPin className="w-3 h-3" />
+                            {lang === "ar" ? "وجاهي" : "In-person"}
                           </span>
                         </div>
                         <div className="text-sm font-bold text-foreground">{ev.organization[l] || ev.organization.ar}</div>
@@ -771,15 +791,7 @@ export default function Home() {
                             {ev.spotsLeft} {t.structure.spotsLeft}
                           </span>
                         )}
-                        <ExternalLinkDialog href={ev.registrationLink}>
-                          <Button
-                            size="sm"
-                            className="mt-1 w-full bg-primary hover:bg-primary/90 text-white rounded-full"
-                            data-testid={`event-register-${ev.id}`}
-                          >
-                            {lang === "ar" ? "سجّل عبر الموقع الرسمي" : "Register at Official Site"} ↗
-                          </Button>
-                        </ExternalLinkDialog>
+                        <UpcomingCourseRegistration course={ev} courseTitle={lp?.shortTitle ?? ev.programId} lang={lang} />
                       </CardContent>
                     </Card>
                   );

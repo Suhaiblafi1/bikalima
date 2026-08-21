@@ -43,7 +43,7 @@ export type CourseRecord = {
 export type EnrollmentRecord = { id: string; userId: string; courseId: string; status: string; enrolledAt: string; userEmail: string | null; userFirstName: string | null; userLastName: string | null; courseTitle: string | null };
 export type RequestRecord = { id: string; applicantType: string; fullName: string; email: string; phone: string; programId: string; trainingType: string | null; status: string; createdAt: string; formData: unknown };
 export type OrderRecord = { id: string; workbookId: string; quantity: number; format: string; buyerName: string; buyerEmail: string; totalPrice: number | null; status: string; createdAt: string };
-export type LmsOrderRecord = { id: string; userId: string | null; courseId: string | null; courseTitle: string | null; buyerName: string; buyerEmail: string; buyerPhone: string; amount: number | null; currency: string; status: string; paymentNotes: string | null; adminNotes: string | null; createdAt: string };
+export type LmsOrderRecord = { id: string; userId: string | null; courseId: string | null; courseTitle: string | null; buyerName: string; buyerEmail: string; buyerPhone: string; amount: number | null; originalAmount: number | null; discountAmount: number; discountCode: string | null; currency: string; status: string; paymentNotes: string | null; adminNotes: string | null; createdAt: string };
 export type Stats = { totalUsers: number; todaySignups: number; weekSignups: number; totalCourses: number; totalEnrollments: number; totalRequests: number; totalOrders: number; totalLmsOrders?: number };
 export type RevenueCourse = { courseId: string | null; courseTitleAr: string | null; courseTitleEn: string | null; revenue: number; orders: number };
 export type RevenueDay = { date: string; revenue: number; count: number };
@@ -137,6 +137,7 @@ export type AdminPageKey =
   | "workbook-orders" | "assignments" | "reviews"
   | "speech-evaluations" | "home-page" | "workbooks" | "field-media"
   | "certificates" | "chat" | "settings"
+  | "discount-codes"
   | "leads" | "pipeline" | "tasks" | "automations"
   | "message-templates" | "funnels"
   | "audit-log" | "feature-flags" | "impact-stats"
@@ -168,6 +169,7 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Live chat with site visitors — sales + admin handle replies.
   chat: ["admin", "sales"],
   settings: ["admin"],
+  "discount-codes": ["admin"],
   // ── Growth Center (CRM) — admin/sales only; supervisor excluded ────────
   leads: ["admin", "sales"],
   pipeline: ["admin", "sales"],

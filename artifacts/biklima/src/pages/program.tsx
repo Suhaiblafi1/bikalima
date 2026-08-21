@@ -329,7 +329,11 @@ export default function ProgramPage() {
               label={t.metaPrice}
               value={isSchoolsOnly ? t.metaSchoolsOnly : (typeof price === "number" ? formatPrice(price) : "—")}
             />
-            <MetaCell icon={<Users className="w-5 h-5" />} label={loc.role} value={courseData?.format ?? loc.delivery} />
+            <MetaCell
+              icon={<Users className="w-5 h-5" />}
+              label={loc.role}
+              value={isSchoolsOnly ? (courseData?.format ?? loc.delivery) : Translations[lang].structure.deliveryOptions}
+            />
           </div>
         </div>
       </section>
@@ -513,6 +517,12 @@ export default function ProgramPage() {
                 </div>
 
                 <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                  {!isSchoolsOnly && (
+                    <div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
+                      <p className="font-bold text-foreground mb-1">{t.deliveryHeading}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{t.deliveryBody}</p>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{t.metaPrice}</p>

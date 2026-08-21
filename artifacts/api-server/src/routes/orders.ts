@@ -6,8 +6,9 @@ import {
   ordersTable,
   coursesTable,
   enrollmentsTable,
+  discountCodesTable,
 } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, isNull, lt, gt, sql } from "drizzle-orm";
 import { paymentService, toMinorUnits as toStripeMinorUnits } from "../integrations/paymentService.js";
 import { isFeatureEnabled } from "../lib/platform.js";
 import { authRateLimit } from "../middlewares/security.js";
@@ -16,6 +17,7 @@ const router: IRouter = Router();
 // Tight per-IP ceiling on checkout creation: prevents Stripe-session abuse
 // and accidental floods from a misbehaving client. 12 attempts / 5 min.
 const orderCreateLimiter = authRateLimit(12, 5 * 60_000);
+const discountValidateLimiter = authRateLimit(30, 5 * 60_000);
 
 const SMTP_FROM =
   process.env.SMTP_FROM ?? `"بكلمة" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
@@ -68,6 +70,75 @@ const CreateOrderSchema = z.object({
       message: "Invalid phone number",
     }),
   paymentNotes: z.string().max(500).optional().nullable(),
+  discountCode: z.string().trim().max(64).optional(),
+});
+
+const ValidateDiscountSchema = z.object({
+  courseId: z.string().trim().min(1).max(80),
+  code: z.string().trim().min(3).max(64),
+});
+
+type AppliedDiscount = {
+  id: string;
+  code: string;
+  discountAmount: number;
+  finalAmount: number;
+};
+
+async function resolveDiscount(codeInput: string, courseId: string, originalAmount: number): Promise<AppliedDiscount | null> {
+  const code = codeInput.trim().toUpperCase();
+  if (!code) return null;
+  const [discount] = await db
+    .select()
+    .from(discountCodesTable)
+    .where(eq(discountCodesTable.code, code))
+    .limit(1);
+  if (!discount || !discount.isActive) return null;
+
+  const now = Date.now();
+  if (discount.startsAt && discount.startsAt.getTime() > now) return null;
+  if (discount.expiresAt && discount.expiresAt.getTime() < now) return null;
+  if (discount.courseId && discount.courseId !== courseId) return null;
+  if (discount.maxUses !== null && discount.usedCount >= discount.maxUses) return null;
+
+  const rawDiscount = discount.discountType === "percent"
+    ? Math.floor(originalAmount * discount.discountValue / 100)
+    : discount.discountValue;
+  const discountAmount = Math.max(0, Math.min(originalAmount, rawDiscount));
+  return {
+    id: discount.id,
+    code: discount.code,
+    discountAmount,
+    finalAmount: Math.max(0, originalAmount - discountAmount),
+  };
+}
+
+router.post("/discount-codes/validate", discountValidateLimiter, async (req: Request, res: Response) => {
+  if (!req.isAuthenticated() || !req.user) {
+    res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+    return;
+  }
+  const parsed = ValidateDiscountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ valid: false, error: "بيانات كود الخصم غير صالحة" });
+    return;
+  }
+  const [course] = await db
+    .select({ id: coursesTable.id, price: coursesTable.price, discountPrice: coursesTable.discountPrice })
+    .from(coursesTable)
+    .where(eq(coursesTable.id, parsed.data.courseId))
+    .limit(1);
+  if (!course) {
+    res.status(404).json({ valid: false, error: "الدورة غير موجودة" });
+    return;
+  }
+  const originalAmount = course.discountPrice ?? course.price ?? 0;
+  const discount = await resolveDiscount(parsed.data.code, course.id, originalAmount);
+  if (!discount) {
+    res.status(400).json({ valid: false, error: "الكود غير صالح أو انتهت صلاحيته" });
+    return;
+  }
+  res.json({ valid: true, code: discount.code, originalAmount, discountAmount: discount.discountAmount, finalAmount: discount.finalAmount });
 });
 
 router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) => {
@@ -85,7 +156,7 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
       res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
       return;
     }
-    const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes } = parsed.data;
+    const { courseId, buyerName, buyerEmail, buyerPhone, paymentNotes, discountCode } = parsed.data;
 
     const [course] = await db
       .select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr, titleEn: coursesTable.titleEn, price: coursesTable.price, discountPrice: coursesTable.discountPrice })
@@ -98,42 +169,58 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
     }
 
     const userId = req.user.id;
-    const chargeAmount = course.discountPrice ?? course.price ?? 0;
+    const originalAmount = course.discountPrice ?? course.price ?? 0;
+    const discount = discountCode ? await resolveDiscount(discountCode, course.id, originalAmount) : null;
+    if (discountCode && !discount) {
+      res.status(400).json({ error: "كود الخصم غير صالح أو انتهت صلاحيته" });
+      return;
+    }
+    const chargeAmount = discount?.finalAmount ?? originalAmount;
 
-    // If course is free, enroll immediately and skip the payment gateway.
-    if (chargeAmount <= 0) {
-      const [order] = await db.insert(ordersTable).values({
+    if (chargeAmount > 0 && !paymentsEnabled) {
+      res.status(503).json({ error: "الدفع الإلكتروني معطّل مؤقتاً" });
+      return;
+    }
+
+    const orderStatus = chargeAmount <= 0 ? "paid" : "pending";
+    const order = await db.transaction(async (tx) => {
+      if (discount) {
+        const [claimed] = await tx
+          .update(discountCodesTable)
+          .set({ usedCount: sql`${discountCodesTable.usedCount} + 1`, updatedAt: new Date() })
+          .where(and(
+            eq(discountCodesTable.id, discount.id),
+            eq(discountCodesTable.isActive, true),
+            or(isNull(discountCodesTable.maxUses), lt(discountCodesTable.usedCount, discountCodesTable.maxUses)),
+          ))
+          .returning({ id: discountCodesTable.id });
+        if (!claimed) throw new Error("discount_exhausted");
+      }
+
+      const [created] = await tx.insert(ordersTable).values({
         userId,
         courseId: course.id,
         buyerName: buyerName.trim(),
         buyerEmail: buyerEmail.toLowerCase().trim(),
         buyerPhone: buyerPhone.trim(),
-        amount: 0,
+        amount: chargeAmount,
+        originalAmount,
+        discountAmount: discount?.discountAmount ?? 0,
+        discountCodeId: discount?.id ?? null,
+        discountCode: discount?.code ?? null,
         currency: "JOD",
-        status: "paid",
+        status: orderStatus,
         paymentNotes: paymentNotes?.trim() || null,
       }).returning();
+      return created;
+    });
+
+    // If course is free, enroll immediately and skip the payment gateway.
+    if (chargeAmount <= 0) {
       await ensureEnrollment(userId, course.id);
       res.json({ success: true, orderId: order.id, paid: true });
       return;
     }
-
-    if (!paymentsEnabled) {
-      res.status(503).json({ error: "الدفع الإلكتروني معطّل مؤقتاً" });
-      return;
-    }
-
-    const [order] = await db.insert(ordersTable).values({
-      userId,
-      courseId: course.id,
-      buyerName: buyerName.trim(),
-      buyerEmail: buyerEmail.toLowerCase().trim(),
-      buyerPhone: buyerPhone.trim(),
-      amount: chargeAmount,
-      currency: "JOD",
-      status: "pending",
-      paymentNotes: paymentNotes?.trim() || null,
-    }).returning();
 
     // If a payment gateway is configured, create a checkout session and
     // hand the user off to it. The success page will verify the session
@@ -155,6 +242,7 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
           orderId: order.id,
           courseId: course.id,
           userId,
+          discountCode: discount?.code ?? "",
         },
       });
 
@@ -165,7 +253,14 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
 
       req.log.error({ result }, "stripe checkout session creation failed");
       // Mark the order failed so admins can see it didn't go through.
-      await db.update(ordersTable).set({ status: "failed", updatedAt: new Date() }).where(eq(ordersTable.id, order.id));
+      await db.transaction(async (tx) => {
+        await tx.update(ordersTable).set({ status: "failed", updatedAt: new Date() }).where(eq(ordersTable.id, order.id));
+        if (discount) {
+          await tx.update(discountCodesTable)
+            .set({ usedCount: sql`${discountCodesTable.usedCount} - 1`, updatedAt: new Date() })
+            .where(and(eq(discountCodesTable.id, discount.id), gt(discountCodesTable.usedCount, 0)));
+        }
+      });
       res.status(502).json({
         error:
           result.reason === "not_configured"
@@ -217,6 +312,10 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
 
     res.json({ success: true, orderId: order.id, manualReview: true });
   } catch (err) {
+    if ((err as Error).message === "discount_exhausted") {
+      res.status(409).json({ error: "نفدت مرات استخدام كود الخصم" });
+      return;
+    }
     req.log.error({ err }, "POST /orders error");
     res.status(500).json({ error: "Failed to submit order" });
   }

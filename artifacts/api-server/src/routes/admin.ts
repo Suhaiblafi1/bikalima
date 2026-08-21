@@ -14,6 +14,7 @@ import {
   reviewsTable,
   siteSettingsTable,
   speechEvaluationsTable,
+  discountCodesTable,
 } from "@workspace/db";
 import { db as _db, courseTrainersTable, trainerLearnerNotesTable, assignmentsTable, assignmentSubmissionsTable, lessonSessionAttendanceTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
@@ -1011,6 +1012,9 @@ async function adminGetLmsOrders(req: Request, res: Response) {
         buyerEmail: ordersTable.buyerEmail,
         buyerPhone: ordersTable.buyerPhone,
         amount: ordersTable.amount,
+        originalAmount: ordersTable.originalAmount,
+        discountAmount: ordersTable.discountAmount,
+        discountCode: ordersTable.discountCode,
         currency: ordersTable.currency,
         status: ordersTable.status,
         paymentNotes: ordersTable.paymentNotes,
@@ -1263,6 +1267,162 @@ router.patch("/admin/settings", async (req: Request, res: Response) => {
   } catch (err) {
     req.log.error({ err }, "Failed to update settings");
     res.status(500).json({ error: "Failed to update settings" });
+  }
+});
+
+// ===== Discount codes =====
+const DISCOUNT_TYPES = ["percent", "fixed"] as const;
+type DiscountType = (typeof DISCOUNT_TYPES)[number];
+
+function parseDiscountDate(value: unknown): Date | null | undefined {
+  if (value === null || value === "") return null;
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+router.get("/admin/discount-codes", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const codes = await db
+      .select({
+        id: discountCodesTable.id,
+        code: discountCodesTable.code,
+        discountType: discountCodesTable.discountType,
+        discountValue: discountCodesTable.discountValue,
+        courseId: discountCodesTable.courseId,
+        courseTitleAr: coursesTable.titleAr,
+        isActive: discountCodesTable.isActive,
+        startsAt: discountCodesTable.startsAt,
+        expiresAt: discountCodesTable.expiresAt,
+        maxUses: discountCodesTable.maxUses,
+        usedCount: discountCodesTable.usedCount,
+        createdAt: discountCodesTable.createdAt,
+        updatedAt: discountCodesTable.updatedAt,
+      })
+      .from(discountCodesTable)
+      .leftJoin(coursesTable, eq(coursesTable.id, discountCodesTable.courseId))
+      .orderBy(desc(discountCodesTable.createdAt));
+    res.json({ codes });
+  } catch (err) {
+    req.log.error({ err }, "Failed to list discount codes");
+    res.status(500).json({ error: "Failed to list discount codes" });
+  }
+});
+
+router.post("/admin/discount-codes", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
+    const discountType = body.discountType as DiscountType;
+    const discountValue = Number(body.discountValue);
+    const courseId = typeof body.courseId === "string" && body.courseId ? body.courseId : null;
+    const startsAt = parseDiscountDate(body.startsAt);
+    const expiresAt = parseDiscountDate(body.expiresAt);
+    const maxUses = body.maxUses === null || body.maxUses === "" || body.maxUses === undefined ? null : Number(body.maxUses);
+
+    if (!/^[A-Z0-9_-]{3,32}$/.test(code)) {
+      res.status(400).json({ error: "الكود يجب أن يكون 3–32 حرفاً إنجليزياً أو رقماً" });
+      return;
+    }
+    if (!DISCOUNT_TYPES.includes(discountType)) {
+      res.status(400).json({ error: "نوع الخصم غير صالح" });
+      return;
+    }
+    if (!Number.isInteger(discountValue) || discountValue <= 0 || (discountType === "percent" && discountValue > 100)) {
+      res.status(400).json({ error: "قيمة الخصم غير صالحة" });
+      return;
+    }
+    if (startsAt === undefined || expiresAt === undefined || (startsAt && expiresAt && expiresAt <= startsAt)) {
+      res.status(400).json({ error: "فترة صلاحية الكود غير صالحة" });
+      return;
+    }
+    if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses <= 0)) {
+      res.status(400).json({ error: "حد الاستخدام يجب أن يكون رقماً صحيحاً موجباً" });
+      return;
+    }
+
+    const [created] = await db.insert(discountCodesTable).values({
+      code,
+      discountType,
+      discountValue,
+      courseId,
+      startsAt,
+      expiresAt,
+      maxUses,
+      isActive: body.isActive !== false,
+      createdById: req.user?.id ?? null,
+    }).returning();
+    await recordAuditLog({
+      actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+      action: "discount_code.create",
+      entityType: "discount_code",
+      entityId: created.id,
+      description: `Created discount code ${created.code}`,
+      after: { code: created.code, discountType, discountValue, courseId, maxUses },
+    });
+    res.json({ code: created });
+  } catch (err) {
+    if ((err as { code?: string }).code === "23505") {
+      res.status(409).json({ error: "هذا الكود مستخدم مسبقاً" });
+      return;
+    }
+    req.log.error({ err }, "Failed to create discount code");
+    res.status(500).json({ error: "Failed to create discount code" });
+  }
+});
+
+router.patch("/admin/discount-codes/:id", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const [current] = await db.select().from(discountCodesTable).where(eq(discountCodesTable.id, req.params.id)).limit(1);
+    if (!current) {
+      res.status(404).json({ error: "الكود غير موجود" });
+      return;
+    }
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const update: Partial<typeof discountCodesTable.$inferInsert> = { updatedAt: new Date() };
+    if (typeof body.isActive === "boolean") update.isActive = body.isActive;
+    if (body.startsAt !== undefined) {
+      const parsed = parseDiscountDate(body.startsAt);
+      if (parsed === undefined) { res.status(400).json({ error: "تاريخ البدء غير صالح" }); return; }
+      update.startsAt = parsed;
+    }
+    if (body.expiresAt !== undefined) {
+      const parsed = parseDiscountDate(body.expiresAt);
+      if (parsed === undefined) { res.status(400).json({ error: "تاريخ الانتهاء غير صالح" }); return; }
+      update.expiresAt = parsed;
+    }
+    if (body.maxUses !== undefined) {
+      const maxUses = body.maxUses === null || body.maxUses === "" ? null : Number(body.maxUses);
+      if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < current.usedCount || maxUses <= 0)) {
+        res.status(400).json({ error: "حد الاستخدام لا يمكن أن يكون أقل من الاستخدام الحالي" });
+        return;
+      }
+      update.maxUses = maxUses;
+    }
+    const effectiveStart = update.startsAt === undefined ? current.startsAt : update.startsAt;
+    const effectiveEnd = update.expiresAt === undefined ? current.expiresAt : update.expiresAt;
+    if (effectiveStart && effectiveEnd && effectiveEnd <= effectiveStart) {
+      res.status(400).json({ error: "تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء" });
+      return;
+    }
+    const [updated] = await db.update(discountCodesTable).set(update).where(eq(discountCodesTable.id, current.id)).returning();
+    await recordAuditLog({
+      actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+      action: "discount_code.update",
+      entityType: "discount_code",
+      entityId: current.id,
+      description: `Updated discount code ${current.code}`,
+      before: { isActive: current.isActive, startsAt: current.startsAt, expiresAt: current.expiresAt, maxUses: current.maxUses },
+      after: { isActive: updated.isActive, startsAt: updated.startsAt, expiresAt: updated.expiresAt, maxUses: updated.maxUses },
+    });
+    res.json({ code: updated });
+  } catch (err) {
+    req.log.error({ err }, "Failed to update discount code");
+    res.status(500).json({ error: "Failed to update discount code" });
   }
 });
 

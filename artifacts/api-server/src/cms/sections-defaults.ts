@@ -82,13 +82,13 @@ export const SECTION_DEFAULTS: Record<SectionKey, { ar: SectionContent; en: Sect
   },
   events: {
     ar: {
-      heading: "الفعاليات القادمة",
-      subheading: "دورات وجاهية جماعية — سجّل مكانك الآن",
+      heading: "الدورات الوجاهية القادمة",
+      subheading: "مواعيد التدريب الحضوري القادمة — اطّلع على التفاصيل وسجّل مباشرة من هنا",
       ctaLabel: "احجز جلسة استشارية مجانية",
     },
     en: {
-      heading: "Upcoming Events",
-      subheading: "In-person group courses — secure your spot now",
+      heading: "Upcoming In-Person Courses",
+      subheading: "Upcoming classroom training dates — review the details and register here",
       ctaLabel: "Book a Free Consultation",
     },
   },

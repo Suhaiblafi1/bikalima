@@ -1,7 +1,5 @@
 export type IntegrationProvider =
   | "odoo"
-  | "openai"
-  | "gemini"
   | "whatsapp"
   | "payment"
   | "storage";

@@ -277,7 +277,10 @@ export default function AdminEnrollmentsPage() {
                     <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerEmail}</td>
                     <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerPhone}</td>
                     <td className="py-2 px-3 text-xs">{o.courseTitle || "—"}</td>
-                    <td className="py-2 px-3 font-bold text-primary">{o.amount ? `${o.amount} JOD` : "—"}</td>
+                    <td className="py-2 px-3 font-bold text-primary">
+                      {o.amount !== null ? `${o.amount} JOD` : "—"}
+                      {o.discountCode && <div className="text-[10px] font-medium text-emerald-700" dir="ltr">{o.discountCode} (-{o.discountAmount} JOD)</div>}
+                    </td>
                     <td className="py-2 px-3 text-xs text-muted-foreground max-w-[120px] truncate">{o.paymentNotes || "—"}</td>
                     <td className="py-2 px-3"><StatusBadge status={o.status} /></td>
                     <td className="py-2 px-3 text-end">

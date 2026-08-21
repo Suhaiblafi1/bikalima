@@ -3,26 +3,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
-import { Textarea } from "@/components/ui/textarea";
-import { Mic2, Video, FileText, CheckCircle2, Send, Clock, Loader2 } from "lucide-react";
+import { Mic2, CheckCircle2, Send, Clock, Loader2 } from "lucide-react";
 import type { Lang } from "../translations";
-import { useFeatureFlag } from "@/hooks/use-feature-flag";
 
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
   return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
 }
 
-type Mode = "text" | "video";
-
 type SpeechFormText = {
   badge: string;
   heading: string;
   sub: string;
-  modeText: string;
   modeVideo: string;
-  textPlaceholder: string;
-  textHint: string;
   videoPlaceholder: string;
   videoHint: string;
   nameLabel: string;
@@ -46,12 +39,9 @@ type SpeechFormText = {
 const TEXT: Record<Lang, SpeechFormText> = {
   ar: {
     badge: "تقييم مجاني",
-    heading: "قيّم خطابك خلال ٦٠ ثانية",
-    sub: "أرسل نصاً قصيراً أو رابط فيديو لخطابك، وسيصلك تقييم أوّلي من فريق بكلمة خلال ٤٨ ساعة.",
-    modeText: "اكتب نص الخطاب",
+    heading: "أرسل رابط خطابك لنقيّم مهاراتك",
+    sub: "أرسل رابط فيديو لخطابك، وسيطّلع عليه فريق بكلمة ويرسل لك تقييماً أولياً خلال ٤٨ ساعة.",
     modeVideo: "أرسل رابط فيديو",
-    textPlaceholder: "اكتب هنا الفقرة الأولى من خطابك أو فكرة عرضك (مثال: مقدمة، نقاط رئيسية، خاتمة)...",
-    textHint: "حتى ٥٠٠٠ حرف.",
     videoPlaceholder: "https://youtu.be/... أو https://drive.google.com/...",
     videoHint: "ضع رابطاً مباشراً (يوتيوب، Drive، Vimeo، إلخ).",
     nameLabel: "الاسم الكامل",
@@ -65,7 +55,7 @@ const TEXT: Record<Lang, SpeechFormText> = {
     successBody: "سيصلك تقييم أوّلي من فريق بكلمة خلال ٤٨ ساعة على بريدك أو رقم واتساب.",
     successCta: "أرسل طلباً آخر",
     errorMissing: "الرجاء تعبئة الاسم والبريد ورقم واتساب.",
-    errorContent: "أرفق نص الخطاب أو رابط الفيديو لإكمال الطلب.",
+    errorContent: "أرفق رابط الفيديو لإكمال الطلب.",
     errorEmail: "البريد الإلكتروني غير صالح.",
     errorWhatsapp: "رقم واتساب قصير جداً.",
     errorVideoUrl: "رابط الفيديو غير صالح.",
@@ -73,12 +63,9 @@ const TEXT: Record<Lang, SpeechFormText> = {
   },
   en: {
     badge: "Free evaluation",
-    heading: "Get your speech evaluated in 60 seconds",
-    sub: "Send a short text or a video link of your speech and our team at Bikalima will send you an initial evaluation within 48 hours.",
-    modeText: "Type your speech",
+    heading: "Send your speech video for a skills review",
+    sub: "Send a video link of your speech. The Bikalima team will review it and send you an initial evaluation within 48 hours.",
     modeVideo: "Send a video link",
-    textPlaceholder: "Paste the first paragraph of your speech or your talk idea (e.g. opening, key points, conclusion)...",
-    textHint: "Up to 5000 characters.",
     videoPlaceholder: "https://youtu.be/... or https://drive.google.com/...",
     videoHint: "Use a direct link (YouTube, Drive, Vimeo, etc).",
     nameLabel: "Full name",
@@ -92,7 +79,7 @@ const TEXT: Record<Lang, SpeechFormText> = {
     successBody: "Our Bikalima team will send you an initial evaluation within 48 hours via email or WhatsApp.",
     successCta: "Send another request",
     errorMissing: "Please fill in your name, email, and WhatsApp number.",
-    errorContent: "Attach a speech text or a video link to complete your request.",
+    errorContent: "Attach a video link to complete your request.",
     errorEmail: "Email address is invalid.",
     errorWhatsapp: "WhatsApp number is too short.",
     errorVideoUrl: "Video URL is invalid.",
@@ -104,12 +91,9 @@ const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
   const t = TEXT[lang];
-  const videoEnabled = useFeatureFlag("video_upload");
-  const [mode, setMode] = useState<Mode>("text");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [speechText, setSpeechText] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,9 +103,7 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
     setFullName("");
     setEmail("");
     setWhatsapp("");
-    setSpeechText("");
     setVideoUrl("");
-    setMode("text");
     setError(null);
     setSuccess(false);
   };
@@ -133,7 +115,6 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
     const name = fullName.trim();
     const mail = email.trim();
     const wa = whatsapp.trim();
-    const txt = speechText.trim();
     const vid = videoUrl.trim();
 
     if (!name || !mail || !wa) {
@@ -148,22 +129,16 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
       setError(t.errorWhatsapp);
       return;
     }
-    if (mode === "text" && !txt) {
+    if (!vid) {
       setError(t.errorContent);
       return;
     }
-    if (mode === "video") {
-      if (!vid) {
-        setError(t.errorContent);
-        return;
-      }
-      try {
-        const u = new URL(vid);
-        if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("scheme");
-      } catch {
-        setError(t.errorVideoUrl);
-        return;
-      }
+    try {
+      const u = new URL(vid);
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("scheme");
+    } catch {
+      setError(t.errorVideoUrl);
+      return;
     }
 
     setSubmitting(true);
@@ -175,8 +150,7 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
           fullName: name,
           email: mail,
           whatsapp: wa,
-          speechText: mode === "text" ? txt : "",
-          videoUrl: mode === "video" ? vid : "",
+          videoUrl: vid,
         }),
       });
       if (!res.ok) {
@@ -251,76 +225,22 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                 onSubmit={handleSubmit}
                 className="p-4 md:p-6 space-y-3.5"
               >
-                {/* Mode tabs — compact pill */}
-                <div className="inline-flex w-full bg-muted/50 p-1 rounded-full">
-                  <button
-                    type="button"
-                    onClick={() => setMode("text")}
-                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
-                      mode === "text"
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    data-testid="speech-eval-mode-text"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    {t.modeText}
-                  </button>
-                  {videoEnabled && (
-                    <button
-                      type="button"
-                      onClick={() => setMode("video")}
-                      className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all ${
-                        mode === "video"
-                          ? "bg-background shadow-sm text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                      data-testid="speech-eval-mode-video"
-                    >
-                      <Video className="w-3.5 h-3.5" />
-                      {t.modeVideo}
-                    </button>
-                  )}
+                <div className="space-y-1">
+                  <Input
+                    id="speech-video"
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder={t.videoPlaceholder}
+                    className="rounded-xl text-sm"
+                    inputMode="url"
+                    aria-label={t.modeVideo}
+                    aria-required="true"
+                    required
+                    data-testid="speech-eval-video-url"
+                  />
+                  <p className="text-[11px] text-muted-foreground">{t.videoHint}</p>
                 </div>
-
-                {/* Content input */}
-                {mode === "text" ? (
-                  <div className="space-y-1">
-                    <Textarea
-                      id="speech-text"
-                      value={speechText}
-                      onChange={(e) => setSpeechText(e.target.value.slice(0, 5000))}
-                      placeholder={t.textPlaceholder}
-                      rows={4}
-                      className="resize-y rounded-xl text-sm"
-                      aria-label={t.modeText}
-                      aria-required="true"
-                      required
-                      data-testid="speech-eval-text"
-                    />
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                      <span>{t.textHint}</span>
-                      <span>{speechText.length} / 5000</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <Input
-                      id="speech-video"
-                      type="url"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder={t.videoPlaceholder}
-                      className="rounded-xl text-sm"
-                      inputMode="url"
-                      aria-label={t.modeVideo}
-                      aria-required="true"
-                      required
-                      data-testid="speech-eval-video-url"
-                    />
-                    <p className="text-[11px] text-muted-foreground">{t.videoHint}</p>
-                  </div>
-                )}
 
                 {/* Contact fields — 3 columns on desktop for compactness */}
                 <div className="grid sm:grid-cols-2 gap-3">

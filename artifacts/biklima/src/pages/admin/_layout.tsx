@@ -9,7 +9,7 @@ import {
   ClipboardList, Star, Mic2, Settings as SettingsIcon,
   Layout as LayoutIcon, FileText, Film, ShieldCheck, MessageCircle,
   UserPlus, KanbanSquare, ListTodo, Zap, MessageSquareText, Filter,
-  ScrollText, ToggleRight, Sparkles,
+  ScrollText, ToggleRight, Sparkles, BadgePercent,
 } from "lucide-react";
 
 type NavItem = {
@@ -70,6 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: "users",          label: "المستخدمون",     href: "/admin/users",          icon: <Users className="w-4 h-4" /> },
       { key: "settings",       label: "إعدادات الموقع", href: "/admin/settings",       icon: <SettingsIcon className="w-4 h-4" /> },
+      { key: "discount-codes", label: "أكواد الخصم",    href: "/admin/discount-codes", icon: <BadgePercent className="w-4 h-4" /> },
       { key: "policies",       label: "الشروط والسياسات", href: "/admin/policies",     icon: <ScrollText className="w-4 h-4" /> },
       { key: "feature-flags",  label: "تفعيل الميزات",  href: "/admin/feature-flags",  icon: <ToggleRight className="w-4 h-4" /> },
       { key: "audit-log",      label: "سجل العمليات",   href: "/admin/audit-log",      icon: <ScrollText className="w-4 h-4" /> },

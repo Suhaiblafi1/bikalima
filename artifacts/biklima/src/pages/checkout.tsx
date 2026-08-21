@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Mail, Phone, AlertCircle, ArrowRight, Home, LogIn } from "lucide-react";
+import { User, Mail, Phone, AlertCircle, ArrowRight, Home, LogIn, BadgePercent, CheckCircle2, Loader2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -41,6 +41,15 @@ export default function CheckoutPage() {
   );
 
   const [form, setForm] = useState({ buyerName: "", buyerEmail: "", buyerPhone: "" });
+  const [discountCode, setDiscountCode] = useState("");
+  const [checkingDiscount, setCheckingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    originalAmount: number;
+    discountAmount: number;
+    finalAmount: number;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -68,7 +77,9 @@ export default function CheckoutPage() {
           setCourseId(data.course.id);
           setCourseTitleAr(data.course.titleAr || "");
           setCourseTitleEn(data.course.titleEn || "");
-          setCoursePrice(data.course.price ?? null);
+          setCoursePrice(data.course.discountPrice ?? data.course.price ?? null);
+          setAppliedDiscount(null);
+          setDiscountCode("");
         } else {
           setCourseError(lang === "ar" ? "لم يتم العثور على الدورة." : "Course not found.");
         }
@@ -90,6 +101,40 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
+  const applyDiscount = async () => {
+    const code = discountCode.trim().toUpperCase();
+    setDiscountError("");
+    if (!code || !courseId) {
+      setDiscountError(lang === "ar" ? "أدخل كود الخصم أولاً." : "Enter a discount code first.");
+      return;
+    }
+    setCheckingDiscount(true);
+    try {
+      const response = await apiFetch("/discount-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId, code }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.valid) {
+        setAppliedDiscount(null);
+        setDiscountError(data.error || (lang === "ar" ? "الكود غير صالح." : "This code is not valid."));
+        return;
+      }
+      setDiscountCode(data.code);
+      setAppliedDiscount({
+        code: data.code,
+        originalAmount: data.originalAmount,
+        discountAmount: data.discountAmount,
+        finalAmount: data.finalAmount,
+      });
+    } catch {
+      setDiscountError(lang === "ar" ? "تعذّر التحقق من الكود." : "We couldn't validate the code.");
+    } finally {
+      setCheckingDiscount(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseId || submitting) return;
@@ -104,6 +149,7 @@ export default function CheckoutPage() {
           buyerName: form.buyerName.trim(),
           buyerEmail: form.buyerEmail.trim(),
           buyerPhone: form.buyerPhone.trim(),
+          discountCode: appliedDiscount?.code,
         }),
       });
       if (res.status === 401) {
@@ -168,8 +214,9 @@ export default function CheckoutPage() {
           <p className="text-xs text-muted-foreground mb-1">
             {lang === "ar" ? "الرسوم" : "Fee"}
           </p>
+          {appliedDiscount && <p className="text-sm text-muted-foreground line-through">{appliedDiscount.originalAmount} {lang === "ar" ? "د.أ" : "JOD"}</p>}
           <p className="font-black text-primary text-xl" data-testid="checkout-course-price">
-            {coursePrice} <span className="text-sm font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span>
+            {appliedDiscount?.finalAmount ?? coursePrice} <span className="text-sm font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span>
           </p>
         </div>
       )}
@@ -340,6 +387,41 @@ export default function CheckoutPage() {
                     value={form.buyerPhone}
                     onChange={(v) => setForm((f) => ({ ...f, buyerPhone: v }))}
                   />
+                </div>
+
+                <div className="space-y-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4" data-testid="checkout-discount-section">
+                  <label htmlFor="checkout-discount" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
+                    <BadgePercent className="w-4 h-4 text-primary" />
+                    {lang === "ar" ? "هل لديك كود خصم؟" : "Have a discount code?"}
+                  </label>
+                  {appliedDiscount ? (
+                    <div className="flex items-center justify-between gap-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-emerald-800">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span><strong dir="ltr">{appliedDiscount.code}</strong> — {lang === "ar" ? `وفّرت ${appliedDiscount.discountAmount} د.أ` : `You saved ${appliedDiscount.discountAmount} JOD`}</span>
+                      </div>
+                      <button type="button" aria-label={lang === "ar" ? "إزالة الكود" : "Remove code"} onClick={() => { setAppliedDiscount(null); setDiscountCode(""); setDiscountError(""); }}>
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        id="checkout-discount"
+                        value={discountCode}
+                        onChange={(e) => { setDiscountCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "")); setDiscountError(""); }}
+                        placeholder="WELCOME20"
+                        dir="ltr"
+                        maxLength={32}
+                        data-testid="checkout-discount-code"
+                      />
+                      <Button type="button" variant="outline" onClick={applyDiscount} disabled={checkingDiscount || !discountCode.trim()} data-testid="checkout-apply-discount">
+                        {checkingDiscount && <Loader2 className="w-4 h-4 me-2 animate-spin" />}
+                        {lang === "ar" ? "تطبيق" : "Apply"}
+                      </Button>
+                    </div>
+                  )}
+                  {discountError && <p role="alert" className="text-xs text-destructive">{discountError}</p>}
                 </div>
 
                 {!paymentsEnabled && (
