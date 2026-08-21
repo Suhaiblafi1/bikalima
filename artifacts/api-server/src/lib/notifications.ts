@@ -1,5 +1,5 @@
 import { db, notificationsTable, type NewNotification } from "@workspace/db";
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 export type NotificationPayload = {
   userId: string;

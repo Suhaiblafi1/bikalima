@@ -1,7 +1,7 @@
 import { db, lessonSessionAttendanceTable, lessonsTable, coursesTable, courseTrainersTable } from "@workspace/db";
 import { and, eq, gte, inArray } from "drizzle-orm";
-import { createNotification } from "./notifications";
-import { logger } from "./logger";
+import { createNotification } from "./notifications.js";
+import { logger } from "./logger.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

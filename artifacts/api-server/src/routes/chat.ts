@@ -8,12 +8,12 @@ import {
   chatMessagesTable,
   type ChatThread,
 } from "@workspace/db";
-import { requireRole } from "../lib/admin";
+import { requireRole } from "../lib/admin.js";
 import {
   sendWhatsAppText,
   isWhatsAppConfigured,
   getTeamWhatsAppNumber,
-} from "../lib/whatsapp";
+} from "../lib/whatsapp.js";
 import { registerLeadFromForm } from "../lib/leads.js";
 
 const router: IRouter = Router();

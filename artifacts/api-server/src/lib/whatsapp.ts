@@ -16,7 +16,7 @@
  * that window require an approved template, which is not implemented here).
  */
 
-import { logger } from "./logger";
+import { logger } from "./logger.js";
 
 type WhatsAppCreds = {
   phoneNumberId: string;

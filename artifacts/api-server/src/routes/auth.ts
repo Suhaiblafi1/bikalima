@@ -15,8 +15,8 @@ import {
   SESSION_COOKIE,
   SESSION_TTL,
   type SessionData,
-} from "../lib/auth";
-import { authRateLimit, checkFailureBudget, recordFailure } from "../middlewares/security";
+} from "../lib/auth.js";
+import { authRateLimit, checkFailureBudget, recordFailure } from "../middlewares/security.js";
 import { z } from "zod";
 
 // Centralised request schemas. 400s carry a uniform `{ error, issues }` body.

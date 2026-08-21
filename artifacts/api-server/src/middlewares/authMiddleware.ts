@@ -4,8 +4,8 @@ import {
   clearSession,
   getSessionId,
   getSession,
-} from "../lib/auth";
-import { getUserRole, type Role } from "../lib/admin";
+} from "../lib/auth.js";
+import { getUserRole, type Role } from "../lib/admin.js";
 
 declare global {
   namespace Express {

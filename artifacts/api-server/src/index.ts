@@ -1,7 +1,7 @@
-import app from "./app";
-import { logger } from "./lib/logger";
-import { startDailyAbsenceDigest } from "./lib/attendance-digest";
-import { startLiveSessionReminders } from "./routes/little-speaker";
+import app from "./app.js";
+import { logger } from "./lib/logger.js";
+import { startDailyAbsenceDigest } from "./lib/attendance-digest.js";
+import { startLiveSessionReminders } from "./routes/little-speaker.js";
 
 const rawPort = process.env["PORT"];
 

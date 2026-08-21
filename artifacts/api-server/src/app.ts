@@ -3,16 +3,16 @@ import cookieParser from "cookie-parser";
 // Use the package's named export so both our bundler and Vercel's direct
 // TypeScript compilation resolve the callable function consistently.
 import { pinoHttp } from "pino-http";
-import router from "./routes";
-import { logger } from "./lib/logger";
-import { authMiddleware } from "./middlewares/authMiddleware";
+import router from "./routes/index.js";
+import { logger } from "./lib/logger.js";
+import { authMiddleware } from "./middlewares/authMiddleware.js";
 import {
   securityHeaders,
   strictCors,
   globalRateLimit,
   csrfProtection,
-} from "./middlewares/security";
-import { seedPlatformDefaults } from "./lib/platform";
+} from "./middlewares/security.js";
+import { seedPlatformDefaults } from "./lib/platform.js";
 
 const app: Express = express();
 
