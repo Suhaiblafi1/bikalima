@@ -1,4 +1,4 @@
-import app from "./app.js";
+import app from "./application.js";
 import { logger } from "./lib/logger.js";
 import { startDailyAbsenceDigest } from "./lib/attendance-digest.js";
 import { startLiveSessionReminders } from "./routes/little-speaker.js";

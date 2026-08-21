@@ -1,82 +1,9 @@
-import express, { type Express, type Request, type Response, type NextFunction } from "express";
-import cookieParser from "cookie-parser";
-// Use the package's named export so both our bundler and Vercel's direct
-// TypeScript compilation resolve the callable function consistently.
-import { pinoHttp } from "pino-http";
-import router from "./routes/index.js";
-import { logger } from "./lib/logger.js";
-import { authMiddleware } from "./middlewares/authMiddleware.js";
-import {
-  securityHeaders,
-  strictCors,
-  globalRateLimit,
-  csrfProtection,
-} from "./middlewares/security.js";
-import { seedPlatformDefaults } from "./lib/platform.js";
+import type { Express } from "express";
 
-const app: Express = express();
+// `build.mjs` creates this self-contained bundle before Vercel packages the
+// function. Keeping the server entrypoint inside the API root avoids pnpm
+// workspace symlinks being dropped from the Lambda file trace.
+// @ts-expect-error The generated bundle is intentionally absent in a clean checkout.
+import bundledApp from "../dist/app-runtime.mjs";
 
-// We sit behind Replit's proxy + (optionally) a CDN, so trust the
-// inner-most proxy for `req.ip` / `req.ips`. Do NOT use `true` (any-hop
-// trust enables IP spoofing via X-Forwarded-For).
-app.set("trust proxy", 1);
-// Strip the default `X-Powered-By: Express` header.
-app.disable("x-powered-by");
-
-app.use(securityHeaders);
-app.use(strictCors);
-app.use(
-  pinoHttp({
-    logger,
-    serializers: {
-      req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
-      },
-      res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
-      },
-    },
-  }),
-);
-app.use(cookieParser());
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true, limit: "1mb" }));
-app.use(globalRateLimit);
-app.use(authMiddleware);
-app.use(csrfProtection);
-
-app.use("/api", router);
-
-// Seed badge definitions, feature flags, and impact-stat placeholders on
-// boot. Runs once per process and is idempotent (ON CONFLICT DO NOTHING).
-seedPlatformDefaults().catch((err) => logger.warn({ err }, "platform seed failed at boot"));
-
-// Centralised JSON error handler. Production responses NEVER leak stack
-// traces; everything is logged server-side via req.log instead.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
-  const e = err as { status?: number; statusCode?: number; message?: string };
-  const status = e?.status ?? e?.statusCode ?? 500;
-  if (req.log) {
-    req.log.error({ err }, "unhandled error");
-  } else {
-    logger.error({ err }, "unhandled error");
-  }
-  if (res.headersSent) return;
-  // Only 5xx responses are genericised in production — explicit 4xx
-  // messages (validation failures, 401/403/404, etc.) are preserved so
-  // clients can show actionable, intent-revealing errors. Dev returns
-  // the raw message for everything to aid debugging.
-  const isProd = process.env.NODE_ENV === "production";
-  const message =
-    isProd && status >= 500 ? "Internal server error" : (e?.message ?? "Error");
-  res.status(status).json({ error: message });
-});
-
-export default app;
+export default bundledApp as Express;
