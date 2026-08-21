@@ -14,6 +14,8 @@ import ProgramPage from "@/pages/program";
 import CheckoutPage from "@/pages/checkout";
 import ConfirmationPage from "@/pages/confirmation";
 import LoginPage from "@/pages/login";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 import { LiveChatWidget } from "@/components/live-chat-widget";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
@@ -128,6 +130,8 @@ function AppRouter() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/login" component={LoginPage} />
+        <Route path="/forgot-password" component={ForgotPasswordPage} />
+        <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/dashboard" component={DashboardRoute} />
         <Route path="/parent" component={ParentPage} />
         <Route path="/admin">

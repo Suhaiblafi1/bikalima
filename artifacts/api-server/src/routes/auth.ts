@@ -1,9 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import * as client from "openid-client";
 import { randomBytes } from "node:crypto";
 import { GetCurrentAuthUserResponse } from "@workspace/api-zod";
 import { db, usersTable } from "@workspace/db";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import {
   clearSession,
   getSessionId,
@@ -51,6 +52,11 @@ function buildTransporter() {
 }
 
 function appOrigin(req: Request): string {
+  // APP_ORIGIN pins the public-facing origin (e.g. http://localhost:7100 in
+  // local dev where the API sits behind the vite proxy). Replit sets
+  // REPLIT_DOMAINS instead; APP_ORIGIN stays unset there.
+  const pinned = process.env.APP_ORIGIN?.trim();
+  if (pinned) return pinned.replace(/\/+$/, "");
   const envDomains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (envDomains.length > 0) return `https://${envDomains[0]}`;
   const host = req.get("host") ?? "localhost";
@@ -291,6 +297,142 @@ router.post("/auth/resend-verification", async (req: Request, res: Response) => 
   }
 });
 
+// ── Password reset: request link ──────────────────────────────────────────
+// Always answers { ok: true } so the endpoint can never be used to probe
+// which emails are registered. Reset tokens live for 1 hour, single-use.
+const RESET_TOKEN_TTL = 60 * 60 * 1000; // 1h
+const forgotLimiter = authRateLimit(5, 60_000);
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().trim().email().max(200),
+});
+const ResetPasswordSchema = z.object({
+  token: z.string().min(10).max(200),
+  password: z.string().min(6).max(200),
+});
+
+async function sendPasswordResetEmail(req: Request, email: string, firstName: string | null, token: string) {
+  const link = `${appOrigin(req)}/reset-password?token=${encodeURIComponent(token)}`;
+  const transporter = buildTransporter();
+  if (!transporter) {
+    // Dev fallback: no SMTP configured — surface the link in the server log
+    // so the flow stays testable locally.
+    req.log.warn({ email, link }, "SMTP not configured — password reset link (dev only)");
+    return;
+  }
+
+  const name = firstName || email.split("@")[0];
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`,
+      to: email,
+      subject: "إعادة تعيين كلمة المرور — Reset your Bikalima password",
+      html: `
+        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #25786A; font-size: 36px; margin: 0;">بكلمة</h1>
+          </div>
+          <h2 style="color: #333; margin-bottom: 10px;">مرحباً ${name}</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.8;">
+            وصلنا طلب لإعادة تعيين كلمة المرور لحسابك في منصة <strong>بكلمة</strong>. اضغط على الزر أدناه لاختيار كلمة مرور جديدة.
+          </p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${link}" style="display: inline-block; background: #25786A; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 999px; font-weight: bold; font-size: 16px;">
+              إعادة تعيين كلمة المرور · Reset Password
+            </a>
+          </div>
+          <p style="color: #888; font-size: 13px; line-height: 1.7; text-align: center;">
+            أو انسخ هذا الرابط في متصفحك:<br />
+            <span dir="ltr" style="word-break: break-all;">${link}</span>
+          </p>
+          <p style="color: #aaa; font-size: 12px; line-height: 1.6; text-align: center; margin-top: 24px;">
+            هذا الرابط صالح لمدة ساعة واحدة ويُستخدم مرة واحدة فقط. إذا لم تطلب إعادة التعيين، تجاهل هذه الرسالة — كلمة مرورك لن تتغير.<br />
+            This link is valid for 1 hour and can be used once. If you didn't request a reset, ignore this email — your password stays unchanged.
+          </p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="color: #aaa; font-size: 12px; text-align: center;">© ${new Date().getFullYear()} بكلمة — Bikalima</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    req.log.error({ err, email }, "Failed to send password reset email");
+  }
+}
+
+router.post("/auth/forgot-password", forgotLimiter, async (req: Request, res: Response) => {
+  try {
+    const parsed = ForgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+      return;
+    }
+    const email = parsed.data.email.toLowerCase().trim();
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    if (user) {
+      const token = randomBytes(32).toString("hex");
+      await db
+        .update(usersTable)
+        .set({
+          passwordResetToken: token,
+          passwordResetExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL),
+        })
+        .where(eq(usersTable.id, user.id));
+      await sendPasswordResetEmail(req, user.email, user.firstName, token);
+    }
+
+    // Uniform response regardless of whether the email exists.
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Forgot-password error");
+    res.status(500).json({ error: "Could not process request" });
+  }
+});
+
+// ── Password reset: consume token ─────────────────────────────────────────
+router.post("/auth/reset-password", forgotLimiter, async (req: Request, res: Response) => {
+  try {
+    const parsed = ResetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
+      return;
+    }
+    const { token, password } = parsed.data;
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.passwordResetToken, token),
+          gt(usersTable.passwordResetExpiresAt, new Date()),
+        ),
+      );
+
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired token" });
+      return;
+    }
+
+    const passwordHash = await hashPassword(password);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, passwordResetToken: null, passwordResetExpiresAt: null })
+      .where(eq(usersTable.id, user.id));
+
+    // Invalidate every existing session for this account so a stolen session
+    // dies with the old password. sess stores SessionData { user: { id } }.
+    await db.execute(
+      sql`DELETE FROM sessions WHERE sess->'user'->>'id' = ${user.id}`,
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "Reset-password error");
+    res.status(500).json({ error: "Could not reset password" });
+  }
+});
+
 router.post("/auth/login", async (req: Request, res: Response) => {
   // Per-IP failure-only limiter: 6 wrong-password attempts per minute.
   // Successful logins do not consume budget.
@@ -481,6 +623,156 @@ router.get("/logout", async (req: Request, res: Response) => {
   const sid = getSessionId(req);
   await clearSession(res, sid);
   res.redirect("/");
+});
+
+// ── Google OAuth (optional — active only when env credentials exist) ──────
+// Set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET to enable. The frontend asks
+// /api/auth/providers and shows the Google button only when enabled, so the
+// feature is invisible (and the endpoints return 404) without credentials.
+const GOOGLE_ENABLED = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+);
+const OAUTH_COOKIE = "google_oauth";
+const OAUTH_COOKIE_TTL = 10 * 60 * 1000; // 10 minutes to complete the flow
+
+router.get("/auth/providers", (_req: Request, res: Response) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ google: GOOGLE_ENABLED });
+});
+
+let googleConfigPromise: Promise<client.Configuration> | null = null;
+function getGoogleConfig(): Promise<client.Configuration> {
+  googleConfigPromise ??= client.discovery(
+    new URL("https://accounts.google.com"),
+    process.env.GOOGLE_CLIENT_ID!,
+    process.env.GOOGLE_CLIENT_SECRET!,
+  );
+  return googleConfigPromise;
+}
+
+function googleRedirectUri(req: Request): string {
+  return `${appOrigin(req)}/api/auth/google/callback`;
+}
+
+router.get("/auth/google", async (req: Request, res: Response) => {
+  if (!GOOGLE_ENABLED) {
+    res.status(404).json({ error: "Google sign-in is not configured" });
+    return;
+  }
+  try {
+    const config = await getGoogleConfig();
+    const state = client.randomState();
+    const nonce = client.randomNonce();
+    const codeVerifier = client.randomPKCECodeVerifier();
+    const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
+
+    // state+nonce guard against CSRF/replay; the PKCE verifier is the secret
+    // half of the code exchange. Short-lived httpOnly cookie keeps the flow
+    // stateless (no DB writes before the user actually returns).
+    const payload = Buffer.from(
+      JSON.stringify({ state, nonce, codeVerifier }),
+    ).toString("base64url");
+    res.cookie(OAUTH_COOKIE, payload, {
+      httpOnly: true,
+      secure: appOrigin(req).startsWith("https"),
+      sameSite: "lax",
+      path: "/",
+      maxAge: OAUTH_COOKIE_TTL,
+    });
+
+    const url = client.buildAuthorizationUrl(config, {
+      redirect_uri: googleRedirectUri(req),
+      scope: "openid email profile",
+      state,
+      nonce,
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+    });
+    res.redirect(url.href);
+  } catch (err) {
+    req.log.error({ err }, "Google OAuth start failed");
+    res.redirect("/login?oauth_error=google");
+  }
+});
+
+router.get("/auth/google/callback", async (req: Request, res: Response) => {
+  if (!GOOGLE_ENABLED) {
+    res.status(404).json({ error: "Google sign-in is not configured" });
+    return;
+  }
+  try {
+    const raw = req.cookies?.[OAUTH_COOKIE];
+    res.clearCookie(OAUTH_COOKIE, { path: "/" });
+    if (!raw) {
+      res.redirect("/login?oauth_error=state");
+      return;
+    }
+    const { state, nonce, codeVerifier } = JSON.parse(
+      Buffer.from(raw, "base64url").toString("utf8"),
+    );
+
+    const config = await getGoogleConfig();
+    const tokens = await client.authorizationCodeGrant(
+      config,
+      new URL(req.originalUrl, appOrigin(req)),
+      {
+        pkceCodeVerifier: codeVerifier,
+        expectedState: state,
+        expectedNonce: nonce,
+        idTokenExpected: true,
+      },
+    );
+    const claims = tokens.claims();
+    const email = claims?.email?.toLowerCase().trim();
+    if (!email) {
+      res.redirect("/login?oauth_error=no_email");
+      return;
+    }
+
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+    if (!user) {
+      // First Google sign-in creates the account. The password is a random
+      // throwaway hash — the user can set a real one via password reset.
+      const passwordHash = await hashPassword(randomBytes(16).toString("hex"));
+      [user] = await db
+        .insert(usersTable)
+        .values({
+          email,
+          passwordHash,
+          firstName: claims.given_name ?? null,
+          lastName: claims.family_name ?? null,
+          emailVerified: claims.email_verified === true,
+        })
+        .returning();
+    } else if (!user.emailVerified && claims.email_verified === true) {
+      // Google already verified this mailbox — trust that and clear any
+      // pending verification token.
+      await db
+        .update(usersTable)
+        .set({
+          emailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpiresAt: null,
+        })
+        .where(eq(usersTable.id, user.id));
+    }
+
+    const sessionData: SessionData = {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+      },
+    };
+    const sid = await createSession(sessionData);
+    setSessionCookie(res, sid);
+    res.redirect("/dashboard");
+  } catch (err) {
+    req.log.error({ err }, "Google OAuth callback failed");
+    res.redirect("/login?oauth_error=google");
+  }
 });
 
 export default router;

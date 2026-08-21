@@ -4,27 +4,22 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
+// Replit always sets PORT; outside Replit (plain local runs / preview
+// tooling) the port comes from the CLI (`--port`) or vite's default.
 const rawPort = process.env.PORT;
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+let port: number | undefined;
+if (rawPort) {
+  const parsed = Number(rawPort);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    throw new Error(`Invalid PORT value: "${rawPort}"`);
+  }
+  port = parsed;
 }
 
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Replit always sets BASE_PATH; default to "/" for plain local runs
+// (REPL_ID is undefined outside Replit, so behavior there is unchanged).
+const basePath = process.env.BASE_PATH ?? "/";
 
 export default defineConfig({
   base: basePath,
@@ -66,9 +61,23 @@ export default defineConfig({
     drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
   },
   server: {
-    port,
+    ...(port ? { port } : {}),
     host: "0.0.0.0",
     allowedHosts: true,
+    // Local development only: forward /api to a locally running API server.
+    // Defaults to http://localhost:3000 outside Replit (REPL_ID is always
+    // set on Replit, so behavior there is unchanged). Override with
+    // LOCAL_API_URL if needed.
+    ...(() => {
+      const localApiUrl =
+        process.env.LOCAL_API_URL ??
+        (process.env.REPL_ID === undefined && process.env.NODE_ENV !== "production"
+          ? "http://localhost:3000"
+          : undefined);
+      return localApiUrl
+        ? { proxy: { "/api": { target: localApiUrl, changeOrigin: true } } }
+        : {};
+    })(),
     fs: {
       strict: true,
       deny: ["**/.*"],
@@ -80,7 +89,7 @@ export default defineConfig({
     },
   },
   preview: {
-    port,
+    ...(port ? { port } : {}),
     host: "0.0.0.0",
     allowedHosts: true,
   },
