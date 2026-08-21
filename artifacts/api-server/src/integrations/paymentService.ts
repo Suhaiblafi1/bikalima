@@ -40,8 +40,8 @@ type SessionStatusResult =
   | NotConfiguredResult
   | { ok: false; reason: "error"; message: string };
 
-let cachedClient: Stripe | null = null;
-function getClient(): Stripe | null {
+let cachedClient: InstanceType<typeof Stripe> | null = null;
+function getClient(): InstanceType<typeof Stripe> | null {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) return null;
   if (!cachedClient) {
