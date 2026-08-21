@@ -1,6 +1,8 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cookieParser from "cookie-parser";
-import pinoHttp from "pino-http";
+// Use the package's named export so both our bundler and Vercel's direct
+// TypeScript compilation resolve the callable function consistently.
+import { pinoHttp } from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { authMiddleware } from "./middlewares/authMiddleware";
