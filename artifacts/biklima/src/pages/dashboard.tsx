@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
+import { StudentTodayOverview } from "@/components/dashboard/student-today-overview";
 import { SkillsAndBadgesSection } from "@/components/skills-section";
 import { useLang } from "@/hooks/useLang";
 import {
@@ -262,6 +263,24 @@ const tabIcons = {
 };
 
 type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "certificates" | "achievements" | "skills" | "workbooks" | "continue" | "live" | "messages" | "family";
+
+type DashboardSection = "home" | "learning" | "activities" | "messages" | "account";
+
+const dashboardSections: Array<{ key: DashboardSection; tabs: Tab[]; icon: typeof Home }> = [
+  { key: "home", tabs: ["courses"], icon: Home },
+  { key: "learning", tabs: ["continue", "workbooks", "certificates", "achievements", "skills"], icon: BookOpen },
+  { key: "activities", tabs: ["live", "assignments", "schedule"], icon: ClipboardList },
+  { key: "messages", tabs: ["messages"], icon: MessageCircle },
+  { key: "account", tabs: ["account", "family", "orders"], icon: User },
+];
+
+const dashboardSectionLabels: Record<DashboardSection, { ar: string; en: string }> = {
+  home: { ar: "الرئيسية", en: "Home" },
+  learning: { ar: "تعلّمي", en: "My learning" },
+  activities: { ar: "الجلسات والمهام", en: "Sessions & tasks" },
+  messages: { ar: "الرسائل", en: "Messages" },
+  account: { ar: "حسابي", en: "My account" },
+};
 
 type NextLessonData = {
   courseId: string;
@@ -963,6 +982,22 @@ export default function Dashboard() {
     ? allTabs.filter((tab) => tab !== "continue")
     : tabs;
 
+  const visibleSections = dashboardSections
+    .map((section) => ({ ...section, tabs: section.tabs.filter((tab) => visibleTabs.includes(tab)) }))
+    .filter((section) => section.tabs.length > 0);
+  const activeSection = visibleSections.find((section) => section.tabs.includes(activeTab)) ?? visibleSections[0];
+
+  const selectDashboardTab = (tab: Tab) => {
+    setActiveTab(tab);
+    setViewingCourse(null);
+    setActiveLesson(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState({}, "", url.toString());
+    } catch {}
+  };
+
   // If the current tab becomes hidden (e.g., user landed on ?tab=continue
   // but has no in-progress lesson), rebase to the first visible tab and
   // sync the URL so we never render hidden-tab content.
@@ -1161,8 +1196,8 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h2>
         </div>
 
-        {/* Hero "أكمل التعلم" CTA — visible on every tab */}
-        {dataLoading ? (
+        {/* The learning hero belongs to the home/continue experience, not every utility page. */}
+        {(activeTab === "courses" || activeTab === "continue") && (dataLoading ? (
           <div
             className="mb-6 rounded-2xl border border-border bg-card p-5 md:p-6 animate-pulse"
             data-testid="hero-skeleton"
@@ -1238,7 +1273,7 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
-        ) : null}
+        ) : null)}
 
         {meUser && meUser.emailVerified === false && (
           <div
@@ -1277,34 +1312,28 @@ export default function Dashboard() {
           </div>
         )}
 
+        {activeTab === "courses" && <StudentTodayOverview lang={lang} onSelect={selectDashboardTab} />}
+
         <div className="flex flex-col md:flex-row gap-6">
           <nav className="md:w-64 shrink-0 max-md:sticky max-md:top-16 max-md:z-20 max-md:-mx-4" aria-label={isRtl ? "أقسام منصة الطالب" : "Learner platform sections"}>
             <div className="bg-card rounded-2xl border border-border p-2 space-y-1 sticky top-20 max-md:static max-md:flex max-md:gap-1 max-md:space-y-0 max-md:overflow-x-auto max-md:rounded-none max-md:border-x-0 max-md:px-4 max-md:py-2 max-md:shadow-sm">
-              {visibleTabs.map((tab) => {
-                const Icon = tabIcons[tab];
+              {visibleSections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeSection?.key === section.key;
                 return (
                   <button
-                    key={tab}
-                    data-testid={`dashboard-tab-${tab}`}
-                    onClick={() => {
-                      setActiveTab(tab);
-                      setViewingCourse(null);
-                      setActiveLesson(null);
-                      try {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set("tab", tab);
-                        window.history.replaceState({}, "", url.toString());
-                      } catch {}
-                    }}
+                    key={section.key}
+                    data-testid={`dashboard-section-${section.key}`}
+                    onClick={() => selectDashboardTab(section.tabs[0])}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-start max-md:w-auto max-md:shrink-0 max-md:px-3 max-md:py-2.5 ${
-                      activeTab === tab
+                      isActive
                         ? "bg-primary text-white font-bold shadow-md"
                         : "hover:bg-secondary text-foreground"
                     }`}
                   >
                     <Icon className="w-5 h-5 shrink-0" />
-                    <span>{t.tabs[tab]}</span>
-                    <ChevronRight className={`w-4 h-4 ms-auto max-md:hidden ${isRtl ? "rotate-180" : ""} ${activeTab === tab ? "opacity-100" : "opacity-30"}`} />
+                    <span>{dashboardSectionLabels[section.key][lang]}</span>
+                    <ChevronRight className={`w-4 h-4 ms-auto max-md:hidden ${isRtl ? "rotate-180" : ""} ${isActive ? "opacity-100" : "opacity-30"}`} />
                   </button>
                 );
               })}
@@ -1323,6 +1352,25 @@ export default function Dashboard() {
           </nav>
 
           <main className="flex-1 min-w-0">
+            {activeSection && activeSection.tabs.length > 1 && (
+              <nav className="mb-4 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-card p-2" aria-label={isRtl ? "تفاصيل القسم" : "Section pages"}>
+                {activeSection.tabs.map((tab) => {
+                  const Icon = tabIcons[tab];
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      data-testid={`dashboard-tab-${tab}`}
+                      onClick={() => selectDashboardTab(tab)}
+                      className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${activeTab === tab ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {t.tabs[tab]}
+                    </button>
+                  );
+                })}
+              </nav>
+            )}
             {activeTab === "account" && (
               <AccountTab apiBase={apiBase} lang={lang} t={t} user={user} />
             )}

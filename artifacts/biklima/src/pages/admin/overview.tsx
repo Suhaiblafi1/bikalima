@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Users, BookOpen, GraduationCap, FileText, ShoppingCart, DollarSign,
   Activity, TrendingUp, UserPlus, ListTodo, Zap, KanbanSquare, CalendarCheck,
-  Database,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import {
@@ -55,11 +55,6 @@ export default function AdminOverviewPage() {
   const [activities, setActivities] = useState<AdminActivityRecord[]>([]);
   const [topPrograms, setTopPrograms] = useState<TopProgramRecord[]>([]);
   const [growth, setGrowth] = useState<Growth | null>(null);
-  const [platformHealth, setPlatformHealth] = useState<{
-    badge_definitions: number; user_badges: number; feature_flags: number;
-    audit_log_entries: number; impact_stats_overrides: number; transformation_stories: number;
-    lesson_session_attendance: number;
-  } | null>(null);
 
   const fetchGrowth = useCallback(async () => {
     const r = await apiFetch("/admin/growth/overview");
@@ -92,25 +87,20 @@ export default function AdminOverviewPage() {
     }
   }, [apiFetch]);
 
-  const fetchPlatformHealth = useCallback(async () => {
-    const r = await apiFetch("/admin/platform-health");
-    if (r.ok) {
-      const d = await r.json();
-      setPlatformHealth(d.counts ?? null);
-    }
-  }, [apiFetch]);
-
   useEffect(() => {
     fetchStats();
     fetchRevenue();
     fetchActivities();
     fetchTopPrograms();
     fetchGrowth();
-    fetchPlatformHealth();
-  }, [fetchStats, fetchRevenue, fetchActivities, fetchTopPrograms, fetchGrowth, fetchPlatformHealth]);
+  }, [fetchStats, fetchRevenue, fetchActivities, fetchTopPrograms, fetchGrowth]);
 
   return (
     <AdminLayout activeKey="overview">
+      <header className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <h1 className="text-2xl font-bold">نظرة عامة</h1>
+        <p className="mt-1 text-sm text-muted-foreground">ابدأ بما يحتاج قرارك اليوم، ثم انتقل إلى التفاصيل عند الحاجة.</p>
+      </header>
       {/* ─── Growth Center KPIs ─────────────────────────────────────── */}
       {growth && (
         <div className="space-y-3">
@@ -146,7 +136,10 @@ export default function AdminOverviewPage() {
               <CardContent className="p-4">
                 <h3 className="font-bold text-sm flex items-center gap-2 mb-3"><KanbanSquare className="w-4 h-4 text-primary" /> توزيع العملاء حسب الحالة</h3>
                 {Object.keys(growth.pipeline.byStatus).length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">لا يوجد عملاء محتملون بعد.</p>
+                  <div className="py-6 text-center">
+                    <p className="text-sm text-muted-foreground">لا يوجد عملاء محتملون بعد.</p>
+                    <Button size="sm" className="mt-3 rounded-full" onClick={() => navigate("/admin/leads")}>أضف أول عميل</Button>
+                  </div>
                 ) : (
                   <div className="space-y-1.5">
                     {Object.entries(growth.pipeline.byStatus).sort((a, b) => b[1] - a[1]).map(([status, count]) => {
@@ -170,7 +163,10 @@ export default function AdminOverviewPage() {
               <CardContent className="p-4">
                 <h3 className="font-bold text-sm flex items-center gap-2 mb-3"><Zap className="w-4 h-4 text-primary" /> آخر النشاطات</h3>
                 {growth.activities.recent.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">لا نشاطات بعد.</p>
+                  <div className="py-6 text-center">
+                    <p className="text-sm text-muted-foreground">لا نشاطات بعد.</p>
+                    <Button size="sm" variant="outline" className="mt-3 rounded-full" onClick={() => navigate("/admin/leads")}>افتح مركز العملاء</Button>
+                  </div>
                 ) : (
                   <ul className="space-y-1.5 max-h-56 overflow-y-auto">
                     {growth.activities.recent.slice(0, 8).map((a) => (
@@ -220,7 +216,10 @@ export default function AdminOverviewPage() {
               <TrendingUp className="w-4 h-4 text-primary" /> أكثر البرامج طلبًا
             </h3>
             {topPrograms.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">لا توجد طلبات تسجيل بعد.</p>
+              <div className="py-6 text-center">
+                <p className="text-sm text-muted-foreground">لا توجد طلبات تسجيل بعد.</p>
+                <Button size="sm" variant="outline" className="mt-3 rounded-full" onClick={() => navigate("/admin/courses")}>إدارة الدورات</Button>
+              </div>
             ) : (
               <div className="space-y-2">
                 {topPrograms.map((p, i) => {
@@ -254,7 +253,10 @@ export default function AdminOverviewPage() {
               <Activity className="w-4 h-4 text-primary" /> أحدث النشاطات
             </h3>
             {activities.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">لم يُسجَّل أي نشاط بعد. ستظهر إجراءاتك على المحتوى هنا.</p>
+              <div className="py-6 text-center">
+                <p className="text-sm text-muted-foreground">لم يُسجَّل أي نشاط بعد. ستظهر إجراءاتك على المحتوى هنا.</p>
+                <Button size="sm" variant="outline" className="mt-3 rounded-full" onClick={() => navigate("/admin/home-page")}>إدارة المحتوى</Button>
+              </div>
             ) : (
               <ul className="space-y-2 max-h-64 overflow-y-auto">
                 {activities.slice(0, 12).map((a) => (
@@ -279,36 +281,6 @@ export default function AdminOverviewPage() {
       </div>
 
       <RevenueTab revenue={revenue} onRefresh={fetchRevenue} />
-
-      {/* ─── Platform foundations health ─────────────────────────────── */}
-      {platformHealth && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="font-bold text-sm flex items-center gap-2 mb-3">
-              <Database className="w-4 h-4 text-primary" /> النظام الأساسي
-              <span className="text-[10px] text-muted-foreground font-normal ms-auto">
-                صحة الجداول الجديدة (شارات، حضور، سجل تدقيق، أعلام، أثر)
-              </span>
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 text-xs">
-              {[
-                { label: "تعريفات الشارات", value: platformHealth.badge_definitions },
-                { label: "شارات الطلاب",   value: platformHealth.user_badges },
-                { label: "أعلام الميزات",  value: platformHealth.feature_flags },
-                { label: "سجل التدقيق",    value: platformHealth.audit_log_entries },
-                { label: "أرقام الأثر",    value: platformHealth.impact_stats_overrides },
-                { label: "قصص التحول",    value: platformHealth.transformation_stories },
-                { label: "حضور الجلسات",  value: platformHealth.lesson_session_attendance },
-              ].map((s, i) => (
-                <div key={i} className="rounded-lg border bg-muted/20 p-2">
-                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                  <p className="text-base font-bold leading-none mt-1">{s.value}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </AdminLayout>
   );
 }

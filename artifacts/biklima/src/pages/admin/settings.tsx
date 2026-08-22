@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings as SettingsIcon, Save, Globe, Phone, Share2, FileText } from "lucide-react";
+import { Settings as SettingsIcon, Save, Globe, Phone, Share2, FileText, Database } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, type SiteSettingsRecord } from "./_shared";
 import { toast } from "@/hooks/use-toast";
@@ -65,6 +65,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [platformHealth, setPlatformHealth] = useState<Record<string, number> | null>(null);
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
@@ -86,6 +87,13 @@ export default function AdminSettingsPage() {
   }, [apiFetch]);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
+
+  useEffect(() => {
+    apiFetch("/admin/platform-health")
+      .then(async (response) => response.ok ? (await response.json()).counts ?? null : null)
+      .then(setPlatformHealth)
+      .catch(() => setPlatformHealth(null));
+  }, [apiFetch]);
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -116,9 +124,9 @@ export default function AdminSettingsPage() {
     <AdminLayout activeKey="settings">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-bold flex items-center gap-2 text-lg">
+          <h1 className="font-bold flex items-center gap-2 text-xl">
             <SettingsIcon className="w-5 h-5 text-primary" /> إعدادات الموقع
-          </h2>
+          </h1>
           <p className="text-xs text-muted-foreground mt-1">
             هذه الإعدادات تُستخدم لعرض بيانات الموقع وروابط التواصل والنصوص القانونية.
           </p>
@@ -195,6 +203,33 @@ export default function AdminSettingsPage() {
             </div>
           </CardContent></Card>
         ))
+      )}
+
+      {platformHealth && (
+        <Card>
+          <CardContent className="p-5">
+            <h2 className="flex items-center gap-2 border-b pb-2 text-sm font-bold">
+              <Database className="h-4 w-4 text-primary" /> الحالة التقنية للمنصة
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">مؤشرات داخلية للتأكد من أن البنى الأساسية تحتوي بيانات. لا تظهر هذه المعلومات في لوحة العمل اليومية.</p>
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {[
+                ["تعريفات الشارات", "badge_definitions"],
+                ["شارات الطلاب", "user_badges"],
+                ["أعلام الميزات", "feature_flags"],
+                ["سجل التدقيق", "audit_log_entries"],
+                ["أرقام الأثر", "impact_stats_overrides"],
+                ["قصص التحول", "transformation_stories"],
+                ["حضور الجلسات", "lesson_session_attendance"],
+              ].map(([label, key]) => (
+                <div key={key} className="rounded-xl border border-border bg-muted/20 p-3">
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-lg font-bold">{platformHealth[key] ?? 0}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </AdminLayout>
   );
