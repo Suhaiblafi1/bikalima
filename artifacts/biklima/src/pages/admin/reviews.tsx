@@ -74,6 +74,7 @@ export default function AdminReviewsPage() {
 
   return (
     <AdminLayout activeKey="reviews">
+      <h1 className="sr-only">آراء الطلاب</h1>
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card><CardContent className="p-4">

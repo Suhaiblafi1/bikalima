@@ -11,6 +11,9 @@ import {
   csrfProtection,
 } from "./middlewares/security.js";
 import { seedPlatformDefaults } from "./lib/platform.js";
+import { validateEnvironment } from "./lib/env.js";
+
+validateEnvironment();
 
 const app: Express = express();
 

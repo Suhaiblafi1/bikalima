@@ -9,6 +9,7 @@ import { PhoneInput } from "@/components/phone-input";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
 import { StudentTodayOverview } from "@/components/dashboard/student-today-overview";
+import { StudentOnboarding } from "@/components/dashboard/student-onboarding";
 import { SkillsAndBadgesSection } from "@/components/skills-section";
 import { useLang } from "@/hooks/useLang";
 import {
@@ -709,11 +710,11 @@ function CourseAttendanceLine({
 function VideoEmbed({ url }: { url: string }) {
   const ytId = getYouTubeId(url);
   if (ytId) {
-    return <iframe src={`https://www.youtube.com/embed/${ytId}?rel=0`} className="w-full aspect-video rounded-xl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />;
+    return <iframe title="فيديو من مكتبة الطالب" src={`https://www.youtube.com/embed/${ytId}?rel=0`} className="w-full aspect-video rounded-xl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />;
   }
   const vimeoId = getVimeoId(url);
   if (vimeoId) {
-    return <iframe src={`https://player.vimeo.com/video/${vimeoId}`} className="w-full aspect-video rounded-xl" allow="autoplay; fullscreen" allowFullScreen />;
+    return <iframe title="فيديو من مكتبة الطالب" src={`https://player.vimeo.com/video/${vimeoId}`} className="w-full aspect-video rounded-xl" allow="autoplay; fullscreen" allowFullScreen />;
   }
   return <div className="w-full aspect-video rounded-xl bg-muted flex items-center justify-center text-muted-foreground"><Video className="w-10 h-10" /></div>;
 }
@@ -1191,9 +1192,9 @@ export default function Dashboard() {
       containerClassName=""
       breadcrumb={[{ label: lang === "ar" ? "منصتي" : "My Platform" }]}
     >
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pb-28 md:pb-8">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h2>
+          <h1 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h1>
         </div>
 
         {/* The learning hero belongs to the home/continue experience, not every utility page. */}
@@ -1312,11 +1313,12 @@ export default function Dashboard() {
           </div>
         )}
 
+        {activeTab === "courses" && !dataLoading && courses.length > 0 && <StudentOnboarding lang={lang} userId={userId} />}
         {activeTab === "courses" && <StudentTodayOverview lang={lang} onSelect={selectDashboardTab} />}
 
         <div className="flex flex-col md:flex-row gap-6">
-          <nav className="md:w-64 shrink-0 max-md:sticky max-md:top-16 max-md:z-20 max-md:-mx-4" aria-label={isRtl ? "أقسام منصة الطالب" : "Learner platform sections"}>
-            <div className="bg-card rounded-2xl border border-border p-2 space-y-1 sticky top-20 max-md:static max-md:flex max-md:gap-1 max-md:space-y-0 max-md:overflow-x-auto max-md:rounded-none max-md:border-x-0 max-md:px-4 max-md:py-2 max-md:shadow-sm">
+          <nav className="hidden md:block md:w-64 shrink-0" aria-label={isRtl ? "أقسام منصة الطالب" : "Learner platform sections"}>
+            <div className="bg-card rounded-2xl border border-border p-2 space-y-1 sticky top-20">
               {visibleSections.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection?.key === section.key;
@@ -1325,7 +1327,7 @@ export default function Dashboard() {
                     key={section.key}
                     data-testid={`dashboard-section-${section.key}`}
                     onClick={() => selectDashboardTab(section.tabs[0])}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-start max-md:w-auto max-md:shrink-0 max-md:px-3 max-md:py-2.5 ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-start ${
                       isActive
                         ? "bg-primary text-white font-bold shadow-md"
                         : "hover:bg-secondary text-foreground"
@@ -1333,18 +1335,18 @@ export default function Dashboard() {
                   >
                     <Icon className="w-5 h-5 shrink-0" />
                     <span>{dashboardSectionLabels[section.key][lang]}</span>
-                    <ChevronRight className={`w-4 h-4 ms-auto max-md:hidden ${isRtl ? "rotate-180" : ""} ${isActive ? "opacity-100" : "opacity-30"}`} />
+                    <ChevronRight className={`w-4 h-4 ms-auto ${isRtl ? "rotate-180" : ""} ${isActive ? "opacity-100" : "opacity-30"}`} />
                   </button>
                 );
               })}
-              <hr className="border-border my-2 max-md:hidden" />
+              <hr className="border-border my-2" />
               {isAdmin && (
-                <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium max-md:hidden">
+                <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium">
                   <Shield className="w-5 h-5" />
                   <span>{lang === "ar" ? "لوحة الإدارة" : "Admin Panel"}</span>
                 </button>
               )}
-              <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start max-md:hidden">
+              <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start">
                 <Home className="w-5 h-5" />
                 <span>{t.backHome}</span>
               </button>
@@ -1700,10 +1702,34 @@ export default function Dashboard() {
             )}
           </main>
         </div>
+
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_-18px_rgba(0,0,0,.45)] backdrop-blur-xl md:hidden"
+          aria-label={isRtl ? "التنقل الرئيسي في منصة الطالب" : "Learner platform primary navigation"}
+        >
+          <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
+            {visibleSections.map((section) => {
+              const Icon = section.icon;
+              const isActive = activeSection?.key === section.key;
+              return (
+                <button
+                  key={section.key}
+                  type="button"
+                  onClick={() => selectDashboardTab(section.tabs[0])}
+                  className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition-colors ${isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="max-w-full truncate">{dashboardSectionLabels[section.key][lang]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
       {errorToast && (
         <div
-          className={`fixed bottom-6 ${isRtl ? "right-6" : "left-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-rose-200 bg-rose-50 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
+          className={`fixed bottom-24 md:bottom-6 ${isRtl ? "right-4 md:right-6" : "left-4 md:left-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-rose-200 bg-rose-50 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
           role="alert"
           data-testid="dashboard-error-toast"
         >
@@ -1734,7 +1760,7 @@ export default function Dashboard() {
         const Icon = BADGE_TOAST_ICONS[badgeToast.icon] ?? Award;
         return (
           <div
-            className={`fixed bottom-6 ${isRtl ? "left-6" : "right-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-border bg-card p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
+            className={`fixed bottom-24 md:bottom-6 ${isRtl ? "left-4 md:left-6" : "right-4 md:right-6"} z-50 max-w-sm rounded-2xl shadow-lg border border-border bg-card p-4 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4`}
             role="status"
             data-testid="badge-toast"
           >

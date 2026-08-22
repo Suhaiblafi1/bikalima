@@ -19,6 +19,10 @@ export default function AdminAssignmentsPage() {
 
   return (
     <AdminLayout activeKey="assignments">
+      <header>
+        <h1 className="text-xl font-bold">الواجبات والتقييم</h1>
+        <p className="mt-1 text-sm text-muted-foreground">أنشئ الواجبات، راجع التسليمات، وأرسل تغذية راجعة واضحة للطلاب.</p>
+      </header>
       <AdminAssignmentsTab apiFetch={apiFetch} courses={courses} />
     </AdminLayout>
   );

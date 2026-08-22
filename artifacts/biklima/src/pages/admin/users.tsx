@@ -80,7 +80,7 @@ export default function AdminUsersPage() {
     <AdminLayout activeKey="users">
       <Card><CardContent className="p-5">
         <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-          <h2 className="font-bold flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> المستخدمون ({filtered.length})</h2>
+          <h1 className="font-bold flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> المستخدمون ({filtered.length})</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <select
               value={roleFilter}

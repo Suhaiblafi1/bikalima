@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +11,8 @@ import { lazy, Suspense } from "react";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
 import {
   BookOpen, GraduationCap, Mic2, ClipboardList, CalendarCheck, Loader2,
-  FileText, AlertTriangle, StickyNote, Megaphone, Send,
+  FileText, AlertTriangle, StickyNote, Megaphone, Send, LayoutDashboard,
+  UsersRound, MessagesSquare, LibraryBig, ArrowDown,
 } from "lucide-react";
 
 type CourseRow = { id: string; titleAr: string; titleEn: string; enrollmentCount: number };
@@ -46,6 +47,10 @@ export default function TrainerDashboardPage() {
   const [broadcastSubject, setBroadcastSubject] = useState("");
   const [broadcastBody, setBroadcastBody] = useState("");
   const [broadcastSending, setBroadcastSending] = useState(false);
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const sendBroadcast = useCallback(async () => {
     if (!broadcastCourseId || !broadcastBody.trim()) return;
@@ -102,31 +107,58 @@ export default function TrainerDashboardPage() {
     );
   }
 
-  const pendingEvals = evals.filter((e) => e.status === "pending" || e.status === "in_review");
   const uniqueLearners = new Map<string, EnrollmentRow>();
   for (const en of learners) if (!uniqueLearners.has(en.userId)) uniqueLearners.set(en.userId, en);
 
   return (
     <AppShell containerClassName="container mx-auto px-4 py-6" breadcrumb={[{ label: "لوحة المدرّب", href: "/trainer" }]}>
       <div className="space-y-6" dir="rtl" data-testid="trainer-dashboard">
-        <header className="flex items-start justify-between gap-4 flex-wrap">
+        <header className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/10 via-card to-amber-50 p-5 shadow-sm sm:p-7">
+          <div aria-hidden className="absolute -end-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
           <div>
-            <h1 className="text-2xl font-bold">لوحة المدرّب</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              مرحبًا {user?.firstName ?? user?.email}، هذه دوراتك وطلابك المخصّصون لك فقط.
+            <p className="mb-1 text-xs font-bold text-primary">اليوم في بكلمة</p>
+            <h1 className="text-2xl font-bold sm:text-3xl">مرحباً {user?.firstName ?? user?.email}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              ابدأ بما يحتاج تدخلك اليوم؛ التقييمات والحضور أولاً، ثم تواصل مع طلابك وأدر محتوى دوراتك.
             </p>
           </div>
         </header>
 
-        <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <nav className="sticky top-16 z-20 -mx-4 overflow-x-auto border-y border-border bg-background/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border" aria-label="أقسام مساحة المدرب">
+          <div className="flex min-w-max gap-2 sm:min-w-0 sm:grid sm:grid-cols-4">
+            {[
+              { id: "trainer-today", label: "اليوم", icon: LayoutDashboard },
+              { id: "trainer-courses-section", label: "دوراتي", icon: LibraryBig },
+              { id: "trainer-learners-section", label: "طلابي", icon: UsersRound },
+              { id: "trainer-messages-section", label: "الرسائل", icon: MessagesSquare },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <button key={item.id} type="button" onClick={() => scrollToSection(item.id)} className="flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:bg-primary/10 focus-visible:text-primary">
+                  <Icon className="h-4 w-4" /> {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <section id="trainer-today" className="scroll-mt-36 space-y-3" aria-labelledby="trainer-today-heading">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 id="trainer-today-heading" className="text-xl font-bold">ما يحتاجك الآن</h2>
+              <p className="mt-1 text-sm text-muted-foreground">مؤشرات عملية، وليست مجرد أرقام.</p>
+            </div>
+            <ArrowDown className="h-5 w-5 text-muted-foreground" aria-hidden />
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard icon={<BookOpen className="w-5 h-5" />} label="دوراتي" value={courses.length} />
           <StatCard icon={<GraduationCap className="w-5 h-5" />} label="طلابي" value={uniqueLearners.size} />
           <StatCard icon={<FileText className="w-5 h-5" />} label="تسليمات بانتظار التقييم" value={pendingSubs.length} testid="stat-pending-subs" />
           <StatCard icon={<CalendarCheck className="w-5 h-5" />} label="حصص بحاجة تسجيل حضور" value={lessonsNeed.length} testid="stat-lessons-need-attendance" />
-          <StatCard icon={<Mic2 className="w-5 h-5" />} label="تقييمات صوتية" value={evals.length} sub={`${pendingEvals.length} بانتظار المراجعة`} />
+          </div>
         </section>
 
-        <section className="grid md:grid-cols-2 gap-4">
+        <section className="grid md:grid-cols-2 gap-4" aria-label="قائمة عمل المدرب اليومية">
           <Card>
             <CardContent className="p-4 space-y-3">
               <h2 className="font-semibold flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> تسليمات الواجبات بانتظار التقييم</h2>
@@ -195,7 +227,7 @@ export default function TrainerDashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card id="trainer-courses-section" className="scroll-mt-36">
             <CardContent className="p-4 space-y-3">
               <h2 className="font-semibold flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" /> دوراتي</h2>
               {courses.length === 0 ? (
@@ -221,17 +253,20 @@ export default function TrainerDashboardPage() {
               <CardContent className="p-4 space-y-3">
                 <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-primary" /> إعلان لطلاب الدورة</h2>
                 <p className="text-xs text-muted-foreground">سيتم إرسال الرسالة كمحادثة لكل طالب مسجّل في الدورة المختارة.</p>
-                <select value={broadcastCourseId} onChange={(e) => setBroadcastCourseId(e.target.value)}
+                <label htmlFor="trainer-broadcast-course" className="text-xs font-bold">الدورة</label>
+                <select id="trainer-broadcast-course" value={broadcastCourseId} onChange={(e) => setBroadcastCourseId(e.target.value)}
                   className="w-full p-2 rounded-lg border border-border text-sm bg-card" data-testid="broadcast-course-select">
                   <option value="">اختر الدورة...</option>
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>{c.titleAr} ({c.enrollmentCount})</option>
                   ))}
                 </select>
-                <input value={broadcastSubject} onChange={(e) => setBroadcastSubject(e.target.value)}
+                <label htmlFor="trainer-broadcast-subject" className="sr-only">موضوع الإعلان</label>
+                <input id="trainer-broadcast-subject" value={broadcastSubject} onChange={(e) => setBroadcastSubject(e.target.value)}
                   placeholder="الموضوع (اختياري)"
                   className="w-full p-2 rounded-lg border border-border text-sm" />
-                <textarea value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)}
+                <label htmlFor="trainer-broadcast-body" className="sr-only">نص الإعلان</label>
+                <textarea id="trainer-broadcast-body" value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)}
                   placeholder="نص الإعلان..."
                   className="w-full min-h-[80px] p-2 rounded-lg border border-border text-sm" />
                 <Button size="sm" onClick={sendBroadcast}
@@ -246,9 +281,9 @@ export default function TrainerDashboardPage() {
 
           <Card>
             <CardContent className="p-4 space-y-3">
-              <h2 className="font-semibold flex items-center gap-2"><Mic2 className="w-4 h-4 text-primary" /> طلبات التقييم الصوتي</h2>
+              <h2 className="font-semibold flex items-center gap-2"><Mic2 className="w-4 h-4 text-primary" /> طلبات تقييم الفيديو من الموقع</h2>
               {evals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">لا توجد تقييمات مخصّصة لك حاليًا.</p>
+                <p className="text-sm text-muted-foreground">لا توجد طلبات بشرية مخصّصة لك حالياً.</p>
               ) : (
                 <ul className="space-y-2" data-testid="trainer-speech-evals">
                   {evals.slice(0, 8).map((e) => (
@@ -266,7 +301,7 @@ export default function TrainerDashboardPage() {
           </Card>
         </section>
 
-        <Card>
+        <Card id="trainer-learners-section" className="scroll-mt-36">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-semibold flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary" /> طلابي</h2>
             {uniqueLearners.size === 0 ? (
@@ -286,7 +321,7 @@ export default function TrainerDashboardPage() {
                     {Array.from(uniqueLearners.values()).slice(0, 50).map((l) => {
                       const open = openLearnerNotes === l.userId;
                       return (
-                        <>
+                        <Fragment key={l.userId}>
                           <tr key={l.id} className="border-b border-border/40">
                             <td className="py-2 px-2">{[l.userFirstName, l.userLastName].filter(Boolean).join(" ") || "—"}</td>
                             <td className="py-2 px-2 text-muted-foreground">{l.userEmail ?? "—"}</td>
@@ -314,7 +349,7 @@ export default function TrainerDashboardPage() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -324,9 +359,15 @@ export default function TrainerDashboardPage() {
           </CardContent>
         </Card>
 
-        <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
-          <StudentMessagesTab lang="ar" currentUserId={user?.id ?? null} />
-        </Suspense>
+        <section id="trainer-messages-section" className="scroll-mt-36" aria-labelledby="trainer-messages-heading">
+          <div className="mb-3">
+            <h2 id="trainer-messages-heading" className="text-xl font-bold">رسائل الطلاب</h2>
+            <p className="mt-1 text-sm text-muted-foreground">جميع المحادثات داخل المنصة وفي مكان واحد.</p>
+          </div>
+          <Suspense fallback={<div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>}>
+            <StudentMessagesTab lang="ar" currentUserId={user?.id ?? null} />
+          </Suspense>
+        </section>
 
         <Card>
           <CardContent className="p-4 flex items-center gap-3 text-sm">
@@ -342,10 +383,11 @@ export default function TrainerDashboardPage() {
 
 function StatCard({ icon, label, value, sub, testid }: { icon: React.ReactNode; label: string; value: number | string; sub?: string; testid?: string }) {
   return (
-    <Card>
-      <CardContent className="p-4" data-testid={testid}>
-        <div className="flex items-center gap-2 text-muted-foreground text-xs">{icon}{label}</div>
-        <div className="text-2xl font-bold mt-1">{value}</div>
+    <Card className="overflow-hidden border-border/80 shadow-sm">
+      <CardContent className="p-4 sm:p-5" data-testid={testid}>
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">{icon}</div>
+        <div className="mt-3 text-2xl font-bold">{value}</div>
+        <div className="mt-1 text-xs font-medium leading-relaxed text-muted-foreground">{label}</div>
         {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
       </CardContent>
     </Card>

@@ -9,7 +9,12 @@ import {
   StickyNote, Save, Trash2, Award, Sparkles, Mail, MessageCircle, Hourglass,
 } from "lucide-react";
 import { Certificate } from "@/components/certificate";
-import { ActivityPlayer, type Activity, type SubmissionStatus } from "@/components/activity-player";
+import {
+  ActivityPlayer,
+  PLATFORM_DISABLED_ACTIVITY_TYPES,
+  type Activity,
+  type SubmissionStatus,
+} from "@/components/activity-player";
 import { ContentProtection } from "@/components/content-protection";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { programPageSlugFromCourseSlug } from "@/lib/site-config";
@@ -207,7 +212,9 @@ function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
       const r = await fetch(`${apiBase}/lessons/${lessonId}/activities`, { credentials: "include" });
       if (r.ok) {
         const d = await r.json();
-        setActs(d.activities ?? []);
+        setActs((d.activities ?? []).filter(
+          (activity: Activity) => !PLATFORM_DISABLED_ACTIVITY_TYPES.has(activity.type),
+        ));
         const pm: Record<string, { status: SubmissionStatus }> = {};
         for (const k of Object.keys(d.myProgress ?? {})) {
           pm[k] = { status: d.myProgress[k].status as SubmissionStatus };

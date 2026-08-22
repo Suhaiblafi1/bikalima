@@ -163,7 +163,7 @@ export default function AdminLeadDetailPage({ id }: { id: string }) {
           <Card>
             <CardContent className="p-4 space-y-2.5">
               <div>
-                <h2 className="text-lg font-bold">{lead.fullName}</h2>
+                <h1 className="text-lg font-bold">{lead.fullName}</h1>
                 <p className="text-[11px] text-muted-foreground">{LEAD_SOURCE_LABELS[lead.source] ?? lead.source} · {fmt(lead.createdAt)}</p>
               </div>
               <div className="space-y-1.5 text-xs" dir="ltr">

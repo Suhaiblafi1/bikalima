@@ -302,7 +302,7 @@ export function SiteHeader() {
             <div className="container mx-auto px-6 py-6">
               <div className="flex items-center justify-between mb-8">
                 <div className="logo-biklima text-3xl text-primary leading-none">بكلمة</div>
-                <button onClick={() => setMobileOpen(false)} className="p-2 text-foreground" aria-label="Close">
+                <button onClick={() => setMobileOpen(false)} className="p-2 text-foreground" aria-label={isRtl ? "إغلاق القائمة" : "Close menu"}>
                   <X size={26} />
                 </button>
               </div>

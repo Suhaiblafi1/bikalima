@@ -200,6 +200,7 @@ export default function AdminChatPage() {
 
   return (
     <AdminLayout activeKey="chat">
+      <h1 className="sr-only">الشات المباشر</h1>
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           <div className="flex flex-col lg:flex-row min-h-[70vh]">

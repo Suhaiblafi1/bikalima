@@ -10,6 +10,19 @@ export type ActivityType =
   | "voice_recording" | "video_submission" | "drag_drop" | "scenario"
   | "self_assessment" | "coach_feedback" | "challenge";
 
+/**
+ * Legacy activity types kept in the data model so existing records remain
+ * readable. They are intentionally hidden from learner and course-authoring
+ * interfaces: video evaluation is requested from the public homepage and is
+ * handled by a human through the administrative back office only.
+ */
+export const PLATFORM_DISABLED_ACTIVITY_TYPES = new Set<ActivityType>([
+  "speech_builder",
+  "voice_recording",
+  "video_submission",
+  "coach_feedback",
+]);
+
 export interface Activity {
   id: string;
   lessonId: string;
@@ -58,7 +71,7 @@ function VideoEmbed({ url, type }: { url: string; type?: string }) {
     return (
       <div className="w-full bg-black rounded-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
         {id ? (
-          <iframe src={`https://player.vimeo.com/video/${id}`} className="w-full h-full" allowFullScreen />
+          <iframe title="فيديو النشاط التدريبي" src={`https://player.vimeo.com/video/${id}`} className="w-full h-full" allowFullScreen />
         ) : <video src={url} controls className="w-full h-full" />}
       </div>
     );
@@ -67,7 +80,7 @@ function VideoEmbed({ url, type }: { url: string; type?: string }) {
   return (
     <div className="w-full bg-black rounded-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
       {id ? (
-        <iframe src={`https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`} className="w-full h-full" allowFullScreen />
+        <iframe title="فيديو النشاط التدريبي" src={`https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`} className="w-full h-full" allowFullScreen />
       ) : <video src={url} controls className="w-full h-full" />}
     </div>
   );

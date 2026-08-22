@@ -346,6 +346,7 @@ export default function AdminSpeechEvaluationsPage() {
 
   return (
     <AdminLayout activeKey="speech-evaluations">
+      <h1 className="sr-only">طلبات تقييم الفيديو البشرية</h1>
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">

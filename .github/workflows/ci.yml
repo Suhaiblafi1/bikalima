@@ -1,0 +1,88 @@
+name: Release checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+
+  critical-journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bikalima
+          POSTGRES_PASSWORD: bikalima_test
+          POSTGRES_DB: bikalima_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bikalima -d bikalima_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bikalima:bikalima_test@localhost:5432/bikalima_e2e
+      E2E_BASE_URL: http://localhost:8080
+      PUBLIC_APP_URL: http://localhost:8080
+      CRON_SECRET: e2e-only-cron-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @workspace/db migrate
+      - run: pnpm --filter @workspace/api-server build
+      - name: Start API and web app
+        run: |
+          PORT=3000 pnpm --filter @workspace/api-server start > /tmp/bikalima-api.log 2>&1 &
+          PORT=8080 LOCAL_API_URL=http://localhost:3000 pnpm --filter @workspace/biklima dev > /tmp/bikalima-web.log 2>&1 &
+          for attempt in {1..40}; do
+            if curl --fail --silent http://localhost:8080/api/healthz >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          tail -n 100 /tmp/bikalima-api.log /tmp/bikalima-web.log
+          exit 1
+      - run: pnpm test
+      - name: Upload Playwright evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-evidence
+          path: |
+            test-results/
+            playwright-report/

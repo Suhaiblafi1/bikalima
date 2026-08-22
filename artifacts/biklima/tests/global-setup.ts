@@ -12,6 +12,7 @@ import {
   featureFlagsTable,
   badgeDefinitionsTable,
   userBadgesTable,
+  courseTrainersTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { TEST_FIXTURES } from "./fixtures/data";
@@ -260,6 +261,14 @@ async function ensureEnrollment(userId: string, courseId: string) {
   }
 }
 
+async function ensureTrainerCourse(userId: string, courseId: string) {
+  const [existing] = await db
+    .select({ id: courseTrainersTable.id })
+    .from(courseTrainersTable)
+    .where(and(eq(courseTrainersTable.userId, userId), eq(courseTrainersTable.courseId, courseId)));
+  if (!existing) await db.insert(courseTrainersTable).values({ userId, courseId });
+}
+
 export default async function globalSetup() {
   if (!process.env.DATABASE_URL) {
     throw new Error(
@@ -286,7 +295,16 @@ export default async function globalSetup() {
     role: "student",
   });
 
+  const trainerId = await upsertUser({
+    email: TEST_FIXTURES.trainer.email,
+    password: TEST_FIXTURES.trainer.password,
+    firstName: TEST_FIXTURES.trainer.firstName,
+    lastName: TEST_FIXTURES.trainer.lastName,
+    role: "trainer",
+  });
+
   await ensureEnrollment(learnerId, courseId);
+  await ensureTrainerCourse(trainerId, courseId);
   const learnerFullName = `${TEST_FIXTURES.learner.firstName} ${TEST_FIXTURES.learner.lastName}`;
   await upsertCertificate({
     userId: learnerId,
@@ -303,10 +321,11 @@ export default async function globalSetup() {
   process.env.E2E_COURSE_ID = courseId;
   process.env.E2E_ADMIN_ID = adminId;
   process.env.E2E_LEARNER_ID = learnerId;
+  process.env.E2E_TRAINER_ID = trainerId;
   process.env.E2E_IN_PERSON_COURSE_ID = inPersonCourseId;
 
   // eslint-disable-next-line no-console
   console.log(
-    `[e2e setup] course=${courseId} admin=${adminId} learner=${learnerId}`,
+    `[e2e setup] course=${courseId} admin=${adminId} learner=${learnerId} trainer=${trainerId}`,
   );
 }

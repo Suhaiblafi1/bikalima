@@ -2,11 +2,15 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, X, Settings2 } from "lucide-react";
-import { ACTIVITY_TYPE_META, type ActivityType, type Activity } from "@/components/activity-player";
+import {
+  ACTIVITY_TYPE_META,
+  PLATFORM_DISABLED_ACTIVITY_TYPES,
+  type ActivityType,
+  type Activity,
+} from "@/components/activity-player";
 
 const ALL_TYPES: ActivityType[] = [
-  "video", "text", "quiz", "reflection", "speech_builder", "voice_recording",
-  "video_submission", "drag_drop", "scenario", "self_assessment", "coach_feedback", "challenge",
+  "video", "text", "quiz", "reflection", "drag_drop", "scenario", "self_assessment", "challenge",
 ];
 const SKILLS = [
   "idea", "structure", "voice", "body", "improvisation", "impact", "confidence", "fear_management",
@@ -33,7 +37,9 @@ export function AdminActivityEditor({ lessonId, onClose }: { lessonId: string; o
     setLoading(true);
     fetch(`${apiBase}/admin/lessons/${lessonId}/activities`, { credentials: "include" })
       .then(r => r.ok ? r.json() : { activities: [] })
-      .then(d => setActs(d.activities ?? []))
+      .then(d => setActs((d.activities ?? []).filter(
+        (activity: Activity) => !PLATFORM_DISABLED_ACTIVITY_TYPES.has(activity.type),
+      )))
       .finally(() => setLoading(false));
   }, [apiBase, lessonId]);
 

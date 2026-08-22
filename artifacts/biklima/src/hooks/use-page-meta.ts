@@ -52,10 +52,9 @@ export function usePageMeta(meta: PageMeta) {
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", title);
     setMeta("twitter:description", description);
-    if (meta.ogImage) {
-      setMeta("og:image", meta.ogImage, "property");
-      setMeta("twitter:image", meta.ogImage);
-    }
+    const ogImage = meta.ogImage ?? "https://bikalima.com/opengraph.jpg";
+    setMeta("og:image", ogImage, "property");
+    setMeta("twitter:image", ogImage);
 
     const canonicalHref = meta.canonicalPath
       ? `https://bikalima.com${meta.canonicalPath.startsWith("/") ? meta.canonicalPath : `/${meta.canonicalPath}`}`

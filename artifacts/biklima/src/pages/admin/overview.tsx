@@ -3,13 +3,12 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Users, BookOpen, GraduationCap, FileText, ShoppingCart, DollarSign,
-  Activity, TrendingUp, UserPlus, ListTodo, Zap, KanbanSquare, CalendarCheck,
+  GraduationCap, Activity, TrendingUp, UserPlus, ListTodo, Zap, KanbanSquare,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import {
   useApiFetch, RevenueTab, leadStatusLabel, leadStatusColor, LEAD_SOURCE_LABELS,
-  type Stats, type RevenueData, type AdminActivityRecord, type TopProgramRecord,
+  type RevenueData, type AdminActivityRecord, type TopProgramRecord,
 } from "./_shared";
 
 type Growth = {
@@ -50,7 +49,6 @@ const ENTITY_LABELS: Record<string, string> = {
 export default function AdminOverviewPage() {
   const apiFetch = useApiFetch();
   const [, navigate] = useLocation();
-  const [stats, setStats] = useState<Stats | null>(null);
   const [revenue, setRevenue] = useState<RevenueData | null>(null);
   const [activities, setActivities] = useState<AdminActivityRecord[]>([]);
   const [topPrograms, setTopPrograms] = useState<TopProgramRecord[]>([]);
@@ -59,11 +57,6 @@ export default function AdminOverviewPage() {
   const fetchGrowth = useCallback(async () => {
     const r = await apiFetch("/admin/growth/overview");
     if (r.ok) setGrowth(await r.json());
-  }, [apiFetch]);
-
-  const fetchStats = useCallback(async () => {
-    const res = await apiFetch("/admin/stats");
-    if (res.ok) setStats(await res.json());
   }, [apiFetch]);
 
   const fetchRevenue = useCallback(async () => {
@@ -88,12 +81,11 @@ export default function AdminOverviewPage() {
   }, [apiFetch]);
 
   useEffect(() => {
-    fetchStats();
     fetchRevenue();
     fetchActivities();
     fetchTopPrograms();
     fetchGrowth();
-  }, [fetchStats, fetchRevenue, fetchActivities, fetchTopPrograms, fetchGrowth]);
+  }, [fetchRevenue, fetchActivities, fetchTopPrograms, fetchGrowth]);
 
   return (
     <AdminLayout activeKey="overview">
@@ -110,14 +102,12 @@ export default function AdminOverviewPage() {
             </h2>
             <button onClick={() => navigate("/admin/leads")} className="text-[11px] text-primary hover:underline">عرض الكل ←</button>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3" data-testid="admin-executive-kpis">
             {[
-              { label: "العملاء المحتملون", value: growth.totals.leads, icon: <UserPlus className="w-5 h-5 text-cyan-700" />, bg: "bg-cyan-100", href: "/admin/leads" },
               { label: "جدد آخر 7 أيام", value: growth.pipeline.newLeads7d, icon: <TrendingUp className="w-5 h-5 text-emerald-700" />, bg: "bg-emerald-100", href: "/admin/leads" },
               { label: "محوّلون (30 يوم)", value: `${growth.pipeline.converted30d} (${growth.pipeline.conversionRate}%)`, icon: <GraduationCap className="w-5 h-5 text-green-700" />, bg: "bg-green-100", href: "/admin/funnels" },
-              { label: "مهام مفتوحة", value: growth.tasks.open, icon: <ListTodo className="w-5 h-5 text-blue-700" />, bg: "bg-blue-100", href: "/admin/tasks?filter=open" },
               { label: "متأخرة", value: growth.tasks.overdue, icon: <ListTodo className="w-5 h-5 text-red-700" />, bg: "bg-red-100", href: "/admin/tasks?filter=overdue" },
-              { label: "حجوزات استشارة", value: growth.totals.consultations, icon: <CalendarCheck className="w-5 h-5 text-indigo-700" />, bg: "bg-indigo-100", href: "/admin/leads?source=consultation" },
+              { label: "عملاء يحتاجون متابعة", value: growth.totals.leads, icon: <UserPlus className="w-5 h-5 text-cyan-700" />, bg: "bg-cyan-100", href: "/admin/leads" },
             ].map((s, i) => (
               <Card key={i} className="cursor-pointer hover:shadow-md transition" onClick={() => navigate(s.href)}>
                 <CardContent className="p-3 flex items-center gap-2.5">
@@ -182,29 +172,6 @@ export default function AdminOverviewPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      )}
-
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[
-            { label: "المستخدمون", value: stats.totalUsers, icon: <Users className="w-5 h-5 text-primary" />, bg: "bg-primary/10" },
-            { label: "الدورات", value: stats.totalCourses, icon: <BookOpen className="w-5 h-5 text-blue-600" />, bg: "bg-blue-100" },
-            { label: "التسجيلات", value: stats.totalEnrollments, icon: <GraduationCap className="w-5 h-5 text-teal-600" />, bg: "bg-teal-100" },
-            { label: "طلبات التسجيل", value: stats.totalRequests, icon: <FileText className="w-5 h-5 text-amber-600" />, bg: "bg-amber-100" },
-            { label: "طلبات الكراسات", value: stats.totalOrders, icon: <ShoppingCart className="w-5 h-5 text-purple-600" />, bg: "bg-purple-100" },
-            { label: "طلبات الدورات", value: stats.totalLmsOrders ?? 0, icon: <DollarSign className="w-5 h-5 text-green-600" />, bg: "bg-green-100" },
-          ].map((s, i) => (
-            <Card key={i}>
-              <CardContent className="p-3 flex items-center gap-2.5">
-                <div className={`w-9 h-9 rounded-full ${s.bg} flex items-center justify-center shrink-0`}>{s.icon}</div>
-                <div>
-                  <p className="text-lg font-bold leading-none">{s.value}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       )}
 

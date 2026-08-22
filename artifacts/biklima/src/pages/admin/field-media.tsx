@@ -194,9 +194,9 @@ export default function AdminFieldMediaPage() {
     <AdminLayout activeKey="field-media">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-bold flex items-center gap-2 text-lg">
+          <h1 className="font-bold flex items-center gap-2 text-lg">
             <Film className="w-5 h-5 text-primary" /> من الميدان — مكتبة المواد التدريبية
-          </h2>
+          </h1>
           <p className="text-xs text-muted-foreground mt-1">
             أضف فيديوهات وصور من تدريباتك أو من شخصيات ملهمة، صنّفها، وأرفق تحليلًا تدريبيًا قابلًا للتعديل.
           </p>

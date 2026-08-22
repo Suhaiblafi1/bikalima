@@ -155,9 +155,9 @@ export default function AdminHomePage() {
     <AdminLayout activeKey="home-page">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-bold flex items-center gap-2 text-lg">
+          <h1 className="font-bold flex items-center gap-2 text-lg">
             <LayoutIcon className="w-5 h-5 text-primary" /> إدارة الصفحة الرئيسية
-          </h2>
+          </h1>
           <p className="text-xs text-muted-foreground mt-1">
             عدّل نصوص كل قسم بالعربية والإنجليزية، أو أعد ترتيب الأقسام، أو أخفِها مؤقتاً. التغييرات تُحفظ لكل قسم على حدة وتظهر في الموقع فور الحفظ.
           </p>

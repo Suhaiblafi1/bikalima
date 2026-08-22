@@ -513,15 +513,15 @@ export default function Home() {
                         </motion.div>
                       </AnimatePresence>
                       <div className="flex items-center gap-3 mt-5">
-                        <button onClick={() => setBioPageIdx((p) => Math.max(0, p - 1))} disabled={bioPageIdx === 0} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
+                        <button aria-label={lang === "ar" ? "الصفحة السابقة من السيرة" : "Previous biography page"} onClick={() => setBioPageIdx((p) => Math.max(0, p - 1))} disabled={bioPageIdx === 0} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
                           <ChevronRight className={`w-4 h-4 ${lang === "ar" ? "" : "rotate-180"}`} />
                         </button>
                         <div className="flex gap-2">
                           {bioPages.map((_, i) => (
-                            <button key={i} onClick={() => setBioPageIdx(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === bioPageIdx ? "bg-primary scale-125" : "bg-border hover:bg-primary/40"}`} />
+                            <button key={i} aria-label={`${lang === "ar" ? "عرض صفحة السيرة" : "Show biography page"} ${i + 1}`} aria-current={i === bioPageIdx ? "step" : undefined} onClick={() => setBioPageIdx(i)} className={`w-2.5 h-2.5 rounded-full transition-all ${i === bioPageIdx ? "bg-primary scale-125" : "bg-border hover:bg-primary/40"}`} />
                           ))}
                         </div>
-                        <button onClick={() => setBioPageIdx((p) => Math.min(bioPages.length - 1, p + 1))} disabled={bioPageIdx === bioPages.length - 1} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
+                        <button aria-label={lang === "ar" ? "الصفحة التالية من السيرة" : "Next biography page"} onClick={() => setBioPageIdx((p) => Math.min(bioPages.length - 1, p + 1))} disabled={bioPageIdx === bioPages.length - 1} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
                           <ChevronLeft className={`w-4 h-4 ${lang === "ar" ? "" : "rotate-180"}`} />
                         </button>
                         <span className="text-xs text-muted-foreground ms-auto">{bioPageIdx + 1}/{bioPages.length}</span>
@@ -1331,6 +1331,7 @@ export default function Home() {
               onClick={(e) => e.stopPropagation()}
             >
               <iframe
+                title={lang === "ar" ? "فيديو من معرض بكلمة" : "Bikalima gallery video"}
                 key={videoModalId}
                 src={`https://www.youtube.com/embed/${videoModalId}?autoplay=1&cc_load_policy=1&cc_lang_pref=ar&hl=ar`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

@@ -31,7 +31,6 @@ const Dashboard = lazy(() => import("@/pages/dashboard"));
 const TrainerDashboard = lazy(() => import("@/pages/trainer"));
 const ParentPage = lazy(() => import("@/pages/parent"));
 const LearnPage = lazy(() => import("@/pages/learn"));
-const InstructorReviewsPage = lazy(() => import("@/pages/instructor-reviews"));
 const GalleryPage = lazy(() => import("@/pages/gallery"));
 const WorkbooksPage = lazy(() => import("@/pages/workbooks"));
 const VerifyPage = lazy(() => import("@/pages/verify"));
@@ -254,7 +253,6 @@ function AppRouter() {
         <Route path="/checkout" component={CheckoutPage} />
         <Route path="/confirmation" component={ConfirmationPage} />
         <Route path="/courses/:slug/learn" component={LearnPage} />
-        <Route path="/instructor/reviews" component={InstructorReviewsPage} />
         <Route path="/courses/:slug">
           {(params) => {
             const programId = SLUG_TO_PROGRAM_ID[params.slug];

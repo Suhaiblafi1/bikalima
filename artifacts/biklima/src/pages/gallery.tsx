@@ -285,7 +285,7 @@ export default function GalleryPage() {
             className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
             onClick={() => setVideoModalId(null)}
           >
-            <button onClick={() => setVideoModalId(null)} className="absolute top-5 end-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+            <button aria-label={lang === "ar" ? "إغلاق الفيديو" : "Close video"} onClick={() => setVideoModalId(null)} className="absolute top-5 end-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
               <X className="w-6 h-6 text-white" />
             </button>
             <motion.div
@@ -294,6 +294,7 @@ export default function GalleryPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <iframe
+                title={lang === "ar" ? "فيديو من معرض بكلمة" : "Bikalima gallery video"}
                 key={videoModalId}
                 src={`https://www.youtube.com/embed/${videoModalId}?autoplay=1`}
                 className="w-full h-full rounded-2xl"

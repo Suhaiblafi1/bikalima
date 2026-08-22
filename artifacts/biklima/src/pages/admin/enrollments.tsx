@@ -131,6 +131,10 @@ export default function AdminEnrollmentsPage() {
 
   return (
     <AdminLayout activeKey="enrollments">
+      <header>
+        <h1 className="text-xl font-bold">التسجيلات والمدفوعات</h1>
+        <p className="mt-1 text-sm text-muted-foreground">تابع طلبات التسجيل، المدفوعات، وتقدم الطلاب من شاشة واحدة.</p>
+      </header>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {subTabs.map((s) => (
           <button

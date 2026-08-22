@@ -75,7 +75,7 @@ export default function WorkbooksPage() {
       <section className="py-10 md:py-16 bg-background">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-8 md:mb-14">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold mb-3 md:mb-6">{t.workbooks.heading}</h2>
+            <h1 className="font-serif text-3xl md:text-4xl font-bold mb-3 md:mb-6">{t.workbooks.heading}</h1>
             <p className="text-base md:text-xl text-muted-foreground">{t.workbooks.sub}</p>
           </div>
           <div className="grid md:grid-cols-2 gap-6 md:gap-8">

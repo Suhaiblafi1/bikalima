@@ -436,8 +436,9 @@ router.delete("/admin/field-media/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Generate a draft analysis template for a media item. Pure scaffold for
-// now — the trainer edits and refines it. Future work: call an AI model.
+// Generate a neutral editorial scaffold for a media item. The trainer remains
+// fully responsible for writing and refining the analysis; no AI evaluation is
+// performed here or planned for this workflow.
 router.post("/admin/field-media/:id/generate-analysis", async (req: Request, res: Response) => {
   if (!requireFieldMediaAccess(req, res)) return;
   const { id } = req.params;

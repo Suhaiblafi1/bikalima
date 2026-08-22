@@ -36,3 +36,43 @@ test("reduced-motion preference is respected", async ({ browser, baseURL }) => {
   expect(duration).toBe("0.00001s");
   await context.close();
 });
+
+for (const path of [
+  "/",
+  "/programs/influential-speaker",
+  "/workbooks",
+  "/gallery",
+  "/impact",
+  "/accreditations",
+  "/verify",
+  "/privacy",
+  "/terms",
+]) {
+  test(`${path} has one page title and no basic accessibility leaks`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.setItem("biklima-lang", "ar");
+      localStorage.setItem("bikalima_analytics_consent", "denied");
+    });
+    await page.goto(path);
+    await expect(page.locator("h1")).toHaveCount(1);
+
+    const audit = await page.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      imagesWithoutAlt: [...document.querySelectorAll("img")].filter((image) => !image.hasAttribute("alt")).length,
+      unlabeledButtons: [...document.querySelectorAll("button")].filter((button) => {
+        const text = button.textContent?.trim();
+        return !text && !button.getAttribute("aria-label") && !button.getAttribute("title");
+      }).length,
+      emptyLinks: [...document.querySelectorAll("a")].filter((link) => {
+        const text = link.textContent?.trim();
+        return !text && !link.getAttribute("aria-label") && !link.querySelector("img[alt]");
+      }).length,
+    }));
+
+    expect(audit.overflow).toBeLessThanOrEqual(1);
+    expect(audit.imagesWithoutAlt).toBe(0);
+    expect(audit.unlabeledButtons).toBe(0);
+    expect(audit.emptyLinks).toBe(0);
+  });
+}

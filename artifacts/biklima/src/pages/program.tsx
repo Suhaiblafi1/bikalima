@@ -236,10 +236,14 @@ export default function ProgramPage() {
     >
       {/* ── HERO ── */}
       <section className={`relative bg-gradient-to-br ${heroGradient} text-white overflow-hidden`}>
-        <div
-          className="absolute inset-0 opacity-15 bg-cover bg-center"
-          style={{ backgroundImage: `url(${program.image})` }}
-          aria-hidden
+        <img
+          src={program.image}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-15"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
         />
         <div className="relative container mx-auto px-6 py-12 md:py-20">
           <div className="max-w-3xl">

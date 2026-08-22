@@ -10,11 +10,12 @@
 
 المتغيرات المطلوبة حسب الميزات المفعلة:
 
-- `DATABASE_URL`, `SESSION_SECRET`, `PUBLIC_APP_URL`
+- `DATABASE_URL`, `PUBLIC_APP_URL`, `CRON_SECRET`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-- `CRON_SECRET`
 - مفاتيح Google وWhatsApp الموجودة سابقاً عند تفعيل خدمتيهما
+
+يتحقق الخادم عند الإقلاع من المتغيرات الإلزامية في الإنتاج، ومن اكتمال كل تكامل اختياري: لا يمكن مثلاً ضبط مفتاح Stripe دون سر Webhook، أو معرّف Google دون سره. يجب أن تستخدم روابط الإنتاج بروتوكول HTTPS.
 
 يجب أن تكون قيمة `PUBLIC_APP_URL` رابط الواجهة العامة، وأن يكون Webhook في Stripe موجهاً إلى `/api/webhooks/stripe` في البيئة نفسها.
 

@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { ShoppingCart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Download, Search, ShoppingCart } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, StatusBadge, ORDER_STATUS_OPTIONS, type OrderRecord } from "./_shared";
 
@@ -8,6 +10,7 @@ export default function AdminWorkbookOrdersPage() {
   const apiFetch = useApiFetch();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
   const fetchOrders = useCallback(async () => {
     const res = await apiFetch("/admin/workbook-orders");
@@ -25,16 +28,54 @@ export default function AdminWorkbookOrdersPage() {
     if (res.ok) setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
   };
 
-  const filtered = statusFilter === "all" ? orders : orders.filter((o) => o.status === statusFilter);
+  const normalizedSearch = search.trim().toLocaleLowerCase("ar");
+  const filtered = orders.filter((order) => {
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesSearch = !normalizedSearch || [order.buyerName, order.buyerEmail, order.workbookId]
+      .some((value) => value?.toLocaleLowerCase("ar").includes(normalizedSearch));
+    return matchesStatus && matchesSearch;
+  });
+
+  const exportCsv = () => {
+    const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const rows = [
+      ["المشتري", "البريد", "الكراسة", "الصيغة", "الكمية", "المجموع", "الحالة", "التاريخ"],
+      ...filtered.map((order) => [
+        order.buyerName,
+        order.buyerEmail,
+        order.workbookId,
+        order.format === "pdf" ? "رقمية" : "مطبوعة",
+        order.quantity,
+        order.totalPrice,
+        order.status,
+        new Date(order.createdAt).toLocaleDateString("ar-JO"),
+      ]),
+    ];
+    const blob = new Blob([`\uFEFF${rows.map((row) => row.map(escape).join(",")).join("\n")}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `bikalima-workbook-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <AdminLayout activeKey="workbook-orders">
       <Card><CardContent className="p-5">
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <h2 className="font-bold flex items-center gap-2">
+          <h1 className="font-bold flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" /> طلبات الكراسات ({filtered.length})
-          </h2>
+          </h1>
           <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative min-w-56">
+              <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <label htmlFor="workbook-orders-search" className="sr-only">البحث في طلبات الكراسات</label>
+              <Input id="workbook-orders-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث بالاسم أو البريد أو الكراسة" className="pe-9" />
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
+              <Download className="h-4 w-4" /> تصدير CSV
+            </Button>
             <button
               onClick={() => setStatusFilter("all")}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${

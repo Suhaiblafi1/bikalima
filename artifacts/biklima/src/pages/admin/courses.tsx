@@ -320,7 +320,7 @@ export default function AdminCoursesPage() {
       {subTab === "courses" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="font-bold flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" /> الدورات ({courses.length})</h2>
+            <h1 className="font-bold flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" /> الدورات ({courses.length})</h1>
             <div className="flex gap-2">
               {isAdminRole && (
                 <Button size="sm" onClick={() => setShowEnrollForm(!showEnrollForm)} variant="outline" className="gap-1">

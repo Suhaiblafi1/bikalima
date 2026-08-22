@@ -156,9 +156,9 @@ export default function AdminWorkbooksPage() {
     <AdminLayout activeKey="workbooks">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-bold flex items-center gap-2 text-lg">
+          <h1 className="font-bold flex items-center gap-2 text-lg">
             <FileText className="w-5 h-5 text-primary" /> إدارة الكراسات
-          </h2>
+          </h1>
           <p className="text-xs text-muted-foreground mt-1">
             أضف كراسات بكلمة، حدّد سعرها، صورة الغلاف، عينة PDF، والمحاور، وحدّد حالة النشر.
           </p>

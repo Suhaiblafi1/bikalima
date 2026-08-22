@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { useLocation } from "wouter";
 import { AppShell } from "@/components/app-shell";
 import { useMe, type Role } from "@/hooks/use-me";
@@ -9,7 +9,7 @@ import {
   ClipboardList, Star, Mic2, Settings as SettingsIcon,
   Layout as LayoutIcon, FileText, Film, ShieldCheck, MessageCircle,
   UserPlus, KanbanSquare, ListTodo, Zap, MessageSquareText, Filter,
-  ScrollText, ToggleRight, Sparkles, BadgePercent, CalendarDays,
+  ScrollText, ToggleRight, Sparkles, BadgePercent, CalendarDays, ChevronDown,
 } from "lucide-react";
 
 type NavItem = {
@@ -101,6 +101,19 @@ export function AdminLayout({
     .map((g) => ({ ...g, items: g.items.filter((i) => canSee(role, i.key)) }))
     .filter((g) => g.items.length > 0);
   const allVisible = visibleGroups.flatMap((g) => g.items);
+  const activeGroupLabel = visibleGroups.find((group) => group.items.some((item) => item.key === activeKey))?.label;
+  const [openGroups, setOpenGroups] = useState<Set<string>>(
+    () => new Set(activeGroupLabel ? [activeGroupLabel] : visibleGroups[0]?.label ? [visibleGroups[0].label] : []),
+  );
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups((current) => {
+      const next = new Set(current);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
 
   // Trainers always land on /trainer, not the global admin overview.
   if (role === "trainer" && activeKey === "overview") {
@@ -157,10 +170,17 @@ export function AdminLayout({
             </p>
             {visibleGroups.map((group, gi) => (
               <div key={group.label} className={gi === 0 ? "" : "mt-3 pt-2 border-t border-border/50"}>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold px-3 py-1.5">
-                  {group.label}
-                </p>
-                <ul className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.label)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-start text-[11px] font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-expanded={openGroups.has(group.label)}
+                >
+                  <span>{group.label}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openGroups.has(group.label) ? "rotate-180" : ""}`} />
+                </button>
+                <div className={`grid transition-[grid-template-rows,opacity] duration-200 ${openGroups.has(group.label) ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-60"}`}>
+                  <ul className="min-h-0 space-y-0.5 overflow-hidden">
                   {group.items.map((item) => {
                     const isActive = item.key === activeKey;
                     return (
@@ -179,14 +199,15 @@ export function AdminLayout({
                       </li>
                     );
                   })}
-                </ul>
+                  </ul>
+                </div>
               </div>
             ))}
           </nav>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 space-y-4">{children}</main>
+        <main className="flex-1 min-w-0 space-y-4" data-admin-workspace>{children}</main>
       </div>
     </AppShell>
   );

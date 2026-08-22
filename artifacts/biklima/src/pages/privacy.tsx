@@ -87,7 +87,7 @@ function renderMarkdown(text: string): React.ReactNode {
     }
     if (line.startsWith("# ")) {
       flushList();
-      out.push(<h1 key={i} className="font-serif text-3xl md:text-4xl font-bold mt-6 mb-4">{line.slice(2)}</h1>);
+      continue;
     } else if (line.startsWith("## ")) {
       flushList();
       out.push(<h2 key={i} className="font-serif text-xl md:text-2xl font-bold mt-6 mb-3">{line.slice(3)}</h2>);
@@ -126,6 +126,7 @@ export default function PrivacyPage() {
   return (
     <AppShell containerClassName="container mx-auto px-6 py-10">
       <div className="max-w-3xl mx-auto">
+        <h1 className="font-serif text-3xl font-bold md:text-4xl">{heading}</h1>
         {isLoading && (
           <div className="flex items-center gap-2 text-muted-foreground text-sm mb-4">
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -133,7 +134,6 @@ export default function PrivacyPage() {
           </div>
         )}
         <article className="prose-like" data-testid="privacy-content">
-          <h1 className="sr-only">{heading}</h1>
           {renderMarkdown(content)}
         </article>
       </div>
