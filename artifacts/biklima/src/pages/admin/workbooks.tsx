@@ -9,6 +9,7 @@ import { AdminLayout } from "./_layout";
 import {
   useApiFetch, type WorkbookRecord, StatusBadge,
 } from "./_shared";
+import { toast } from "@/hooks/use-toast";
 
 type Form = {
   slug: string; titleAr: string; titleEn: string;
@@ -138,7 +139,7 @@ export default function AdminWorkbooksPage() {
     if (!confirm(`هل أنت متأكد من حذف الكراسة "${w.titleAr}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
     const res = await apiFetch(`/admin/workbooks/${w.id}`, { method: "DELETE" });
     if (res.ok) fetchItems();
-    else alert("تعذّر الحذف");
+    else toast({ title: "تعذّر الحذف", variant: "destructive" });
   };
 
   const filtered = items.filter((w) => {

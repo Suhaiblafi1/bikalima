@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Zap, Plus, X, Trash2, Edit3, PlayCircle } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch } from "./_shared";
+import { toast } from "@/hooks/use-toast";
 
 type Automation = {
   id: string;
@@ -67,7 +68,8 @@ export default function AdminAutomationsPage() {
   };
   const test = async (id: string) => {
     const r = await apiFetch(`/admin/automations/${id}/test`, { method: "POST" });
-    if (r.ok) alert("تم تشغيل الاختبار بنجاح ✓"); else alert("فشل الاختبار");
+    if (r.ok) toast({ title: "تم تشغيل الاختبار بنجاح ✓" });
+    else toast({ title: "فشل الاختبار", variant: "destructive" });
   };
 
   return (

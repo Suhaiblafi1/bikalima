@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
 import {
   Plus, Edit3, Trash2, X, Save, Loader2, ScrollText, FileStack, Eye, EyeOff,
 } from "lucide-react";
@@ -73,7 +74,7 @@ export default function AdminPoliciesPage() {
         body: JSON.stringify(editing),
       });
       if (r.ok) { setEditing(null); await load(); }
-      else { const d = await r.json().catch(() => ({})); alert(d.error ?? "فشل الحفظ"); }
+      else { const d = await r.json().catch(() => ({})); toast({ title: d.error ?? "فشل الحفظ", variant: "destructive" }); }
     } finally { setSaving(false); }
   };
 

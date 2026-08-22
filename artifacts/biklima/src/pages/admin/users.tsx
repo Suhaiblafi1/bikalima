@@ -6,6 +6,7 @@ import { Users, Search, Trash2, Edit3, Save, X } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, ROLE_LABELS_AR, type UserRecord } from "./_shared";
 import { useMe, type Role } from "@/hooks/use-me";
+import { toast } from "@/hooks/use-toast";
 
 export default function AdminUsersPage() {
   const apiFetch = useApiFetch();
@@ -56,7 +57,7 @@ export default function AdminUsersPage() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "تعذّر تحديث الدور");
+      toast({ title: data.error || "تعذّر تحديث الدور", variant: "destructive" });
       return;
     }
     const data = await res.json();

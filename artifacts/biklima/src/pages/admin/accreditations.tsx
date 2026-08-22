@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
 import {
   Plus, Edit3, Trash2, X, Save, RefreshCw, ShieldCheck, Loader2,
   Calendar, Building2, ExternalLink, Sparkles,
@@ -81,7 +82,7 @@ export default function AdminAccreditationsPage() {
         }),
       });
       if (r.ok) { setEditing(null); await load(); }
-      else { alert("فشل الحفظ"); }
+      else { toast({ title: "فشل الحفظ", variant: "destructive" }); }
     } finally { setSaving(false); }
   };
 
@@ -96,7 +97,7 @@ export default function AdminAccreditationsPage() {
     const newExpiryDate = (document.getElementById("renew-date") as HTMLInputElement)?.value;
     const newCertificateFileUrl = (document.getElementById("renew-cert") as HTMLInputElement)?.value;
     const notes = (document.getElementById("renew-notes") as HTMLTextAreaElement)?.value;
-    if (!newExpiryDate) { alert("يرجى تحديد تاريخ الانتهاء الجديد"); return; }
+    if (!newExpiryDate) { toast({ title: "يرجى تحديد تاريخ الانتهاء الجديد", variant: "destructive" }); return; }
     const r = await apiFetch(`/admin/accreditations/${renewing.id}/renew`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newExpiryDate, newCertificateFileUrl: newCertificateFileUrl || null, notes: notes || null }),

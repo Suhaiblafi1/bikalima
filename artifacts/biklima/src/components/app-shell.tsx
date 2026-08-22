@@ -2,7 +2,9 @@ import { type ReactNode } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/breadcrumb";
+import { PlatformHeader } from "@/components/platform-header";
 import { useLang } from "@/hooks/useLang";
+import { useLocation } from "wouter";
 
 type Lang = "ar" | "en";
 
@@ -29,16 +31,23 @@ export function AppShell({
   hideFooter?: boolean;
 }) {
   const { lang } = useLang();
+  const [location] = useLocation();
   const isRtl = lang === "ar";
+  const isPlatformRoute =
+    location === "/dashboard" ||
+    location === "/parent" ||
+    location === "/trainer" ||
+    location.startsWith("/admin") ||
+    location.startsWith("/instructor/") ||
+    /^\/courses\/[^/]+\/learn(?:\/|$)/.test(location);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col" dir={isRtl ? "rtl" : "ltr"}>
-      <SiteHeader />
-      {/* Spacer for fixed header */}
-      <div aria-hidden className="h-16 md:h-20 shrink-0" />
+    <div className={`min-h-screen flex flex-col ${isPlatformRoute ? "bg-muted/25" : "bg-background"}`} dir={isRtl ? "rtl" : "ltr"}>
+      {isPlatformRoute ? <PlatformHeader /> : <SiteHeader />}
+      {!isPlatformRoute && <div aria-hidden className="h-16 md:h-20 shrink-0" />}
       {breadcrumb && breadcrumb.length > 0 && <Breadcrumb items={breadcrumb} />}
       <main className={`flex-1 ${containerClassName}`}>{children}</main>
-      {!hideFooter && <SiteFooter />}
+      {!hideFooter && !isPlatformRoute && <SiteFooter />}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Settings as SettingsIcon, Save, Globe, Phone, Share2, FileText } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, type SiteSettingsRecord } from "./_shared";
+import { toast } from "@/hooks/use-toast";
 
 type Field = keyof Omit<SiteSettingsRecord, "id" | "updatedAt">;
 
@@ -104,7 +105,7 @@ export default function AdminSettingsPage() {
         setSavedAt(new Date().toLocaleTimeString("ar-SA"));
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || "تعذّر الحفظ");
+        toast({ title: data.error || "تعذّر الحفظ", variant: "destructive" });
       }
     } finally {
       setSaving(false);

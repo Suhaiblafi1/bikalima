@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 import { useApiFetch } from "@/pages/admin/_shared";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
+import { toast } from "@/hooks/use-toast";
 import { lazy, Suspense } from "react";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
 import {
@@ -60,10 +61,10 @@ export default function TrainerDashboardPage() {
       });
       if (r.ok) {
         setBroadcastSubject(""); setBroadcastBody("");
-        alert("تم إرسال الإعلان لجميع طلاب الدورة.");
+        toast({ title: "تم إرسال الإعلان لجميع طلاب الدورة." });
       } else {
         const d = await r.json().catch(() => ({}));
-        alert(d.error ?? "فشل الإرسال");
+        toast({ title: d.error ?? "فشل الإرسال", variant: "destructive" });
       }
     } finally { setBroadcastSending(false); }
   }, [apiFetch, broadcastCourseId, broadcastSubject, broadcastBody]);

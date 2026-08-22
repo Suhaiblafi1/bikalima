@@ -14,6 +14,7 @@ import {
   type EnrollmentRecord,
 } from "./_shared";
 import { useMe } from "@/hooks/use-me";
+import { toast } from "@/hooks/use-toast";
 
 type SubTab = "courses" | "instructors" | "trainers";
 
@@ -271,7 +272,7 @@ export default function AdminCoursesPage() {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || "تعذّر التعيين");
+      toast({ title: data.error || "تعذّر التعيين", variant: "destructive" });
       return;
     }
     await fetchCourseTrainers(trainerAssignCourseId);

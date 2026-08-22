@@ -1278,8 +1278,8 @@ export default function Dashboard() {
         )}
 
         <div className="flex flex-col md:flex-row gap-6">
-          <nav className="md:w-64 shrink-0">
-            <div className="bg-card rounded-2xl border border-border p-2 space-y-1 sticky top-24">
+          <nav className="md:w-64 shrink-0 max-md:sticky max-md:top-16 max-md:z-20 max-md:-mx-4" aria-label={isRtl ? "أقسام منصة الطالب" : "Learner platform sections"}>
+            <div className="bg-card rounded-2xl border border-border p-2 space-y-1 sticky top-20 max-md:static max-md:flex max-md:gap-1 max-md:space-y-0 max-md:overflow-x-auto max-md:rounded-none max-md:border-x-0 max-md:px-4 max-md:py-2 max-md:shadow-sm">
               {visibleTabs.map((tab) => {
                 const Icon = tabIcons[tab];
                 return (
@@ -1296,7 +1296,7 @@ export default function Dashboard() {
                         window.history.replaceState({}, "", url.toString());
                       } catch {}
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-start ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-start max-md:w-auto max-md:shrink-0 max-md:px-3 max-md:py-2.5 ${
                       activeTab === tab
                         ? "bg-primary text-white font-bold shadow-md"
                         : "hover:bg-secondary text-foreground"
@@ -1304,18 +1304,18 @@ export default function Dashboard() {
                   >
                     <Icon className="w-5 h-5 shrink-0" />
                     <span>{t.tabs[tab]}</span>
-                    <ChevronRight className={`w-4 h-4 ms-auto ${isRtl ? "rotate-180" : ""} ${activeTab === tab ? "opacity-100" : "opacity-30"}`} />
+                    <ChevronRight className={`w-4 h-4 ms-auto max-md:hidden ${isRtl ? "rotate-180" : ""} ${activeTab === tab ? "opacity-100" : "opacity-30"}`} />
                   </button>
                 );
               })}
-              <hr className="border-border my-2" />
+              <hr className="border-border my-2 max-md:hidden" />
               {isAdmin && (
-                <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium">
+                <button onClick={() => navigate("/admin")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-amber-50 text-amber-700 text-start font-medium max-md:hidden">
                   <Shield className="w-5 h-5" />
                   <span>{lang === "ar" ? "لوحة الإدارة" : "Admin Panel"}</span>
                 </button>
               )}
-              <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start">
+              <button onClick={() => navigate("/")} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-secondary text-muted-foreground text-start max-md:hidden">
                 <Home className="w-5 h-5" />
                 <span>{t.backHome}</span>
               </button>

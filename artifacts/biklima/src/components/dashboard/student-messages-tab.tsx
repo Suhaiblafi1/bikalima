@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, Send, Loader2, ChevronLeft, Plus } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Contact { id: string; firstName: string | null; lastName: string | null; email: string; role: string | null }
 
@@ -77,7 +78,7 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
         if (newId) openThread(newId);
       } else {
         const d = await r.json().catch(() => ({}));
-        alert(d.error ?? (isRtl ? "تعذّر إنشاء المحادثة" : "Could not create conversation"));
+        toast({ title: d.error ?? (isRtl ? "تعذّر إنشاء المحادثة" : "Could not create conversation"), variant: "destructive" });
       }
     } finally { setCreating(false); }
   };

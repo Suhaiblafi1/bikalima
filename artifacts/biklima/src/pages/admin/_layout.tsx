@@ -128,9 +128,29 @@ export function AdminLayout({
 
   return (
     <AppShell containerClassName="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="lg:hidden sticky top-16 z-30 -mx-3 -mt-4 mb-4 border-b border-border bg-background/95 px-3 py-3 shadow-sm backdrop-blur-xl sm:-mx-4 sm:px-4">
+        <label htmlFor="admin-mobile-navigation" className="mb-1.5 block text-sm font-bold">
+          الانتقال داخل لوحة الإدارة
+        </label>
+        <select
+          id="admin-mobile-navigation"
+          value={activeKey}
+          onChange={(event) => {
+            const target = allVisible.find((item) => item.key === event.target.value);
+            if (target) navigate(target.href);
+          }}
+          className="min-h-11 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        >
+          {visibleGroups.map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.items.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+            </optgroup>
+          ))}
+        </select>
+      </div>
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Sidebar */}
-        <aside className="lg:w-60 shrink-0">
+        <aside className="hidden lg:block lg:w-60 shrink-0">
           <nav className="bg-card border border-border rounded-2xl p-2 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold px-3 pt-2 pb-1">
               لوحة الإدارة

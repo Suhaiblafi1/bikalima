@@ -10,6 +10,7 @@ import {
   useApiFetch, type FieldMediaRecord, StatusBadge,
   FIELD_MEDIA_CATEGORIES, FIELD_MEDIA_PLACEMENTS,
 } from "./_shared";
+import { toast } from "@/hooks/use-toast";
 
 type Form = {
   mediaType: FieldMediaRecord["mediaType"];
@@ -163,7 +164,7 @@ export default function AdminFieldMediaPage() {
     if (!confirm(`هل أنت متأكد من حذف "${m.titleAr}"؟`)) return;
     const res = await apiFetch(`/admin/field-media/${m.id}`, { method: "DELETE" });
     if (res.ok) fetchItems();
-    else alert("تعذّر الحذف");
+    else toast({ title: "تعذّر الحذف", variant: "destructive" });
   };
 
   const generateAnalysis = async (force = false) => {
@@ -184,7 +185,7 @@ export default function AdminFieldMediaPage() {
         }
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.message || data.error || "تعذّر إنشاء التحليل");
+        toast({ title: data.message || data.error || "تعذّر إنشاء التحليل", variant: "destructive" });
       }
     } finally { setGenerating(false); }
   };

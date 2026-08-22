@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ShieldCheck, ExternalLink, Copy } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useMyCertificates } from "@/hooks/use-dashboard-data";
+import { toast } from "@/hooks/use-toast";
 
 type Lang = "ar" | "en";
 
@@ -40,7 +41,7 @@ export default function StudentCertificatesTab({ lang }: { lang: Lang }) {
     const url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/certificates/${encodeURIComponent(code)}`;
     try {
       await navigator.clipboard.writeText(url);
-      alert(isAr ? "تم نسخ رابط التحقق" : "Verification link copied");
+      toast({ title: isAr ? "تم نسخ رابط التحقق" : "Verification link copied" });
     } catch {
       prompt(isAr ? "انسخ الرابط:" : "Copy the link:", url);
     }

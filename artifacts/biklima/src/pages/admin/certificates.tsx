@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useApiFetch } from "./_shared";
+import { toast } from "@/hooks/use-toast";
 import {
   Plus, Edit3, Trash2, X, Search, Download, Copy, RefreshCw,
   Sparkles, ExternalLink, ShieldCheck,
@@ -228,7 +229,7 @@ export default function AdminCertificates() {
 
   const remove = async (c: Cert) => {
     if (!canDelete) {
-      alert("حذف الشهادات متاح فقط للمدير العام (Super Admin).");
+      toast({ title: "حذف الشهادات متاح فقط للمدير العام (Super Admin).", variant: "destructive" });
       return;
     }
     if (!confirm(`حذف شهادة ${c.code} للخريج ${c.fullName}؟ لا يمكن التراجع.`)) return;
@@ -236,7 +237,7 @@ export default function AdminCertificates() {
     if (res.ok) fetchItems();
     else {
       const d = await res.json().catch(() => ({}));
-      alert(d.message || "تعذّر الحذف");
+      toast({ title: d.message || "تعذّر الحذف", variant: "destructive" });
     }
   };
 
@@ -253,7 +254,7 @@ export default function AdminCertificates() {
     const url = `${verifyBaseUrl}/${encodeURIComponent(c.code)}`;
     try {
       await navigator.clipboard.writeText(url);
-      alert("تم نسخ رابط التحقق");
+      toast({ title: "تم نسخ رابط التحقق" });
     } catch {
       prompt("انسخ الرابط:", url);
     }
