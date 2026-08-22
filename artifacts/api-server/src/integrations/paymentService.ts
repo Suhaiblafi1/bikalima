@@ -19,6 +19,7 @@ type CheckoutSessionInput = {
   successUrl: string;
   cancelUrl: string;
   metadata?: Record<string, string>;
+  idempotencyKey?: string;
 };
 
 type CheckoutSessionResult =
@@ -37,6 +38,25 @@ type SessionStatusResult =
       customerEmail: string | null;
       metadata: Record<string, string>;
     }
+  | NotConfiguredResult
+  | { ok: false; reason: "error"; message: string };
+
+type WebhookResult =
+  | {
+      ok: true;
+      eventId: string;
+      eventType: string;
+      sessionId: string | null;
+      paymentIntentId: string | null;
+      paid: boolean;
+      amountTotal: number | null;
+      currency: string | null;
+      metadata: Record<string, string>;
+    }
+  | { ok: false; reason: "not_configured" | "invalid_signature"; message: string };
+
+type RefundResult =
+  | { ok: true; refundId: string; amountMinor: number; status: string | null }
   | NotConfiguredResult
   | { ok: false; reason: "error"; message: string };
 
@@ -76,6 +96,8 @@ export const paymentService: IntegrationService & {
   providerName(): PaymentProviderName;
   createCheckoutSession(input: CheckoutSessionInput): Promise<CheckoutSessionResult>;
   getSessionStatus(sessionId: string): Promise<SessionStatusResult>;
+  verifyWebhook(payload: Buffer, signature: string): WebhookResult;
+  refundPayment(input: { paymentIntentId: string; amount?: number; currency: string; idempotencyKey: string }): Promise<RefundResult>;
 } = {
   provider: "payment",
 
@@ -125,8 +147,10 @@ export const paymentService: IntegrationService & {
         customer_email: input.customerEmail,
         success_url: input.successUrl,
         cancel_url: input.cancelUrl,
+        // Keep the Checkout lifetime aligned with the coupon reservation.
+        expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
         metadata: input.metadata ?? {},
-      });
+      }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined);
       if (!session.url) {
         return { ok: false, reason: "error", message: "stripe_no_session_url" };
       }
@@ -166,6 +190,54 @@ export const paymentService: IntegrationService & {
     } catch (err) {
       const message = err instanceof Error ? err.message : "stripe_unknown_error";
       return { ok: false, reason: "error", message };
+    }
+  },
+
+  verifyWebhook(payload, signature) {
+    const stripe = getClient();
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!stripe || !webhookSecret) {
+      return { ok: false, reason: "not_configured", message: "stripe_webhook_not_configured" };
+    }
+    try {
+      const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      const object = event.data.object as Stripe.Checkout.Session | Stripe.Charge;
+      const isSession = "payment_status" in object && "metadata" in object;
+      const metadata: Record<string, string> = {};
+      for (const [key, value] of Object.entries(object.metadata ?? {})) {
+        if (typeof value === "string") metadata[key] = value;
+      }
+      const paymentIntent = "payment_intent" in object ? object.payment_intent : null;
+      const paymentIntentId = typeof paymentIntent === "string" ? paymentIntent : paymentIntent?.id ?? null;
+      return {
+        ok: true,
+        eventId: event.id,
+        eventType: event.type,
+        sessionId: isSession ? object.id : null,
+        paymentIntentId,
+        paid: isSession ? object.payment_status === "paid" : event.type === "charge.succeeded",
+        amountTotal: isSession ? object.amount_total ?? null : object.amount ?? null,
+        currency: object.currency ?? null,
+        metadata,
+      };
+    } catch (err) {
+      return { ok: false, reason: "invalid_signature", message: err instanceof Error ? err.message : "invalid_signature" };
+    }
+  },
+
+  async refundPayment(input) {
+    const { enabled, missing } = checkEnvVars(REQUIRED_ENV);
+    if (!enabled) return notConfigured("payment", missing);
+    const stripe = getClient();
+    if (!stripe) return notConfigured("payment", missing);
+    try {
+      const refund = await stripe.refunds.create({
+        payment_intent: input.paymentIntentId,
+        amount: input.amount == null ? undefined : toMinorUnits(input.amount, input.currency),
+      }, { idempotencyKey: input.idempotencyKey });
+      return { ok: true, refundId: refund.id, amountMinor: refund.amount, status: refund.status ?? null };
+    } catch (err) {
+      return { ok: false, reason: "error", message: err instanceof Error ? err.message : "stripe_refund_error" };
     }
   },
 };

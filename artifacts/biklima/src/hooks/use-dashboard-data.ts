@@ -62,8 +62,16 @@ export type DashLmsOrder = {
   courseTitleAr: string | null;
   courseTitleEn: string | null;
   amount: number | null;
+  originalAmount: number | null;
+  discountAmount: number;
+  discountCode: string | null;
+  deliveryFormat: string | null;
   currency: string;
   status: string;
+  paymentProvider: string | null;
+  paidAt: string | null;
+  refundedAt: string | null;
+  refundAmount: number;
   paymentNotes: string | null;
   createdAt: string;
 };
@@ -137,22 +145,6 @@ export type DashCertificate = {
   certificateFileUrl: string | null;
 };
 
-export type DashEvaluation = {
-  id: string;
-  status: "pending" | "in_review" | "completed" | "converted" | "cancelled";
-  speechTopic: string | null;
-  videoUrl: string | null;
-  transcriptText: string | null;
-  rubricScores: Record<string, number> | null;
-  rubricNotes: Record<string, string> | null;
-  overallScore: number | null;
-  programRecommendation: "core" | "tot" | "teachers" | "children" | "none" | null;
-  finalReportMd: string | null;
-  reportPublishedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 // ── Query keys ──
 //
 // Every key is scoped by user id so cached results from a previous account
@@ -173,7 +165,6 @@ export const DASH_KEYS = {
   workbooks: (uid: Uid) => ["dashboard", uid ?? "anon", "workbooks"] as const,
   badges: (uid: Uid) => ["dashboard", uid ?? "anon", "badges"] as const,
   certificates: (uid: Uid) => ["dashboard", uid ?? "anon", "certificates"] as const,
-  evaluations: (uid: Uid) => ["dashboard", uid ?? "anon", "evaluations"] as const,
   adminCheck: (uid: Uid) => ["dashboard", uid ?? "anon", "admin-check"] as const,
 } as const;
 
@@ -270,20 +261,6 @@ export function useMyCertificates(userId: Uid, enabled?: boolean) {
   return useQuery({
     queryKey: DASH_KEYS.certificates(userId),
     queryFn: () => fetchJson<{ certificates: DashCertificate[] }>(`${getApiBase()}/me/certificates`, { certificates: [] }).then((d) => d.certificates ?? []),
-    enabled: gate(userId, enabled),
-    ...DEFAULTS,
-  });
-}
-
-export function useMyEvaluations(userId: Uid, enabled?: boolean) {
-  return useQuery({
-    queryKey: DASH_KEYS.evaluations(userId),
-    queryFn: async () => {
-      const r = await fetch(`${getApiBase()}/me/speech-evaluations`, { credentials: "include" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = (await r.json()) as { evaluations: DashEvaluation[] };
-      return d.evaluations ?? [];
-    },
     enabled: gate(userId, enabled),
     ...DEFAULTS,
   });

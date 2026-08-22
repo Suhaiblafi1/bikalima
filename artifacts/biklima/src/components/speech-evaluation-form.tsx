@@ -25,6 +25,7 @@ type SpeechFormText = {
   submit: string;
   submitting: string;
   privacy: string;
+  consentLabel: string;
   successHeading: string;
   successBody: string;
   successCta: string;
@@ -33,6 +34,7 @@ type SpeechFormText = {
   errorEmail: string;
   errorWhatsapp: string;
   errorVideoUrl: string;
+  errorConsent: string;
   errorGeneric: string;
 };
 
@@ -51,6 +53,7 @@ const TEXT: Record<Lang, SpeechFormText> = {
     submit: "أرسل للتقييم",
     submitting: "جارٍ الإرسال...",
     privacy: "بياناتك تُستخدم فقط للتواصل معك حول هذا التقييم.",
+    consentLabel: "أوافق على أن يشاهد فريق بكلمة رابط الفيديو لغرض التقييم البشري، وعلى الاحتفاظ بالطلب لمدة لا تتجاوز 90 يوماً.",
     successHeading: "وصلنا طلبك",
     successBody: "سيصلك تقييم أوّلي من فريق بكلمة خلال ٤٨ ساعة على بريدك أو رقم واتساب.",
     successCta: "أرسل طلباً آخر",
@@ -59,6 +62,7 @@ const TEXT: Record<Lang, SpeechFormText> = {
     errorEmail: "البريد الإلكتروني غير صالح.",
     errorWhatsapp: "رقم واتساب قصير جداً.",
     errorVideoUrl: "رابط الفيديو غير صالح.",
+    errorConsent: "يلزم الموافقة على مشاهدة الفيديو وسياسة الاحتفاظ قبل الإرسال.",
     errorGeneric: "تعذّر إرسال الطلب، حاول مرة أخرى.",
   },
   en: {
@@ -75,6 +79,7 @@ const TEXT: Record<Lang, SpeechFormText> = {
     submit: "Send for evaluation",
     submitting: "Sending...",
     privacy: "Your information is only used to contact you about this evaluation.",
+    consentLabel: "I allow the Bikalima team to view this video for a human review and retain the request for no more than 90 days.",
     successHeading: "We received your request",
     successBody: "Our Bikalima team will send you an initial evaluation within 48 hours via email or WhatsApp.",
     successCta: "Send another request",
@@ -83,6 +88,7 @@ const TEXT: Record<Lang, SpeechFormText> = {
     errorEmail: "Email address is invalid.",
     errorWhatsapp: "WhatsApp number is too short.",
     errorVideoUrl: "Video URL is invalid.",
+    errorConsent: "Please agree to the video review and retention policy before submitting.",
     errorGeneric: "Could not submit your request — please try again.",
   },
 };
@@ -95,6 +101,7 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -104,6 +111,7 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
     setEmail("");
     setWhatsapp("");
     setVideoUrl("");
+    setPrivacyConsent(false);
     setError(null);
     setSuccess(false);
   };
@@ -133,6 +141,10 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
       setError(t.errorContent);
       return;
     }
+    if (!privacyConsent) {
+      setError(t.errorConsent);
+      return;
+    }
     try {
       const u = new URL(vid);
       if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("scheme");
@@ -151,6 +163,7 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
           email: mail,
           whatsapp: wa,
           videoUrl: vid,
+          privacyConsent,
         }),
       });
       if (!res.ok) {
@@ -291,6 +304,11 @@ export function SpeechEvaluationForm({ lang }: { lang: Lang }) {
                     {error}
                   </div>
                 )}
+
+                <label className="flex items-start gap-2 rounded-xl bg-muted/40 p-3 text-xs text-muted-foreground cursor-pointer">
+                  <input type="checkbox" checked={privacyConsent} onChange={(event) => setPrivacyConsent(event.target.checked)} required className="mt-0.5" />
+                  <span>{t.consentLabel}</span>
+                </label>
 
                 <div className="flex items-center justify-between gap-3 pt-1">
                   <p className="text-[11px] text-muted-foreground line-clamp-2 flex-1">{t.privacy}</p>

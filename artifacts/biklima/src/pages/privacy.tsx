@@ -19,6 +19,12 @@ const FALLBACK = {
 - إرسال تقييم خطابك أو رد على طلب الاستشارة.
 - تحسين جودة دوراتنا وفهم احتياجات متدربينا.
 
+## تقييم الخطابة البشري
+لا نستخدم الذكاء الاصطناعي لتحليل الفيديو. يشاهد الرابط موظفون مخولون من فريق بكلمة فقط، وبعد موافقتك الصريحة. نُخفي بيانات الطلب ومحتواه تلقائياً بعد 90 يوماً، ما لم يفرض القانون مدة أخرى.
+
+## التحليلات
+لا نسجل التحليلات إلا بعد موافقتك. القياس أولي ومجهول ولا يتضمن الاسم أو البريد أو الهاتف أو محتوى النماذج، ويمكنك رفضه من دون أن تتأثر وظائف الموقع.
+
 ## المشاركة مع الغير
 لا نبيع بياناتك لأي طرف ثالث. قد نشاركها فقط مع مزوّدي خدمات أساسيين (مثل خدمات البريد الإلكتروني) لتنفيذ خدماتنا.
 
@@ -40,6 +46,12 @@ At Bikalima, we respect the privacy of our visitors and trainees and are committ
 - To communicate with you about training programs and inquiries.
 - To send you your speech evaluation or respond to consultation requests.
 - To improve the quality of our courses and understand our trainees' needs.
+
+## Human speech review
+We do not use AI to analyse your video. Only authorised Bikalima staff may view the link after your explicit consent. Request details and content are automatically anonymised after 90 days unless a different period is legally required.
+
+## Analytics
+Analytics are recorded only after your consent. They are first-party and anonymous and never include names, emails, phone numbers, or form content. You may decline without affecting site functionality.
 
 ## Sharing with third parties
 We do not sell your data to any third party. We may share it only with essential service providers (such as email services) to deliver our services.

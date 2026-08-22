@@ -35,7 +35,9 @@ export default function AdminCoursesPage() {
   const blankCourse = () => ({
     titleAr: "", titleEn: "", titleFr: "", slug: "", subtitleAr: "", subtitleEn: "",
     descriptionAr: "", descriptionEn: "", imageUrl: "", trailerUrl: "",
-    price: "", discountPrice: "", level: "", language: "ar", category: "", instructorId: "",
+    price: "", discountPrice: "", recordedPrice: "", zoomPrice: "", blendedPrice: "",
+    deliveryFormats: ["recorded"] as Array<"recorded" | "zoom" | "blended">,
+    level: "", language: "ar", category: "", instructorId: "",
     programId: "", whatYouLearnAr: [] as string[], whatYouLearnEn: [] as string[],
     requirementsAr: [] as string[], requirementsEn: [] as string[],
     targetAudienceAr: "", targetAudienceEn: "", seoTitle: "", seoDescription: "",
@@ -106,6 +108,9 @@ export default function AdminCoursesPage() {
       descriptionAr: c.descriptionAr || "", descriptionEn: c.descriptionEn || "",
       imageUrl: c.imageUrl || "", trailerUrl: c.trailerUrl || "",
       price: c.price?.toString() || "", discountPrice: c.discountPrice?.toString() || "",
+      recordedPrice: c.recordedPrice?.toString() || c.discountPrice?.toString() || c.price?.toString() || "",
+      zoomPrice: c.zoomPrice?.toString() || "", blendedPrice: c.blendedPrice?.toString() || "",
+      deliveryFormats: c.deliveryFormats?.length ? c.deliveryFormats : ["recorded"],
       level: c.level || "", language: c.language || "ar", category: c.category || "",
       instructorId: c.instructorId || "", programId: c.programId || "",
       whatYouLearnAr: c.whatYouLearnAr || [], whatYouLearnEn: c.whatYouLearnEn || [],
@@ -121,6 +126,9 @@ export default function AdminCoursesPage() {
     ...courseForm,
     price: courseForm.price ? parseInt(courseForm.price) : null,
     discountPrice: courseForm.discountPrice ? parseInt(courseForm.discountPrice) : null,
+    recordedPrice: courseForm.recordedPrice ? parseInt(courseForm.recordedPrice) : null,
+    zoomPrice: courseForm.zoomPrice ? parseInt(courseForm.zoomPrice) : null,
+    blendedPrice: courseForm.blendedPrice ? parseInt(courseForm.blendedPrice) : null,
     instructorId: courseForm.instructorId || null,
     slug: courseForm.slug || null,
   });
@@ -390,6 +398,9 @@ export default function AdminCoursesPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="relative"><Input placeholder="السعر (JOD)" value={courseForm.price} onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })} type="number" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
                   <div className="relative"><Input placeholder="سعر بعد الخصم" value={courseForm.discountPrice} onChange={(e) => setCourseForm({ ...courseForm, discountPrice: e.target.value })} type="number" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
+                  <div className="relative"><Input placeholder="سعر المسجّل" value={courseForm.recordedPrice} onChange={(e) => setCourseForm({ ...courseForm, recordedPrice: e.target.value })} type="number" min="0" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
+                  <div className="relative"><Input placeholder="سعر Zoom" value={courseForm.zoomPrice} onChange={(e) => setCourseForm({ ...courseForm, zoomPrice: e.target.value })} type="number" min="0" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
+                  <div className="relative"><Input placeholder="سعر المختلط" value={courseForm.blendedPrice} onChange={(e) => setCourseForm({ ...courseForm, blendedPrice: e.target.value })} type="number" min="0" /><span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">JOD</span></div>
                   <select value={courseForm.level} onChange={(e) => setCourseForm({ ...courseForm, level: e.target.value })} className="border rounded-lg p-2 text-sm bg-background">
                     <option value="">المستوى...</option>
                     <option value="beginner">مبتدئ</option>
@@ -401,6 +412,17 @@ export default function AdminCoursesPage() {
                     <option value="en">English</option>
                   </select>
                 </div>
+                <fieldset className="mt-3">
+                  <legend className="text-xs font-semibold text-muted-foreground mb-2">صيغ الدراسة المتاحة</legend>
+                  <div className="flex flex-wrap gap-4">
+                    {(["recorded", "zoom", "blended"] as const).map((format) => (
+                      <label key={format} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="checkbox" checked={courseForm.deliveryFormats.includes(format)} onChange={(e) => setCourseForm({ ...courseForm, deliveryFormats: e.target.checked ? [...courseForm.deliveryFormats, format] : courseForm.deliveryFormats.filter((item) => item !== format) })} />
+                        {format === "recorded" ? "مسجّلة" : format === "zoom" ? "Zoom مباشر" : "مسجّل + Zoom"}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
                   <Input placeholder="التصنيف (category)" value={courseForm.category} onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })} />
                   <select value={courseForm.instructorId} onChange={(e) => setCourseForm({ ...courseForm, instructorId: e.target.value })} className="border rounded-lg p-2 text-sm bg-background">

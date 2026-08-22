@@ -140,7 +140,7 @@ function AccreditationCard({ a, lang, featured }: { a: Accreditation; lang: "ar"
       <CardContent className="p-5 space-y-3">
         <div className="flex items-start gap-3">
           {a.issuerLogoUrl ? (
-            <img src={a.issuerLogoUrl} alt={issuer} className="w-14 h-14 object-contain rounded-lg bg-white border border-border" />
+            <img src={a.issuerLogoUrl} alt={issuer} className="w-14 h-14 object-contain rounded-lg bg-white border border-border" loading="lazy" decoding="async" />
           ) : (
             <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
               <Building2 className="w-7 h-7 text-muted-foreground" />

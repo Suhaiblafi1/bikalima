@@ -29,6 +29,10 @@ export const coursesTable = pgTable("courses", {
   trailerUrl: varchar("trailer_url"),
   price: integer("price"),
   discountPrice: integer("discount_price"),
+  recordedPrice: integer("recorded_price"),
+  zoomPrice: integer("zoom_price"),
+  blendedPrice: integer("blended_price"),
+  deliveryFormats: jsonb("delivery_formats").$type<Array<"recorded" | "zoom" | "blended">>(),
   level: varchar("level").$type<"beginner" | "intermediate" | "advanced">(),
   language: varchar("language").default("ar"),
   category: varchar("category"),
@@ -131,6 +135,59 @@ export const enrollmentRequestsTable = pgTable("enrollment_requests", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const inPersonCoursesTable = pgTable("in_person_courses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").references(() => coursesTable.id, { onDelete: "set null" }),
+  programId: varchar("program_id"),
+  titleAr: varchar("title_ar").notNull(),
+  titleEn: varchar("title_en").notNull(),
+  descriptionAr: text("description_ar"),
+  descriptionEn: text("description_en"),
+  organizationAr: varchar("organization_ar"),
+  organizationEn: varchar("organization_en"),
+  trainerAr: varchar("trainer_ar"),
+  trainerEn: varchar("trainer_en"),
+  locationAr: varchar("location_ar").notNull(),
+  locationEn: varchar("location_en").notNull(),
+  countryCode: varchar("country_code", { length: 2 }),
+  timezone: varchar("timezone").notNull().default("Asia/Amman"),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  registrationDeadline: timestamp("registration_deadline", { withTimezone: true }),
+  capacity: integer("capacity").notNull(),
+  price: integer("price"),
+  currency: varchar("currency", { length: 3 }).notNull().default("JOD"),
+  status: varchar("status", { length: 20 }).$type<"draft" | "published" | "closed" | "cancelled">().notNull().default("draft"),
+  waitlistEnabled: boolean("waitlist_enabled").notNull().default(true),
+  createdById: varchar("created_by_id").references(() => usersTable.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("in_person_courses_starts_at_idx").on(table.startsAt),
+  index("in_person_courses_status_idx").on(table.status),
+]);
+
+export const inPersonCourseRegistrationsTable = pgTable("in_person_course_registrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => inPersonCoursesTable.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  fullName: varchar("full_name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone").notNull(),
+  note: text("note"),
+  status: varchar("status", { length: 20 }).$type<"pending" | "confirmed" | "waitlisted" | "cancelled">().notNull().default("pending"),
+  manageTokenHash: varchar("manage_token_hash", { length: 64 }).notNull(),
+  reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  source: varchar("source").notNull().default("website"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("in_person_registrations_event_idx").on(table.eventId),
+  index("in_person_registrations_status_idx").on(table.status),
+  uniqueIndex("in_person_registrations_manage_token_unique").on(table.manageTokenHash),
+]);
+
 export const workbookOrdersTable = pgTable("workbook_orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
@@ -189,6 +246,9 @@ export const speechEvaluationsTable = pgTable("speech_evaluations", {
   // internal trainer account for scoping.
   assignedTrainerUserId: varchar("assigned_trainer_user_id").references(() => usersTable.id, { onDelete: "set null" }),
   leadSource: varchar("lead_source"),
+  privacyConsentAt: timestamp("privacy_consent_at", { withTimezone: true }),
+  privacyConsentVersion: varchar("privacy_consent_version", { length: 32 }),
+  retentionExpiresAt: timestamp("retention_expires_at", { withTimezone: true }),
   syncStatus: varchar("sync_status").$type<"pending" | "synced" | "error" | "skipped">().default("pending"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -218,6 +278,7 @@ export const ordersTable = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => usersTable.id, { onDelete: "set null" }),
   courseId: varchar("course_id").references(() => coursesTable.id, { onDelete: "set null" }),
+  deliveryFormat: varchar("delivery_format", { length: 16 }).$type<"recorded" | "zoom" | "blended">().notNull().default("recorded"),
   buyerName: varchar("buyer_name").notNull(),
   buyerEmail: varchar("buyer_email").notNull(),
   buyerPhone: varchar("buyer_phone").notNull(),
@@ -228,12 +289,68 @@ export const ordersTable = pgTable("orders", {
   discountCode: varchar("discount_code", { length: 64 }),
   currency: varchar("currency").default("JOD"),
   status: varchar("status").notNull().default("pending"),
+  paymentProvider: varchar("payment_provider", { length: 24 }),
+  paymentSessionId: varchar("payment_session_id"),
+  paymentIntentId: varchar("payment_intent_id"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  refundAmount: integer("refund_amount").notNull().default(0),
+  failureCode: varchar("failure_code"),
   paymentNotes: text("payment_notes"),
   adminNotes: text("admin_notes"),
   adminApprovedBy: varchar("admin_approved_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const discountCodeReservationsTable = pgTable("discount_code_reservations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  discountCodeId: varchar("discount_code_id").notNull().references(() => discountCodesTable.id, { onDelete: "cascade" }),
+  orderId: varchar("order_id").notNull().references(() => ordersTable.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 16 }).$type<"held" | "consumed" | "released" | "expired">().notNull().default("held"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  uniqueIndex("discount_code_reservations_order_unique").on(table.orderId),
+  index("discount_code_reservations_code_status_idx").on(table.discountCodeId, table.status),
+  index("discount_code_reservations_expiry_idx").on(table.expiresAt),
+]);
+
+export const orderEventsTable = pgTable("order_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull().references(() => ordersTable.id, { onDelete: "cascade" }),
+  type: varchar("type", { length: 48 }).notNull(),
+  providerEventId: varchar("provider_event_id"),
+  actorUserId: varchar("actor_user_id").references(() => usersTable.id, { onDelete: "set null" }),
+  data: jsonb("data").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("order_events_order_idx").on(table.orderId),
+  uniqueIndex("order_events_provider_event_unique").on(table.providerEventId),
+]);
+
+export const paymentWebhookEventsTable = pgTable("payment_webhook_events", {
+  id: varchar("id").primaryKey(),
+  provider: varchar("provider", { length: 24 }).notNull(),
+  eventType: varchar("event_type", { length: 80 }).notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const analyticsEventsTable = pgTable("analytics_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  anonymousId: varchar("anonymous_id", { length: 64 }).notNull(),
+  eventName: varchar("event_name", { length: 64 }).notNull(),
+  path: varchar("path", { length: 500 }).notNull(),
+  properties: jsonb("properties").$type<Record<string, string | number | boolean | null>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("analytics_events_created_idx").on(table.createdAt),
+  index("analytics_events_name_idx").on(table.eventName),
+]);
 
 export const reviewsTable = pgTable("reviews", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -624,6 +741,10 @@ export type Assignment = typeof assignmentsTable.$inferSelect;
 export type AssignmentSubmission = typeof assignmentSubmissionsTable.$inferSelect;
 export type SiteSettings = typeof siteSettingsTable.$inferSelect;
 export type DiscountCode = typeof discountCodesTable.$inferSelect;
+export type DiscountCodeReservation = typeof discountCodeReservationsTable.$inferSelect;
+export type InPersonCourse = typeof inPersonCoursesTable.$inferSelect;
+export type InPersonCourseRegistration = typeof inPersonCourseRegistrationsTable.$inferSelect;
+export type OrderEvent = typeof orderEventsTable.$inferSelect;
 export type HomePageSection = typeof homePageSectionsTable.$inferSelect;
 export type Workbook = typeof workbooksTable.$inferSelect;
 export type FieldMedia = typeof fieldMediaTable.$inferSelect;

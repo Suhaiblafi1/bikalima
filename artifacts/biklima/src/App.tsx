@@ -19,6 +19,9 @@ import ResetPasswordPage from "@/pages/reset-password";
 import NotFound from "@/pages/not-found";
 import { LiveChatWidget } from "@/components/live-chat-widget";
 import { MobileStickyCta } from "@/components/mobile-sticky-cta";
+import { AnalyticsConsentBanner } from "@/components/analytics-consent";
+import { AppErrorBoundary, OfflineBanner } from "@/components/app-resilience";
+import { track } from "@/lib/analytics";
 
 // Lazy: heavy authenticated / admin / rarely-visited routes. These only
 // load when the user actually navigates to them, so an anonymous visitor
@@ -54,6 +57,9 @@ const AdminReviews = lazy(() => import("@/pages/admin/reviews"));
 const AdminSpeechEvaluations = lazy(() => import("@/pages/admin/speech-evaluations"));
 const AdminSettings = lazy(() => import("@/pages/admin/settings"));
 const AdminDiscountCodes = lazy(() => import("@/pages/admin/discount-codes"));
+const AdminInPersonCourses = lazy(() => import("@/pages/admin/in-person-courses"));
+const AdminAnalytics = lazy(() => import("@/pages/admin/analytics"));
+const ManageRegistration = lazy(() => import("@/pages/manage-registration"));
 const AdminHomePage = lazy(() => import("@/pages/admin/home-page"));
 const AdminWorkbooksCms = lazy(() => import("@/pages/admin/workbooks"));
 const AdminFieldMedia = lazy(() => import("@/pages/admin/field-media"));
@@ -92,6 +98,7 @@ function ScrollToTop() {
   useEffect(() => {
     if (window.location.hash) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    track("page_view");
   }, [location]);
   return null;
 }
@@ -218,6 +225,13 @@ function AppRouter() {
         <Route path="/admin/discount-codes">
           {() => (<AdminRoute><AdminDiscountCodes /></AdminRoute>)}
         </Route>
+        <Route path="/admin/in-person-courses">
+          {() => (<AdminRoute><AdminInPersonCourses /></AdminRoute>)}
+        </Route>
+        <Route path="/admin/analytics">
+          {() => (<AdminRoute><AdminAnalytics /></AdminRoute>)}
+        </Route>
+        <Route path="/manage-registration" component={ManageRegistration} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/accreditations" component={AccreditationsPage} />
@@ -282,17 +296,22 @@ function LiveChatGate() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <ScrollToTop />
-          <AppRouter />
-          <LiveChatGate />
-          <MobileStickyCta />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[200] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white">تجاوز إلى المحتوى</a>
+            <OfflineBanner />
+            <ScrollToTop />
+            <div id="main-content" tabIndex={-1}><AppRouter /></div>
+            <LiveChatGate />
+            <MobileStickyCta />
+            <AnalyticsConsentBanner />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
 

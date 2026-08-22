@@ -56,7 +56,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
-import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, upcomingEvents, EVENT_COUNTRIES } from "../programsData";
+import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, EVENT_COUNTRIES } from "../programsData";
 import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
@@ -71,7 +71,7 @@ import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
 import { JourneyCta } from "@/components/journey-cta";
 import { EnrollmentWizard } from "@/components/enrollment-wizard";
-import { UpcomingCourseRegistration } from "@/components/upcoming-course-registration";
+import { UpcomingCourseRegistration, type InPersonCoursePublic } from "@/components/upcoming-course-registration";
 import { useHomeSections } from "@/hooks/use-home-sections";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { usePageMeta } from "@/hooks/use-page-meta";
@@ -152,16 +152,6 @@ function MiniCalendar({ lang }: { lang: Lang }) {
   );
 }
 
-function isUpcomingDate(dateValue: string) {
-  const [day, month, year] = dateValue.split("/").map(Number);
-  if (!day || !month || !year) return false;
-
-  const eventEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return eventEnd >= today;
-}
-
 export default function Home() {
   usePageMeta({
     title: undefined,
@@ -213,11 +203,27 @@ export default function Home() {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [videoModalId, setVideoModalId] = useState<string | null>(null);
   const [videoTab, setVideoTab] = useState<VideoCategory | "all">("opening");
+  const [upcomingInPersonCourses, setUpcomingInPersonCourses] = useState<InPersonCoursePublic[]>([]);
+  const [upcomingCoursesLoading, setUpcomingCoursesLoading] = useState(true);
 
   useEffect(() => {
     document.documentElement.dir = dir;
     document.documentElement.lang = lang;
   }, [dir, lang]);
+
+  useEffect(() => {
+    let active = true;
+    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "").replace(/\/[^/]+$/, "");
+    fetch(`${base}/api/in-person-courses`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("request_failed");
+        return response.json() as Promise<{ courses?: InPersonCoursePublic[] }>;
+      })
+      .then((data) => { if (active) setUpcomingInPersonCourses(data.courses ?? []); })
+      .catch(() => { if (active) setUpcomingInPersonCourses([]); })
+      .finally(() => { if (active) setUpcomingCoursesLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const total = t.hero.imageQuotes.length;
@@ -359,9 +365,6 @@ export default function Home() {
 
   const coreProgram = localizedPrograms.find((p) => p.id === "core")!;
   const branchPrograms = localizedPrograms.filter((p) => p.id !== "core");
-  const upcomingInPersonCourses = upcomingEvents.filter(
-    (event) => event.type === "inPerson" && isUpcomingDate(event.endDate),
-  );
   const cmsEventsHeading = getSectionContent(cms, "events", lang, "heading", t.structure.upcomingEventsHeading);
   const eventsHeading = cmsEventsHeading === "الفعاليات القادمة" || cmsEventsHeading === "Upcoming Events"
     ? t.structure.upcomingEventsHeading
@@ -750,48 +753,51 @@ export default function Home() {
               <p className="text-muted-foreground">{getSectionContent(cms, "events", lang, "subheading", t.structure.upcomingEventsSub)}</p>
             </motion.div>
 
-            {upcomingInPersonCourses.length > 0 ? (
+            {upcomingCoursesLoading ? (
+              <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto" aria-busy="true" aria-label={lang === "ar" ? "جارٍ تحميل الدورات الوجاهية" : "Loading in-person courses"}>
+                {[0, 1].map((item) => <div key={item} className="h-64 rounded-2xl bg-muted/60 animate-pulse" />)}
+              </div>
+            ) : upcomingInPersonCourses.length > 0 ? (
               <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
                 {upcomingInPersonCourses.map((ev) => {
-                  const prog = programs.find(p => p.id === ev.programId);
-                  const lp = prog ? getLocalizedProgram(prog, lang) : null;
-                  const l = lang as "ar" | "en";
+                  const title = lang === "ar" ? ev.titleAr : ev.titleEn;
+                  const organization = lang === "ar" ? ev.organizationAr : ev.organizationEn;
+                  const trainer = lang === "ar" ? ev.trainerAr : ev.trainerEn;
+                  const location = lang === "ar" ? ev.locationAr : ev.locationEn;
+                  const startsAt = new Date(ev.startsAt).toLocaleString(lang === "ar" ? "ar-JO" : "en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: ev.timezone });
+                  const endsAt = new Date(ev.endsAt).toLocaleString(lang === "ar" ? "ar-JO" : "en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: ev.timezone });
                   return (
                     <Card key={ev.id} className="border-2 border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 overflow-hidden">
                       <CardContent className="p-5 flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
-                          {lp && <span className="text-xs font-bold text-primary uppercase tracking-wide">{lp.shortTitle}</span>}
+                          <span className="text-sm font-bold text-primary">{title}</span>
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                             <MapPin className="w-3 h-3" />
                             {lang === "ar" ? "وجاهي" : "In-person"}
                           </span>
                         </div>
-                        <div className="text-sm font-bold text-foreground">{ev.organization[l] || ev.organization.ar}</div>
+                        {organization && <div className="text-sm font-bold text-foreground">{organization}</div>}
                         <div className="space-y-1.5 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
+                          {trainer && <div className="flex items-center gap-2">
                             <UserCheck className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span>{ev.trainer[l] || ev.trainer.ar}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span>{ev.days[l] || ev.days.ar} · {ev.timeSlot[l] || ev.timeSlot.ar}</span>
-                          </div>
-                          <div className="flex items-center gap-2" dir="ltr">
+                            <span>{trainer}</span>
+                          </div>}
+                          <div className="flex items-start gap-2">
                             <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                            <span className="font-semibold text-foreground">{ev.startDate} → {ev.endDate}</span>
+                            <span className="font-semibold text-foreground">{startsAt}<br />{endsAt}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                            <span>{ev.location[l] || ev.location.ar}</span>
+                            <span>{location}</span>
                           </div>
                         </div>
-                        {ev.spotsLeft && ev.spotsLeft <= 15 && (
+                        {ev.spotsLeft <= 15 && (
                           <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-bold">
                             <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                            {ev.spotsLeft} {t.structure.spotsLeft}
+                            {ev.spotsLeft > 0 ? `${ev.spotsLeft} ${t.structure.spotsLeft}` : (lang === "ar" ? "قائمة الانتظار متاحة" : "Waitlist available")}
                           </span>
                         )}
-                        <UpcomingCourseRegistration course={ev} courseTitle={lp?.shortTitle ?? ev.programId} lang={lang} />
+                        <UpcomingCourseRegistration course={ev} lang={lang} />
                       </CardContent>
                     </Card>
                   );

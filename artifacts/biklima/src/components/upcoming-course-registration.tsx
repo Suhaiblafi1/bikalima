@@ -13,7 +13,32 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Lang } from "@/translations";
-import type { UpcomingEvent } from "@/programsData";
+
+export type InPersonCoursePublic = {
+  id: string;
+  courseId: string | null;
+  programId: string | null;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  organizationAr: string | null;
+  organizationEn: string | null;
+  trainerAr: string | null;
+  trainerEn: string | null;
+  locationAr: string;
+  locationEn: string;
+  timezone: string;
+  startsAt: string;
+  endsAt: string;
+  registrationDeadline: string | null;
+  capacity: number;
+  price: number | null;
+  currency: string;
+  spotsLeft: number;
+  registrationOpen: boolean;
+  waitlistEnabled: boolean;
+};
 
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
@@ -22,15 +47,12 @@ function getApiBase(): string {
 
 export function UpcomingCourseRegistration({
   course,
-  courseTitle,
   lang,
 }: {
-  course: UpcomingEvent;
-  courseTitle: string;
+  course: InPersonCoursePublic;
   lang: Lang;
 }) {
   const isAr = lang === "ar";
-  const locale = isAr ? "ar" : "en";
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,6 +61,10 @@ export function UpcomingCourseRegistration({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [registrationStatus, setRegistrationStatus] = useState<"pending" | "waitlisted">("pending");
+  const [manageToken, setManageToken] = useState("");
+
+  const courseTitle = isAr ? course.titleAr : course.titleEn;
 
   const reset = () => {
     setName("");
@@ -47,6 +73,7 @@ export function UpcomingCourseRegistration({
     setMessage("");
     setError("");
     setSuccess(false);
+    setManageToken("");
   };
 
   const submit = async (event: FormEvent) => {
@@ -60,32 +87,26 @@ export function UpcomingCourseRegistration({
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${getApiBase()}/enroll`, {
+      const response = await fetch(`${getApiBase()}/in-person-courses/${encodeURIComponent(course.id)}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: "individual",
-          lang,
-          name: name.trim(),
-          contactPerson: name.trim(),
+          fullName: name.trim(),
           email: email.trim(),
           phone: phone.trim(),
-          program: courseTitle,
-          programId: course.programId,
-          mode: "group-inperson",
-          eventId: course.id,
-          eventStartDate: course.startDate,
-          eventEndDate: course.endDate,
-          eventLocation: course.location[locale],
-          reason: message.trim(),
-          message: message.trim(),
-          leadSource: "upcoming_inperson_course",
+          note: message.trim(),
+          source: "homepage_inperson_course",
         }),
       });
-      if (!response.ok) throw new Error("request_failed");
+      const data = await response.json().catch(() => ({})) as { error?: string; status?: "pending" | "waitlisted"; manageToken?: string };
+      if (!response.ok) throw new Error(data.error || "request_failed");
+      setRegistrationStatus(data.status ?? "pending");
+      setManageToken(data.manageToken ?? "");
       setSuccess(true);
-    } catch {
-      setError(isAr ? "تعذّر إرسال طلبك. حاول مرة أخرى." : "We couldn't submit your request. Please try again.");
+    } catch (submitError) {
+      setError(submitError instanceof Error && submitError.message !== "request_failed"
+        ? submitError.message
+        : (isAr ? "تعذّر إرسال طلبك. حاول مرة أخرى." : "We couldn't submit your request. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -104,8 +125,14 @@ export function UpcomingCourseRegistration({
           size="sm"
           className="mt-1 w-full bg-primary hover:bg-primary/90 text-white rounded-full"
           data-testid={`event-register-${course.id}`}
+          disabled={!course.registrationOpen}
+          aria-label={isAr ? `التسجيل في ${course.titleAr}` : `Register for ${course.titleEn}`}
         >
-          {isAr ? "سجّل في هذه الدورة" : "Register for this course"}
+          {!course.registrationOpen
+            ? (isAr ? "التسجيل مغلق" : "Registration closed")
+            : course.spotsLeft <= 0
+              ? (isAr ? "انضم لقائمة الانتظار" : "Join the waitlist")
+              : (isAr ? "سجّل في هذه الدورة" : "Register for this course")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl" dir={isAr ? "rtl" : "ltr"}>
@@ -113,13 +140,20 @@ export function UpcomingCourseRegistration({
           <div className="py-8 text-center space-y-4" data-testid="event-registration-success">
             <CheckCircle2 className="w-14 h-14 text-emerald-600 mx-auto" />
             <DialogTitle className="text-2xl font-bold">
-              {isAr ? "تم استلام تسجيلك" : "Your registration was received"}
+              {registrationStatus === "waitlisted"
+                ? (isAr ? "أضفناك إلى قائمة الانتظار" : "You're on the waitlist")
+                : (isAr ? "تم استلام تسجيلك" : "Your registration was received")}
             </DialogTitle>
             <p className="text-muted-foreground leading-relaxed">
-              {isAr
-                ? "حجزنا طلبك مبدئياً، وسيتواصل معك فريق بكلمة لتأكيد المقعد وتفاصيل الدفع."
-                : "Your request is reserved provisionally. The Bikalima team will contact you to confirm your seat and payment details."}
+              {registrationStatus === "waitlisted"
+                ? (isAr ? "اكتملت المقاعد حالياً. سنتواصل معك فور توفر مقعد." : "Seats are currently full. We'll contact you as soon as one becomes available.")
+                : (isAr ? "حجزنا طلبك مبدئياً، وسيتواصل معك فريق بكلمة لتأكيد المقعد وتفاصيل الدفع." : "Your request is reserved provisionally. The Bikalima team will contact you to confirm your seat and payment details.")}
             </p>
+            {manageToken && (
+              <a className="text-sm font-semibold text-primary underline underline-offset-4" href={`/manage-registration?token=${encodeURIComponent(manageToken)}`}>
+                {isAr ? "تعديل أو إلغاء التسجيل" : "Edit or cancel registration"}
+              </a>
+            )}
             <Button className="rounded-full px-8" onClick={() => setOpen(false)}>
               {isAr ? "حسناً" : "Done"}
             </Button>
@@ -134,11 +168,11 @@ export function UpcomingCourseRegistration({
             <div className="grid sm:grid-cols-2 gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm">
               <div className="flex items-start gap-2">
                 <Calendar className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <span>{course.startDate} – {course.endDate}<br />{course.days[locale]} · {course.timeSlot[locale]}</span>
+                <span>{new Date(course.startsAt).toLocaleString(isAr ? "ar-JO" : "en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: course.timezone })}</span>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <span>{course.location[locale]}<br />{course.organization[locale]}</span>
+                <span>{isAr ? course.locationAr : course.locationEn}<br />{isAr ? course.organizationAr : course.organizationEn}</span>
               </div>
             </div>
 

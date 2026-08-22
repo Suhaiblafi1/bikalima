@@ -409,7 +409,7 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
     <div className={`relative bg-gradient-to-br ${heroGradient} text-white overflow-hidden`}>
       {coverImage && (
         <div className="absolute inset-0">
-          <img src={coverImage} alt={title} className="w-full h-full object-cover opacity-25" />
+          <img src={coverImage} alt={title} className="w-full h-full object-cover opacity-25" loading="lazy" decoding="async" />
           <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-80`} />
         </div>
       )}

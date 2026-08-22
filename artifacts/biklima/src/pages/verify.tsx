@@ -84,6 +84,8 @@ export function CertificateCard({ cert }: { cert: PublicCert }) {
               src={cert.graduateImageUrl}
               alt={cert.fullName}
               className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md -mt-12"
+              loading="lazy"
+              decoding="async"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
           )}
@@ -158,6 +160,7 @@ export function CertificateCard({ cert }: { cert: PublicCert }) {
             alt="QR للتحقق"
             className="w-[160px] h-[160px] rounded-lg border border-border bg-white p-1"
             loading="lazy"
+            decoding="async"
           />
           <p className="text-[10px] text-muted-foreground text-center">امسح الرمز للتحقق المباشر</p>
         </div>

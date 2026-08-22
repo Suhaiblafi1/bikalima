@@ -43,7 +43,15 @@ app.use(
   }),
 );
 app.use(cookieParser());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({
+  limit: "1mb",
+  verify(req, _res, buffer) {
+    // Stripe requires the exact raw request bytes for signature verification.
+    // Keep them only in memory for this request; routes other than the webhook
+    // ignore this property.
+    (req as Request & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(globalRateLimit);
 app.use(authMiddleware);

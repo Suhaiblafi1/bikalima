@@ -147,6 +147,8 @@ export default function GraduatesPage() {
                       src={g.graduateImageUrl}
                       alt={g.fullName}
                       className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-primary/10"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                     />
                   ) : (

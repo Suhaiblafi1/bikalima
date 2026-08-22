@@ -27,11 +27,15 @@ import activitiesRouter, { bootstrapActivities } from "./activities.js";
 import littleSpeakerRouter from "./little-speaker.js";
 import accreditationsRouter from "./accreditations.js";
 import csrfRouter from "./csrf.js";
+import inPersonCoursesRouter from "./in-person-courses.js";
+import analyticsRouter from "./analytics.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(csrfRouter);
+router.use(inPersonCoursesRouter);
+router.use(analyticsRouter);
 router.use(authRouter);
 router.use(enrollRouter);
 router.use(workbookOrderRouter);

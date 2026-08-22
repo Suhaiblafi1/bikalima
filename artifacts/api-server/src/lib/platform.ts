@@ -274,7 +274,6 @@ const DEFAULT_FLAGS: Array<{
   descriptionAr: string;
   descriptionEn: string;
 }> = [
-  { key: "ai_evaluation",     descriptionAr: "التقييم التلقائي بالذكاء الاصطناعي", descriptionEn: "AI-powered evaluation" },
   { key: "live_chat",         descriptionAr: "الشات المباشر مع الزوار",            descriptionEn: "Live chat widget" },
   { key: "payments",          descriptionAr: "الدفع الإلكتروني",                    descriptionEn: "Online payments" },
   { key: "graduates_page",    descriptionAr: "صفحة سجل الخريجين العامة",            descriptionEn: "Public graduates registry" },

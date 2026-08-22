@@ -31,6 +31,8 @@ export type CourseRecord = {
   descriptionAr: string | null; descriptionEn: string | null;
   imageUrl: string | null; trailerUrl: string | null;
   price: number | null; discountPrice: number | null;
+  recordedPrice: number | null; zoomPrice: number | null; blendedPrice: number | null;
+  deliveryFormats: Array<"recorded" | "zoom" | "blended"> | null;
   level: string | null; language: string | null; category: string | null;
   instructorId: string | null; programId: string | null;
   whatYouLearnAr: string[] | null; whatYouLearnEn: string[] | null;
@@ -43,7 +45,7 @@ export type CourseRecord = {
 export type EnrollmentRecord = { id: string; userId: string; courseId: string; status: string; enrolledAt: string; userEmail: string | null; userFirstName: string | null; userLastName: string | null; courseTitle: string | null };
 export type RequestRecord = { id: string; applicantType: string; fullName: string; email: string; phone: string; programId: string; trainingType: string | null; status: string; createdAt: string; formData: unknown };
 export type OrderRecord = { id: string; workbookId: string; quantity: number; format: string; buyerName: string; buyerEmail: string; totalPrice: number | null; status: string; createdAt: string };
-export type LmsOrderRecord = { id: string; userId: string | null; courseId: string | null; courseTitle: string | null; buyerName: string; buyerEmail: string; buyerPhone: string; amount: number | null; originalAmount: number | null; discountAmount: number; discountCode: string | null; currency: string; status: string; paymentNotes: string | null; adminNotes: string | null; createdAt: string };
+export type LmsOrderRecord = { id: string; userId: string | null; courseId: string | null; courseTitle: string | null; buyerName: string; buyerEmail: string; buyerPhone: string; amount: number | null; originalAmount: number | null; discountAmount: number; discountCode: string | null; deliveryFormat: "recorded" | "zoom" | "blended"; currency: string; status: string; paymentProvider: string | null; paymentSessionId: string | null; paymentIntentId: string | null; paidAt: string | null; cancelledAt: string | null; refundedAt: string | null; refundAmount: number; failureCode: string | null; paymentNotes: string | null; adminNotes: string | null; createdAt: string };
 export type Stats = { totalUsers: number; todaySignups: number; weekSignups: number; totalCourses: number; totalEnrollments: number; totalRequests: number; totalOrders: number; totalLmsOrders?: number };
 export type RevenueCourse = { courseId: string | null; courseTitleAr: string | null; courseTitleEn: string | null; revenue: number; orders: number };
 export type RevenueDay = { date: string; revenue: number; count: number };
@@ -133,7 +135,8 @@ export type AdminActivityRecord = {
 export type TopProgramRecord = { programId: string; requestCount: number };
 
 export type AdminPageKey =
-  | "overview" | "users" | "courses" | "enrollments"
+  | "overview" | "analytics" | "users" | "courses" | "enrollments"
+  | "in-person-courses"
   | "workbook-orders" | "assignments" | "reviews"
   | "speech-evaluations" | "home-page" | "workbooks" | "field-media"
   | "certificates" | "chat" | "settings"
@@ -153,8 +156,10 @@ export type AdminPageKey =
 export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   // Trainers no longer land on the global admin overview — they go to /trainer.
   overview: ["admin", "supervisor", "sales"],
+  analytics: ["admin"],
   users: ["admin"],
   courses: ["admin", "supervisor", "trainer"],
+  "in-person-courses": ["admin", "supervisor", "sales"],
   enrollments: ["admin", "supervisor", "sales", "trainer"],
   "workbook-orders": ["admin", "supervisor", "sales"],
   assignments: ["admin", "supervisor", "trainer"],

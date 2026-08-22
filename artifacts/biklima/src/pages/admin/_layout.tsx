@@ -9,7 +9,7 @@ import {
   ClipboardList, Star, Mic2, Settings as SettingsIcon,
   Layout as LayoutIcon, FileText, Film, ShieldCheck, MessageCircle,
   UserPlus, KanbanSquare, ListTodo, Zap, MessageSquareText, Filter,
-  ScrollText, ToggleRight, Sparkles, BadgePercent,
+  ScrollText, ToggleRight, Sparkles, BadgePercent, CalendarDays,
 } from "lucide-react";
 
 type NavItem = {
@@ -29,6 +29,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "نظرة عامة",
     items: [
       { key: "overview", label: "نظرة عامة", href: "/admin/overview", icon: <BarChart3 className="w-4 h-4" /> },
+      { key: "analytics", label: "التحليلات", href: "/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
     ],
   },
   {
@@ -47,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "نظام التعلّم (LMS)",
     items: [
       { key: "courses",            label: "الدورات",            href: "/admin/courses",            icon: <BookOpen className="w-4 h-4" /> },
+      { key: "in-person-courses",  label: "الدورات الوجاهية",   href: "/admin/in-person-courses",  icon: <CalendarDays className="w-4 h-4" /> },
       { key: "enrollments",        label: "التسجيلات",          href: "/admin/enrollments",        icon: <GraduationCap className="w-4 h-4" /> },
       { key: "workbook-orders",    label: "طلبات الكراسات",     href: "/admin/workbook-orders",    icon: <ShoppingCart className="w-4 h-4" /> },
       { key: "speech-evaluations", label: "طلبات تقييم الخطاب", href: "/admin/speech-evaluations", icon: <Mic2 className="w-4 h-4" /> },

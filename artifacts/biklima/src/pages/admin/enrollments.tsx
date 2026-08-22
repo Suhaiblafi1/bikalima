@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  FileText, GraduationCap, TrendingUp, CheckCircle, XCircle, UserPlus,
+  FileText, GraduationCap, TrendingUp, CheckCircle, XCircle, UserPlus, RotateCcw,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
@@ -84,6 +84,12 @@ export default function AdminEnrollmentsPage() {
       body: JSON.stringify({ status }),
     });
     if (res.ok) setLmsOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+  };
+
+  const refundOrder = async (order: LmsOrderRecord) => {
+    if (!confirm(`استرداد كامل بقيمة ${order.amount ?? 0} ${order.currency}؟`)) return;
+    const response = await apiFetch(`/admin/orders/${order.id}/refund`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+    if (response.ok) await fetchLmsOrders();
   };
 
   const enrollUser = async () => {
@@ -216,7 +222,7 @@ export default function AdminEnrollmentsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 className="font-bold flex items-center gap-2"><GraduationCap className="w-5 h-5 text-primary" /> طلبات الدورات ({filteredLmsOrders.length})</h2>
             <div className="flex items-center gap-2 flex-wrap">
-              {(["all", "pending", "paid", "cancelled"] as const).map((s) => (
+              {(["all", "pending", "paid", "cancelled", "refunded"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setLmsStatusFilter(s)}
@@ -226,7 +232,7 @@ export default function AdminEnrollmentsPage() {
                       : "bg-background border-border text-muted-foreground hover:bg-muted"
                   }`}
                 >
-                  {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "paid" ? "مدفوع" : "ملغى"}
+                  {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "paid" ? "مدفوع" : s === "refunded" ? "مسترد" : "ملغى"}
                 </button>
               ))}
               <Button size="sm" variant="outline" onClick={() => exportCsv(filteredLmsOrders)} className="h-7 text-xs gap-1">
@@ -276,10 +282,11 @@ export default function AdminEnrollmentsPage() {
                     <td className="py-2 px-3 font-medium">{o.buyerName}</td>
                     <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerEmail}</td>
                     <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerPhone}</td>
-                    <td className="py-2 px-3 text-xs">{o.courseTitle || "—"}</td>
+                    <td className="py-2 px-3 text-xs">{o.courseTitle || "—"}<div className="text-[10px] text-muted-foreground">{o.deliveryFormat === "zoom" ? "Zoom" : o.deliveryFormat === "blended" ? "مختلط" : "مسجّل"}</div></td>
                     <td className="py-2 px-3 font-bold text-primary">
                       {o.amount !== null ? `${o.amount} JOD` : "—"}
                       {o.discountCode && <div className="text-[10px] font-medium text-emerald-700" dir="ltr">{o.discountCode} (-{o.discountAmount} JOD)</div>}
+                      {o.refundAmount > 0 && <div className="text-[10px] font-medium text-amber-700">مسترد: {o.refundAmount} JOD</div>}
                     </td>
                     <td className="py-2 px-3 text-xs text-muted-foreground max-w-[120px] truncate">{o.paymentNotes || "—"}</td>
                     <td className="py-2 px-3"><StatusBadge status={o.status} /></td>
@@ -289,11 +296,18 @@ export default function AdminEnrollmentsPage() {
                           <Button size="sm" onClick={() => updateLmsOrderStatus(o.id, "paid")} className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700 text-white gap-1"><CheckCircle className="w-3 h-3" /> قبول</Button>
                           <Button size="sm" variant="outline" onClick={() => updateLmsOrderStatus(o.id, "cancelled")} className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 border-destructive/30 gap-1"><XCircle className="w-3 h-3" /> رفض</Button>
                         </div>
+                      ) : o.status === "paid" && o.paymentIntentId ? (
+                        <Button size="sm" variant="outline" onClick={() => refundOrder(o)} className="h-7 px-2 text-xs text-amber-700 gap-1"><RotateCcw className="w-3 h-3" /> استرداد</Button>
                       ) : (
                         <select value={o.status} onChange={(e) => updateLmsOrderStatus(o.id, e.target.value)} className="text-xs border rounded p-1 bg-background">
                           <option value="pending">قيد المراجعة</option>
+                          <option value="awaiting_payment">بانتظار الدفع</option>
                           <option value="paid">مدفوع</option>
+                          <option value="failed">فشل</option>
+                          <option value="expired">منتهي</option>
                           <option value="cancelled">ملغى</option>
+                          <option value="partially_refunded">مسترد جزئياً</option>
+                          <option value="refunded">مسترد</option>
                         </select>
                       )}
                     </td>

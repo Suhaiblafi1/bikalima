@@ -71,6 +71,22 @@ test.describe("production hardening", () => {
     expect([401, 403]).toContain(res.status());
   });
 
+  test("Stripe webhook rejects unsigned requests", async ({ request }) => {
+    const response = await request.post("/api/webhooks/stripe", { data: { type: "checkout.session.completed" } });
+    expect(response.status()).toBe(400);
+  });
+
+  test("analytics endpoint rejects unknown events and personal-data-shaped payloads", async ({ request }) => {
+    const unknown = await request.post("/api/analytics/events", {
+      data: { anonymousId: crypto.randomUUID(), eventName: "email_collected", path: "/", properties: { email: "person@example.com" } },
+    });
+    expect(unknown.status()).toBe(400);
+    const personalData = await request.post("/api/analytics/events", {
+      data: { anonymousId: crypto.randomUUID(), eventName: "page_view", path: "/", properties: { email: "person@example.com" } },
+    });
+    expect(personalData.status()).toBe(400);
+  });
+
   test("robots.txt and sitemap.xml are served", async ({ request }) => {
     const robots = await request.get("/robots.txt");
     expect(robots.ok()).toBeTruthy();

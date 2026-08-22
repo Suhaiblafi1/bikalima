@@ -1,9 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
 import { db, speechEvaluationsTable } from "@workspace/db";
-import { eq, or, desc, sql } from "drizzle-orm";
+import { lt } from "drizzle-orm";
 import { registerLeadFromForm } from "../lib/leads.js";
-import { awardBadgeIfEligible } from "../lib/platform.js";
 import { applyAdHocLimit } from "../middlewares/security.js";
 
 const router: IRouter = Router();
@@ -24,6 +23,7 @@ const SpeechEvaluationSchema = z
     speechTopic: z.string().max(200).optional(),
     speechLanguage: z.string().max(50).optional(),
     notes: z.string().max(2000).optional(),
+    privacyConsent: z.literal(true),
   })
   .superRefine((data, ctx) => {
     const phone = (data.whatsapp ?? data.phone ?? "").trim();
@@ -81,19 +81,13 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
         transcriptText: null,
         leadSource: "home_60sec_evaluation",
         status: "pending",
+        privacyConsentAt: new Date(),
+        privacyConsentVersion: "speech-review-v1",
+        retentionExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60_000),
       })
       .returning({ id: speechEvaluationsTable.id });
 
-    req.log.info({ id: inserted.id, email }, "speech-evaluation lead created");
-
-    // ── Badge: first speech uploaded (only when learner is signed in) ─────
-    if (userId) {
-      try {
-        await awardBadgeIfEligible(userId, "speech_submitted", { evaluationId: inserted.id });
-      } catch (err) {
-        req.log.warn({ err }, "[BADGE] speech_submitted award failed");
-      }
-    }
+    req.log.info({ id: inserted.id }, "speech-evaluation lead created");
 
     // ── CRM: register/upsert as a lead ──────────────────────────────
     try {
@@ -124,70 +118,28 @@ router.post("/speech-evaluation", async (req: Request, res: Response) => {
   }
 });
 
-// ── Learner-facing list of own evaluations ─────────────────────────────
-// Matches by user_id when present, plus by case-insensitive email so that
-// evaluations submitted as a guest (before the learner created an account
-// or while logged out) still surface in their dashboard once they sign in.
-router.get("/me/speech-evaluations", async (req: Request, res: Response) => {
-  if (!req.isAuthenticated() || !req.user?.id) {
-    res.status(401).json({ error: "Authentication required" });
+router.post("/cron/speech-retention", async (req: Request, res: Response) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.authorization !== `Bearer ${secret}`) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  try {
-    const userId = req.user.id;
-    const userEmail = (req.user.email ?? "").toLowerCase().trim();
-    const rows = await db
-      .select({
-        id: speechEvaluationsTable.id,
-        status: speechEvaluationsTable.status,
-        speechTopic: speechEvaluationsTable.speechTopic,
-        videoUrl: speechEvaluationsTable.videoUrl,
-        transcriptText: speechEvaluationsTable.transcriptText,
-        rubricScores: speechEvaluationsTable.rubricScores,
-        rubricNotes: speechEvaluationsTable.rubricNotes,
-        overallScore: speechEvaluationsTable.overallScore,
-        programRecommendation: speechEvaluationsTable.programRecommendation,
-        finalReportMd: speechEvaluationsTable.finalReportMd,
-        reportPublishedAt: speechEvaluationsTable.reportPublishedAt,
-        createdAt: speechEvaluationsTable.createdAt,
-        updatedAt: speechEvaluationsTable.updatedAt,
-      })
-      .from(speechEvaluationsTable)
-      .where(
-        userEmail
-          ? or(
-              eq(speechEvaluationsTable.userId, userId),
-              sql`lower(${speechEvaluationsTable.email}) = ${userEmail}`,
-            )
-          : eq(speechEvaluationsTable.userId, userId),
-      )
-      .orderBy(desc(speechEvaluationsTable.createdAt));
-    // Hide draft evaluator content until the trainer publishes the report.
-    // Pre-publish, only safe summary fields (status, topic, raw inputs) are
-    // returned. `trainerFeedback` is internal and never exposed to learners.
-    const sanitized = rows.map((r) => {
-      const isPublished = !!r.reportPublishedAt;
-      return {
-        id: r.id,
-        status: r.status,
-        speechTopic: r.speechTopic,
-        videoUrl: r.videoUrl,
-        transcriptText: r.transcriptText,
-        rubricScores: isPublished ? r.rubricScores : null,
-        rubricNotes: isPublished ? r.rubricNotes : null,
-        overallScore: isPublished ? r.overallScore : null,
-        programRecommendation: isPublished ? r.programRecommendation : null,
-        finalReportMd: isPublished ? r.finalReportMd : null,
-        reportPublishedAt: r.reportPublishedAt,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-      };
-    });
-    res.json({ evaluations: sanitized });
-  } catch (err) {
-    req.log.error({ err }, "Failed to load my speech evaluations");
-    res.status(500).json({ error: "Failed to load evaluations" });
-  }
+  const expired = await db.update(speechEvaluationsTable).set({
+    fullName: "محذوف وفق سياسة الاحتفاظ",
+    email: "deleted@privacy.invalid",
+    phone: "deleted",
+    videoUrl: null,
+    audioUrl: null,
+    notes: null,
+    transcriptText: null,
+    trainerFeedback: null,
+    rubricScores: null,
+    rubricNotes: null,
+    finalReportMd: null,
+    retentionExpiresAt: null,
+    updatedAt: new Date(),
+  }).where(lt(speechEvaluationsTable.retentionExpiresAt, new Date())).returning({ id: speechEvaluationsTable.id });
+  res.json({ ok: true, anonymized: expired.length });
 });
 
 export default router;

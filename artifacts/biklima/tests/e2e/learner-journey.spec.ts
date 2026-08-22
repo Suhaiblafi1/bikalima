@@ -3,14 +3,14 @@ import { TEST_FIXTURES } from "../fixtures/data";
 
 /**
  * Happy-path learner journey. The steps mirror the audit's required flow:
- *   anonymous browse → enroll → pay → access lesson → submit speech →
- *   evaluation visible → see badge → download certificate → graduates page.
+ *   anonymous browse → enroll → pay → access lesson → submit a human-review
+ *   request → register for an in-person course → see badge → verify certificate.
  *
  * The seeded test course (`e2e-test-course`) is free, so the order endpoint
  * exercises the same code path real paid orders use, but completes the
  * enrollment immediately without hitting Stripe. The seed also pre-publishes
- * a speech evaluation, awards a badge, attaches a certificate file URL, and
- * forces the `graduates_page` feature flag on so the public registry assertion
+ * a badge, attaches a certificate file URL, and forces the
+ * `graduates_page` feature flag on so the public registry assertion
  * is deterministic.
  */
 test.describe.serial("learner happy path", () => {
@@ -66,6 +66,7 @@ test.describe.serial("learner happy path", () => {
         videoUrl: "https://youtu.be/dQw4w9WgXcQ",
         speechTopic: "Test",
         speechLanguage: "ar",
+        privacyConsent: true,
       },
     });
     expect(
@@ -75,26 +76,23 @@ test.describe.serial("learner happy path", () => {
     await page.close();
   });
 
-  test("learner sees the published evaluation report", async ({ learner }) => {
-    const page = await learner.newPage();
-    const resp = await page.request.get("/api/me/speech-evaluations");
-    expect(resp.ok(), `me/speech-evaluations failed: ${await resp.text()}`).toBeTruthy();
-    const json = await resp.json();
-    expect(Array.isArray(json.evaluations)).toBe(true);
-
-    // Find the seeded, published evaluation by topic.
-    const published = json.evaluations.find(
-      (e: { speechTopic: string | null; reportPublishedAt: string | null }) =>
-        e.speechTopic === TEST_FIXTURES.speechEvaluation.topic &&
-        e.reportPublishedAt,
-    );
-    expect(
-      published,
-      "seeded published evaluation should be visible to the learner",
-    ).toBeTruthy();
-    expect(published.overallScore).toBe(TEST_FIXTURES.speechEvaluation.overallScore);
-    expect(published.finalReportMd).toContain("E2E Final Report");
-    expect(published.programRecommendation).toBe("core");
+  test("visitor can register for an upcoming in-person course inside the site", async ({ anon }) => {
+    const page = await anon.newPage();
+    const list = await page.request.get("/api/in-person-courses");
+    expect(list.ok()).toBeTruthy();
+    const listJson = await list.json();
+    const event = listJson.courses.find((item: { id: string }) => item.id === process.env.E2E_IN_PERSON_COURSE_ID);
+    expect(event).toBeTruthy();
+    const email = `e2e.inperson+${Date.now()}@bikalima.test`;
+    const response = await page.request.post(`/api/in-person-courses/${event.id}/register`, {
+      data: { fullName: "زائر وجاهي", email, phone: "0790000000", note: "E2E" },
+    });
+    expect(response.ok(), await response.text()).toBeTruthy();
+    const result = await response.json();
+    expect(["pending", "waitlisted"]).toContain(result.status);
+    expect(result.manageToken).toBeTruthy();
+    const manage = await page.request.get(`/api/in-person-registrations/manage/${encodeURIComponent(result.manageToken)}`);
+    expect(manage.ok()).toBeTruthy();
     await page.close();
   });
 

@@ -15,6 +15,7 @@ import {
   siteSettingsTable,
   speechEvaluationsTable,
   discountCodesTable,
+  orderEventsTable,
 } from "@workspace/db";
 import { db as _db, courseTrainersTable, trainerLearnerNotesTable, assignmentsTable, assignmentSubmissionsTable, lessonSessionAttendanceTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
@@ -32,6 +33,8 @@ import {
 } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
 import { recordAuditLog, awardBadgeIfEligible } from "../lib/platform.js";
+import { paymentService } from "../integrations/paymentService.js";
+import { markOrderPaid, releaseDiscountReservation } from "./orders.js";
 
 const router: IRouter = Router();
 
@@ -365,7 +368,8 @@ const COURSE_FIELDS = [
   "titleAr", "titleEn", "titleFr", "subtitleAr", "subtitleEn",
   "descriptionAr", "descriptionEn", "descriptionFr",
   "programId", "slug", "imageUrl", "trailerUrl",
-  "price", "discountPrice", "level", "language", "category", "instructorId",
+  "price", "discountPrice", "recordedPrice", "zoomPrice", "blendedPrice", "deliveryFormats",
+  "level", "language", "category", "instructorId",
   "whatYouLearnAr", "whatYouLearnEn", "requirementsAr", "requirementsEn",
   "targetAudienceAr", "targetAudienceEn", "seoTitle", "seoDescription",
   "isPublished", "isFeatured",
@@ -378,6 +382,9 @@ router.post("/admin/courses", async (req: Request, res: Response) => {
     const vals: CourseInsert = { titleAr: req.body.titleAr, titleEn: req.body.titleEn, titleFr: req.body.titleFr || "" };
     for (const key of COURSE_FIELDS) {
       if (req.body[key] !== undefined) (vals as Record<string, unknown>)[key] = req.body[key];
+    }
+    if (vals.deliveryFormats && (!Array.isArray(vals.deliveryFormats) || vals.deliveryFormats.some((format) => !["recorded", "zoom", "blended"].includes(format)))) {
+      res.status(400).json({ error: "Invalid deliveryFormats" }); return;
     }
     if (!vals.isPublished) vals.isPublished = false;
     const [course] = await db.insert(coursesTable).values(vals).returning();
@@ -394,6 +401,9 @@ router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
     const updates: Partial<CourseInsert> = {};
     for (const key of COURSE_FIELDS) {
       if (req.body[key] !== undefined) (updates as Record<string, unknown>)[key] = req.body[key];
+    }
+    if (updates.deliveryFormats && (!Array.isArray(updates.deliveryFormats) || updates.deliveryFormats.some((format) => !["recorded", "zoom", "blended"].includes(format)))) {
+      res.status(400).json({ error: "Invalid deliveryFormats" }); return;
     }
     if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [course] = await db.update(coursesTable).set(updates).where(eq(coursesTable.id, id)).returning();
@@ -995,7 +1005,7 @@ router.get("/admin/revenue", async (req: Request, res: Response) => {
   }
 });
 
-const VALID_ORDER_STATUSES = ["pending", "paid", "cancelled"] as const;
+const VALID_ORDER_STATUSES = ["pending", "awaiting_payment", "paid", "failed", "expired", "cancelled", "partially_refunded", "refunded"] as const;
 type OrderStatus = typeof VALID_ORDER_STATUSES[number];
 
 async function adminGetLmsOrders(req: Request, res: Response) {
@@ -1015,8 +1025,17 @@ async function adminGetLmsOrders(req: Request, res: Response) {
         originalAmount: ordersTable.originalAmount,
         discountAmount: ordersTable.discountAmount,
         discountCode: ordersTable.discountCode,
+        deliveryFormat: ordersTable.deliveryFormat,
         currency: ordersTable.currency,
         status: ordersTable.status,
+        paymentProvider: ordersTable.paymentProvider,
+        paymentSessionId: ordersTable.paymentSessionId,
+        paymentIntentId: ordersTable.paymentIntentId,
+        paidAt: ordersTable.paidAt,
+        cancelledAt: ordersTable.cancelledAt,
+        refundedAt: ordersTable.refundedAt,
+        refundAmount: ordersTable.refundAmount,
+        failureCode: ordersTable.failureCode,
         paymentNotes: ordersTable.paymentNotes,
         adminNotes: ordersTable.adminNotes,
         adminApprovedBy: ordersTable.adminApprovedBy,
@@ -1039,7 +1058,7 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
     const { status, adminNotes } = req.body as { status?: string; adminNotes?: string };
 
     if (status !== undefined && !VALID_ORDER_STATUSES.includes(status as OrderStatus)) {
-      res.status(400).json({ error: "Invalid status. Must be pending, paid, or cancelled." });
+      res.status(400).json({ error: "Invalid order status." });
       return;
     }
 
@@ -1051,10 +1070,31 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
       }
     }
 
-    const updates: { updatedAt: Date; status?: string; adminNotes?: string; adminApprovedBy?: string } = { updatedAt: new Date() };
+    const updates: Partial<typeof ordersTable.$inferInsert> = { updatedAt: new Date() };
     if (status !== undefined) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
     if (status === "paid" && req.user) updates.adminApprovedBy = req.user.id;
+
+    if (status === "paid") {
+      let order;
+      try {
+        order = await markOrderPaid({ orderId: id, source: "admin", actorUserId: req.user?.id ?? null });
+      } catch (error) {
+        if ((error as Error).message === "discount_reservation_expired") {
+          res.status(409).json({ error: "انتهى حجز كود الخصم أو نفدت مرات استخدامه؛ أنشئ طلباً جديداً قبل اعتماد الدفع." });
+          return;
+        }
+        if ((error as Error).message === "order_not_payable") {
+          res.status(409).json({ error: "لا يمكن اعتماد طلب ملغى كطلب مدفوع." });
+          return;
+        }
+        throw error;
+      }
+      if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+      if (adminNotes !== undefined) await db.update(ordersTable).set({ adminNotes, adminApprovedBy: req.user?.id ?? null, updatedAt: new Date() }).where(eq(ordersTable.id, id));
+      res.json({ order: { ...order, status: "paid" } });
+      return;
+    }
 
     let order: typeof ordersTable.$inferSelect | undefined;
     await db.transaction(async (tx) => {
@@ -1062,22 +1102,18 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
       if (!updated) return;
       order = updated;
 
-      if (updated.userId && updated.courseId && (status === "paid" || status === "cancelled")) {
+      if (updated.userId && updated.courseId && status === "cancelled") {
         const existing = await tx
           .select()
           .from(enrollmentsTable)
           .where(and(eq(enrollmentsTable.userId, updated.userId), eq(enrollmentsTable.courseId, updated.courseId)));
-        if (status === "paid") {
-          if (existing.length === 0) {
-            await tx.insert(enrollmentsTable).values({ userId: updated.userId, courseId: updated.courseId, status: "active", enrolledAt: new Date() });
-          } else if (existing[0].status !== "active") {
-            await tx.update(enrollmentsTable).set({ status: "active" }).where(eq(enrollmentsTable.id, existing[0].id));
-          }
-        } else if (status === "cancelled" && existing.length > 0 && existing[0].status === "active") {
+        if (existing.length > 0 && existing[0].status === "active") {
           await tx.update(enrollmentsTable).set({ status: "suspended" }).where(eq(enrollmentsTable.id, existing[0].id));
         }
       }
+      await tx.insert(orderEventsTable).values({ orderId: updated.id, type: `status_${status ?? "notes_updated"}`, actorUserId: req.user?.id ?? null, data: { adminNotes: adminNotes ?? null } });
     });
+    if (status === "cancelled" || status === "failed" || status === "expired") await releaseDiscountReservation(id, `admin_${status}`);
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json({ order });
   } catch {
@@ -1162,6 +1198,67 @@ router.get("/admin/student-progress", async (req: Request, res: Response) => {
 router.get("/admin/orders", adminGetLmsOrders);
 router.patch("/admin/lms-orders/:id", adminPatchLmsOrder);
 router.patch("/admin/orders/:id", adminPatchLmsOrder);
+
+router.post("/admin/orders/:id/refund", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+  const outcome = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT ${ordersTable.id} FROM ${ordersTable} WHERE ${ordersTable.id} = ${req.params.id} FOR UPDATE`);
+    const [order] = await tx.select().from(ordersTable).where(eq(ordersTable.id, req.params.id)).limit(1);
+    if (!order) return { kind: "not_found" as const };
+    if (!order.paymentIntentId || (order.status !== "paid" && order.status !== "partially_refunded")) {
+      return { kind: "not_refundable" as const };
+    }
+    const remaining = (order.amount ?? 0) - order.refundAmount;
+    const amount = req.body?.amount == null ? remaining : Number(req.body.amount);
+    if (!Number.isInteger(amount) || amount <= 0 || amount > remaining) return { kind: "invalid_amount" as const };
+    const result = await paymentService.refundPayment({
+      paymentIntentId: order.paymentIntentId,
+      amount,
+      currency: order.currency ?? "JOD",
+      idempotencyKey: `refund-${order.id}-${order.refundAmount}-${amount}`,
+    });
+    if (!result.ok) return { kind: "gateway_error" as const, result };
+    const refundAmount = order.refundAmount + amount;
+    const fullyRefunded = refundAmount >= (order.amount ?? 0);
+    const [updated] = await tx.update(ordersTable).set({
+      refundAmount,
+      refundedAt: new Date(),
+      status: fullyRefunded ? "refunded" : "partially_refunded",
+      updatedAt: new Date(),
+    }).where(eq(ordersTable.id, order.id)).returning();
+    await tx.insert(orderEventsTable).values({
+      orderId: order.id,
+      type: fullyRefunded ? "refunded" : "partially_refunded",
+      actorUserId: req.user?.id ?? null,
+      data: { amount, refundId: result.refundId, totalRefunded: refundAmount },
+    });
+    if (fullyRefunded && order.userId && order.courseId) {
+      await tx.update(enrollmentsTable).set({ status: "suspended" })
+        .where(and(eq(enrollmentsTable.userId, order.userId), eq(enrollmentsTable.courseId, order.courseId)));
+    }
+    return { kind: "refunded" as const, order, updated, result, amount };
+  });
+  if (outcome.kind === "not_found") return void res.status(404).json({ error: "Order not found" });
+  if (outcome.kind === "not_refundable") return void res.status(409).json({ error: "Only a paid online order can be refunded" });
+  if (outcome.kind === "invalid_amount") return void res.status(400).json({ error: "Invalid refund amount" });
+  if (outcome.kind === "gateway_error") return void res.status(502).json({ error: outcome.result.reason === "error" ? outcome.result.message : "Payment gateway not configured" });
+  await recordAuditLog({
+    actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+    action: "order.refund",
+    entityType: "order",
+    entityId: outcome.order.id,
+    description: `Refunded ${outcome.amount} ${outcome.order.currency ?? "JOD"}`,
+    before: { status: outcome.order.status, refundAmount: outcome.order.refundAmount },
+    after: { status: outcome.updated.status, refundAmount: outcome.updated.refundAmount },
+  });
+  res.json({ order: outcome.updated, refund: outcome.result });
+});
+
+router.get("/admin/orders/:id/events", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "supervisor", "sales")) return;
+  const events = await db.select().from(orderEventsTable).where(eq(orderEventsTable.orderId, req.params.id)).orderBy(asc(orderEventsTable.createdAt));
+  res.json({ events });
+});
 
 // ===== Reviews moderation =====
 router.get("/admin/reviews", async (req: Request, res: Response) => {

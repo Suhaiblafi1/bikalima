@@ -190,7 +190,7 @@ export default function ImpactPage() {
                     </blockquote>
                     <figcaption className="flex items-center gap-3 pt-4 border-t border-border/60">
                       {s.photoUrl ? (
-                        <img src={s.photoUrl} alt={s.name} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                        <img src={s.photoUrl} alt={s.name} className="w-12 h-12 rounded-full object-cover shrink-0" loading="lazy" decoding="async" />
                       ) : (
                         <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${AVATAR_BG[i % AVATAR_BG.length]}`} aria-hidden>
                           {initialsFor(s.name)}

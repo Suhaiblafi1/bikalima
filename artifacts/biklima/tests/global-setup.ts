@@ -8,7 +8,7 @@ import {
   usersTable,
   certificatesTable,
   enrollmentsTable,
-  speechEvaluationsTable,
+  inPersonCoursesTable,
   featureFlagsTable,
   badgeDefinitionsTable,
   userBadgesTable,
@@ -183,42 +183,29 @@ async function upsertCertificate(opts: { userId: string; fullName: string; email
   return created.id;
 }
 
-async function upsertPublishedSpeechEvaluation(opts: {
-  userId: string;
-  fullName: string;
-  email: string;
-}) {
-  const [existing] = await db
-    .select()
-    .from(speechEvaluationsTable)
-    .where(eq(speechEvaluationsTable.userId, opts.userId));
+async function upsertInPersonCourse(courseId: string) {
+  const titleAr = "موعد وجاهي لاختبار E2E";
+  const [existing] = await db.select().from(inPersonCoursesTable).where(eq(inPersonCoursesTable.titleAr, titleAr));
+  const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60_000);
   const values = {
-    userId: opts.userId,
-    fullName: opts.fullName,
-    email: opts.email,
-    phone: "0790000000",
-    speechTopic: TEST_FIXTURES.speechEvaluation.topic,
-    speechLanguage: "ar",
-    transcriptText: "نص خطاب اختبار E2E.",
-    status: "completed" as const,
-    rubricScores: { delivery: 8, content: 9, structure: 8 },
-    rubricNotes: { delivery: "Clear and confident.", content: "Strong examples." },
-    overallScore: TEST_FIXTURES.speechEvaluation.overallScore,
-    programRecommendation: "core" as const,
-    finalReportMd: TEST_FIXTURES.speechEvaluation.reportMarker,
-    reportPublishedAt: new Date(),
+    courseId,
+    programId: "core",
+    titleAr,
+    titleEn: "E2E In-person Course",
+    locationAr: "عمّان",
+    locationEn: "Amman",
+    timezone: "Asia/Amman",
+    startsAt,
+    endsAt: new Date(startsAt.getTime() + 3 * 60 * 60_000),
+    capacity: 2,
+    status: "published" as const,
+    waitlistEnabled: true,
   };
   if (existing) {
-    await db
-      .update(speechEvaluationsTable)
-      .set(values)
-      .where(eq(speechEvaluationsTable.id, existing.id));
-    return existing.id;
+    const [updated] = await db.update(inPersonCoursesTable).set(values).where(eq(inPersonCoursesTable.id, existing.id)).returning();
+    return updated.id;
   }
-  const [created] = await db
-    .insert(speechEvaluationsTable)
-    .values(values)
-    .returning();
+  const [created] = await db.insert(inPersonCoursesTable).values(values).returning();
   return created.id;
 }
 
@@ -306,11 +293,7 @@ export default async function globalSetup() {
     fullName: learnerFullName,
     email: TEST_FIXTURES.learner.email,
   });
-  await upsertPublishedSpeechEvaluation({
-    userId: learnerId,
-    fullName: learnerFullName,
-    email: TEST_FIXTURES.learner.email,
-  });
+  const inPersonCourseId = await upsertInPersonCourse(courseId);
   await ensureBadgeAwarded(learnerId);
   // Make sure the public graduates registry is enabled so the spec can
   // assert the seeded card renders deterministically.
@@ -320,6 +303,7 @@ export default async function globalSetup() {
   process.env.E2E_COURSE_ID = courseId;
   process.env.E2E_ADMIN_ID = adminId;
   process.env.E2E_LEARNER_ID = learnerId;
+  process.env.E2E_IN_PERSON_COURSE_ID = inPersonCourseId;
 
   // eslint-disable-next-line no-console
   console.log(

@@ -29,7 +29,6 @@ import {
 const StudentAssignmentsTab = lazy(() => import("@/components/student-assignments-tab"));
 const StudentCertificatesTab = lazy(() => import("@/components/dashboard/student-certificates-tab"));
 const StudentAchievementsTab = lazy(() => import("@/components/dashboard/student-achievements-tab"));
-const StudentEvaluationsTab = lazy(() => import("@/components/dashboard/student-evaluations-tab"));
 const StudentWorkbooksTab = lazy(() => import("@/components/dashboard/student-workbooks-tab"));
 const StudentLiveSessionsTab = lazy(() => import("@/components/dashboard/student-live-sessions-tab"));
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
@@ -95,7 +94,6 @@ const dashT = {
       orders: "طلباتي",
       schedule: "الجدول الزمني",
       assignments: "الواجبات",
-      evaluations: "تقييمات الخطاب",
       certificates: "شهاداتي واعتماداتي",
       achievements: "إنجازاتي",
       skills: "مهاراتي وشاراتي",
@@ -175,7 +173,6 @@ const dashT = {
       orders: "My Orders",
       schedule: "Schedule",
       assignments: "Assignments",
-      evaluations: "Speech Evaluations",
       certificates: "My Certificates",
       achievements: "My Achievements",
       skills: "Skills & Badges",
@@ -254,7 +251,6 @@ const tabIcons = {
   orders: ShoppingCart,
   schedule: Calendar,
   assignments: ClipboardList,
-  evaluations: Mic,
   certificates: ShieldCheck,
   achievements: Award,
   skills: Sparkles,
@@ -265,7 +261,7 @@ const tabIcons = {
   family: Users,
 };
 
-type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "evaluations" | "certificates" | "achievements" | "skills" | "workbooks" | "continue" | "live" | "messages" | "family";
+type Tab = "account" | "courses" | "orders" | "schedule" | "assignments" | "certificates" | "achievements" | "skills" | "workbooks" | "continue" | "live" | "messages" | "family";
 
 type NextLessonData = {
   courseId: string;
@@ -738,8 +734,16 @@ type LmsOrderData = {
   courseTitleAr: string | null;
   courseTitleEn: string | null;
   amount: number | null;
+  originalAmount: number | null;
+  discountAmount: number;
+  discountCode: string | null;
+  deliveryFormat: string | null;
   currency: string;
   status: string;
+  paymentProvider: string | null;
+  paidAt: string | null;
+  refundedAt: string | null;
+  refundAmount: number;
   paymentNotes: string | null;
   createdAt: string;
 };
@@ -779,7 +783,7 @@ export default function Dashboard() {
   const readTabFromUrl = (): Tab => {
     if (typeof window === "undefined") return "account";
     const t = new URLSearchParams(window.location.search).get("tab");
-    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "evaluations", "certificates", "achievements", "schedule", "skills", "workbooks", "continue", "live", "messages", "family"];
+    const allowed: Tab[] = ["account", "courses", "orders", "assignments", "certificates", "achievements", "schedule", "skills", "workbooks", "continue", "live", "messages", "family"];
     return (allowed as string[]).includes(t ?? "") ? (t as Tab) : "courses";
   };
   const [activeTab, setActiveTab] = useState<Tab>(readTabFromUrl());
@@ -938,7 +942,7 @@ export default function Dashboard() {
   // Spec order: Courses · Continue · Assignments · Speech Evaluations ·
   // Workbooks · Certificates · Orders · Schedule · Account.
   // Achievements/skills are kept after certificates so badges still show.
-  const allTabs: Tab[] = ["courses", "continue", "live", "messages", "assignments", "evaluations", "workbooks", "certificates", "achievements", "skills", "family", "orders", "schedule", "account"];
+  const allTabs: Tab[] = ["courses", "continue", "live", "messages", "assignments", "workbooks", "certificates", "achievements", "skills", "family", "orders", "schedule", "account"];
   // Hide tabs we know are empty from parent-level data. Tabs that fetch
   // their own data (assignments/evaluations/certificates/achievements/
   // skills/schedule/account) stay visible — each renders its own warm
@@ -982,14 +986,14 @@ export default function Dashboard() {
 
   const statusLabel = (s: string) => {
     const labels: Record<string, Record<string, string>> = {
-      ar: { pending: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض", confirmed: "مؤكد", shipped: "تم الشحن", delivered: "تم التوصيل", paid: "مدفوع", cancelled: "ملغى" },
-      en: { pending: "Pending", approved: "Approved", rejected: "Rejected", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered", paid: "Paid", cancelled: "Cancelled" },
+      ar: { pending: "قيد المراجعة", awaiting_payment: "بانتظار الدفع", approved: "مقبول", rejected: "مرفوض", confirmed: "مؤكد", shipped: "تم الشحن", delivered: "تم التوصيل", paid: "مدفوع", failed: "فشل الدفع", expired: "منتهي", partially_refunded: "مسترد جزئياً", refunded: "مسترد", cancelled: "ملغى" },
+      en: { pending: "Pending", awaiting_payment: "Awaiting payment", approved: "Approved", rejected: "Rejected", confirmed: "Confirmed", shipped: "Shipped", delivered: "Delivered", paid: "Paid", failed: "Payment failed", expired: "Expired", partially_refunded: "Partially refunded", refunded: "Refunded", cancelled: "Cancelled" },
     };
     return labels[lang]?.[s] || s;
   };
 
   const statusColor = (s: string) => {
-    const c: Record<string, string> = { pending: "bg-amber-100 text-amber-800", approved: "bg-green-100 text-green-800", rejected: "bg-red-100 text-red-800", confirmed: "bg-blue-100 text-blue-800", shipped: "bg-purple-100 text-purple-800", delivered: "bg-green-100 text-green-800", paid: "bg-green-100 text-green-800", cancelled: "bg-red-100 text-red-800" };
+    const c: Record<string, string> = { pending: "bg-amber-100 text-amber-800", awaiting_payment: "bg-amber-100 text-amber-800", approved: "bg-green-100 text-green-800", rejected: "bg-red-100 text-red-800", confirmed: "bg-blue-100 text-blue-800", shipped: "bg-purple-100 text-purple-800", delivered: "bg-green-100 text-green-800", paid: "bg-green-100 text-green-800", failed: "bg-red-100 text-red-800", expired: "bg-gray-100 text-gray-800", partially_refunded: "bg-orange-100 text-orange-800", refunded: "bg-orange-100 text-orange-800", cancelled: "bg-red-100 text-red-800" };
     return c[s] || "bg-gray-100 text-gray-800";
   };
 
@@ -1461,7 +1465,12 @@ export default function Dashboard() {
                           <div key={o.id} className="flex items-center justify-between bg-muted/30 border border-border/40 rounded-xl p-4">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium truncate">{isRtl ? (o.courseTitleAr || "—") : (o.courseTitleEn || o.courseTitleAr || "—")}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{new Date(o.createdAt).toLocaleDateString(isRtl ? "ar-SA" : undefined)}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {new Date(o.createdAt).toLocaleDateString(isRtl ? "ar-SA" : undefined)}
+                                {o.deliveryFormat ? ` · ${o.deliveryFormat === "recorded" ? (isRtl ? "مسجلة" : "Recorded") : o.deliveryFormat === "zoom" ? (isRtl ? "زووم" : "Zoom") : (isRtl ? "مدمجة" : "Blended")}` : ""}
+                              </p>
+                              {o.discountAmount > 0 && <p className="text-xs text-emerald-700 mt-0.5">{isRtl ? `وفّرت ${o.discountAmount} ${o.currency}` : `You saved ${o.discountAmount} ${o.currency}`}</p>}
+                              {o.refundAmount > 0 && <p className="text-xs text-orange-700 mt-0.5">{isRtl ? `مبلغ مسترد: ${o.refundAmount} ${o.currency}` : `Refunded: ${o.refundAmount} ${o.currency}`}</p>}
                               {o.paymentNotes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{o.paymentNotes}</p>}
                             </div>
                             <div className="flex items-center gap-3 ms-4 shrink-0">
@@ -1529,12 +1538,6 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </div>
-            )}
-
-            {activeTab === "evaluations" && (
-              <Suspense fallback={<TabSuspenseFallback />}>
-                <StudentEvaluationsTab lang={lang} />
-              </Suspense>
             )}
 
             {activeTab === "assignments" && (

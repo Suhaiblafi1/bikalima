@@ -1,7 +1,7 @@
-import imgCore from "@assets/برنامج_اليافعين__1774983039252.jpg";
-import imgToT from "@assets/برنامج_tot_1774988106487.jpg";
-import imgTeachers from "@assets/برنامج_اولياء_الامور_1774988106487.jpg";
-import imgChildren from "@assets/برنامج_الطفل_١_1774988344874.jpg";
+import imgCore from "@assets/program_youth_1600.jpg";
+import imgToT from "@assets/program_tot_1600.jpg";
+import imgTeachers from "@assets/program_parents_1600.jpg";
+import imgChildren from "@assets/program_children_1600.jpg";
 import type { Lang } from "./translations";
 
 export const RECORDED_PRICES = { core: 70, tot: 110, teachers: 90, children: 50 };

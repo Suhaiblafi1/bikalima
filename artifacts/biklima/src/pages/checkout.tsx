@@ -12,6 +12,7 @@ import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { programPageSlugFromCourseSlug } from "@/lib/site-config";
 import { apiFetch } from "@/lib/api-fetch";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { track } from "@/lib/analytics";
 
 export default function CheckoutPage() {
   const paymentsEnabled = useFeatureFlag("payments");
@@ -35,6 +36,9 @@ export default function CheckoutPage() {
   const [courseTitleAr, setCourseTitleAr] = useState<string>("");
   const [courseTitleEn, setCourseTitleEn] = useState<string>("");
   const [coursePrice, setCoursePrice] = useState<number | null>(null);
+  const [deliveryFormat, setDeliveryFormat] = useState<"recorded" | "zoom" | "blended">("recorded");
+  const [availableFormats, setAvailableFormats] = useState<Array<"recorded" | "zoom" | "blended">>(["recorded"]);
+  const [formatPrices, setFormatPrices] = useState<Record<"recorded" | "zoom" | "blended", number | null>>({ recorded: null, zoom: null, blended: null });
   const [courseLoading, setCourseLoading] = useState(!!slug);
   const [courseError, setCourseError] = useState(
     !slug ? (lang === "ar" ? "لم يتم تحديد دورة. يرجى العودة واختيار دورة." : "No course selected. Please go back and choose a course.") : ""
@@ -77,9 +81,21 @@ export default function CheckoutPage() {
           setCourseId(data.course.id);
           setCourseTitleAr(data.course.titleAr || "");
           setCourseTitleEn(data.course.titleEn || "");
-          setCoursePrice(data.course.discountPrice ?? data.course.price ?? null);
+          const formats: Array<"recorded" | "zoom" | "blended"> = data.course.deliveryFormats?.length ? data.course.deliveryFormats : ["recorded"];
+          const requestedFormat = params.get("format") as "recorded" | "zoom" | "blended" | null;
+          const initialFormat: "recorded" | "zoom" | "blended" = requestedFormat && formats.includes(requestedFormat) ? requestedFormat : formats[0];
+          const prices: Record<"recorded" | "zoom" | "blended", number | null> = {
+            recorded: data.course.recordedPrice ?? data.course.discountPrice ?? data.course.price ?? null,
+            zoom: data.course.zoomPrice ?? data.course.price ?? null,
+            blended: data.course.blendedPrice ?? data.course.price ?? null,
+          };
+          setAvailableFormats(formats);
+          setFormatPrices(prices);
+          setDeliveryFormat(initialFormat);
+          setCoursePrice(prices[initialFormat]);
           setAppliedDiscount(null);
           setDiscountCode("");
+          track("checkout_started", { courseSlug: slug, deliveryFormat: initialFormat });
         } else {
           setCourseError(lang === "ar" ? "لم يتم العثور على الدورة." : "Course not found.");
         }
@@ -113,7 +129,7 @@ export default function CheckoutPage() {
       const response = await apiFetch("/discount-codes/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, code }),
+        body: JSON.stringify({ courseId, deliveryFormat, code }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.valid) {
@@ -128,6 +144,7 @@ export default function CheckoutPage() {
         discountAmount: data.discountAmount,
         finalAmount: data.finalAmount,
       });
+      track("discount_applied", { courseSlug: slug, deliveryFormat });
     } catch {
       setDiscountError(lang === "ar" ? "تعذّر التحقق من الكود." : "We couldn't validate the code.");
     } finally {
@@ -146,6 +163,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId,
+          deliveryFormat,
           buyerName: form.buyerName.trim(),
           buyerEmail: form.buyerEmail.trim(),
           buyerPhone: form.buyerPhone.trim(),
@@ -168,6 +186,7 @@ export default function CheckoutPage() {
       }
       const data = await res.json().catch(() => ({}));
       if (data?.checkoutUrl) {
+        track("payment_redirect", { courseSlug: slug, deliveryFormat });
         window.location.href = data.checkoutUrl;
         return;
       }
@@ -190,6 +209,11 @@ export default function CheckoutPage() {
   // Reusable: course summary card the visitor sees regardless of auth state.
   const programPage = `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`;
   const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
+  const formatLabel = (format: "recorded" | "zoom" | "blended") => format === "recorded"
+    ? (lang === "ar" ? "مسجّلة" : "Recorded")
+    : format === "zoom"
+      ? (lang === "ar" ? "مباشر عبر Zoom" : "Live on Zoom")
+      : (lang === "ar" ? "مسجّل + Zoom" : "Recorded + Zoom");
 
   const courseSummary = courseLoading ? (
     <div className="h-20 bg-muted/40 rounded-xl animate-pulse" />
@@ -208,6 +232,7 @@ export default function CheckoutPage() {
           {lang === "ar" ? "الدورة المختارة" : "Selected Course"}
         </p>
         <p className="font-bold text-foreground" data-testid="checkout-course-title">{courseTitle}</p>
+        <p className="text-xs text-primary font-semibold mt-1">{formatLabel(deliveryFormat)}</p>
       </div>
       {coursePrice !== null && (
         <div className="text-end shrink-0">
@@ -339,6 +364,33 @@ export default function CheckoutPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={error ? "checkout-error" : undefined}>
+                {availableFormats.length > 1 && (
+                  <fieldset className="space-y-2">
+                    <legend className="text-sm font-medium text-foreground">{lang === "ar" ? "اختر صيغة الدراسة" : "Choose learning format"}</legend>
+                    <div className="grid sm:grid-cols-3 gap-2">
+                      {availableFormats.map((format) => (
+                        <label key={format} className={`rounded-xl border p-3 cursor-pointer transition-colors ${deliveryFormat === format ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
+                          <input
+                            className="sr-only"
+                            type="radio"
+                            name="delivery-format"
+                            value={format}
+                            checked={deliveryFormat === format}
+                            onChange={() => {
+                              setDeliveryFormat(format);
+                              setCoursePrice(formatPrices[format]);
+                              setAppliedDiscount(null);
+                              setDiscountCode("");
+                              setDiscountError("");
+                            }}
+                          />
+                          <span className="block text-sm font-semibold">{formatLabel(format)}</span>
+                          {formatPrices[format] != null && <span className="block text-xs text-muted-foreground mt-1">{formatPrices[format]} JOD</span>}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
                 <div className="space-y-1.5">
                   <label htmlFor="checkout-name" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
                     <User className="w-4 h-4 text-primary" />

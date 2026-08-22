@@ -56,6 +56,18 @@ export default defineConfig({
     // strip console/debugger statements from the bundle.
     sourcemap: false,
     minify: "esbuild",
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("framer-motion")) return "motion";
+          if (id.includes("@radix-ui") || id.includes("lucide-react")) return "ui-vendor";
+          if (id.includes("@tanstack") || id.includes("wouter")) return "app-vendor";
+          if (id.includes("react") || id.includes("scheduler")) return "react-vendor";
+          return undefined;
+        },
+      },
+    },
   },
   esbuild: {
     drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
