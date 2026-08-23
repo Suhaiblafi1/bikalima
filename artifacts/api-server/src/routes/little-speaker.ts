@@ -17,6 +17,9 @@ import {
   lessonActivitiesTable,
   certificatesTable,
   notificationsTable,
+  assignmentsTable,
+  assignmentSubmissionsTable,
+  lessonSessionAttendanceTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
@@ -183,7 +186,21 @@ router.get("/parent/live-sessions", async (req: Request, res: Response) => {
     const courses = await db.select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr })
       .from(coursesTable).where(inArray(coursesTable.id, courseIds));
     const courseMap = new Map(courses.map(c => [c.id, c]));
-    res.json({ sessions: sessions.map(s => decorateSession(s, lessonMap, courseMap)) });
+    const studentsByCourse = new Map<string, string[]>();
+    for (const enrollment of enrolls) {
+      studentsByCourse.set(enrollment.courseId, [
+        ...(studentsByCourse.get(enrollment.courseId) ?? []),
+        enrollment.userId,
+      ]);
+    }
+    res.json({ sessions: sessions.map((session) => {
+      const decorated = decorateSession(session, lessonMap, courseMap);
+      const lesson = lessonMap.get(session.lessonId);
+      return {
+        ...decorated,
+        studentUserIds: lesson ? studentsByCourse.get(lesson.courseId) ?? [] : [],
+      };
+    }) });
   } catch (err) {
     req.log.error({ err }, "list parent live-sessions failed");
     res.status(500).json({ error: "Failed" });
@@ -319,26 +336,114 @@ router.get("/parent/children", async (req: Request, res: Response) => {
     }).from(usersTable).where(inArray(usersTable.id, studentIds));
     const studentMap = new Map(students.map(s => [s.id, s]));
 
-    // Compute per-child summary
+    // Compute a real weekly summary from the same LMS records used by the
+    // student and trainer workspaces.
+    const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60_000);
+    const now = new Date();
     const summaries: Array<Record<string, unknown>> = [];
     for (const link of links) {
       const s = studentMap.get(link.studentUserId);
       if (!s) continue;
-      const [enrollCount] = await db.select({ c: sql<number>`count(*)::int` })
+      const activeEnrollments = await db.select({ courseId: enrollmentsTable.courseId })
         .from(enrollmentsTable).where(and(eq(enrollmentsTable.userId, link.studentUserId), eq(enrollmentsTable.status, "active")));
+      const courseIds = activeEnrollments.map((enrollment) => enrollment.courseId);
       const [doneLessons] = await db.select({ c: sql<number>`count(*)::int` })
         .from(lessonProgressTable)
         .where(and(eq(lessonProgressTable.userId, link.studentUserId), eq(lessonProgressTable.completed, true)));
       const [submissions] = await db.select({ c: sql<number>`count(*)::int` })
         .from(activitySubmissionsTable)
         .where(and(eq(activitySubmissionsTable.userId, link.studentUserId), eq(activitySubmissionsTable.status, "completed")));
+      const [weeklyLessons] = await db.select({ c: sql<number>`count(*)::int` })
+        .from(lessonProgressTable)
+        .where(and(
+          eq(lessonProgressTable.userId, link.studentUserId),
+          eq(lessonProgressTable.completed, true),
+          gte(lessonProgressTable.completedAt, weekStart),
+        ));
+      const [weeklyActivities] = await db.select({ c: sql<number>`count(*)::int` })
+        .from(activitySubmissionsTable)
+        .where(and(
+          eq(activitySubmissionsTable.userId, link.studentUserId),
+          eq(activitySubmissionsTable.status, "completed"),
+          gte(activitySubmissionsTable.createdAt, weekStart),
+        ));
+      const attendanceRows = await db.select({ status: lessonSessionAttendanceTable.status })
+        .from(lessonSessionAttendanceTable)
+        .where(and(
+          eq(lessonSessionAttendanceTable.userId, link.studentUserId),
+          gte(lessonSessionAttendanceTable.markedAt, weekStart),
+        ));
+      const attendance = attendanceRows.reduce((counts, row) => {
+        counts[row.status] += 1;
+        return counts;
+      }, { present: 0, absent: 0, excused: 0 });
+
+      let nextAssignment: { id: string; titleAr: string; dueAt: Date | null; status: "pending" | "submitted" | "reviewed" } | null = null;
+      let courseProgress: Array<{ courseId: string; titleAr: string; completedLessons: number; totalLessons: number; progressPct: number }> = [];
+      if (courseIds.length > 0) {
+        const [upcoming] = await db.select({ id: assignmentsTable.id, titleAr: assignmentsTable.titleAr, dueAt: assignmentsTable.dueAt })
+          .from(assignmentsTable)
+          .where(and(
+            inArray(assignmentsTable.courseId, courseIds),
+            eq(assignmentsTable.isPublished, true),
+            gte(assignmentsTable.dueAt, now),
+          ))
+          .orderBy(asc(assignmentsTable.dueAt))
+          .limit(1);
+        if (upcoming) {
+          const [submission] = await db.select({ status: assignmentSubmissionsTable.status })
+            .from(assignmentSubmissionsTable)
+            .where(and(
+              eq(assignmentSubmissionsTable.assignmentId, upcoming.id),
+              eq(assignmentSubmissionsTable.userId, link.studentUserId),
+            ))
+            .limit(1);
+          nextAssignment = { ...upcoming, status: submission?.status ?? "pending" };
+        }
+
+        const activeCourses = await db.select({ id: coursesTable.id, titleAr: coursesTable.titleAr })
+          .from(coursesTable)
+          .where(inArray(coursesTable.id, courseIds));
+        const publishedLessons = await db.select({ id: lessonsTable.id, courseId: lessonsTable.courseId })
+          .from(lessonsTable)
+          .where(and(inArray(lessonsTable.courseId, courseIds), eq(lessonsTable.isPublished, true)));
+        const lessonIds = publishedLessons.map((lesson) => lesson.id);
+        const completedRows = lessonIds.length > 0
+          ? await db.select({ lessonId: lessonProgressTable.lessonId })
+            .from(lessonProgressTable)
+            .where(and(
+              eq(lessonProgressTable.userId, link.studentUserId),
+              eq(lessonProgressTable.completed, true),
+              inArray(lessonProgressTable.lessonId, lessonIds),
+            ))
+          : [];
+        const completedSet = new Set(completedRows.map((row) => row.lessonId));
+        courseProgress = activeCourses.map((course) => {
+          const courseLessons = publishedLessons.filter((lesson) => lesson.courseId === course.id);
+          const completed = courseLessons.filter((lesson) => completedSet.has(lesson.id)).length;
+          return {
+            courseId: course.id,
+            titleAr: course.titleAr,
+            completedLessons: completed,
+            totalLessons: courseLessons.length,
+            progressPct: courseLessons.length > 0 ? Math.round((completed / courseLessons.length) * 100) : 0,
+          };
+        });
+      }
       summaries.push({
         linkId: link.id,
         relationshipAr: link.relationshipAr,
         student: s,
-        enrolledCourses: enrollCount?.c ?? 0,
+        enrolledCourses: courseIds.length,
         completedLessons: doneLessons?.c ?? 0,
         completedActivities: submissions?.c ?? 0,
+        weekly: {
+          completedLessons: weeklyLessons?.c ?? 0,
+          completedActivities: weeklyActivities?.c ?? 0,
+          attendance,
+        },
+        courseProgress,
+        nextAssignment,
       });
     }
     res.json({ children: summaries });

@@ -30,6 +30,7 @@ interface LiveSession {
   id: string; zoomJoinUrl: string; titleAr: string | null; scheduledAt: string;
   durationMinutes: number; status: string; recordingUrl: string | null;
   lessonTitleAr: string | null; courseTitleAr: string | null;
+  studentUserIds: string[];
 }
 
 interface ChildSummary {
@@ -45,6 +46,24 @@ interface ChildSummary {
   enrolledCourses: number;
   completedLessons: number;
   completedActivities: number;
+  weekly: {
+    completedLessons: number;
+    completedActivities: number;
+    attendance: { present: number; absent: number; excused: number };
+  };
+  courseProgress: Array<{
+    courseId: string;
+    titleAr: string;
+    completedLessons: number;
+    totalLessons: number;
+    progressPct: number;
+  }>;
+  nextAssignment: {
+    id: string;
+    titleAr: string;
+    dueAt: string | null;
+    status: "pending" | "submitted" | "reviewed";
+  } | null;
 }
 
 function getApiBase(): string {
@@ -134,6 +153,9 @@ export default function ParentPage() {
   if (!isAuthenticated) return <Redirect to="/login?redirect=%2Fparent" replace />;
 
   const selectedChild = children?.find((child) => child.student.id === selectedChildId) ?? null;
+  const selectedLiveSessions = liveSessions?.filter((session) => (
+    !selectedChildId || session.studentUserIds.includes(selectedChildId)
+  )) ?? null;
 
   return (
     <AppShell>
@@ -258,7 +280,7 @@ export default function ParentPage() {
         </Card>
 
         {selectedChild && (
-          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-primary/15 bg-primary/5 p-3 sm:gap-3 sm:p-4" aria-label={`ملخص ${selectedChild.student.firstName ?? "الطفل"}`}>
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-primary/15 bg-primary/5 p-3 sm:gap-3 sm:p-4" aria-label={`الملخص العام لـ ${selectedChild.student.firstName ?? "الطفل"}`}>
             <div className="text-center">
               <p className="text-xl font-bold text-primary">{selectedChild.enrolledCourses}</p>
               <p className="text-xs text-muted-foreground">برامج نشطة</p>
@@ -274,19 +296,68 @@ export default function ParentPage() {
           </div>
         )}
 
+        {selectedChild && (
+          <Card className="overflow-hidden rounded-2xl border-primary/15">
+            <CardContent className="p-0">
+              <div className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent p-4 sm:p-6">
+                <p className="text-xs font-bold text-primary">خلال آخر 7 أيام</p>
+                <h2 className="mt-1 text-lg font-bold">ملخص أسبوع {selectedChild.student.firstName || "الطالب"}</h2>
+                <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                  {selectedChild.weekly.completedLessons + selectedChild.weekly.completedActivities > 0
+                    ? `أنجز ${selectedChild.weekly.completedLessons} من الدروس و${selectedChild.weekly.completedActivities} من الأنشطة هذا الأسبوع.`
+                    : "لا يوجد نشاط تعليمي مكتمل مسجّل هذا الأسبوع حتى الآن."}
+                  {selectedChild.weekly.attendance.absent > 0
+                    ? ` توجد ${selectedChild.weekly.attendance.absent} حالة غياب تحتاج المتابعة.`
+                    : selectedChild.weekly.attendance.present > 0 ? " الحضور المسجّل منتظم." : " لم تُسجّل جلسات حضور خلال الفترة."}
+                </p>
+              </div>
+              <div className="grid grid-cols-3 border-y border-border bg-card text-center">
+                <div className="p-3 sm:p-4"><p className="text-xl font-bold text-primary">{selectedChild.weekly.completedLessons}</p><p className="text-xs text-muted-foreground">دروس هذا الأسبوع</p></div>
+                <div className="border-x border-border p-3 sm:p-4"><p className="text-xl font-bold text-primary">{selectedChild.weekly.completedActivities}</p><p className="text-xs text-muted-foreground">أنشطة منجزة</p></div>
+                <div className="p-3 sm:p-4"><p className={`text-xl font-bold ${selectedChild.weekly.attendance.absent > 0 ? "text-rose-600" : "text-emerald-600"}`}>{selectedChild.weekly.attendance.present}/{selectedChild.weekly.attendance.present + selectedChild.weekly.attendance.absent + selectedChild.weekly.attendance.excused}</p><p className="text-xs text-muted-foreground">جلسات حضرها</p></div>
+              </div>
+              <div className="space-y-5 p-4 sm:p-6">
+                <div>
+                  <h3 className="text-sm font-bold">تقدم البرامج</h3>
+                  {selectedChild.courseProgress.length === 0 ? (
+                    <p className="mt-2 text-xs text-muted-foreground">لا توجد برامج نشطة حالياً.</p>
+                  ) : (
+                    <ul className="mt-3 space-y-3">
+                      {selectedChild.courseProgress.map((course) => (
+                        <li key={course.courseId}>
+                          <div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className="truncate font-bold">{course.titleAr}</span><span className="shrink-0 text-primary">{course.progressPct}%</span></div>
+                          <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${course.progressPct}%` }} /></div>
+                          <p className="mt-1 text-xs text-muted-foreground">{course.completedLessons} من {course.totalLessons} درس</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
+                  <p className="text-xs font-bold text-muted-foreground">الواجب القادم</p>
+                  {selectedChild.nextAssignment ? (
+                    <div className="mt-1 flex items-center justify-between gap-3"><p className="truncate text-sm font-bold">{selectedChild.nextAssignment.titleAr}</p><span className="shrink-0 text-xs text-primary">{selectedChild.nextAssignment.status === "pending" ? "بانتظار التسليم" : selectedChild.nextAssignment.status === "submitted" ? "تم التسليم" : "تمت المراجعة"}</span></div>
+                  ) : <p className="mt-1 text-sm text-muted-foreground">لا يوجد واجب قادم.</p>}
+                  {selectedChild.nextAssignment?.dueAt && <p className="mt-1 text-xs text-muted-foreground">الموعد: {new Date(selectedChild.nextAssignment.dueAt).toLocaleString("ar-SA")}</p>}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="rounded-2xl">
           <CardContent className="p-4 sm:p-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
               <Video className="w-5 h-5 text-primary" />
               الحصص المباشرة لأبنائي
             </h2>
-            {liveSessions === null ? (
+            {selectedLiveSessions === null ? (
               loadError ? null : <div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>
-            ) : liveSessions.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">لا توجد حصص مباشرة قادمة لأبنائك.</p>
+            ) : selectedLiveSessions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">لا توجد حصص مباشرة قادمة للطفل المحدد.</p>
             ) : (
               <ul className="space-y-3">
-                {liveSessions.map(s => {
+                {selectedLiveSessions.map(s => {
                   const when = new Date(s.scheduledAt);
                   const isLive = s.status === "live";
                   return (
