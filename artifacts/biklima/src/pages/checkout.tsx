@@ -278,6 +278,46 @@ export default function CheckoutPage() {
     );
   }
 
+  if (!courseLoading && courseError) {
+    return (
+      <AppShell
+        containerClassName=""
+        breadcrumb={[
+          { label: lang === "ar" ? "البرامج" : "Programs", href: "/#structure" },
+          { label: lang === "ar" ? "التسجيل" : "Registration" },
+        ]}
+      >
+        <div className="mx-auto flex min-h-[55dvh] max-w-lg items-center px-4 py-10" dir={isRtl ? "rtl" : "ltr"}>
+          <Card className="w-full border-border/70 shadow-sm">
+            <CardContent className="space-y-4 p-6 text-center sm:p-8">
+              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">
+                  {lang === "ar" ? "التسجيل غير متاح لهذه الدورة حالياً" : "Registration is not available for this course yet"}
+                </h1>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {lang === "ar"
+                    ? "يمكنك مراجعة تفاصيل البرنامج أو إرسال طلب اهتمام، وسنتواصل معك عند فتح التسجيل."
+                    : "Review the programme details or send an interest request and we will contact you when registration opens."}
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button className="rounded-full" onClick={() => navigate(programPage)}>
+                  {lang === "ar" ? "تفاصيل البرنامج" : "Programme details"}
+                </Button>
+                <Button variant="outline" className="rounded-full" onClick={() => navigate("/#enroll")}>
+                  {lang === "ar" ? "أرسل طلب اهتمام" : "Send an interest request"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AppShell>
+    );
+  }
+
   const loginRedirect = `/login?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`;
 
   return (

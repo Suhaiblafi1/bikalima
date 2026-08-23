@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
-import { Shield, Home as HomeIcon, LogIn } from "lucide-react";
+import { Home as HomeIcon, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "./states";
 import { useMe, type Role } from "@/hooks/use-me";
@@ -79,13 +79,6 @@ export function AdminRoute({ children }: { children: ReactNode }) {
 
 type RoleArea = "student" | "trainer" | "parent" | "admin";
 
-const AREA_COPY: Record<RoleArea, { ar: string; en: string }> = {
-  student: { ar: "هذه المساحة مخصصة للمتعلمين.", en: "This workspace is for learners." },
-  trainer: { ar: "هذه المساحة مخصصة للمدربين.", en: "This workspace is for trainers." },
-  parent: { ar: "هذه المساحة مخصصة لأولياء الأمور.", en: "This workspace is for parents." },
-  admin: { ar: "هذه المساحة مخصصة لفريق الإدارة.", en: "This workspace is for the administration team." },
-};
-
 export function RoleRoute({
   children,
   allowedRoles,
@@ -98,9 +91,6 @@ export function RoleRoute({
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { role, isLoading: meLoading } = useMe();
   const [location] = useLocation();
-  const [lang] = useState<Lang>(getLangFromStorage);
-  const isRtl = lang === "ar";
-
   if (authLoading || (isAuthenticated && meLoading)) return <FullPageLoading />;
 
   if (!isAuthenticated) {
@@ -110,18 +100,10 @@ export function RoleRoute({
 
   if (role && allowedRoles.includes(role)) return <>{children}</>;
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6" dir={isRtl ? "rtl" : "ltr"}>
-      <div className="max-w-md w-full text-center bg-card border border-border rounded-2xl p-8 shadow-sm">
-        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-          <Shield className="w-7 h-7 text-primary" />
-        </div>
-        <h2 className="text-xl font-bold mb-2">{isRtl ? "سننقلك إلى منصتك" : "Taking you to your workspace"}</h2>
-        <p className="text-sm text-muted-foreground mb-6">{AREA_COPY[area][lang]}</p>
-        <RedirectTo href={getRoleHome(role)} />
-      </div>
-    </div>
-  );
+  // A user who opens another role's URL should be redirected immediately.
+  // Rendering a full-page loader inside the explanatory card created a very
+  // tall blank panel and made a normal redirect look like an infinite load.
+  return <RedirectTo href={getRoleHome(role)} />;
 }
 
 function RedirectTo({ href }: { href: string }) {

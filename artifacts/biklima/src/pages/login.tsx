@@ -31,6 +31,7 @@ const t = {
     registerTitle: "إنشاء حساب",
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
+    confirmPassword: "تأكيد كلمة المرور",
     loginBtn: "تسجيل الدخول",
     registerBtn: "إنشاء الحساب",
     switchToRegister: "ليس لديك حساب؟ ",
@@ -39,6 +40,7 @@ const t = {
     signIn: "سجّل الدخول",
     backHome: "العودة إلى الصفحة الرئيسية",
     passwordMin: "كلمة المرور الجديدة يجب أن تكون 10 أحرف على الأقل.",
+    passwordMismatch: "كلمتا المرور غير متطابقتين.",
     showPwd: "إظهار كلمة المرور",
     hidePwd: "إخفاء كلمة المرور",
     secureNote: "اتصالك مؤمَّن. لن نشارك بياناتك مع أي طرف ثالث.",
@@ -46,7 +48,7 @@ const t = {
     orDivider: "أو",
     googleBtn: "المتابعة عبر Google",
     oauthError: "تعذّر تسجيل الدخول عبر Google. حاول مرة أخرى أو استخدم بريدك.",
-    nameLater: "بدون اسم أو تأكيد — تكمل ملفك الشخصي بعد أول دخول.",
+    googleUnavailable: "الدخول عبر Google غير مفعّل بعد. يمكن تفعيله فور إضافة بيانات Google إلى إعدادات المنصة.",
   },
   en: {
     pageTitle: "Sign in to your platform",
@@ -56,6 +58,7 @@ const t = {
     registerTitle: "Create account",
     email: "Email",
     password: "Password",
+    confirmPassword: "Confirm password",
     loginBtn: "Sign in",
     registerBtn: "Create account",
     switchToRegister: "Don't have an account? ",
@@ -64,6 +67,7 @@ const t = {
     signIn: "Sign in",
     backHome: "Back to home",
     passwordMin: "A new password must be at least 10 characters.",
+    passwordMismatch: "Passwords do not match.",
     showPwd: "Show password",
     hidePwd: "Hide password",
     secureNote: "Your connection is secure. We never share your details.",
@@ -71,7 +75,7 @@ const t = {
     orDivider: "or",
     googleBtn: "Continue with Google",
     oauthError: "Google sign-in failed. Try again or use your email.",
-    nameLater: "No name or confirmation needed — complete your profile after your first sign-in.",
+    googleUnavailable: "Google sign-in is not enabled yet. Add the Google credentials in platform settings to activate it.",
   },
 } as const;
 
@@ -91,6 +95,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -114,6 +119,7 @@ export default function LoginPage() {
     setError("");
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -121,6 +127,10 @@ export default function LoginPage() {
     setError("");
     if (!isLogin && password.length < 10) {
       setError(tr.passwordMin);
+      return;
+    }
+    if (!isLogin && password !== confirmPassword) {
+      setError(tr.passwordMismatch);
       return;
     }
     setLoading(true);
@@ -263,6 +273,30 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {!isLogin && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="auth-confirm-password"
+                className="text-sm font-medium flex items-center gap-1.5 text-foreground"
+              >
+                <Lock className="w-4 h-4 text-muted-foreground" />
+                {tr.confirmPassword}
+              </label>
+              <Input
+                id="auth-confirm-password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="rounded-xl h-11"
+                dir="ltr"
+                minLength={10}
+                autoComplete="new-password"
+                data-testid="auth-input-confirm-password"
+              />
+            </div>
+          )}
+
           {isLogin && (
             <div className="text-end -mt-1">
               <button
@@ -274,12 +308,6 @@ export default function LoginPage() {
                 {tr.forgotPassword}
               </button>
             </div>
-          )}
-
-          {!isLogin && (
-            <p className="text-xs text-muted-foreground leading-relaxed -mt-1">
-              {tr.nameLater}
-            </p>
           )}
 
           <Button
@@ -303,28 +331,43 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {googleEnabled && (
-          <>
+        <>
             <div className="flex items-center gap-3 my-5" aria-hidden>
               <span className="h-px flex-1 bg-border" />
               <span className="text-xs text-muted-foreground">{tr.orDivider}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
-            <a
-              href={`${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}/api/auth/google`}
-              className="w-full h-12 rounded-full border border-border bg-card hover:bg-muted/40 transition-colors flex items-center justify-center gap-2.5 text-sm font-bold text-foreground"
-              data-testid="auth-google-btn"
-            >
+            {googleEnabled ? (
+              <a
+                href={`${(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}/api/auth/google`}
+                className="w-full h-12 rounded-full border border-border bg-card hover:bg-muted/40 transition-colors flex items-center justify-center gap-2.5 text-sm font-bold text-foreground"
+                data-testid="auth-google-btn"
+              >
               <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden>
                 <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
                 <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
                 <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z" />
                 <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z" />
               </svg>
-              {tr.googleBtn}
-            </a>
+                {tr.googleBtn}
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setError(tr.googleUnavailable)}
+                className="w-full h-12 rounded-full border border-border bg-card hover:bg-muted/40 transition-colors flex items-center justify-center gap-2.5 text-sm font-bold text-foreground"
+                data-testid="auth-google-btn-unavailable"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden>
+                  <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z" />
+                </svg>
+                {tr.googleBtn}
+              </button>
+            )}
           </>
-        )}
 
         <p className="flex items-start gap-2 text-xs text-muted-foreground mt-5 leading-relaxed">
           <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0 text-primary/70" />

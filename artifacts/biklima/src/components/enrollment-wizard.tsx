@@ -191,11 +191,11 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
 
   return (
     <div dir={dir} data-testid="enrollment-wizard">
-      <h2 className="font-serif text-3xl md:text-4xl font-bold mb-2">{t.enroll.heading}</h2>
-      <p className="text-muted-foreground mb-6">{t.enroll.sub}</p>
+      <h2 className="font-serif text-2xl md:text-3xl font-bold mb-1.5">{t.enroll.heading}</h2>
+      <p className="text-sm text-muted-foreground mb-5">{t.enroll.sub}</p>
 
       {/* Progress / step indicator */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-primary uppercase tracking-widest">
             {w.stepLabel} {step} {w.of} 4
@@ -213,11 +213,11 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
           />
         </div>
         {/* Step dots */}
-        <div className="flex justify-between mt-3">
+        <div className="flex justify-between mt-2.5">
           {[1, 2, 3, 4].map((n) => (
             <div
               key={n}
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all ${
+              className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all ${
                 n < step ? "bg-primary text-white"
                 : n === step ? "bg-primary/15 text-primary ring-2 ring-primary"
                 : "bg-secondary text-muted-foreground"
@@ -240,8 +240,8 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
         >
           {step === 1 && (
             <div data-testid="wizard-step-1">
-              <h3 className="text-xl font-bold mb-1">{w.step1Title}</h3>
-              <p className="text-sm text-muted-foreground mb-5">{w.step1Sub}</p>
+              <h3 className="text-lg font-bold mb-1">{w.step1Title}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{w.step1Sub}</p>
               <div className="grid grid-cols-2 gap-3">
                 {AUDIENCE_DEFS.map(({ key, icon: Icon }) => {
                   const titleKey = `aud${key.charAt(0).toUpperCase() + key.slice(1)}` as keyof typeof w;
@@ -253,19 +253,19 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                       type="button"
                       onClick={() => setAudience(key)}
                       data-testid={`wizard-audience-${key}`}
-                      className={`flex flex-col items-start gap-2 p-5 rounded-2xl border-2 text-start transition-all ${
+                      className={`flex items-start gap-3 p-3.5 rounded-xl border text-start transition-all ${
                         selected
                           ? "border-primary bg-primary/5 shadow-md"
                           : "border-border bg-background hover:border-primary/40 hover:bg-primary/5"
                       }`}
                     >
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                         selected ? "bg-primary text-white" : "bg-secondary text-primary"
                       }`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-bold text-base text-foreground">{w[titleKey] as string}</p>
+                        <p className="font-bold text-sm text-foreground">{w[titleKey] as string}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{w[descKey] as string}</p>
                       </div>
                       {selected && (
@@ -529,7 +529,7 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
       </AnimatePresence>
 
       {/* Navigation buttons */}
-      <div className="mt-8 flex items-center justify-between gap-3">
+      <div className="mt-6 flex items-center justify-between gap-3">
         {step > 1 ? (
           <Button
             type="button"

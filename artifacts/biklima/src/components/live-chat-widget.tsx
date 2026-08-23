@@ -6,7 +6,6 @@ import { PhoneInput } from "@/components/phone-input";
 import { trackWhatsappClick } from "@/lib/analytics";
 
 const STORAGE_KEY = "bikalima_chat_v1";
-const TEASER_DISMISS_KEY = "bikalima_chat_teaser_dismissed_at";
 const POLL_INTERVAL_MS = 5000;
 
 // Public event other components can dispatch to programmatically open the
@@ -24,7 +23,6 @@ export const ACTIVE_CHAT_TRANSPORT: ChatTransport = "team";
 const TEXT = {
   ar: {
     bubble: "اسأل ومضة",
-    teaser: "لست متأكدًا من أين تبدأ؟ اسأل ومضة.",
     headerTitle: "ومضة",
     headerSubtitle: "مساعد بكلمة",
     statusOnline: "متصل",
@@ -65,7 +63,6 @@ const TEXT = {
   },
   en: {
     bubble: "Ask Wamda",
-    teaser: "Not sure where to begin? Ask Wamda.",
     headerTitle: "Wamda",
     headerSubtitle: "Bikalima assistant",
     statusOnline: "Online",
@@ -149,27 +146,6 @@ function clearSession(): void {
   }
 }
 
-function shouldShowTeaser(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const dismissed = window.localStorage.getItem(TEASER_DISMISS_KEY);
-    if (!dismissed) return true;
-    const ms = Number(dismissed);
-    if (!Number.isFinite(ms)) return true;
-    return Date.now() - ms > 24 * 60 * 60 * 1000;
-  } catch {
-    return true;
-  }
-}
-
-function dismissTeaserStorage(): void {
-  try {
-    window.localStorage.setItem(TEASER_DISMISS_KEY, String(Date.now()));
-  } catch {
-    /* ignore */
-  }
-}
-
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
   return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
@@ -211,7 +187,6 @@ export function LiveChatWidget() {
   const apiBase = useMemo(() => getApiBase(), []);
 
   const [open, setOpen] = useState(false);
-  const [showTeaser, setShowTeaser] = useState(false);
   const [session, setSession] = useState<StoredSession | null>(() => loadSession());
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadStatus, setThreadStatus] = useState<"open" | "closed">("open");
@@ -231,20 +206,10 @@ export function LiveChatWidget() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const lastSeenRef = useRef<string | null>(null);
 
-  // ── Teaser bubble (only when no session exists) ────────────────────
-  useEffect(() => {
-    if (session) return;
-    if (!shouldShowTeaser()) return;
-    const tm = window.setTimeout(() => setShowTeaser(true), 5000);
-    return () => window.clearTimeout(tm);
-  }, [session]);
-
   // ── Allow other components to open chat programmatically ───────────
   useEffect(() => {
     const handler = () => {
       setOpen(true);
-      setShowTeaser(false);
-      dismissTeaserStorage();
     };
     window.addEventListener(OPEN_CHAT_EVENT, handler);
     return () => window.removeEventListener(OPEN_CHAT_EVENT, handler);
@@ -514,8 +479,6 @@ export function LiveChatWidget() {
 
   const onBubbleClick = () => {
     setOpen((v) => !v);
-    setShowTeaser(false);
-    dismissTeaserStorage();
   };
 
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -530,36 +493,6 @@ export function LiveChatWidget() {
       }}
       data-testid="live-chat-widget"
     >
-      {/* Teaser */}
-      <AnimatePresence>
-        {showTeaser && !open && !session && (
-          <motion.div
-            key="teaser"
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.25 }}
-            className="relative bg-card border border-primary/15 shadow-xl rounded-2xl px-4 py-3 max-w-[260px]"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setShowTeaser(false);
-                dismissTeaserStorage();
-              }}
-              aria-label={t.closeBtn}
-              className="absolute -top-2 -end-2 w-6 h-6 rounded-full bg-foreground/80 text-background flex items-center justify-center hover:bg-foreground"
-              data-testid="live-chat-teaser-dismiss"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-            <p className="text-xs text-foreground leading-relaxed font-medium pe-2">
-              {t.teaser}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Panel */}
       <AnimatePresence>
         {open && (
