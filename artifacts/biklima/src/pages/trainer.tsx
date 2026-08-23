@@ -81,6 +81,7 @@ export default function TrainerDashboardPage() {
   const [broadcastSubject, setBroadcastSubject] = useState("");
   const [broadcastBody, setBroadcastBody] = useState("");
   const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastConfirming, setBroadcastConfirming] = useState(false);
   const [focusedAssignmentId, setFocusedAssignmentId] = useState<string | null>(null);
   const [focusedSubmissionId, setFocusedSubmissionId] = useState<string | null>(null);
   const [focusedCourseId, setFocusedCourseId] = useState<string | null>(null);
@@ -109,6 +110,7 @@ export default function TrainerDashboardPage() {
       });
       if (r.ok) {
         setBroadcastSubject(""); setBroadcastBody("");
+        setBroadcastConfirming(false);
         toast({ title: "تم إرسال الإعلان لجميع طلاب الدورة." });
       } else {
         const d = await r.json().catch(() => ({}));
@@ -360,27 +362,43 @@ export default function TrainerDashboardPage() {
                 <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-primary" /> إعلان لطلاب الدورة</h2>
                 <p className="text-xs text-muted-foreground">سيتم إرسال الرسالة كمحادثة لكل طالب مسجّل في الدورة المختارة.</p>
                 <label htmlFor="trainer-broadcast-course" className="text-xs font-bold">الدورة</label>
-                <select id="trainer-broadcast-course" value={broadcastCourseId} onChange={(e) => setBroadcastCourseId(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-border text-sm bg-card" data-testid="broadcast-course-select">
+                <select id="trainer-broadcast-course" value={broadcastCourseId} onChange={(e) => { setBroadcastCourseId(e.target.value); setBroadcastConfirming(false); }}
+                  className="min-h-11 w-full p-2 rounded-lg border border-border text-sm bg-card" data-testid="broadcast-course-select">
                   <option value="">اختر الدورة...</option>
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>{c.titleAr} ({c.enrollmentCount})</option>
                   ))}
                 </select>
                 <label htmlFor="trainer-broadcast-subject" className="sr-only">موضوع الإعلان</label>
-                <input id="trainer-broadcast-subject" value={broadcastSubject} onChange={(e) => setBroadcastSubject(e.target.value)}
+                <input id="trainer-broadcast-subject" value={broadcastSubject} onChange={(e) => { setBroadcastSubject(e.target.value); setBroadcastConfirming(false); }}
                   placeholder="الموضوع (اختياري)"
-                  className="w-full p-2 rounded-lg border border-border text-sm" />
+                  className="min-h-11 w-full p-2 rounded-lg border border-border text-sm" />
                 <label htmlFor="trainer-broadcast-body" className="sr-only">نص الإعلان</label>
-                <textarea id="trainer-broadcast-body" value={broadcastBody} onChange={(e) => setBroadcastBody(e.target.value)}
+                <textarea id="trainer-broadcast-body" value={broadcastBody} onChange={(e) => { setBroadcastBody(e.target.value); setBroadcastConfirming(false); }}
                   placeholder="نص الإعلان..."
                   className="w-full min-h-[80px] p-2 rounded-lg border border-border text-sm" />
-                <Button size="sm" onClick={sendBroadcast}
-                  disabled={broadcastSending || !broadcastCourseId || !broadcastBody.trim()}
-                  data-testid="broadcast-send">
-                  {broadcastSending ? <Loader2 className="w-4 h-4 animate-spin me-1" /> : <Send className="w-4 h-4 me-1" />}
-                  إرسال الإعلان
-                </Button>
+                {broadcastConfirming ? (
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4" role="status">
+                    <p className="text-sm font-bold">تأكيد جمهور الإعلان</p>
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      سيصل «{broadcastSubject.trim() || "إعلان من المدرّب"}» إلى {courses.find((course) => course.id === broadcastCourseId)?.enrollmentCount ?? 0} طالباً في دورة «{courses.find((course) => course.id === broadcastCourseId)?.titleAr ?? "—"}».
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <Button onClick={sendBroadcast} disabled={broadcastSending} className="min-h-11" data-testid="broadcast-send">
+                        {broadcastSending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Send className="me-1 h-4 w-4" />}
+                        تأكيد الإرسال
+                      </Button>
+                      <Button variant="outline" onClick={() => setBroadcastConfirming(false)} disabled={broadcastSending} className="min-h-11">مراجعة الرسالة</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button size="sm" onClick={() => setBroadcastConfirming(true)}
+                    disabled={!broadcastCourseId || !broadcastBody.trim()}
+                    className="min-h-11"
+                    data-testid="broadcast-preview">
+                    معاينة الإرسال والجمهور
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

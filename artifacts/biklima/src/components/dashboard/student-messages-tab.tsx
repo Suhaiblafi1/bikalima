@@ -26,6 +26,11 @@ interface Participant {
   email: string;
 }
 
+const ROLE_LABELS = {
+  ar: { admin: "مدير", supervisor: "مشرف", trainer: "مدرّب", student: "طالب", sales: "مبيعات", parent: "ولي أمر" },
+  en: { admin: "Admin", supervisor: "Supervisor", trainer: "Trainer", student: "Student", sales: "Sales", parent: "Parent" },
+} as const;
+
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
   return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
@@ -136,14 +141,14 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
 
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-6 md:p-8">
+      <CardContent className="p-4 sm:p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold text-xl flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" />
             {isRtl ? "الرسائل" : "Messages"}
           </h3>
           {!openId && !showCompose && (
-            <button onClick={openCompose} className="text-sm font-bold inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white">
+            <button onClick={openCompose} className="inline-flex min-h-11 items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-bold text-white">
               <Plus className="w-4 h-4" />
               {isRtl ? "محادثة جديدة" : "New conversation"}
             </button>
@@ -154,27 +159,27 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
           <div className="space-y-3 border border-border rounded-xl p-4 bg-muted/20 mb-4">
             <p className="font-bold text-sm">{isRtl ? "محادثة جديدة" : "New conversation"}</p>
             <select value={composeTo} onChange={(e) => setComposeTo(e.target.value)}
-              className="w-full p-2 rounded-lg border border-border text-sm bg-card">
+              className="min-h-11 w-full p-2 rounded-lg border border-border text-sm bg-card">
               <option value="">{isRtl ? "اختر المستلم..." : "Choose recipient..."}</option>
               {contacts.map(c => (
                 <option key={c.id} value={c.id}>
-                  {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.email} {c.role ? `(${c.role})` : ""}
+                  {[c.firstName, c.lastName].filter(Boolean).join(" ") || c.email} {c.role ? `(${ROLE_LABELS[lang][c.role as keyof typeof ROLE_LABELS.ar] ?? c.role})` : ""}
                 </option>
               ))}
             </select>
             <input value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)}
               placeholder={isRtl ? "الموضوع (اختياري)" : "Subject (optional)"}
-              className="w-full p-2 rounded-lg border border-border text-sm" />
+              className="min-h-11 w-full p-2 rounded-lg border border-border text-sm" />
             <textarea value={composeBody} onChange={(e) => setComposeBody(e.target.value)}
               placeholder={isRtl ? "اكتب رسالتك..." : "Write your message..."}
               className="w-full min-h-[80px] p-2 rounded-lg border border-border text-sm" />
             <div className="flex gap-2">
               <button onClick={createThread} disabled={creating || !composeTo || !composeBody.trim()}
-                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-50">
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {isRtl ? "إرسال" : "Send"}
               </button>
-              <button onClick={() => setShowCompose(false)} className="px-4 py-2 rounded-lg border border-border text-sm">
+              <button onClick={() => setShowCompose(false)} className="min-h-11 rounded-lg border border-border px-4 py-2 text-sm">
                 {isRtl ? "إلغاء" : "Cancel"}
               </button>
             </div>
@@ -230,7 +235,7 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
 
         {openId && (
           <div className="space-y-3">
-            <button onClick={() => setOpenId(null)} className="text-sm text-muted-foreground inline-flex items-center gap-1">
+            <button onClick={() => setOpenId(null)} className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground">
               <ChevronLeft className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`} />
               {isRtl ? "العودة للمحادثات" : "Back to conversations"}
             </button>
@@ -264,7 +269,7 @@ export default function StudentMessagesTab({ lang, currentUserId }: { lang: "ar"
               <button
                 onClick={send}
                 disabled={sending || !draft.trim()}
-                className="self-end px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold inline-flex items-center gap-1.5 disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-1.5 self-end rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
               >
                 {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {isRtl ? "إرسال" : "Send"}
