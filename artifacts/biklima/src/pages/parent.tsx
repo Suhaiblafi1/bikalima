@@ -63,6 +63,8 @@ export default function ParentPage() {
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [redeeming, setRedeeming] = useState(false);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [linkPanelOpen, setLinkPanelOpen] = useState(true);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -87,6 +89,14 @@ export default function ParentPage() {
   useEffect(() => {
     if (isAuthenticated) load();
   }, [isAuthenticated, load]);
+
+  useEffect(() => {
+    if (!children?.length) return;
+    setLinkPanelOpen(false);
+    if (!selectedChildId || !children.some((child) => child.student.id === selectedChildId)) {
+      setSelectedChildId(children[0].student.id);
+    }
+  }, [children, selectedChildId]);
 
   const redeem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +133,8 @@ export default function ParentPage() {
   }
   if (!isAuthenticated) return <Redirect to="/login?redirect=%2Fparent" replace />;
 
+  const selectedChild = children?.find((child) => child.student.id === selectedChildId) ?? null;
+
   return (
     <AppShell>
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6" dir="rtl">
@@ -144,12 +156,18 @@ export default function ParentPage() {
           </div>
         )}
 
-        <Card className="rounded-2xl">
-          <CardContent className="p-4 sm:p-6">
-            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-primary" />
-              ربط حساب طفل جديد
-            </h2>
+        <details
+          className="group rounded-2xl border border-border bg-card shadow-xs"
+          open={linkPanelOpen}
+          onToggle={(event) => setLinkPanelOpen(event.currentTarget.open)}
+        >
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-bold marker:hidden sm:px-5">
+            <KeyRound className="h-4 w-4 text-primary" />
+            ربط حساب طفل جديد
+            <span className="ms-auto text-xs font-normal text-muted-foreground group-open:hidden">إظهار</span>
+            <span className="ms-auto hidden text-xs font-normal text-muted-foreground group-open:inline">إخفاء</span>
+          </summary>
+          <div className="border-t border-border px-4 py-4 sm:px-5">
             <form onSubmit={redeem} className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
@@ -176,8 +194,8 @@ export default function ParentPage() {
             <p className="text-xs text-muted-foreground mt-3">
               يمكن لطفلك إنشاء رمز الدعوة من تبويب "أهلي وأولياء أمري" في لوحة التحكم الخاصة به.
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </details>
 
         <Card className="rounded-2xl">
           <CardContent className="p-4 sm:p-6">
@@ -193,7 +211,13 @@ export default function ParentPage() {
                 {children.map(c => {
                   const fullName = [c.student.firstName, c.student.lastName].filter(Boolean).join(" ") || c.student.email;
                   return (
-                    <li key={c.linkId} className="border border-border rounded-xl p-4">
+                    <li key={c.linkId}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedChildId(c.student.id)}
+                        aria-pressed={selectedChildId === c.student.id}
+                        className={`w-full rounded-2xl border p-4 text-start transition-all ${selectedChildId === c.student.id ? "border-primary/40 bg-primary/5 shadow-sm ring-2 ring-primary/10" : "border-border bg-card hover:border-primary/25"}`}
+                      >
                       <div className="flex items-center gap-3 mb-3">
                         {c.student.profileImageUrl ? (
                           <img src={c.student.profileImageUrl} alt={fullName} className="w-12 h-12 rounded-full object-cover" />
@@ -224,6 +248,7 @@ export default function ParentPage() {
                           <p className="text-[10px] text-muted-foreground">أنشطة</p>
                         </div>
                       </div>
+                      </button>
                     </li>
                   );
                 })}
@@ -231,6 +256,23 @@ export default function ParentPage() {
             )}
           </CardContent>
         </Card>
+
+        {selectedChild && (
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-primary/15 bg-primary/5 p-3 sm:gap-3 sm:p-4" aria-label={`ملخص ${selectedChild.student.firstName ?? "الطفل"}`}>
+            <div className="text-center">
+              <p className="text-xl font-bold text-primary">{selectedChild.enrolledCourses}</p>
+              <p className="text-xs text-muted-foreground">برامج نشطة</p>
+            </div>
+            <div className="border-x border-primary/10 text-center">
+              <p className="text-xl font-bold text-primary">{selectedChild.completedLessons}</p>
+              <p className="text-xs text-muted-foreground">دروس مكتملة</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-primary">{selectedChild.completedActivities}</p>
+              <p className="text-xs text-muted-foreground">أنشطة منجزة</p>
+            </div>
+          </div>
+        )}
 
         <Card className="rounded-2xl">
           <CardContent className="p-4 sm:p-6">
@@ -248,7 +290,7 @@ export default function ParentPage() {
                   const when = new Date(s.scheduledAt);
                   const isLive = s.status === "live";
                   return (
-                    <li key={s.id} className="border border-border rounded-xl p-3 flex items-center gap-3">
+                    <li key={s.id} className="border border-border rounded-xl p-3 flex flex-wrap items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLive ? "bg-rose-100 text-rose-600" : "bg-primary/10 text-primary"}`}>
                         <Video className="w-5 h-5" />
                       </div>
@@ -285,7 +327,7 @@ export default function ParentPage() {
                 <Star className="w-5 h-5 text-primary" />
                 تقييمات وإنجازات أبنائي
               </h2>
-              {dashboard.map(child => (
+              {dashboard.filter((child) => !selectedChildId || child.studentUserId === selectedChildId).map(child => (
                 <div key={child.linkId} className="border border-border rounded-xl p-4 space-y-4">
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{child.name ?? child.email ?? "—"}</span>
