@@ -433,7 +433,47 @@ export default function TrainerDashboardPage() {
             {uniqueLearners.size === 0 ? (
               <p className="text-sm text-muted-foreground">لا يوجد طلاب مسجّلون في دوراتك حاليًا.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                <div className="space-y-3 md:hidden" data-testid="trainer-learners-mobile">
+                  {Array.from(uniqueLearners.values()).slice(0, 50).map((learner) => {
+                    const open = openLearnerNotes === learner.userId;
+                    const fullName = [learner.userFirstName, learner.userLastName].filter(Boolean).join(" ") || learner.userEmail || "طالب";
+                    return (
+                      <article key={learner.userId} className={`rounded-2xl border p-4 ${open ? "border-primary/30 bg-primary/5" : "border-border bg-card"}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
+                            {fullName.charAt(0)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-sm font-bold">{fullName}</h3>
+                            <p className="truncate text-xs text-muted-foreground" dir="ltr">{learner.userEmail ?? "—"}</p>
+                            <p className="mt-1 truncate text-xs font-medium text-primary">{learner.courseTitle ?? "—"}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={open ? "default" : "outline"}
+                            className="min-h-11 gap-1.5"
+                            onClick={() => setOpenLearnerNotes(open ? null : learner.userId)}
+                            aria-expanded={open}
+                          >
+                            <StickyNote className="h-3.5 w-3.5" />
+                            {open ? "إغلاق" : "ملاحظاتي"}
+                          </Button>
+                        </div>
+                        {open && (
+                          <div className="mt-4 border-t border-primary/10 pt-4">
+                            <TrainerNotesPanel
+                              learnerId={learner.userId}
+                              courseId={learner.courseId}
+                              currentTrainerId={user?.id ?? null}
+                            />
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm" data-testid="trainer-learners">
                   <thead className="text-xs text-muted-foreground border-b border-border">
                     <tr>
@@ -480,7 +520,8 @@ export default function TrainerDashboardPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
