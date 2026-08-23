@@ -5,6 +5,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { NotificationBell } from "@/components/notification-bell";
 import { useLang } from "@/hooks/useLang";
 import { useMe, type Role } from "@/hooks/use-me";
+import { getRoleHome } from "@/lib/role-routing";
 
 const ROLE_LABELS: Record<Role, { ar: string; en: string }> = {
   admin: { ar: "مدير المنصة", en: "Administrator" },
@@ -25,13 +26,6 @@ function getPlatformTitle(location: string, lang: "ar" | "en") {
   return ar ? "منصتي" : "My platform";
 }
 
-function getRoleHome(role: Role | null) {
-  if (role === "admin" || role === "supervisor" || role === "sales") return "/admin/overview";
-  if (role === "trainer") return "/trainer";
-  if (role === "parent") return "/parent";
-  return "/dashboard";
-}
-
 export function PlatformHeader() {
   const { lang, switchLang } = useLang();
   const { logout } = useAuth();
@@ -49,6 +43,7 @@ export function PlatformHeader() {
   const signOut = async () => {
     setMenuOpen(false);
     await logout();
+    navigate(`/login?redirect=${encodeURIComponent(roleHome)}`);
   };
 
   return (
@@ -126,7 +121,7 @@ export function PlatformHeader() {
                     <LayoutDashboard className="h-4 w-4 text-primary" />
                     {isAr ? "الرئيسية في المنصة" : "Platform home"}
                   </button>
-                  <button type="button" onClick={() => navigate("/dashboard?tab=account")} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-sm hover:bg-muted" role="menuitem">
+                  <button type="button" onClick={() => navigate(roleHome)} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-start text-sm hover:bg-muted" role="menuitem">
                     <User className="h-4 w-4 text-muted-foreground" />
                     {isAr ? "الحساب الشخصي" : "My account"}
                   </button>

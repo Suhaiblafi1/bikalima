@@ -6,6 +6,7 @@ import {
   GraduationCap, Activity, TrendingUp, UserPlus, ListTodo, Zap, KanbanSquare,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
+import { PlatformIntro } from "@/components/platform-intro";
 import {
   useApiFetch, RevenueTab, leadStatusLabel, leadStatusColor, LEAD_SOURCE_LABELS,
   type RevenueData, type AdminActivityRecord, type TopProgramRecord,
@@ -89,10 +90,14 @@ export default function AdminOverviewPage() {
 
   return (
     <AdminLayout activeKey="overview">
-      <header className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-        <h1 className="text-2xl font-bold">نظرة عامة</h1>
-        <p className="mt-1 text-sm text-muted-foreground">ابدأ بما يحتاج قرارك اليوم، ثم انتقل إلى التفاصيل عند الحاجة.</p>
-      </header>
+      <PlatformIntro
+        tone="admin"
+        eyebrow="غرفة العمليات"
+        title="نظرة عامة"
+        description="ابدأ بما يحتاج قرارك اليوم، ثم انتقل إلى التفاصيل عند الحاجة."
+        icon={<Activity />}
+        compact
+      />
       {/* ─── Growth Center KPIs ─────────────────────────────────────── */}
       {growth && (
         <div className="space-y-3">

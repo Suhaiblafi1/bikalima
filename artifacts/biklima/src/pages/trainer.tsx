@@ -7,6 +7,7 @@ import { useMe } from "@/hooks/use-me";
 import { useApiFetch } from "@/pages/admin/_shared";
 import { AttendanceButton, type LessonRecord } from "@/pages/admin/_shared";
 import AdminAssignmentsTab from "@/components/admin-assignments-tab";
+import { PlatformIntro } from "@/components/platform-intro";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
 import { toast } from "@/hooks/use-toast";
 import { lazy, Suspense } from "react";
@@ -182,16 +183,13 @@ export default function TrainerDashboardPage() {
   return (
     <AppShell containerClassName="container mx-auto px-4 py-6" breadcrumb={[{ label: "لوحة المدرّب", href: "/trainer" }]}>
       <div className="space-y-6" dir="rtl" data-testid="trainer-dashboard">
-        <header className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/10 via-card to-amber-50 p-5 shadow-sm sm:p-7">
-          <div aria-hidden className="absolute -end-16 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-          <div>
-            <p className="mb-1 text-xs font-bold text-primary">اليوم في بكلمة</p>
-            <h1 className="text-2xl font-bold sm:text-3xl">مرحباً {user?.firstName ?? user?.email}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              ابدأ بما يحتاج تدخلك اليوم؛ التقييمات والحضور أولاً، ثم تواصل مع طلابك وأدر محتوى دوراتك.
-            </p>
-          </div>
-        </header>
+        <PlatformIntro
+          tone="trainer"
+          eyebrow="اليوم في بكلمة"
+          title={<>مرحباً {user?.firstName ?? user?.email}</>}
+          description="ابدأ بما يحتاج تدخلك اليوم؛ التقييمات والحضور أولاً، ثم تواصل مع طلابك وأدر محتوى دوراتك."
+          icon={<Mic2 />}
+        />
 
         <nav className="sticky top-16 z-20 -mx-4 overflow-x-auto border-y border-border bg-background/95 px-4 py-2 backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border" aria-label="أقسام مساحة المدرب">
           <div className="flex min-w-max gap-2 sm:min-w-0 sm:grid sm:grid-cols-4">

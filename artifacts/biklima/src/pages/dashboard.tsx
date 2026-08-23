@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
+import { PlatformIntro } from "@/components/platform-intro";
 import { StudentTodayOverview } from "@/components/dashboard/student-today-overview";
 import { StudentOnboarding } from "@/components/dashboard/student-onboarding";
 import { SkillsAndBadgesSection } from "@/components/skills-section";
@@ -1194,7 +1195,14 @@ export default function Dashboard() {
     >
       <div className="container mx-auto px-4 py-8 pb-28 md:pb-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">{t.welcome}، {user?.firstName || user?.email} 👋</h1>
+          <PlatformIntro
+            tone="learner"
+            eyebrow={isRtl ? "رحلتك في بكلمة" : "Your Bikalima journey"}
+            title={<>{t.welcome}، {user?.firstName || user?.email}</>}
+            description={isRtl ? "خطوتك التالية وإنجازاتك وموعدك القادم في مكان واحد." : "Your next step, progress, and upcoming session in one place."}
+            icon={<Sparkles />}
+            compact
+          />
         </div>
 
         {/* The learning hero belongs to the home/continue experience, not every utility page. */}

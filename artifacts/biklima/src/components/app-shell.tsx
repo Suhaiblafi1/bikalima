@@ -40,9 +40,20 @@ export function AppShell({
     location.startsWith("/admin") ||
     location.startsWith("/instructor/") ||
     /^\/courses\/[^/]+\/learn(?:\/|$)/.test(location);
+  const platformKind = location.startsWith("/admin")
+    ? "admin"
+    : location.startsWith("/trainer")
+      ? "trainer"
+      : location.startsWith("/parent")
+        ? "family"
+        : "learner";
 
   return (
-    <div className={`min-h-screen flex flex-col ${isPlatformRoute ? "platform-shell bg-muted/25" : "bg-background"}`} dir={isRtl ? "rtl" : "ltr"}>
+    <div
+      className={`min-h-screen flex flex-col ${isPlatformRoute ? "platform-shell bg-muted/25" : "bg-background"}`}
+      dir={isRtl ? "rtl" : "ltr"}
+      data-platform-kind={isPlatformRoute ? platformKind : undefined}
+    >
       {isPlatformRoute ? <PlatformHeader /> : <SiteHeader />}
       {!isPlatformRoute && <div aria-hidden className="h-16 md:h-20 shrink-0" />}
       {breadcrumb && breadcrumb.length > 0 && <Breadcrumb items={breadcrumb} />}

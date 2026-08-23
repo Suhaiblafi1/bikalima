@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound, AlertTriangle, RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Video, Clock, ExternalLink, Star, Award } from "lucide-react";
+import { PlatformIntro } from "@/components/platform-intro";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
 
 interface ChildDashboard {
@@ -125,13 +126,13 @@ export default function ParentPage() {
   return (
     <AppShell>
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6" dir="rtl">
-        <header>
-          <h1 className="text-3xl font-extrabold flex items-center gap-2">
-            <Users className="w-7 h-7 text-primary" />
-            لوحة ولي الأمر
-          </h1>
-          <p className="text-muted-foreground mt-1">تابع تقدّم أبنائك في منصة المتحدث الصغير.</p>
-        </header>
+        <PlatformIntro
+          tone="family"
+          eyebrow="ملخص الأسرة"
+          title={<>أهلاً {user?.firstName ?? "بك"}</>}
+          description="تابع تقدّم أبنائك وجلساتهم وإنجازاتهم بهدوء، واعرف ما يحتاج انتباهك هذا الأسبوع."
+          icon={<Users />}
+        />
 
         {loadError && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-center" role="alert">
