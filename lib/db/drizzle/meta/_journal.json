@@ -64,6 +64,13 @@
       "when": 1787450000000,
       "tag": "0008_lms_integrity_constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787487000000,
+      "tag": "0009_auth_password_reset",
+      "breakpoints": true
     }
   ]
 }
