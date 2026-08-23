@@ -91,12 +91,12 @@ export default function AdminLeadsPage() {
 
       {/* Status pills */}
       <div className="flex flex-wrap gap-1.5">
-        <button onClick={() => setStatusFilter("")} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${!statusFilter ? "bg-primary text-white border-primary" : "bg-card text-foreground border-border hover:bg-muted"}`}>
+        <button onClick={() => setStatusFilter("")} className={`min-h-11 px-3 py-1.5 rounded-full text-xs font-bold border transition sm:min-h-0 ${!statusFilter ? "bg-primary text-white border-primary" : "bg-card text-foreground border-border hover:bg-muted"}`}>
           الكل ({totalCount})
         </button>
         {LEAD_STATUS_OPTIONS.map((s) => (
           <button key={s.value} onClick={() => setStatusFilter(s.value === statusFilter ? "" : s.value)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === s.value ? "bg-primary text-white border-primary" : `${s.color} border-transparent hover:opacity-80`}`}>
+            className={`min-h-11 px-3 py-1.5 rounded-full text-xs font-bold border transition sm:min-h-0 ${statusFilter === s.value ? "bg-primary text-white border-primary" : `${s.color} border-transparent hover:opacity-80`}`}>
             {s.labelAr} ({statusCounts[s.value] ?? 0})
           </button>
         ))}
@@ -107,30 +107,71 @@ export default function AdminLeadsPage() {
         <CardContent className="p-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالاسم أو الهاتف أو الإيميل..." className="text-xs h-8 pr-8" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالاسم أو الهاتف أو الإيميل..." className="min-h-11 text-xs pr-8 sm:min-h-8" />
           </div>
-          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="border rounded-md p-1 text-xs bg-background h-8">
+          <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="min-h-11 border rounded-md p-1 text-xs bg-background sm:min-h-8">
             <option value="">كل المصادر</option>
             {Object.entries(LEAD_SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className="border rounded-md p-1 text-xs bg-background h-8">
+          <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className="min-h-11 border rounded-md p-1 text-xs bg-background sm:min-h-8">
             <option value="">كل المسؤولين</option>
             <option value="unassigned">— غير مُعيَّن —</option>
             {owners.map((o) => <option key={o.id} value={o.id}>{o.fullName || o.email}</option>)}
           </select>
-          <Button variant="outline" size="sm" onClick={fetchLeads} className="h-8 text-xs">تحديث</Button>
+          <Button variant="outline" size="sm" onClick={fetchLeads} className="min-h-11 text-xs sm:min-h-8">تحديث</Button>
         </CardContent>
       </Card>
 
       {/* Table */}
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-16"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>
           ) : leads.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-12">لا توجد نتائج تطابق المرشّحات.</p>
           ) : (
-            <table className="w-full text-xs">
+            <>
+              <div className="space-y-3 p-3 md:hidden" data-testid="admin-leads-mobile">
+                {leads.map((lead) => {
+                  const score = INTEREST_SCORE_OPTIONS.find((item) => item.value === lead.interestScore);
+                  return (
+                    <article key={lead.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h2 className="truncate text-sm font-bold">{lead.fullName}</h2>
+                          <p className="mt-1 truncate text-xs text-muted-foreground">{lead.interestProgramTitle || "لم يحدد البرنامج"}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${leadStatusColor(lead.status)}`}>{leadStatusLabel(lead.status)}</span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">{LEAD_SOURCE_LABELS[lead.source] ?? lead.source}</span>
+                        {score && <span className={`rounded-full px-2 py-1 font-bold ${score.color}`}>{score.labelAr}</span>}
+                        <span className="text-muted-foreground">آخر تواصل: {timeAgo(lead.lastContactAt ?? lead.createdAt)}</span>
+                      </div>
+                      {(lead.phone || lead.email) && (
+                        <div className="mt-3 space-y-1 text-xs text-muted-foreground" dir="ltr">
+                          {lead.phone && <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{lead.phone}</p>}
+                          {lead.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3.5 w-3.5 shrink-0" />{lead.email}</p>}
+                        </div>
+                      )}
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <Button variant="outline" className="min-h-11" onClick={() => navigate(`/admin/leads/${lead.id}`)}>
+                          <ExternalLink className="me-1.5 h-4 w-4" /> فتح الملف
+                        </Button>
+                        {lead.phone ? (
+                          <Button asChild className="min-h-11 bg-emerald-600 text-white hover:bg-emerald-700">
+                            <a href={`https://wa.me/${lead.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">
+                              <MessageCircle className="me-1.5 h-4 w-4" /> واتساب
+                            </a>
+                          </Button>
+                        ) : <span />}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-xs">
               <thead className="bg-muted/40 text-[11px] uppercase">
                 <tr>
                   <th className="text-start p-2 font-bold">الاسم</th>
@@ -169,7 +210,9 @@ export default function AdminLeadsPage() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

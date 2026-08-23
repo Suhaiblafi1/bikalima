@@ -95,12 +95,12 @@ export default function AdminTasksPage() {
       <div className="flex flex-wrap gap-1.5 items-center">
         {FILTERS.map((f) => (
           <button key={f.value} onClick={() => setFilter(f.value)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${filter === f.value ? "bg-primary text-white border-primary" : "bg-card text-foreground border-border hover:bg-muted"}`}>
+            className={`min-h-11 px-3 py-1.5 rounded-full text-xs font-bold border transition sm:min-h-0 ${filter === f.value ? "bg-primary text-white border-primary" : "bg-card text-foreground border-border hover:bg-muted"}`}>
             {f.labelAr}
           </button>
         ))}
         <div className="border-r border-border h-5 mx-1" />
-        <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="border rounded-md p-1 text-xs bg-background h-7">
+        <select value={assignee} onChange={(e) => setAssignee(e.target.value)} className="min-h-11 border rounded-md p-1 text-xs bg-background sm:min-h-7">
           <option value="all">كل المسؤولين</option>
           <option value="mine">المسندة إليّ</option>
           <option value="unassigned">غير مُسندة</option>
@@ -108,13 +108,67 @@ export default function AdminTasksPage() {
       </div>
 
       <Card>
-        <CardContent className="p-0 overflow-x-auto">
+        <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-16"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>
           ) : tasks.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-12">لا توجد مهام مطابقة.</p>
           ) : (
-            <table className="w-full text-xs">
+            <>
+              <div className="space-y-3 p-3 md:hidden" data-testid="admin-tasks-mobile">
+                {tasks.map((task) => {
+                  const overdue = isOverdue(task.dueAt, task.status);
+                  return (
+                    <article key={task.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <label className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-background" aria-label={task.status === "done" ? "إعادة فتح المهمة" : "إكمال المهمة"}>
+                          <input
+                            type="checkbox"
+                            checked={task.status === "done"}
+                            onChange={() => updateStatus(task.id, task.status === "done" ? "open" : "done")}
+                            className="h-5 w-5"
+                          />
+                        </label>
+                        <div className="min-w-0 flex-1">
+                          <h2 className={`text-sm font-bold ${task.status === "done" ? "line-through text-muted-foreground" : ""}`}>{task.title}</h2>
+                          {task.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{task.description}</p>}
+                        </div>
+                        <span className={`shrink-0 text-xs ${PRIORITY_COLORS[task.priority] ?? ""}`}>{PRIORITY_LABELS[task.priority] ?? task.priority}</span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-xl bg-muted/50 p-2.5">
+                          <span className="block text-muted-foreground">العميل</span>
+                          <span className="mt-0.5 block truncate font-bold">{task.leadName || "مهمة داخلية"}</span>
+                        </div>
+                        <div className={`rounded-xl bg-muted/50 p-2.5 ${overdue ? "text-red-600" : ""}`}>
+                          <span className="block text-muted-foreground">الموعد</span>
+                          <span className="mt-0.5 block font-bold">{fmt(task.dueAt)}</span>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-2">
+                        <select
+                          value={task.status}
+                          onChange={(event) => updateStatus(task.id, event.target.value)}
+                          aria-label={`حالة المهمة: ${task.title}`}
+                          className={`min-h-11 min-w-0 flex-1 rounded-xl border-0 px-3 text-xs font-bold ${STATUS_COLORS[task.status] ?? "bg-gray-100"}`}
+                        >
+                          {Object.entries(STATUS_LABELS).map(([key, value]) => <option key={key} value={key}>{value}</option>)}
+                        </select>
+                        {task.leadId && (
+                          <Button variant="outline" size="icon" className="h-11 w-11" onClick={() => navigate(`/admin/leads/${task.leadId}`)} aria-label={`فتح ملف ${task.leadName || "العميل"}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button variant="outline" size="icon" className="h-11 w-11 text-rose-700" onClick={() => remove(task.id)} aria-label={`حذف المهمة: ${task.title}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-xs">
               <thead className="bg-muted/40 text-[11px] uppercase">
                 <tr>
                   <th className="text-start p-2 font-bold w-8"></th>
@@ -164,7 +218,9 @@ export default function AdminTasksPage() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
