@@ -4,6 +4,8 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Shield, Home as HomeIcon, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "./states";
+import { useMe, type Role } from "@/hooks/use-me";
+import { getRoleHome, STAFF_ROLES } from "@/lib/role-routing";
 
 type Lang = "ar" | "en";
 
@@ -15,11 +17,6 @@ function getLangFromStorage(): Lang {
   } catch {
     return "ar";
   }
-}
-
-function getApiBase(): string {
-  const base = import.meta.env.BASE_URL || "/";
-  return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
 }
 
 function FullPageLoading() {
@@ -77,95 +74,80 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [, navigate] = useLocation();
-  // canEnter covers any non-student staff role (admin / trainer / sales).
-  // We keep the variable name `isAdmin` for backward-compat below.
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  return <RoleRoute allowedRoles={STAFF_ROLES} area="admin">{children}</RoleRoute>;
+}
+
+type RoleArea = "student" | "trainer" | "parent" | "admin";
+
+const AREA_COPY: Record<RoleArea, { ar: string; en: string }> = {
+  student: { ar: "هذه المساحة مخصصة للمتعلمين.", en: "This workspace is for learners." },
+  trainer: { ar: "هذه المساحة مخصصة للمدربين.", en: "This workspace is for trainers." },
+  parent: { ar: "هذه المساحة مخصصة لأولياء الأمور.", en: "This workspace is for parents." },
+  admin: { ar: "هذه المساحة مخصصة لفريق الإدارة.", en: "This workspace is for the administration team." },
+};
+
+export function RoleRoute({
+  children,
+  allowedRoles,
+  area,
+}: {
+  children: ReactNode;
+  allowedRoles: readonly Role[];
+  area: RoleArea;
+}) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { role, isLoading: meLoading } = useMe();
+  const [location] = useLocation();
   const [lang] = useState<Lang>(getLangFromStorage);
   const isRtl = lang === "ar";
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated) {
-      setIsAdmin(false);
-      return;
-    }
-    let cancelled = false;
-    fetch(`${getApiBase()}/admin/check`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => {
-        // Allow trainers and sales/support into the area too — the admin
-        // page itself filters tabs based on the role returned in /api/me.
-        if (!cancelled) setIsAdmin(!!(d.canAccessAdminArea ?? d.isAdmin));
-      })
-      .catch(() => {
-        if (!cancelled) setIsAdmin(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoading, isAuthenticated]);
-
-  if (isLoading || (isAuthenticated && isAdmin === null)) return <FullPageLoading />;
+  if (authLoading || (isAuthenticated && meLoading)) return <FullPageLoading />;
 
   if (!isAuthenticated) {
-    return (
-      <div
-        className="min-h-screen bg-background flex items-center justify-center p-6"
-        dir={isRtl ? "rtl" : "ltr"}
-      >
-        <div className="max-w-md w-full text-center bg-card border border-border rounded-2xl p-8 shadow-sm">
-          <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">
-            {isRtl ? "يلزم تسجيل الدخول" : "Sign in required"}
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            {isRtl
-              ? "هذه المنطقة مخصصة للمشرفين فقط."
-              : "This area is restricted to admins."}
-          </p>
-          <Button
-            onClick={() => navigate("/dashboard")}
-            className="bg-primary hover:bg-primary/90 text-white rounded-full"
-          >
-            {isRtl ? "تسجيل الدخول" : "Sign in"}
-          </Button>
-        </div>
-      </div>
-    );
+    const redirect = encodeURIComponent(location || getRoleHome(allowedRoles[0]));
+    return <RedirectTo href={`/login?redirect=${redirect}`} />;
   }
 
-  if (!isAdmin) {
-    return (
-      <div
-        className="min-h-screen bg-background flex items-center justify-center p-6"
-        dir={isRtl ? "rtl" : "ltr"}
-      >
-        <div className="max-w-md w-full text-center bg-card border border-border rounded-2xl p-8 shadow-sm">
-          <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-7 h-7 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold mb-2">
-            {isRtl ? "غير مصرّح بالوصول" : "Access denied"}
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            {isRtl
-              ? "هذه المنطقة مخصصة للمشرفين فقط."
-              : "This area requires admin privileges."}
-          </p>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/")}
-            className="gap-2 rounded-full"
-          >
-            <HomeIcon className="w-4 h-4" />
-            {isRtl ? "العودة للرئيسية" : "Back home"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (role && allowedRoles.includes(role)) return <>{children}</>;
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6" dir={isRtl ? "rtl" : "ltr"}>
+      <div className="max-w-md w-full text-center bg-card border border-border rounded-2xl p-8 shadow-sm">
+        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <Shield className="w-7 h-7 text-primary" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">{isRtl ? "سننقلك إلى منصتك" : "Taking you to your workspace"}</h2>
+        <p className="text-sm text-muted-foreground mb-6">{AREA_COPY[area][lang]}</p>
+        <RedirectTo href={getRoleHome(role)} />
+      </div>
+    </div>
+  );
+}
+
+function RedirectTo({ href }: { href: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    navigate(href, { replace: true });
+  }, [href, navigate]);
+  return <FullPageLoading />;
+}
+
+export function StudentRoute({ children }: { children: ReactNode }) {
+  return <RoleRoute allowedRoles={["student"]} area="student">{children}</RoleRoute>;
+}
+
+export function TrainerRoute({ children }: { children: ReactNode }) {
+  return <RoleRoute allowedRoles={["trainer"]} area="trainer">{children}</RoleRoute>;
+}
+
+export function ParentRoute({ children }: { children: ReactNode }) {
+  return <RoleRoute allowedRoles={["parent"]} area="parent">{children}</RoleRoute>;
+}
+
+export function RoleHomeRoute() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { role, isLoading: meLoading } = useMe();
+  if (authLoading || (isAuthenticated && meLoading)) return <FullPageLoading />;
+  if (!isAuthenticated) return <RedirectTo href="/login" />;
+  return <RedirectTo href={getRoleHome(role)} />;
 }

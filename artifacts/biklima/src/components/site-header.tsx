@@ -10,11 +10,8 @@ import { useCurrency, CURRENCIES, CURRENCY_ORDER, getBaseUrl } from "@/lib/site-
 import { T, type Lang } from "@/translations";
 import { trackInterestFormSubmit } from "@/lib/analytics";
 import { scrollToPageSection } from "@/lib/utils";
-
-function getApiBase(): string {
-  const base = import.meta.env.BASE_URL || "/";
-  return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
-}
+import { useMe } from "@/hooks/use-me";
+import { getRoleHome, isStaffRole } from "@/lib/role-routing";
 
 type NavTarget =
   | { kind: "section"; id: string; label: string }
@@ -25,6 +22,7 @@ export function SiteHeader() {
   const { lang, switchLang } = useLang();
   const { currency, currencyKey, setCurrencyKey } = useCurrency();
   const { isAuthenticated, isLoading: authLoading, user, logout } = useAuth();
+  const { role } = useMe();
   const [location, navigate] = useLocation();
   const t = T[lang];
   const isRtl = lang === "ar";
@@ -35,7 +33,8 @@ export function SiteHeader() {
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdmin = isStaffRole(role);
+  const platformHome = getRoleHome(role);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 20);
@@ -48,18 +47,6 @@ export function SiteHeader() {
     document.documentElement.dir = isRtl ? "rtl" : "ltr";
     document.documentElement.lang = lang;
   }, [isRtl, lang]);
-
-  useEffect(() => {
-    if (!isAuthenticated) { setIsAdmin(false); return undefined; }
-    let cancelled = false;
-    // The header "Admin Panel" link should appear for any non-student staff
-    // role (admin, trainer, sales) so the role-aware page can take over.
-    fetch(`${getApiBase()}/admin/check`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled) setIsAdmin(!!(d.canAccessAdminArea ?? d.isAdmin)); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [isAuthenticated]);
 
   // Lock scroll when mobile menu open
   useEffect(() => {
@@ -111,6 +98,14 @@ export function SiteHeader() {
   };
 
   const initials = (user?.firstName?.[0] || user?.email?.[0] || "U").toUpperCase();
+
+  const handleLogout = async () => {
+    const returnTo = platformHome;
+    setUserMenuOpen(false);
+    setMobileOpen(false);
+    await logout();
+    navigate(`/login?redirect=${encodeURIComponent(returnTo)}`);
+  };
 
   const langButtons: { key: Lang; label: string }[] = [
     { key: "ar", label: "ع" },
@@ -284,14 +279,14 @@ export function SiteHeader() {
                         <p className="text-xs text-muted-foreground truncate" dir="ltr">{user?.email}</p>
                       </div>
                       <button
-                        onClick={() => { setUserMenuOpen(false); navigate("/dashboard"); }}
+                        onClick={() => { setUserMenuOpen(false); navigate(platformHome); }}
                         className="w-full text-start px-3 py-2 text-sm hover:bg-secondary/50 transition-colors flex items-center gap-2"
                       >
                         <LayoutDashboard className="w-4 h-4 text-primary" />
                         {isRtl ? "منصتي" : "My Platform"}
                       </button>
                       <button
-                        onClick={() => { setUserMenuOpen(false); navigate("/dashboard"); }}
+                        onClick={() => { setUserMenuOpen(false); navigate(platformHome); }}
                         className="w-full text-start px-3 py-2 text-sm hover:bg-secondary/50 transition-colors flex items-center gap-2"
                       >
                         <User className="w-4 h-4 text-muted-foreground" />
@@ -308,7 +303,7 @@ export function SiteHeader() {
                       )}
                       <div className="border-t border-border" />
                       <button
-                        onClick={() => { setUserMenuOpen(false); logout(); }}
+                        onClick={handleLogout}
                         className="w-full text-start px-3 py-2 text-sm hover:bg-secondary/50 text-destructive transition-colors flex items-center gap-2"
                       >
                         <LogOut className="w-4 h-4" />
@@ -320,7 +315,7 @@ export function SiteHeader() {
               </div>
             ) : (
               <button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/login")}
                 className="text-xs font-bold text-primary border border-primary/30 px-3 py-1.5 rounded-full hover:bg-primary/5 transition-colors whitespace-nowrap"
               >
                 {isRtl ? "تسجيل الدخول" : "Log in"}
@@ -410,7 +405,7 @@ export function SiteHeader() {
                   {isAuthenticated ? (
                     <>
                       <button
-                        onClick={() => { setMobileOpen(false); navigate("/dashboard"); }}
+                        onClick={() => { setMobileOpen(false); navigate(platformHome); }}
                         className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
                       >
                         <LayoutDashboard className="w-4 h-4" />
@@ -426,7 +421,7 @@ export function SiteHeader() {
                         </button>
                       )}
                       <button
-                        onClick={() => { setMobileOpen(false); logout(); }}
+                        onClick={handleLogout}
                         className="w-full text-center py-2.5 text-sm text-muted-foreground hover:text-destructive border border-border rounded-2xl flex items-center justify-center gap-2"
                       >
                         <LogOut className="w-4 h-4" />
@@ -435,7 +430,7 @@ export function SiteHeader() {
                     </>
                   ) : (
                     <button
-                      onClick={() => { setMobileOpen(false); navigate("/dashboard"); }}
+                      onClick={() => { setMobileOpen(false); navigate("/login"); }}
                       className="w-full text-center py-3 font-bold text-primary border border-primary/30 rounded-2xl hover:bg-primary/5 transition-colors"
                     >
                       {isRtl ? "تسجيل الدخول / إنشاء حساب" : "Log in / Sign up"}

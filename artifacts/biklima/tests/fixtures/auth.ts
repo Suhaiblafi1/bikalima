@@ -71,6 +71,8 @@ type Fixtures = {
   admin: BrowserContext;
   /** Browser context already logged in as the seeded trainer. */
   trainer: BrowserContext;
+  /** Browser context already logged in as the seeded parent. */
+  parent: BrowserContext;
 };
 
 export const test = base.extend<Fixtures>({
@@ -119,6 +121,17 @@ export const test = base.extend<Fixtures>({
       baseURL!,
       TEST_FIXTURES.trainer.email,
       TEST_FIXTURES.trainer.password,
+    );
+    await use(ctx);
+    await ctx.close();
+  },
+  parent: async ({ browser, baseURL }, use) => {
+    const ctx = await browser.newContext();
+    await loginAs(
+      ctx,
+      baseURL!,
+      TEST_FIXTURES.parent.email,
+      TEST_FIXTURES.parent.password,
     );
     await use(ctx);
     await ctx.close();

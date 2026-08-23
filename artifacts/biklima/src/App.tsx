@@ -1,10 +1,15 @@
 import { lazy, Suspense, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useAuth } from "@workspace/replit-auth-web";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AdminRoute } from "@/components/route-guards";
+import {
+  AdminRoute,
+  ParentRoute,
+  RoleHomeRoute,
+  StudentRoute,
+  TrainerRoute,
+} from "@/components/route-guards";
 
 // Eager: small public pages that show on the most common landing flows
 // (home, program, checkout, login, confirmation). Keeping these eager
@@ -119,21 +124,6 @@ function RouteFallback() {
  * is requested, so anonymous users hitting /dashboard?redirect=... only
  * download the small login chunk.
  */
-function DashboardRoute() {
-  const { isLoading, isAuthenticated } = useAuth();
-  if (isLoading) return <RouteFallback />;
-  if (!isAuthenticated) {
-    const currentRedirect = typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("redirect")
-      : null;
-    const target = currentRedirect && currentRedirect.startsWith("/") && !currentRedirect.startsWith("//")
-      ? currentRedirect
-      : "/dashboard";
-    return <Redirect to={`/login?redirect=${encodeURIComponent(target)}`} replace />;
-  }
-  return <Dashboard />;
-}
-
 function AppRouter() {
   return (
     <Suspense fallback={<RouteFallback />}>
@@ -142,13 +132,18 @@ function AppRouter() {
         <Route path="/login" component={LoginPage} />
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
-        <Route path="/dashboard" component={DashboardRoute} />
-        <Route path="/parent" component={ParentPage} />
+        <Route path="/platform" component={RoleHomeRoute} />
+        <Route path="/dashboard">
+          {() => <StudentRoute><Dashboard /></StudentRoute>}
+        </Route>
+        <Route path="/parent">
+          {() => <ParentRoute><ParentPage /></ParentRoute>}
+        </Route>
         <Route path="/admin">
           {() => <Redirect to="/admin/overview" />}
         </Route>
         <Route path="/trainer">
-          {() => (<AdminRoute><TrainerDashboard /></AdminRoute>)}
+          {() => (<TrainerRoute><TrainerDashboard /></TrainerRoute>)}
         </Route>
         <Route path="/admin/overview">
           {() => (<AdminRoute><AdminOverview /></AdminRoute>)}
@@ -258,7 +253,9 @@ function AppRouter() {
         </Route>
         <Route path="/checkout" component={CheckoutPage} />
         <Route path="/confirmation" component={ConfirmationPage} />
-        <Route path="/courses/:slug/learn" component={LearnPage} />
+        <Route path="/courses/:slug/learn">
+          {() => <StudentRoute><LearnPage /></StudentRoute>}
+        </Route>
         <Route path="/courses/:slug">
           {(params) => {
             const programId = SLUG_TO_PROGRAM_ID[params.slug];

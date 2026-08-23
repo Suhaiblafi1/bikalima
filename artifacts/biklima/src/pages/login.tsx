@@ -4,6 +4,8 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { apiFetch } from "@/lib/api-fetch";
+import { resolvePostAuthDestination } from "@/lib/role-routing";
+import type { Role } from "@/hooks/use-me";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,22 +75,9 @@ const t = {
   },
 } as const;
 
-function getRedirectTarget(): string {
-  if (typeof window === "undefined") return "/dashboard";
-  const r = new URLSearchParams(window.location.search).get("redirect");
-  if (!r) return "/dashboard";
-  // Reject:
-  //  - protocol-relative URLs ("//evil.com") — these escape origin
-  //  - absolute URLs ("http://...", "https://...", "javascript:")
-  //  - non-page internal prefixes (/api, /auth, /webhooks) — never
-  //    a useful destination for a browser navigation after login
-  if (!r.startsWith("/") || r.startsWith("//")) return "/dashboard";
-  const lower = r.toLowerCase();
-  const denied = ["/api/", "/api?", "/auth/", "/webhooks/"];
-  if (denied.some((p) => lower === p.replace(/[/?]$/, "") || lower.startsWith(p))) {
-    return "/dashboard";
-  }
-  return r;
+function getRequestedRedirect(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("redirect");
 }
 
 export default function LoginPage() {
@@ -144,7 +133,19 @@ export default function LoginPage() {
       setError(result.error);
       return;
     }
-    navigate(getRedirectTarget());
+    let role: Role = "student";
+    if (mode === "login") {
+      try {
+        const meResponse = await apiFetch("/me");
+        if (meResponse.ok) {
+          const me = await meResponse.json() as { user?: { role?: Role } };
+          role = me.user?.role ?? "student";
+        }
+      } catch {
+        // The role guard on the destination remains authoritative.
+      }
+    }
+    navigate(resolvePostAuthDestination(role, getRequestedRedirect()));
   };
 
   return (

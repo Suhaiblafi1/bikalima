@@ -781,7 +781,9 @@ router.get("/auth/google/callback", async (req: Request, res: Response) => {
     };
     const sid = await createSession(sessionData);
     setSessionCookie(res, sid);
-    res.redirect("/dashboard");
+    // The SPA resolves the authoritative role and sends the user to the
+    // correct workspace (student, trainer, parent, or administration).
+    res.redirect("/platform");
   } catch (err) {
     req.log.error({ err }, "Google OAuth callback failed");
     res.redirect("/login?oauth_error=google");
