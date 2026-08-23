@@ -25,9 +25,9 @@ export function TestimonialsSection() {
   const items = testimonialsData[lang] ?? testimonialsData.ar;
 
   return (
-    <section id="testimonials" className="py-24 bg-background border-y border-border" data-testid="section-testimonials">
+    <section id="testimonials" className="py-12 md:py-24 bg-background border-y border-border" data-testid="section-testimonials">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-14 max-w-2xl mx-auto">
+        <div className="text-center mb-8 md:mb-14 max-w-2xl mx-auto">
           <p className="uppercase tracking-[0.25em] text-xs sm:text-sm text-primary font-bold mb-3">
             {heading.eyebrow}
           </p>
@@ -35,7 +35,7 @@ export function TestimonialsSection() {
           <p className="text-muted-foreground text-base md:text-lg leading-relaxed">{heading.sub}</p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-5 max-w-6xl mx-auto">
+        <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 md:mx-auto md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 max-w-6xl">
           {items.map((tm, i) => (
             <motion.figure
               key={i}
@@ -43,7 +43,7 @@ export function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ delay: (i % 4) * 0.08, duration: 0.45 }}
-              className="relative bg-card border border-border rounded-3xl p-6 md:p-7 shadow-sm hover:shadow-lg transition-shadow flex flex-col"
+              className="relative flex min-w-[84vw] snap-center flex-col rounded-3xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-lg sm:min-w-[70vw] md:min-w-0 md:p-7"
               data-testid={`testimonial-card-${i}`}
             >
               <Quote

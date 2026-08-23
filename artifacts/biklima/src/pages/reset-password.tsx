@@ -17,7 +17,7 @@ const t = {
     password: "كلمة المرور الجديدة",
     confirm: "تأكيد كلمة المرور",
     submit: "حفظ كلمة المرور",
-    passwordMin: "كلمة المرور يجب أن تكون 6 أحرف على الأقل.",
+    passwordMin: "كلمة المرور يجب أن تكون 10 أحرف على الأقل.",
     passwordMismatch: "كلمتا المرور غير متطابقتين.",
     invalidToken: "هذا الرابط غير صالح أو انتهت صلاحيته. اطلب رابطاً جديداً.",
     missingToken: "الرابط ناقص. استخدم الرابط الكامل من رسالة البريد.",
@@ -35,7 +35,7 @@ const t = {
     password: "New password",
     confirm: "Confirm password",
     submit: "Save password",
-    passwordMin: "Password must be at least 6 characters.",
+    passwordMin: "Password must be at least 10 characters.",
     passwordMismatch: "Passwords do not match.",
     invalidToken: "This link is invalid or has expired. Please request a new one.",
     missingToken: "The link is incomplete. Use the full link from the email.",
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 6) {
+    if (password.length < 10) {
       setError(tr.passwordMin);
       return;
     }
@@ -180,7 +180,7 @@ export default function ResetPasswordPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="rounded-xl pe-10 h-11"
                     dir="ltr"
-                    minLength={6}
+                    minLength={10}
                     autoComplete="new-password"
                     data-testid="reset-input-password"
                   />
@@ -211,7 +211,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setConfirm(e.target.value)}
                   className="rounded-xl h-11"
                   dir="ltr"
-                  minLength={6}
+                  minLength={10}
                   autoComplete="new-password"
                   data-testid="reset-input-confirm"
                 />

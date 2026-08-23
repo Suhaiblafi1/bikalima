@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Loader2, Check, CheckCheck, Minus } from "lucide-react";
+import { MessageCircle, Sparkles, X, Send, Loader2, Check, CheckCheck, Minus } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { PhoneInput } from "@/components/phone-input";
 import { trackWhatsappClick } from "@/lib/analytics";
@@ -12,73 +12,97 @@ const POLL_INTERVAL_MS = 5000;
 // Public event other components can dispatch to programmatically open the
 // chat (e.g. mobile sticky CTA's "WhatsApp" button).
 export const OPEN_CHAT_EVENT = "bikalima:open-chat";
+export const CHAT_STATE_EVENT = "bikalima:chat-state";
+
+// The UI and conversation history are deliberately transport-agnostic.
+// Today messages use the existing team inbox. A future server-side adapter
+// can switch this to "ai" or "hybrid" without exposing provider keys in the
+// browser or replacing the CRM thread model.
+export type ChatTransport = "team" | "ai" | "hybrid";
+export const ACTIVE_CHAT_TRANSPORT: ChatTransport = "team";
 
 const TEXT = {
   ar: {
-    bubble: "ابدأ محادثة مع الفريق",
-    teaser: "تحتاج مساعدة؟ نحن هنا.",
-    headerTitle: "محادثة مع فريق بكلمة",
-    headerSubtitle: "نرد عادةً خلال دقائق قليلة",
+    bubble: "اسأل ومضة",
+    teaser: "لست متأكدًا من أين تبدأ؟ اسأل ومضة.",
+    headerTitle: "ومضة",
+    headerSubtitle: "مساعد بكلمة",
     statusOnline: "متصل",
-    statusReply: "نرد قريبًا",
-    introTitle: "مرحبًا بك في بكلمة",
+    statusReply: "يرد فريق بكلمة حاليًا",
+    introTitle: "أهلًا، أنا ومضة",
     introBody:
-      "اترك اسمك ورقم واتساب وابدأ المحادثة فورًا. سيصلك الرد هنا داخل الموقع، وسنتواصل معك على واتساب أيضًا عند الحاجة.",
-    name: "الاسم",
-    namePh: "اسمك الكريم",
-    whatsapp: "رقم واتساب (اختياري)",
+      "أساعدك في فهم البرامج والدورات الوجاهية والكراسات والشهادات. اختر سؤالًا سريعًا أو اكتب ما تريد، وسيتابع معك فريق بكلمة حاليًا.",
+    name: "كيف نناديك؟",
+    namePh: "اسمك الأول",
+    whatsapp: "واتساب للمتابعة (اختياري)",
     whatsappPh: "974XXXXXXXX",
-    message: "رسالتك",
-    messagePh: "اكتب سؤالك أو ما تحتاج معرفته…",
-    start: "ابدأ المحادثة",
+    message: "ما الذي تريد معرفته؟",
+    messagePh: "اكتب سؤالك هنا…",
+    start: "أرسل سؤالي",
     starting: "جاري الإرسال…",
     sendPh: "اكتب ردًا…",
     send: "إرسال",
-    privacy: "بإرسالك الرسالة، توافق على سياسة الخصوصية.",
+    privacy: "تُرسل رسالتك حاليًا إلى فريق بكلمة، وبإرسالها توافق على سياسة الخصوصية.",
     closed: "تم إغلاق هذه المحادثة. اضغط لبدء محادثة جديدة.",
     reset: "بدء محادثة جديدة",
     closeBtn: "إغلاق",
     minimize: "تصغير",
-    helpPrompt: "كيف أساعدك..",
+    helpPrompt: "اسأل ومضة",
     errorGeneric: "تعذّر الإرسال، حاول مرة أخرى.",
     errorRate: "أرسلت رسائل كثيرة. انتظر قليلًا.",
     errorClosed: "تم إغلاق المحادثة من قبل الفريق.",
     teamLabel: "فريق بكلمة",
     youLabel: "أنت",
     typingHint: "اضغط Enter للإرسال، Shift+Enter لسطر جديد",
+    quickHeading: "كيف يمكنني مساعدتك؟",
+    quickPrompts: [
+      "اعرض لي البرامج المتاحة",
+      "ما الفرق بين المسجّل وZoom؟",
+      "ما مواعيد الدورات الحضورية؟",
+      "أريد معرفة الكراسات والشهادات",
+    ],
+    humanHandoff: "تحتاج شخصًا من الفريق؟ رسالتك تصل إليهم مباشرة.",
   },
   en: {
-    bubble: "Chat with our team",
-    teaser: "Need help? We're here.",
-    headerTitle: "Chat with the Bikalima team",
-    headerSubtitle: "We usually reply within minutes",
+    bubble: "Ask Wamda",
+    teaser: "Not sure where to begin? Ask Wamda.",
+    headerTitle: "Wamda",
+    headerSubtitle: "Bikalima assistant",
     statusOnline: "Online",
-    statusReply: "Replies soon",
-    introTitle: "Welcome to Bikalima",
+    statusReply: "The Bikalima team replies for now",
+    introTitle: "Hello, I'm Wamda",
     introBody:
-      "Leave your name and WhatsApp and start chatting right away. Replies arrive here on the site, and we'll also reach out on WhatsApp if needed.",
-    name: "Your name",
-    namePh: "Your full name",
-    whatsapp: "WhatsApp number (optional)",
+      "I help you understand programmes, in-person courses, workbooks, and certificates. Pick a quick question or write your own; the Bikalima team will follow up for now.",
+    name: "What should we call you?",
+    namePh: "Your first name",
+    whatsapp: "WhatsApp for follow-up (optional)",
     whatsappPh: "974XXXXXXXX",
-    message: "Your message",
-    messagePh: "Type your question…",
-    start: "Start chat",
+    message: "What would you like to know?",
+    messagePh: "Write your question here…",
+    start: "Send my question",
     starting: "Sending…",
     sendPh: "Type a reply…",
     send: "Send",
-    privacy: "By sending you agree to our privacy policy.",
+    privacy: "Your message currently goes to the Bikalima team. By sending it, you agree to our privacy policy.",
     closed: "This conversation is closed. Tap to start a new one.",
     reset: "Start a new chat",
     closeBtn: "Close",
     minimize: "Minimize",
-    helpPrompt: "How can I help..",
+    helpPrompt: "Ask Wamda",
     errorGeneric: "Couldn't send. Please try again.",
     errorRate: "Too many messages — please wait a moment.",
     errorClosed: "Conversation was closed by the team.",
     teamLabel: "Bikalima team",
     youLabel: "You",
     typingHint: "Enter to send, Shift+Enter for new line",
+    quickHeading: "How can I help?",
+    quickPrompts: [
+      "Show me the available programmes",
+      "What's the difference between recorded and Zoom?",
+      "What in-person courses are coming up?",
+      "Tell me about workbooks and certificates",
+    ],
+    humanHandoff: "Need a person? Your message goes directly to our team.",
   },
 } as const;
 
@@ -163,6 +187,24 @@ function formatTime(iso: string, lang: "ar" | "en"): string {
   }
 }
 
+function WamdaAvatar({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const dimensions = size === "lg" ? "w-16 h-16" : size === "sm" ? "w-9 h-9" : "w-11 h-11";
+  const messageSize = size === "lg" ? "w-8 h-8" : size === "sm" ? "w-4.5 h-4.5" : "w-5 h-5";
+  const sparkleSize = size === "lg" ? "w-6 h-6 -top-1 -end-1" : "w-4 h-4 -top-0.5 -end-0.5";
+
+  return (
+    <span
+      className={`relative ${dimensions} rounded-[35%] bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 flex items-center justify-center ring-1 ring-white/25`}
+      aria-hidden
+    >
+      <MessageCircle className={messageSize} strokeWidth={2.2} />
+      <span className={`absolute ${sparkleSize} rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-sm ring-2 ring-background`}>
+        <Sparkles className={size === "lg" ? "w-3.5 h-3.5" : "w-2.5 h-2.5"} strokeWidth={2.5} />
+      </span>
+    </span>
+  );
+}
+
 export function LiveChatWidget() {
   const { lang } = useLang();
   const t = TEXT[lang];
@@ -207,6 +249,14 @@ export function LiveChatWidget() {
     window.addEventListener(OPEN_CHAT_EVENT, handler);
     return () => window.removeEventListener(OPEN_CHAT_EVENT, handler);
   }, []);
+
+  // Keep mobile conversion controls from competing with the assistant sheet.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(CHAT_STATE_EVENT, { detail: { open } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent(CHAT_STATE_EVENT, { detail: { open: false } }));
+    };
+  }, [open]);
 
   // ── Auto-scroll to bottom on new messages ──────────────────────────
   useEffect(() => {
@@ -489,7 +539,7 @@ export function LiveChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.25 }}
-            className="relative bg-white dark:bg-card border border-border shadow-xl rounded-2xl px-4 py-3 max-w-[240px]"
+            className="relative bg-card border border-primary/15 shadow-xl rounded-2xl px-4 py-3 max-w-[260px]"
           >
             <button
               type="button"
@@ -520,22 +570,24 @@ export function LiveChatWidget() {
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             dir={dir}
-            className="w-[min(370px,calc(100vw-2.5rem))] h-[min(560px,calc(100vh-9rem))] bg-background border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            className="w-[min(390px,calc(100vw-1.5rem))] h-[min(610px,calc(100dvh-8rem))] bg-background border border-primary/15 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col max-sm:h-[min(680px,calc(100dvh-7.25rem))]"
             data-testid="live-chat-panel"
+            data-chat-transport={ACTIVE_CHAT_TRANSPORT}
             role="dialog"
             aria-label={t.headerTitle}
           >
             {/* Header */}
-            <div className="bg-gradient-to-l from-primary/90 to-primary text-primary-foreground px-4 py-3 flex items-center justify-between">
+            <div className="bg-foreground text-background px-4 py-3.5 flex items-center justify-between border-b border-background/10">
               <div className="flex items-center gap-2.5">
-                <div className="relative w-9 h-9 rounded-full bg-white/20 flex items-center justify-center leading-none" aria-hidden>
-                  <span className="text-xl">🐨</span>
-                  <span className="absolute -bottom-0.5 -end-0.5 text-[11px]">🎤</span>
-                </div>
+                <WamdaAvatar size="sm" />
                 <div className="leading-tight">
-                  <p className="font-bold text-sm">{t.headerTitle}</p>
-                  <p className="text-[11px] opacity-90 flex items-center gap-1">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                  <p className="font-bold text-sm flex items-center gap-1.5">
+                    {t.headerTitle}
+                    <span className="font-normal text-background/50">·</span>
+                    <span className="font-normal text-background/70">{t.headerSubtitle}</span>
+                  </p>
+                  <p className="text-[11px] text-background/65 flex items-center gap-1 mt-0.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent" />
                     {t.statusReply}
                   </p>
                 </div>
@@ -557,14 +609,37 @@ export function LiveChatWidget() {
             {!session ? (
               <form
                 onSubmit={startConversation}
-                className="flex-1 overflow-y-auto p-4 space-y-3"
+                  className="flex-1 overflow-y-auto p-4 space-y-4"
                 data-testid="live-chat-intro-form"
               >
-                <div className="rounded-xl bg-muted/50 px-3 py-3 text-xs text-muted-foreground leading-relaxed">
-                  <p className="font-bold text-foreground mb-1 text-sm">
-                    {t.introTitle}
-                  </p>
-                  <p>{t.introBody}</p>
+                <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/10 px-4 py-4 text-xs text-muted-foreground leading-relaxed">
+                  <div className="flex items-start gap-3">
+                    <WamdaAvatar size="sm" />
+                    <div>
+                      <p className="font-bold text-foreground mb-1 text-sm">{t.introTitle}</p>
+                      <p>{t.introBody}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold text-foreground mb-2">{t.quickHeading}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {t.quickPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => setIntro(prompt)}
+                        className={`rounded-full border px-3 py-1.5 text-[11px] leading-snug transition-colors text-start ${
+                          intro === prompt
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card text-foreground/80 hover:border-primary/35 hover:bg-primary/5"
+                        }`}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
@@ -579,7 +654,7 @@ export function LiveChatWidget() {
                     aria-required="true"
                     autoComplete="name"
                     placeholder={t.namePh}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                     data-testid="live-chat-name"
                   />
                 </div>
@@ -607,7 +682,7 @@ export function LiveChatWidget() {
                     aria-required="true"
                     rows={3}
                     placeholder={t.messagePh}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                     data-testid="live-chat-intro-message"
                   />
                 </div>
@@ -621,7 +696,7 @@ export function LiveChatWidget() {
                 <button
                   type="submit"
                   disabled={starting}
-                  className="w-full bg-[#25D366] hover:bg-[#1ebe5c] disabled:opacity-60 text-white font-bold rounded-xl py-2.5 text-sm flex items-center justify-center gap-2 transition-colors"
+                  className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 text-primary-foreground font-bold rounded-xl py-3 text-sm flex items-center justify-center gap-2 transition-colors shadow-sm"
                   data-testid="live-chat-start"
                 >
                   {starting ? (
@@ -637,9 +712,10 @@ export function LiveChatWidget() {
                   )}
                 </button>
 
-                <p className="text-[10px] text-muted-foreground leading-relaxed text-center">
+                <p className="text-[10px] text-muted-foreground leading-relaxed text-center px-2">
                   {t.privacy}
                 </p>
+                <p className="text-[10px] text-primary font-medium text-center">{t.humanHandoff}</p>
               </form>
             ) : (
               <>
@@ -700,7 +776,7 @@ export function LiveChatWidget() {
                       type="submit"
                       disabled={sending || draft.trim().length < 1}
                       aria-label={t.send}
-                      className="bg-[#25D366] hover:bg-[#1ebe5c] disabled:opacity-50 text-white rounded-lg p-2.5 transition-colors"
+                      className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground rounded-xl p-2.5 transition-colors"
                       data-testid="live-chat-send"
                     >
                       {sending ? (
@@ -717,55 +793,42 @@ export function LiveChatWidget() {
         )}
       </AnimatePresence>
 
-      {/* Floating character (frame-less). The koala holds a mic and a
-          small speech bubble above prompts the visitor. */}
-      <motion.button
-        type="button"
-        onClick={onBubbleClick}
-        aria-label={t.bubble}
-        title={t.bubble}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.07 }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: "spring", stiffness: 200, damping: 15, delay: 1 }}
-        className="relative flex flex-col items-center gap-1 bg-transparent border-0 p-0 cursor-pointer"
-        data-testid="live-chat-bubble"
-      >
-        {!open && (
-          <span
-            className="px-3 py-1.5 rounded-full bg-background text-foreground text-xs font-bold shadow-lg border border-border whitespace-nowrap relative"
-            data-testid="live-chat-help-prompt"
+      {/* Wamda: a brand-native speech spark rather than an animal mascot. */}
+      {!open && (
+        <motion.button
+            type="button"
+            onClick={onBubbleClick}
+            aria-label={t.bubble}
+            title={t.bubble}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            whileHover={{ scale: 1.07 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.15 }}
+            className="relative flex flex-col items-center gap-2 bg-transparent border-0 p-0 cursor-pointer"
+            data-testid="live-chat-bubble"
           >
-            {t.helpPrompt}
             <span
-              className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-background border-b border-e border-border"
-              aria-hidden
-            />
-          </span>
-        )}
-        {open ? (
-          <span className="w-12 h-12 rounded-full bg-foreground/80 text-background shadow-2xl flex items-center justify-center">
-            <X className="w-6 h-6" strokeWidth={2.4} />
-          </span>
-        ) : (
-          <span
-            className="relative inline-block leading-none drop-shadow-[0_8px_14px_rgba(0,0,0,0.25)]"
-            aria-hidden
-          >
-            <span className="text-[64px]">🐨</span>
-            <span className="absolute bottom-1 -end-2 text-[28px]">🎤</span>
-          </span>
-        )}
-        {unread > 0 && !open && (
-          <span
-            className="absolute top-7 -end-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center border-2 border-background"
-            data-testid="live-chat-unread"
-          >
-            {unread > 9 ? "9+" : unread}
-          </span>
-        )}
-      </motion.button>
+              className="px-3.5 py-2 rounded-full bg-card text-foreground text-xs font-bold shadow-lg border border-primary/15 whitespace-nowrap relative"
+              data-testid="live-chat-help-prompt"
+            >
+              {t.helpPrompt}
+              <span
+                className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 rotate-45 bg-background border-b border-e border-border"
+                aria-hidden
+              />
+            </span>
+            <WamdaAvatar size="lg" />
+            {unread > 0 && (
+              <span
+                className="absolute top-7 -end-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center border-2 border-background"
+                data-testid="live-chat-unread"
+              >
+                {unread > 9 ? "9+" : unread}
+              </span>
+            )}
+        </motion.button>
+      )}
     </div>
   );
 }
@@ -795,12 +858,12 @@ function ChatBubble({
       <div
         className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed shadow-sm ${
           fromMe
-            ? "bg-[#dcf8c6] dark:bg-emerald-900/40 text-foreground rounded-br-sm"
-            : "bg-background border border-border text-foreground rounded-bl-sm"
+            ? "bg-primary text-primary-foreground rounded-br-sm"
+            : "bg-card border border-border text-foreground rounded-bl-sm"
         }`}
       >
         {!fromMe && (
-          <p className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mb-0.5">
+          <p className="text-[10px] font-bold text-primary mb-0.5">
             {t.teamLabel}
           </p>
         )}

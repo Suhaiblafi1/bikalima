@@ -22,7 +22,7 @@ import { z } from "zod";
 // Centralised request schemas. 400s carry a uniform `{ error, issues }` body.
 const RegisterSchema = z.object({
   email: z.string().trim().email().max(200),
-  password: z.string().min(6).max(200),
+  password: z.string().min(10).max(200),
   firstName: z.string().max(120).optional().nullable(),
   lastName: z.string().max(120).optional().nullable(),
 });
@@ -52,13 +52,15 @@ function buildTransporter() {
 }
 
 function appOrigin(req: Request): string {
-  // APP_ORIGIN pins the public-facing origin (e.g. http://localhost:7100 in
-  // local dev where the API sits behind the vite proxy). Replit sets
-  // REPLIT_DOMAINS instead; APP_ORIGIN stays unset there.
-  const pinned = process.env.APP_ORIGIN?.trim();
+  // Password and verification links must be anchored to a trusted deployment
+  // setting, never to a caller-controlled Host header in production.
+  const pinned = (process.env.PUBLIC_APP_URL ?? process.env.APP_ORIGIN)?.trim();
   if (pinned) return pinned.replace(/\/+$/, "");
   const envDomains = (process.env.REPLIT_DOMAINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (envDomains.length > 0) return `https://${envDomains[0]}`;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("PUBLIC_APP_URL must be configured in production");
+  }
   const host = req.get("host") ?? "localhost";
   const proto = (req.get("x-forwarded-proto") ?? req.protocol ?? "https").split(",")[0].trim();
   return `${proto}://${host}`;
@@ -308,16 +310,20 @@ const ForgotPasswordSchema = z.object({
 });
 const ResetPasswordSchema = z.object({
   token: z.string().min(10).max(200),
-  password: z.string().min(6).max(200),
+  password: z.string().min(10).max(200),
 });
 
 async function sendPasswordResetEmail(req: Request, email: string, firstName: string | null, token: string) {
   const link = `${appOrigin(req)}/reset-password?token=${encodeURIComponent(token)}`;
   const transporter = buildTransporter();
   if (!transporter) {
-    // Dev fallback: no SMTP configured — surface the link in the server log
-    // so the flow stays testable locally.
-    req.log.warn({ email, link }, "SMTP not configured — password reset link (dev only)");
+    if (process.env.NODE_ENV !== "production") {
+      // Local-only fallback keeps the flow testable without leaking a live
+      // bearer token into production logs.
+      req.log.warn({ email, link }, "SMTP not configured — password reset link (dev only)");
+    } else {
+      req.log.error({ email }, "SMTP not configured — password reset email not sent");
+    }
     return;
   }
 
@@ -560,8 +566,8 @@ router.post("/auth/change-password", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Current and new password are required" });
       return;
     }
-    if (newPassword.length < 6) {
-      res.status(400).json({ error: "New password must be at least 6 characters" });
+    if (newPassword.length < 10) {
+      res.status(400).json({ error: "New password must be at least 10 characters" });
       return;
     }
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.id));
@@ -576,6 +582,12 @@ router.post("/auth/change-password", async (req: Request, res: Response) => {
     }
     const passwordHash = await hashPassword(newPassword);
     await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, user.id));
+    const sid = getSessionId(req);
+    if (sid) {
+      await db.execute(sql`DELETE FROM sessions WHERE sess->'user'->>'id' = ${user.id} AND sid <> ${sid}`);
+    } else {
+      await db.execute(sql`DELETE FROM sessions WHERE sess->'user'->>'id' = ${user.id}`);
+    }
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "Password change error");

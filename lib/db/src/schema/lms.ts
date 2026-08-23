@@ -86,7 +86,7 @@ export const enrollmentsTable = pgTable("enrollments", {
   courseId: varchar("course_id").notNull().references(() => coursesTable.id, { onDelete: "cascade" }),
   status: varchar("status").$type<"active" | "completed" | "suspended">().notNull().default("active"),
   enrolledAt: timestamp("enrolled_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("uq_enrollments_user_course").on(table.userId, table.courseId)]);
 
 export const lessonProgressTable = pgTable("lesson_progress", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -94,7 +94,7 @@ export const lessonProgressTable = pgTable("lesson_progress", {
   lessonId: varchar("lesson_id").notNull().references(() => lessonsTable.id, { onDelete: "cascade" }),
   completed: boolean("completed").notNull().default(false),
   completedAt: timestamp("completed_at", { withTimezone: true }),
-});
+}, (table) => [uniqueIndex("uq_lesson_progress_user_lesson").on(table.userId, table.lessonId)]);
 
 export const lessonNotesTable = pgTable("lesson_notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -103,7 +103,7 @@ export const lessonNotesTable = pgTable("lesson_notes", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [uniqueIndex("uq_lesson_notes_user_lesson").on(table.userId, table.lessonId)]);
 
 export const enrollmentRequestsTable = pgTable("enrollment_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

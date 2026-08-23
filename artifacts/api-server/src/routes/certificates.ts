@@ -9,8 +9,10 @@ import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { requireAdmin, requireRole, requireSupervisorOrAdmin, isSupervisorOrAdmin } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
 import { awardBadgeIfEligible, recordAuditLog } from "../lib/platform.js";
+import { authRateLimit } from "../middlewares/security.js";
 
 const router: IRouter = Router();
+const publicCertificateLookupLimiter = authRateLimit(30, 60_000);
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 async function logActivity(
@@ -87,9 +89,12 @@ function toPublic(c: typeof certificatesTable.$inferSelect) {
 }
 
 // ── PUBLIC: verify by code (and optional name) ───────────────────────────
-router.get("/verify", async (req: Request, res: Response) => {
+router.get("/verify", publicCertificateLookupLimiter, async (req: Request, res: Response) => {
   const code = String(req.query.code ?? "").trim();
   const name = String(req.query.name ?? "").trim();
+  if (code.length > 80 || name.length > 160) {
+    return res.status(400).json({ error: "Invalid verification query" });
+  }
   if (!code && !name) {
     return res.json({ found: false, results: [] });
   }
@@ -97,8 +102,9 @@ router.get("/verify", async (req: Request, res: Response) => {
     const conds = [];
     if (code) conds.push(eq(certificatesTable.code, code));
     if (name) conds.push(ilike(certificatesTable.fullName, `%${name}%`));
-    // Match either filter (OR) when both provided to be lenient.
-    const where = conds.length === 1 ? conds[0] : or(...conds);
+    // When both are present they must identify the same certificate. Using OR
+    // here would make a code lookup behave like a broad public name search.
+    const where = conds.length === 1 ? conds[0] : and(...conds);
     const rows = await db
       .select()
       .from(certificatesTable)
@@ -118,6 +124,7 @@ router.get("/verify", async (req: Request, res: Response) => {
 // ── PUBLIC: single certificate by code (shareable) ───────────────────────
 router.get("/certificates/:code", async (req: Request, res: Response) => {
   const code = String(req.params.code ?? "").trim();
+  if (!code || code.length > 80) return res.status(400).json({ error: "invalid-code" });
   try {
     const [row] = await db
       .select()
@@ -242,7 +249,10 @@ router.get("/admin/certificates/export.csv", async (req: Request, res: Response)
     ];
     const escape = (v: unknown): string => {
       if (v === null || v === undefined) return "";
-      const s = v instanceof Date ? v.toISOString() : String(v);
+      let s = v instanceof Date ? v.toISOString() : String(v);
+      // Prevent spreadsheet applications from evaluating exported user data
+      // as a formula (CSV injection), including values with leading spaces.
+      if (/^[\t\r ]*[=+\-@]/.test(s)) s = `'${s}`;
       if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
       return s;
     };

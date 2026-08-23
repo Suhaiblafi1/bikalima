@@ -2,16 +2,20 @@ import type { Request, Response } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
-export const ADMIN_EMAILS = ["info@bikalima.com"];
-
 export type Role = "admin" | "supervisor" | "trainer" | "student" | "sales" | "parent";
 export const ROLES: readonly Role[] = ["admin", "supervisor", "trainer", "student", "sales", "parent"] as const;
 
-/** Returns true when the request is authenticated as the hard-pinned master account. */
+/**
+ * Returns true only for a verified account explicitly provisioned as a
+ * super-admin in the database. Email addresses are never authorization
+ * credentials: a freshly registered user must not gain privileges merely by
+ * claiming a particular address.
+ */
 export function isMasterAccount(req: Request): boolean {
   if (!req.isAuthenticated() || !req.user) return false;
-  const email = req.user.email?.toLowerCase();
-  return email ? ADMIN_EMAILS.includes(email) : false;
+  return req.user.role === "admin"
+    && req.user.isSuperAdmin === true
+    && req.user.emailVerified === true;
 }
 
 export function isValidRole(value: unknown): value is Role {
@@ -23,6 +27,8 @@ declare global {
   namespace Express {
     interface User {
       role?: Role;
+      isSuperAdmin?: boolean;
+      emailVerified?: boolean;
     }
   }
 }
@@ -32,28 +38,34 @@ declare global {
  * session payload so role changes take effect without forcing the user to log
  * out. Falls back to "student" if the user record is missing.
  */
-export async function getUserRole(userId: string): Promise<Role> {
+export async function getUserAccess(userId: string): Promise<{
+  role: Role;
+  isSuperAdmin: boolean;
+  emailVerified: boolean;
+} | null> {
   const [row] = await db
-    .select({ role: usersTable.role, email: usersTable.email })
+    .select({
+      role: usersTable.role,
+      isSuperAdmin: usersTable.isSuperAdmin,
+      emailVerified: usersTable.emailVerified,
+    })
     .from(usersTable)
     .where(eq(usersTable.id, userId));
-  if (!row) return "student";
-  // Bootstrap: any user whose email is in ADMIN_EMAILS is auto-promoted.
-  if (ADMIN_EMAILS.includes(row.email.toLowerCase()) && row.role !== "admin") {
-    await db
-      .update(usersTable)
-      .set({ role: "admin" })
-      .where(eq(usersTable.id, userId));
-    return "admin";
-  }
-  return isValidRole(row.role) ? row.role : "student";
+  if (!row) return null;
+  return {
+    role: isValidRole(row.role) ? row.role : "student",
+    isSuperAdmin: row.isSuperAdmin,
+    emailVerified: row.emailVerified,
+  };
+}
+
+export async function getUserRole(userId: string): Promise<Role> {
+  return (await getUserAccess(userId))?.role ?? "student";
 }
 
 export function isAdmin(req: Request): boolean {
   if (!req.isAuthenticated() || !req.user) return false;
-  if (req.user.role === "admin") return true;
-  const email = req.user.email?.toLowerCase();
-  return email ? ADMIN_EMAILS.includes(email) : false;
+  return req.user.role === "admin";
 }
 
 /**
@@ -93,10 +105,6 @@ export function requireRole(req: Request, res: Response, ...allowed: Role[]): bo
   }
   const role = req.user.role ?? "student";
   if (role === "admin") return true;
-  // Master account always passes regardless of stored role (defense in depth
-  // against accidental DB-level demotions of the bootstrap admin).
-  const email = req.user.email?.toLowerCase();
-  if (email && ADMIN_EMAILS.includes(email)) return true;
   if (allowed.includes(role)) return true;
   res.status(403).json({ error: "Forbidden", role, allowed });
   return false;

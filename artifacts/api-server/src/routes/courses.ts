@@ -18,7 +18,7 @@ async function getCourseBySlug(slug: string) {
   const [course] = await db
     .select()
     .from(coursesTable)
-    .where(eq(coursesTable.slug, slug));
+    .where(and(eq(coursesTable.slug, slug), eq(coursesTable.isPublished, true)));
   return course ?? null;
 }
 
@@ -42,6 +42,7 @@ router.get("/courses", async (_req: Request, res: Response) => {
         isPublished: coursesTable.isPublished,
       })
       .from(coursesTable)
+      .where(eq(coursesTable.isPublished, true))
       .orderBy(coursesTable.createdAt);
     res.json({ courses });
   } catch {
@@ -62,7 +63,7 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
     const rawLessons = await db
       .select()
       .from(lessonsTable)
-      .where(eq(lessonsTable.courseId, course.id))
+      .where(and(eq(lessonsTable.courseId, course.id), eq(lessonsTable.isPublished, true)))
       .orderBy(asc(lessonsTable.sortOrder));
 
     let hasAccess = false;
@@ -113,7 +114,7 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
 
       if (enrolled) {
         const allLessons = await db.select({ id: lessonsTable.id }).from(lessonsTable)
-          .where(eq(lessonsTable.courseId, course.id));
+          .where(and(eq(lessonsTable.courseId, course.id), eq(lessonsTable.isPublished, true)));
         const lessonIds = allLessons.map(l => l.id);
         if (lessonIds.length > 0) {
           const progress = await db.select().from(lessonProgressTable)
@@ -128,11 +129,11 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
     }
 
     const sections = await db.select().from(courseSectionsTable)
-      .where(eq(courseSectionsTable.courseId, course.id))
+      .where(and(eq(courseSectionsTable.courseId, course.id), eq(courseSectionsTable.isPublished, true)))
       .orderBy(asc(courseSectionsTable.sortOrder));
 
     const rawLessons = await db.select().from(lessonsTable)
-      .where(eq(lessonsTable.courseId, course.id))
+      .where(and(eq(lessonsTable.courseId, course.id), eq(lessonsTable.isPublished, true)))
       .orderBy(asc(lessonsTable.sortOrder));
 
     const lessons = rawLessons.map(l => {
@@ -230,20 +231,15 @@ router.put("/my/lessons/:lessonId/note", async (req: Request, res: Response) => 
       return;
     }
 
-    if (existing) {
-      const [updated] = await db
-        .update(lessonNotesTable)
-        .set({ content, updatedAt: new Date() })
-        .where(eq(lessonNotesTable.id, existing.id))
-        .returning();
-      res.json({ note: updated });
-    } else {
-      const [created] = await db
-        .insert(lessonNotesTable)
-        .values({ userId: req.user.id, lessonId, content })
-        .returning();
-      res.json({ note: created });
-    }
+    const [note] = await db
+      .insert(lessonNotesTable)
+      .values({ userId: req.user.id, lessonId, content })
+      .onConflictDoUpdate({
+        target: [lessonNotesTable.userId, lessonNotesTable.lessonId],
+        set: { content, updatedAt: new Date() },
+      })
+      .returning();
+    res.json({ note });
   } catch {
     res.status(500).json({ error: "Failed to save note" });
   }
@@ -382,7 +378,11 @@ router.get("/my/next-lesson", async (req: Request, res: Response) => {
       })
       .from(enrollmentsTable)
       .innerJoin(coursesTable, eq(enrollmentsTable.courseId, coursesTable.id))
-      .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.status, "active")));
+      .where(and(
+        eq(enrollmentsTable.userId, userId),
+        eq(enrollmentsTable.status, "active"),
+        eq(coursesTable.isPublished, true),
+      ));
 
     if (enrollments.length === 0) {
       res.json({ nextLesson: null });
@@ -393,7 +393,7 @@ router.get("/my/next-lesson", async (req: Request, res: Response) => {
     const lessons = await db
       .select()
       .from(lessonsTable)
-      .where(inArray(lessonsTable.courseId, courseIds))
+      .where(and(inArray(lessonsTable.courseId, courseIds), eq(lessonsTable.isPublished, true)))
       .orderBy(asc(lessonsTable.sortOrder));
     const progress = await db
       .select()

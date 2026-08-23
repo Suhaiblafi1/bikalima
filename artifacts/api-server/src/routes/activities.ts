@@ -145,9 +145,77 @@ async function getUserCoursesAsTrainer(userId: string): Promise<string[]> {
 async function isEnrolled(userId: string, courseId: string): Promise<boolean> {
   const [row] = await db.select({ id: enrollmentsTable.id })
     .from(enrollmentsTable)
-    .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, courseId)))
+    .where(and(
+      eq(enrollmentsTable.userId, userId),
+      eq(enrollmentsTable.courseId, courseId),
+      eq(enrollmentsTable.status, "active"),
+    ))
     .limit(1);
   return !!row;
+}
+
+type QuizQuestion = { q?: unknown; choices?: unknown; answer?: unknown };
+
+function learnerSafeConfig(type: ActivityType, config: Record<string, unknown>): Record<string, unknown> {
+  if (type !== "quiz") return config;
+  const questions = Array.isArray(config.questions)
+    ? (config.questions as QuizQuestion[]).map(({ answer: _answer, ...question }) => question)
+    : [];
+  return { ...config, questions };
+}
+
+function numericPicks(payload: Record<string, unknown>): Record<string, number> | null {
+  const value = payload.picks;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const picks: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!/^\d+$/.test(key) || !Number.isInteger(raw) || (raw as number) < 0) return null;
+    picks[key] = raw as number;
+  }
+  return picks;
+}
+
+function gradeAutoActivity(
+  type: ActivityType,
+  config: Record<string, unknown>,
+  payload: Record<string, unknown>,
+): { score: number; passed: boolean } | null {
+  if (type === "quiz") {
+    const questions = Array.isArray(config.questions) ? config.questions as QuizQuestion[] : [];
+    const picks = numericPicks(payload);
+    if (questions.length === 0 || !picks || Object.keys(picks).length !== questions.length) return null;
+    let correct = 0;
+    for (let index = 0; index < questions.length; index += 1) {
+      const answer = questions[index]?.answer;
+      if (Number.isInteger(answer) && picks[String(index)] === answer) correct += 1;
+    }
+    const score = Math.round((correct / questions.length) * 100);
+    const configuredPass = Number(config.passScore);
+    const passScore = Number.isFinite(configuredPass) ? Math.max(0, Math.min(100, configuredPass)) : 60;
+    return { score, passed: score >= passScore };
+  }
+  if (type === "drag_drop") {
+    const pairs = Array.isArray(config.pairs) ? config.pairs : [];
+    const picks = numericPicks(payload);
+    if (pairs.length === 0 || !picks || Object.keys(picks).length !== pairs.length) return null;
+    let correct = 0;
+    for (let index = 0; index < pairs.length; index += 1) {
+      if (picks[String(index)] === index) correct += 1;
+    }
+    const score = Math.round((correct / pairs.length) * 100);
+    return { score, passed: score >= 60 };
+  }
+  if (type === "self_assessment") {
+    const valsRaw = payload.vals;
+    if (!valsRaw || typeof valsRaw !== "object" || Array.isArray(valsRaw)) return null;
+    const rawValues = Object.values(valsRaw as Record<string, unknown>);
+    const scale = Math.max(1, Math.min(10, Number(config.scale) || 5));
+    if (rawValues.length === 0 || rawValues.some((value) => !Number.isFinite(value) || Number(value) < 1 || Number(value) > scale)) return null;
+    const values = rawValues.map(Number);
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+    return { score: Math.round((average / scale) * 100), passed: true };
+  }
+  return null;
 }
 
 // Resolve { courseId, isFreePreview } for a lesson id, or null when missing.
@@ -215,7 +283,12 @@ async function recomputeLessonProgress(userId: string, lessonId: string): Promis
         .where(eq(lessonProgressTable.id, existing.id));
     }
   } else if (allDone) {
-    await db.insert(lessonProgressTable).values({ userId, lessonId, completed: true, completedAt: new Date() });
+    await db.insert(lessonProgressTable)
+      .values({ userId, lessonId, completed: true, completedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [lessonProgressTable.userId, lessonProgressTable.lessonId],
+        set: { completed: true, completedAt: new Date() },
+      });
   }
   return allDone;
 }
@@ -318,7 +391,11 @@ router.get("/lessons/:lessonId/activities", async (req: Request, res: Response) 
         }
       }
     }
-    res.json({ activities: acts, myProgress });
+    const learnerActivities = acts.map((activity) => ({
+      ...activity,
+      config: learnerSafeConfig(activity.type, activity.config),
+    }));
+    res.json({ activities: learnerActivities, myProgress });
   } catch (err) {
     req.log.error({ err }, "list activities failed");
     res.status(500).json({ error: "Failed to load activities" });
@@ -347,11 +424,24 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
       return;
     }
 
-    // Decide initial status by activity type:
+    const mediaUrl = typeof body.mediaUrl === "string" && body.mediaUrl.trim() ? body.mediaUrl.trim() : null;
+    const payload = (body.payload && typeof body.payload === "object" && !Array.isArray(body.payload))
+      ? body.payload as Record<string, unknown>
+      : {};
+
+    // Decide initial status by activity type. Quiz and matching scores are
+    // computed here from the private answer key; client-supplied autoScore is
+    // deliberately ignored.
     //   video / text / reflection / self_assessment / drag_drop / quiz / scenario / speech_builder / challenge → completed (auto)
     //   voice_recording / video_submission / coach_feedback → pending (await trainer review)
     const TRAINER_REVIEWED: ActivityType[] = ["voice_recording", "video_submission", "coach_feedback"];
-    const initialStatus: "pending" | "completed" = TRAINER_REVIEWED.includes(act.type) ? "pending" : "completed";
+    let initialStatus: "pending" | "completed" | "needs_revision" = TRAINER_REVIEWED.includes(act.type) ? "pending" : "completed";
+    const grade = gradeAutoActivity(act.type, act.config, payload);
+    if (["quiz", "drag_drop", "self_assessment"].includes(act.type) && !grade) {
+      res.status(400).json({ error: "Invalid or incomplete activity response" });
+      return;
+    }
+    if (grade && !grade.passed) initialStatus = "needs_revision";
 
     // Compute attempt number
     const [last] = await db.select({ n: sql<number>`MAX(${activitySubmissionsTable.attemptNumber})::int` })
@@ -359,9 +449,7 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
       .where(and(eq(activitySubmissionsTable.userId, userId), eq(activitySubmissionsTable.activityId, activityId)));
     const attemptNumber = (last?.n ?? 0) + 1;
 
-    const autoScore = typeof body.autoScore === "number" ? Math.max(0, Math.min(100, Math.round(body.autoScore))) : null;
-    const mediaUrl = typeof body.mediaUrl === "string" && body.mediaUrl.trim() ? body.mediaUrl.trim() : null;
-    const payload = (body.payload && typeof body.payload === "object") ? body.payload as Record<string, unknown> : {};
+    const autoScore = grade?.score ?? null;
 
     const [sub] = await db.insert(activitySubmissionsTable).values({
       userId, activityId, lessonId: act.lessonId,
@@ -439,7 +527,7 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
       if (lessonCompleted) {
         await awardBadgeIfEligible(userId, "lesson_completed", { lessonId: act.lessonId });
       }
-    } else {
+    } else if (initialStatus === "pending") {
       // Notify trainers of the course
       const trainers = await db.select({ userId: courseTrainersTable.userId })
         .from(courseTrainersTable).where(eq(courseTrainersTable.courseId, lesson.courseId));
@@ -448,11 +536,11 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
           userId: t.userId, type: "submission_pending",
           titleAr: "تسليم جديد بانتظار المراجعة",
           titleEn: "New submission awaiting review",
-          link: "/instructor/reviews",
+          link: "/admin/reviews",
         });
       }
     }
-    res.json({ submission: sub, status: initialStatus });
+    res.json({ submission: sub, status: initialStatus, grade });
   } catch (err) {
     req.log.error({ err }, "submit activity failed");
     res.status(500).json({ error: "Failed to submit" });

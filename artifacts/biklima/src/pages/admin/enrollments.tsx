@@ -101,13 +101,20 @@ export default function AdminEnrollmentsPage() {
   };
 
   const exportCsv = (rows: LmsOrderRecord[]) => {
+    const csvCell = (value: unknown) => {
+      let text = value == null ? "" : String(value);
+      if (/^[\t\r ]*[=+\-@]/.test(text)) text = `'${text}`;
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
     const header = ["الاسم", "البريد", "الهاتف", "الدورة", "المبلغ", "الحالة", "التاريخ"];
-    const lines = rows.map((o) => [o.buyerName, o.buyerEmail, o.buyerPhone, o.courseTitle || "", o.amount || "", o.status, new Date(o.createdAt).toLocaleDateString("ar-SA")].join(","));
+    const lines = rows.map((o) => [o.buyerName, o.buyerEmail, o.buyerPhone, o.courseTitle || "", o.amount || "", o.status, new Date(o.createdAt).toLocaleDateString("ar-SA")].map(csvCell).join(","));
     const blob = new Blob([header.join(",") + "\n" + lines.join("\n")], { type: "text/csv" });
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    const objectUrl = URL.createObjectURL(blob);
+    a.href = objectUrl;
     a.download = "lms-orders.csv";
     a.click();
+    URL.revokeObjectURL(objectUrl);
   };
 
   const filteredLmsOrders = lmsOrders.filter((o) => lmsStatusFilter === "all" || o.status === lmsStatusFilter);

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Ticket, MessageSquare } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { trackWhatsappClick, trackReserveSeatClick } from "@/lib/analytics";
-import { OPEN_CHAT_EVENT } from "@/components/live-chat-widget";
+import { CHAT_STATE_EVENT, OPEN_CHAT_EVENT } from "@/components/live-chat-widget";
 import { PROGRAM_SLUGS } from "@/lib/site-config";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -26,6 +26,7 @@ export function MobileStickyCta() {
   const t = TEXT[lang];
   const [location, navigate] = useLocation();
   const [visible, setVisible] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const liveChatEnabled = useFeatureFlag("live_chat");
   const { data: settingsResp } = useSiteSettings();
   const whatsappRaw = settingsResp?.settings?.whatsappNumber ?? null;
@@ -37,6 +38,9 @@ export function MobileStickyCta() {
     const isHidden =
       location.startsWith("/admin") ||
       location.startsWith("/dashboard") ||
+      location.startsWith("/trainer") ||
+      location.startsWith("/parent") ||
+      location.startsWith("/instructor") ||
       location.startsWith("/checkout") ||
       location.startsWith("/learn") ||
       location.startsWith("/programs/") ||
@@ -51,7 +55,16 @@ export function MobileStickyCta() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [location]);
 
-  if (!visible) return null;
+  useEffect(() => {
+    const onChatState = (event: Event) => {
+      const detail = (event as CustomEvent<{ open?: boolean }>).detail;
+      setChatOpen(Boolean(detail?.open));
+    };
+    window.addEventListener(CHAT_STATE_EVENT, onChatState);
+    return () => window.removeEventListener(CHAT_STATE_EVENT, onChatState);
+  }, []);
+
+  if (!visible || chatOpen) return null;
 
   // Site-wide reserve flow goes to checkout for the foundational program.
   // Per-program pages own their own sticky CTA via /programs/* (this bar
@@ -83,6 +96,12 @@ export function MobileStickyCta() {
   };
 
   return (
+    <>
+    <div
+      aria-hidden
+      className="md:hidden"
+      style={{ height: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
+    />
     <div
       className="md:hidden fixed bottom-0 inset-x-0 z-[55] bg-background/95 backdrop-blur-md border-t border-border shadow-[0_-4px_20px_-6px_rgba(0,0,0,0.12)] print:hidden"
       data-testid="mobile-sticky-cta"
@@ -92,7 +111,7 @@ export function MobileStickyCta() {
         <button
           type="button"
           onClick={goChat}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-secondary text-secondary-foreground py-2.5 font-bold text-xs active:scale-95 transition-transform"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-secondary text-secondary-foreground px-3 py-2.5 font-bold text-sm active:scale-95 transition-transform"
           data-testid="mobile-sticky-whatsapp"
         >
           <MessageSquare className="w-4 h-4" />
@@ -101,7 +120,7 @@ export function MobileStickyCta() {
         <button
           type="button"
           onClick={goReserve}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground py-2.5 font-bold text-xs active:scale-95 transition-transform"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary text-primary-foreground px-3 py-2.5 font-bold text-sm active:scale-95 transition-transform"
           data-testid="mobile-sticky-register"
         >
           <Ticket className="w-4 h-4" />
@@ -109,5 +128,6 @@ export function MobileStickyCta() {
         </button>
       </div>
     </div>
+    </>
   );
 }

@@ -55,13 +55,10 @@ function getPublicOrigin(req: Request): string {
 }
 
 async function ensureEnrollment(userId: string, courseId: string): Promise<void> {
-  const existing = await db
-    .select({ id: enrollmentsTable.id })
-    .from(enrollmentsTable)
-    .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, courseId)))
-    .limit(1);
-  if (existing.length > 0) return;
-  await db.insert(enrollmentsTable).values({ userId, courseId, status: "active" });
+  await db
+    .insert(enrollmentsTable)
+    .values({ userId, courseId, status: "active" })
+    .onConflictDoNothing({ target: [enrollmentsTable.userId, enrollmentsTable.courseId] });
 }
 
 // Strict zod schema for the order-create request. Centralises shape +
@@ -227,7 +224,7 @@ router.post("/discount-codes/validate", discountValidateLimiter, async (req: Req
   const [course] = await db
     .select({ id: coursesTable.id, price: coursesTable.price, discountPrice: coursesTable.discountPrice, recordedPrice: coursesTable.recordedPrice, zoomPrice: coursesTable.zoomPrice, blendedPrice: coursesTable.blendedPrice, deliveryFormats: coursesTable.deliveryFormats })
     .from(coursesTable)
-    .where(eq(coursesTable.id, parsed.data.courseId))
+    .where(and(eq(coursesTable.id, parsed.data.courseId), eq(coursesTable.isPublished, true)))
     .limit(1);
   if (!course) {
     res.status(404).json({ valid: false, error: "الدورة غير موجودة" });
@@ -269,7 +266,7 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
     const [course] = await db
       .select({ id: coursesTable.id, slug: coursesTable.slug, titleAr: coursesTable.titleAr, titleEn: coursesTable.titleEn, price: coursesTable.price, discountPrice: coursesTable.discountPrice, recordedPrice: coursesTable.recordedPrice, zoomPrice: coursesTable.zoomPrice, blendedPrice: coursesTable.blendedPrice, deliveryFormats: coursesTable.deliveryFormats })
       .from(coursesTable)
-      .where(eq(coursesTable.id, courseId));
+      .where(and(eq(coursesTable.id, courseId), eq(coursesTable.isPublished, true)));
 
     if (!course) {
       res.status(404).json({ error: "Course not found" });

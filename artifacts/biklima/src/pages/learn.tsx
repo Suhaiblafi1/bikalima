@@ -7,12 +7,14 @@ import {
   CheckCircle, Play, Lock, ChevronDown, Download, FileText,
   ArrowLeft, ArrowRight, Menu, X, BookOpen, BarChart3, Clock,
   StickyNote, Save, Trash2, Award, Sparkles, Mail, MessageCircle, Hourglass,
+  AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { Certificate } from "@/components/certificate";
 import {
   ActivityPlayer,
   PLATFORM_DISABLED_ACTIVITY_TYPES,
   type Activity,
+  type ActivitySubmitResult,
   type SubmissionStatus,
 } from "@/components/activity-player";
 import { ContentProtection } from "@/components/content-protection";
@@ -199,34 +201,41 @@ type SectionGroup = {
 function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
   lessonId: string; apiBase: string; enrolled: boolean; onAnyChange: () => void | Promise<void>;
 }) {
+  const { lang } = useLang();
   const [acts, setActs] = useState<Activity[]>([]);
   const [progress, setProgress] = useState<Record<string, { status: SubmissionStatus }>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [ratingFor, setRatingFor] = useState<{ submissionId: string; activityTitle: string } | null>(null);
   const [savingRating, setSavingRating] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const r = await fetch(`${apiBase}/lessons/${lessonId}/activities`, { credentials: "include" });
-      if (r.ok) {
-        const d = await r.json();
-        setActs((d.activities ?? []).filter(
-          (activity: Activity) => !PLATFORM_DISABLED_ACTIVITY_TYPES.has(activity.type),
-        ));
-        const pm: Record<string, { status: SubmissionStatus }> = {};
-        for (const k of Object.keys(d.myProgress ?? {})) {
-          pm[k] = { status: d.myProgress[k].status as SubmissionStatus };
-        }
-        setProgress(pm);
+      if (!r.ok) throw new Error("activity-load-failed");
+      const d = await r.json();
+      setActs((d.activities ?? []).filter(
+        (activity: Activity) => !PLATFORM_DISABLED_ACTIVITY_TYPES.has(activity.type),
+      ));
+      const pm: Record<string, { status: SubmissionStatus }> = {};
+      for (const k of Object.keys(d.myProgress ?? {})) {
+        pm[k] = { status: d.myProgress[k].status as SubmissionStatus };
       }
+      setProgress(pm);
+    } catch {
+      setLoadError(lang === "ar" ? "تعذّر تحميل أنشطة الدرس." : "Lesson activities could not be loaded.");
     } finally { setLoading(false); }
-  }, [apiBase, lessonId]);
+  }, [apiBase, lang, lessonId]);
 
   useEffect(() => { reload(); }, [reload]);
 
-  const handleSubmit = async (activityId: string, data: { payload?: Record<string, unknown>; mediaUrl?: string; autoScore?: number }) => {
+  const handleSubmit = async (
+    activityId: string,
+    data: { payload?: Record<string, unknown>; mediaUrl?: string },
+  ): Promise<ActivitySubmitResult | void> => {
     setSubmitting(activityId);
     try {
       const r = await fetch(`${apiBase}/activities/${activityId}/submit`, {
@@ -242,6 +251,7 @@ function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
         }
         await reload();
         await onAnyChange();
+        return d.grade ?? undefined;
       }
     } finally { setSubmitting(null); }
   };
@@ -261,7 +271,20 @@ function ActivityList({ lessonId, apiBase, enrolled, onAnyChange }: {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return <div className="mb-5 h-24 animate-pulse rounded-2xl bg-muted/60" aria-label={lang === "ar" ? "جارٍ تحميل الأنشطة" : "Loading activities"} />;
+  }
+  if (loadError) {
+    return (
+      <div className="mb-5 flex flex-col items-center rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center" role="alert">
+        <AlertTriangle className="mb-2 h-6 w-6 text-amber-700" />
+        <p className="text-sm font-medium text-amber-950">{loadError}</p>
+        <button type="button" onClick={() => void reload()} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-300 bg-white px-4 text-sm font-bold text-amber-900">
+          <RefreshCw className="h-4 w-4" /> {lang === "ar" ? "إعادة المحاولة" : "Retry"}
+        </button>
+      </div>
+    );
+  }
   if (acts.length === 0) return null;
 
   return (
@@ -827,7 +850,7 @@ export default function LearnPage() {
     >
       <ContentProtection>
       {/* Lesson sub-header */}
-      <div className="sticky top-14 z-30 bg-card border-b border-border shadow-sm">
+      <div className="sticky top-[var(--platform-header-height)] z-30 bg-card border-b border-border shadow-sm">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
             onClick={() => navigate(`/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`)}
@@ -884,7 +907,7 @@ export default function LearnPage() {
               transition={{ duration: 0.2 }}
               className="hidden lg:block shrink-0 overflow-hidden border-e border-border self-stretch"
             >
-              <div className="w-72 sticky top-28 max-h-[calc(100vh-7rem)] overflow-y-auto">{SidebarContent}</div>
+              <div className="w-72 sticky top-[calc(var(--platform-header-height)+var(--lesson-subheader-height))] max-h-[calc(100dvh-var(--platform-header-height)-var(--lesson-subheader-height))] overflow-y-auto">{SidebarContent}</div>
             </motion.aside>
           )}
         </AnimatePresence>
@@ -903,7 +926,7 @@ export default function LearnPage() {
                 animate={{ x: 0 }}
                 exit={{ x: isRtl ? "100%" : "-100%" }}
                 transition={{ duration: 0.25 }}
-                className={`lg:hidden fixed top-28 bottom-0 ${isRtl ? "right-0" : "left-0"} w-72 z-40 shadow-xl overflow-hidden`}
+                className={`lg:hidden fixed top-[calc(var(--platform-header-height)+var(--lesson-subheader-height))] bottom-0 ${isRtl ? "right-0" : "left-0"} w-72 z-40 shadow-xl overflow-hidden`}
               >
                 <div className="h-full overflow-y-auto">{SidebarContent}</div>
               </motion.aside>

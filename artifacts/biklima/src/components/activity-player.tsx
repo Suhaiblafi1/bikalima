@@ -39,6 +39,7 @@ export interface Activity {
 }
 
 export type SubmissionStatus = "pending" | "completed" | "needs_revision" | null;
+export type ActivitySubmitResult = { score?: number; passed?: boolean };
 
 export const ACTIVITY_TYPE_META: Record<ActivityType, { ar: string; icon: React.ElementType; color: string }> = {
   video:            { ar: "فيديو",            icon: Play,            color: "text-rose-600 bg-rose-50" },
@@ -89,7 +90,7 @@ function VideoEmbed({ url, type }: { url: string; type?: string }) {
 interface PlayerProps {
   activity: Activity;
   status: SubmissionStatus;
-  onSubmit: (data: { payload?: Record<string, unknown>; mediaUrl?: string; autoScore?: number }) => Promise<void>;
+  onSubmit: (data: { payload?: Record<string, unknown>; mediaUrl?: string }) => Promise<ActivitySubmitResult | void>;
   isSubmitting: boolean;
   enrolled: boolean;
 }
@@ -151,7 +152,7 @@ interface BodyProps {
   isPending: boolean;
   enrolled: boolean;
   isSubmitting: boolean;
-  onSubmit: (data: { payload?: Record<string, unknown>; mediaUrl?: string; autoScore?: number }) => Promise<void>;
+  onSubmit: (data: { payload?: Record<string, unknown>; mediaUrl?: string }) => Promise<ActivitySubmitResult | void>;
 }
 
 function PrimaryBtn({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
@@ -223,7 +224,7 @@ function TextActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<BodyPro
 }
 
 // ── 3. Quiz ────────────────────────────────────────────────────────────
-type QuizQ = { q: string; choices: string[]; answer: number };
+type QuizQ = { q: string; choices: string[] };
 function QuizActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<BodyProps, "enrolled" | "isPending">) {
   const cfg = activity.config as { questions?: QuizQ[]; passScore?: number };
   const qs = cfg.questions ?? [];
@@ -232,13 +233,11 @@ function QuizActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<BodyPro
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
 
   const submit = async () => {
-    if (qs.length === 0) { await onSubmit({ autoScore: 100 }); return; }
-    let correct = 0;
-    qs.forEach((q, i) => { if (picks[i] === q.answer) correct++; });
-    const score = Math.round((correct / qs.length) * 100);
-    const passed = score >= passScore;
-    setResult({ score, passed });
-    if (passed) await onSubmit({ payload: { picks }, autoScore: score });
+    if (qs.length === 0) return;
+    const grade = await onSubmit({ payload: { picks } });
+    if (typeof grade?.score === "number") {
+      setResult({ score: grade.score, passed: Boolean(grade.passed) });
+    }
   };
 
   if (qs.length === 0) {
@@ -253,14 +252,10 @@ function QuizActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<BodyPro
           <div className="space-y-1.5">
             {q.choices.map((c, ci) => {
               const selected = picks[i] === ci;
-              const correct = result && q.answer === ci;
-              const wrong = result && selected && q.answer !== ci;
               return (
                 <button key={ci} onClick={() => !result && !isDone && setPicks({ ...picks, [i]: ci })}
                   disabled={!!result || isDone}
                   className={`w-full text-start px-3 py-2 rounded-lg border text-sm transition-colors ${
-                    correct ? "border-green-500 bg-green-50" :
-                    wrong ? "border-rose-500 bg-rose-50" :
                     selected ? "border-primary bg-primary/5" :
                     "border-border hover:bg-muted/40"
                   }`}>
@@ -449,11 +444,8 @@ function DragDropActivity({ activity, isDone, isSubmitting, onSubmit }: Omit<Bod
   const [result, setResult] = useState<{ score: number } | null>(null);
 
   const submit = async () => {
-    let correct = 0;
-    pairs.forEach((_, i) => { if (picks[i] === i) correct++; });
-    const score = pairs.length === 0 ? 100 : Math.round((correct / pairs.length) * 100);
-    setResult({ score });
-    if (score >= 60) await onSubmit({ payload: { picks }, autoScore: score });
+    const grade = await onSubmit({ payload: { picks } });
+    if (typeof grade?.score === "number") setResult({ score: grade.score });
   };
 
   if (pairs.length === 0) return <p className="text-sm text-muted-foreground italic">لم تُضَف أزواج بعد.</p>;
@@ -592,8 +584,7 @@ function SelfAssessmentActivity({ activity, isDone, isSubmitting, onSubmit }: Om
       ))}
       {!isDone && (
         <PrimaryBtn onClick={() => {
-          const avg = Object.values(vals).reduce((a, b) => a + b, 0) / Math.max(1, items.length);
-          onSubmit({ payload: { vals }, autoScore: Math.round((avg / scale) * 100) });
+          onSubmit({ payload: { vals } });
         }} disabled={isSubmitting || !allDone}>
           {kidFriendly ? "🎉 أرسل تقييمي" : "حفظ التقييم"}
         </PrimaryBtn>

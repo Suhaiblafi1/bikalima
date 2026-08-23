@@ -4,7 +4,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound } from "lucide-react";
+import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound, AlertTriangle, RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Video, Clock, ExternalLink, Star, Award } from "lucide-react";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
@@ -58,23 +58,29 @@ export default function ParentPage() {
   const [children, setChildren] = useState<ChildSummary[] | null>(null);
   const [liveSessions, setLiveSessions] = useState<LiveSession[] | null>(null);
   const [dashboard, setDashboard] = useState<ChildDashboard[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [redeemMsg, setRedeemMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [redeeming, setRedeeming] = useState(false);
 
-  const load = useCallback(() => {
-    fetch(`${apiBase}/parent/children`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(d => setChildren(d.children ?? []))
-      .catch(() => setChildren([]));
-    fetch(`${apiBase}/parent/live-sessions`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(d => setLiveSessions(d.sessions ?? []))
-      .catch(() => setLiveSessions([]));
-    fetch(`${apiBase}/parent/dashboard`, { credentials: "include" })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(d => setDashboard(d.children ?? []))
-      .catch(() => setDashboard([]));
+  const load = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const responses = await Promise.all([
+        fetch(`${apiBase}/parent/children`, { credentials: "include" }),
+        fetch(`${apiBase}/parent/live-sessions`, { credentials: "include" }),
+        fetch(`${apiBase}/parent/dashboard`, { credentials: "include" }),
+      ]);
+      if (responses.some((response) => !response.ok)) throw new Error("parent-request-failed");
+      const [childrenData, sessionData, dashboardData] = await Promise.all(
+        responses.map((response) => response.json()),
+      );
+      setChildren(childrenData.children ?? []);
+      setLiveSessions(sessionData.sessions ?? []);
+      setDashboard(dashboardData.children ?? []);
+    } catch {
+      setLoadError("تعذّر تحميل بيانات الأبناء الآن. لم نستبدل الخطأ بحالة فارغة؛ أعد المحاولة بعد التحقق من الاتصال.");
+    }
   }, [apiBase]);
 
   useEffect(() => {
@@ -127,8 +133,18 @@ export default function ParentPage() {
           <p className="text-muted-foreground mt-1">تابع تقدّم أبنائك في منصة المتحدث الصغير.</p>
         </header>
 
+        {loadError && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-center" role="alert">
+            <AlertTriangle className="mx-auto mb-2 h-8 w-8 text-rose-600" />
+            <p className="text-sm font-medium leading-relaxed text-rose-900">{loadError}</p>
+            <button type="button" onClick={() => void load()} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-rose-700 px-4 py-2 text-sm font-bold text-white">
+              <RefreshCw className="h-4 w-4" /> إعادة المحاولة
+            </button>
+          </div>
+        )}
+
         <Card className="rounded-2xl">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-primary" />
               ربط حساب طفل جديد
@@ -163,10 +179,10 @@ export default function ParentPage() {
         </Card>
 
         <Card className="rounded-2xl">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <h2 className="font-bold text-lg mb-4">أبنائي المربوطون</h2>
             {children === null ? (
-              <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" /></div>
+              loadError ? null : <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" /></div>
             ) : children.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">
                 لم يتم ربط أي حساب طفل بعد. اطلب من طفلك رمز الدعوة من حسابه.
@@ -216,13 +232,13 @@ export default function ParentPage() {
         </Card>
 
         <Card className="rounded-2xl">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
               <Video className="w-5 h-5 text-primary" />
               الحصص المباشرة لأبنائي
             </h2>
             {liveSessions === null ? (
-              <div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>
+              loadError ? null : <div className="py-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-muted-foreground" /></div>
             ) : liveSessions.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">لا توجد حصص مباشرة قادمة لأبنائك.</p>
             ) : (
@@ -263,7 +279,7 @@ export default function ParentPage() {
 
         {dashboard && dashboard.length > 0 && (
           <Card className="rounded-2xl">
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-4 space-y-5 sm:p-6 sm:space-y-6">
               <h2 className="font-bold text-lg flex items-center gap-2">
                 <Star className="w-5 h-5 text-primary" />
                 تقييمات وإنجازات أبنائي

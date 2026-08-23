@@ -1,14 +1,36 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { z } from "zod";
 import { db, workbookOrdersTable } from "@workspace/db";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { toWaPhone } from "../lib/phone.js";
+import { authRateLimit } from "../middlewares/security.js";
 
 const workbookOrderRouter = Router();
 
 const ADMIN_EMAIL = "info@bikalima.com";
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 const WA_NUMBER = "97455377065";
+const workbookOrderLimiter = authRateLimit(12, 5 * 60_000);
+const WORKBOOK_PRICES_JOD = { core: 23, tot: 37, teachers: 30, children: 17 } as const;
+
+const WorkbookOrderSchema = z.object({
+  workbookId: z.enum(["core", "tot", "teachers", "children"]),
+  workbookTitle: z.string().trim().min(1).max(180),
+  quantity: z.coerce.number().int().min(1).max(100),
+  format: z.enum(["pdf", "print"]),
+  deliveryAddress: z.string().trim().max(500).optional().nullable(),
+  buyerName: z.string().trim().min(2).max(120),
+  buyerPhone: z.string().trim().min(7).max(40),
+  buyerEmail: z.string().trim().email().max(200),
+  buyerCountry: z.string().trim().max(100).optional().nullable(),
+  notes: z.string().trim().max(1_000).optional().nullable(),
+  lang: z.enum(["ar", "en", "fr"]).default("ar"),
+}).superRefine((value, context) => {
+  if (value.format === "print" && !value.deliveryAddress) {
+    context.addIssue({ code: "custom", path: ["deliveryAddress"], message: "Delivery address is required for print orders" });
+  }
+});
 
 function escapeHtml(s: string): string {
   return String(s ?? "")
@@ -325,8 +347,13 @@ function buildWorkbookApplicantConfirmationHtml(p: {
 </div>`;
 }
 
-workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) => {
+workbookOrderRouter.post("/workbook-order", workbookOrderLimiter, async (req: Request, res: Response) => {
   try {
+    const parsed = WorkbookOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ ok: false, error: "Invalid request body", issues: parsed.error.issues });
+      return;
+    }
     const {
       workbookId,
       workbookTitle,
@@ -338,29 +365,29 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
       buyerEmail,
       buyerCountry,
       notes,
-      unitPrice,
       lang,
-      currencyCode,
-      displayUnitPrice,
-      displayTotal,
-    } = req.body;
+    } = parsed.data;
 
-    const total = (unitPrice ?? 0) * (quantity ?? 1);
+    const unitPrice = WORKBOOK_PRICES_JOD[workbookId];
+    const total = unitPrice * quantity;
+    const currencyCode = "JOD";
+    const displayUnitPrice = `${unitPrice} JOD`;
+    const displayTotal = `${total} JOD`;
     const userId = req.isAuthenticated() ? req.user?.id : null;
 
     await db.insert(workbookOrdersTable).values({
       userId: userId || null,
-      workbookId: workbookId || "unknown",
-      quantity: quantity || 1,
-      format: format || "pdf",
-      buyerName: buyerName || "",
-      buyerEmail: buyerEmail || "",
-      buyerPhone: buyerPhone || "",
+      workbookId,
+      quantity,
+      format,
+      buyerName,
+      buyerEmail: buyerEmail.toLowerCase(),
+      buyerPhone,
       buyerCountry: buyerCountry || null,
       notes: notes || null,
       deliveryAddress: format === "print" ? deliveryAddress : null,
       totalPrice: total,
-      currency: currencyCode || "JOD",
+      currency: currencyCode,
       leadSource: "website",
       syncStatus: "pending",
     });
@@ -401,7 +428,7 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
         notes: notes || "",
         quantity: quantity || 1,
         format: format || "pdf",
-        deliveryAddress: format === "print" ? deliveryAddress : undefined,
+        deliveryAddress: format === "print" ? deliveryAddress ?? undefined : undefined,
         displayUnitPrice: displayUnitPrice || `${unitPrice} JOD`,
         displayTotal: displayTotal || `${total} JOD`,
         currencyCode: currencyCode || "JOD",
@@ -415,7 +442,7 @@ workbookOrderRouter.post("/workbook-order", async (req: Request, res: Response) 
         buyerPhone: buyerPhone || "",
         quantity: quantity || 1,
         format: format || "pdf",
-        deliveryAddress: format === "print" ? deliveryAddress : undefined,
+        deliveryAddress: format === "print" ? deliveryAddress ?? undefined : undefined,
         displayUnitPrice: displayUnitPrice || `${unitPrice} JOD`,
         displayTotal: displayTotal || `${total} JOD`,
         lang: lang || "ar",

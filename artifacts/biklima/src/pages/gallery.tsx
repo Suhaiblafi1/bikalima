@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, ChevronLeft, ChevronRight, ZoomIn, PlayCircle, Lightbulb,
+  X, ChevronLeft, ChevronRight, ZoomIn,
 } from "lucide-react";
 import { T } from "../translations";
 import { useLang } from "../hooks/useLang";
-import { galleryPhotos, speechPhotos, videoLibrary, type VideoCategory } from "../galleryData";
+import { galleryPhotos, speechPhotos } from "../galleryData";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { VideoLibrarySection } from "@/components/video-library-section";
 
 export default function GalleryPage() {
   const { lang, dir } = useLang();
@@ -18,12 +19,11 @@ export default function GalleryPage() {
   const [lightboxSource, setLightboxSource] = useState<"cohorts" | "speeches">("cohorts");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [videoTab, setVideoTab] = useState<VideoCategory | "all">("opening");
-  const [videoModalId, setVideoModalId] = useState<string | null>(null);
+  const [photoLimit, setPhotoLimit] = useState(8);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setLightboxOpen(false); setVideoModalId(null); }
+      if (e.key === "Escape") setLightboxOpen(false);
       if (lightboxOpen) {
         const activePhotos = lightboxSource === "speeches" ? speechPhotos : galleryPhotos;
         if (e.key === "ArrowLeft") setLightboxIndex((i) => (i + 1) % activePhotos.length);
@@ -66,8 +66,8 @@ export default function GalleryPage() {
                 return (
                   <button
                     key={tab}
-                    onClick={() => setGalleryTab(tab)}
-                    className={["px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer", isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"].join(" ")}
+                    onClick={() => { setGalleryTab(tab); setPhotoLimit(8); }}
+                    className={["min-h-11 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer", isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"].join(" ")}
                   >
                     {label}
                   </button>
@@ -78,7 +78,7 @@ export default function GalleryPage() {
 
           {galleryTab === "cohorts" && (
             <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
-              {galleryPhotos.map((photo, i) => (
+              {galleryPhotos.slice(0, photoLimit).map((photo, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -110,7 +110,7 @@ export default function GalleryPage() {
 
           {galleryTab === "speeches" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
-              {speechPhotos.map((photo, i) => (
+              {speechPhotos.slice(0, photoLimit).map((photo, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
@@ -139,103 +139,22 @@ export default function GalleryPage() {
               ))}
             </motion.div>
           )}
+          {photoLimit < (galleryTab === "cohorts" ? galleryPhotos.length : speechPhotos.length) && (
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setPhotoLimit((limit) => limit + 8)}
+                className="min-h-11 rounded-full border border-primary/25 bg-card px-6 py-2 text-sm font-bold text-primary hover:bg-primary/5"
+              >
+                {lang === "ar" ? "عرض صور أكثر" : "Show more photos"}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ── VIDEOS SECTION ── */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-10">
-            <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
-                <PlayCircle className="w-4 h-4" />
-                {lang === "ar" ? "مكتبة تعليمية شاملة" : "Comprehensive Learning Library"}
-              </div>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-4">{t.videos.heading}</h2>
-              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">{t.videos.sub}</p>
-            </motion.div>
-          </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-none snap-x snap-mandatory">
-            {(
-              [
-                ["all", t.videos.tabs.all],
-                ["opening", t.videos.tabs.opening],
-                ["closing", t.videos.tabs.closing],
-                ["storytelling", t.videos.tabs.storytelling],
-                ["humor", t.videos.tabs.humor],
-                ["voice", t.videos.tabs.voice],
-                ["body", t.videos.tabs.body],
-              ] as [string, string][]
-            ).map(([key, label]) => {
-              const count = key === "all" ? videoLibrary.length : videoLibrary.filter(v => v.category === key).length;
-              const active = videoTab === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setVideoTab(key as VideoCategory | "all")}
-                  className={`snap-start shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${active ? "bg-primary text-primary-foreground shadow-md shadow-primary/25" : "bg-secondary/60 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/60"}`}
-                >
-                  {label}
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-muted"}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {videoLibrary
-              .filter(v => videoTab === "all" || v.category === videoTab)
-              .map((video, i) => {
-                const title = video.title[lang as keyof typeof video.title];
-                const speaker = video.speaker[lang as keyof typeof video.speaker];
-                const skill = video.skill[lang as keyof typeof video.skill];
-                const learn = video.learn[lang as keyof typeof video.learn];
-                const thumbUrl = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-                const isSuhaib = video.type === "suhaib";
-                return (
-                  <motion.div
-                    key={`${video.youtubeId}-${video.category}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: (i % 3) * 0.08, duration: 0.45 }}
-                    className={`bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group ${isSuhaib ? "border-primary/40 ring-1 ring-primary/20 hover:ring-primary/40" : "border-border hover:border-primary/20"}`}
-                    onClick={() => setVideoModalId(video.youtubeId)}
-                  >
-                    <div className="relative aspect-video overflow-hidden">
-                      <img src={thumbUrl} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-center justify-center">
-                        <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                          <PlayCircle className="w-8 h-8 text-primary fill-primary" />
-                        </div>
-                      </div>
-                      {isSuhaib && (
-                        <div className="absolute top-3 start-3">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground shadow-md">
-                            ✦ {t.videos.suhaibBadge}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3 border border-accent/20">
-                        <Lightbulb className="w-3 h-3 shrink-0" />
-                        {skill}
-                      </div>
-                      <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
-                      <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
-                      <div className="bg-secondary/40 rounded-xl p-3 border border-border/60">
-                        <p className="text-xs font-bold text-foreground/70 mb-1">{t.videos.skillLabel}</p>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-          </div>
-        </div>
-      </section>
+      {/* The same curated data powers the dedicated /library page. */}
+      <VideoLibrarySection initialLimit={3} className="py-12 md:py-16 bg-background" />
 
       <SiteFooter />
 
@@ -246,13 +165,17 @@ export default function GalleryPage() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
             onClick={() => setLightboxOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label={lang === "ar" ? "عارض الصور" : "Photo viewer"}
           >
-            <button onClick={() => setLightboxOpen(false)} className="absolute top-5 end-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10">
+            <button aria-label={lang === "ar" ? "إغلاق" : "Close"} onClick={() => setLightboxOpen(false)} className="absolute top-5 end-5 w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10">
               <X className="w-6 h-6 text-white" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + activePhotos.length) % activePhotos.length); }}
-              className="absolute start-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+              aria-label={lang === "ar" ? "الصورة السابقة" : "Previous photo"}
+              className="absolute start-4 w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
             >
               {dir === "rtl" ? <ChevronRight className="w-6 h-6 text-white" /> : <ChevronLeft className="w-6 h-6 text-white" />}
             </button>
@@ -268,7 +191,8 @@ export default function GalleryPage() {
             />
             <button
               onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % activePhotos.length); }}
-              className="absolute end-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
+              aria-label={lang === "ar" ? "الصورة التالية" : "Next photo"}
+              className="absolute end-4 w-11 h-11 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors z-10"
             >
               {dir === "rtl" ? <ChevronLeft className="w-6 h-6 text-white" /> : <ChevronRight className="w-6 h-6 text-white" />}
             </button>
@@ -277,34 +201,6 @@ export default function GalleryPage() {
         )}
       </AnimatePresence>
 
-      {/* ── VIDEO MODAL ── */}
-      <AnimatePresence>
-        {videoModalId && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
-            onClick={() => setVideoModalId(null)}
-          >
-            <button aria-label={lang === "ar" ? "إغلاق الفيديو" : "Close video"} onClick={() => setVideoModalId(null)} className="absolute top-5 end-5 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-              <X className="w-6 h-6 text-white" />
-            </button>
-            <motion.div
-              initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-              className="w-full max-w-4xl aspect-video"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <iframe
-                title={lang === "ar" ? "فيديو من معرض بكلمة" : "Bikalima gallery video"}
-                key={videoModalId}
-                src={`https://www.youtube.com/embed/${videoModalId}?autoplay=1`}
-                className="w-full h-full rounded-2xl"
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

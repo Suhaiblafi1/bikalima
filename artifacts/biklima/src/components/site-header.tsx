@@ -9,6 +9,7 @@ import { useLang } from "@/hooks/useLang";
 import { useCurrency, CURRENCIES, CURRENCY_ORDER, getBaseUrl } from "@/lib/site-config";
 import { T, type Lang } from "@/translations";
 import { trackInterestFormSubmit } from "@/lib/analytics";
+import { scrollToPageSection } from "@/lib/utils";
 
 function getApiBase(): string {
   const base = import.meta.env.BASE_URL || "/";
@@ -17,7 +18,8 @@ function getApiBase(): string {
 
 type NavTarget =
   | { kind: "section"; id: string; label: string }
-  | { kind: "route"; path: string; label: string };
+  | { kind: "route"; path: string; label: string }
+  | { kind: "group"; label: string; items: Array<{ path: string; label: string }> };
 
 export function SiteHeader() {
   const { lang, switchLang } = useLang();
@@ -31,6 +33,7 @@ export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -69,10 +72,17 @@ export function SiteHeader() {
   }, [mobileOpen]);
 
   const navItems: NavTarget[] = [
+    { kind: "route",   path: "/about",     label: lang === "ar" ? "من نحن" : "About" },
     { kind: "section", id: "structure", label: t.nav.structure },
-    { kind: "route",   path: "/workbooks", label: t.nav.workbooks },
-    { kind: "route",   path: "/gallery",   label: t.nav.gallery },
-    { kind: "section", id: "videos",      label: t.nav.videos },
+    {
+      kind: "group",
+      label: lang === "ar" ? "الموارد" : "Resources",
+      items: [
+        { path: "/workbooks", label: t.nav.workbooks },
+        { path: "/gallery", label: t.nav.gallery },
+        { path: "/library", label: lang === "ar" ? "المكتبة التعليمية" : "Learning library" },
+      ],
+    },
     { kind: "section", id: "events",      label: t.nav.events },
     { kind: "route",   path: "/verify",    label: lang === "ar" ? "تحقق من شهادة" : "Verify certificate" },
   ];
@@ -82,10 +92,7 @@ export function SiteHeader() {
   const goToSection = (id: string) => {
     setMobileOpen(false);
     if (isHome) {
-      const el = document.getElementById(id);
-      if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-      } else {
+      if (!scrollToPageSection(id)) {
         window.location.hash = id;
       }
     } else {
@@ -131,7 +138,7 @@ export function SiteHeader() {
             بكلمة
           </button>
 
-          <nav className="hidden lg:flex items-center gap-5 font-medium">
+          <nav className="hidden xl:flex items-center gap-4 font-medium">
             {navItems.map((item) =>
               item.kind === "section" ? (
                 <button
@@ -141,7 +148,7 @@ export function SiteHeader() {
                 >
                   {item.label}
                 </button>
-              ) : (
+              ) : item.kind === "route" ? (
                 <button
                   key={`route-${item.path}`}
                   onClick={() => goToRoute(item.path)}
@@ -153,6 +160,49 @@ export function SiteHeader() {
                 >
                   {item.label}
                 </button>
+              ) : (
+                <div
+                  key={`group-${item.label}`}
+                  className="relative"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node)) setResourcesOpen(false);
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setResourcesOpen((open) => !open)}
+                    aria-haspopup="menu"
+                    aria-expanded={resourcesOpen}
+                    className={`inline-flex items-center gap-1 text-sm transition-colors ${
+                      item.items.some(({ path }) => isActiveRoute(path))
+                        ? "text-primary font-bold"
+                        : "text-foreground/80 hover:text-primary"
+                    }`}
+                  >
+                    {item.label}
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${resourcesOpen ? "rotate-180" : ""}`} aria-hidden />
+                  </button>
+                  {resourcesOpen && (
+                    <div
+                      role="menu"
+                      className="absolute top-full start-1/2 -translate-x-1/2 mt-3 w-52 rounded-2xl border border-border bg-background p-2 shadow-xl"
+                    >
+                      {item.items.map((resource) => (
+                        <button
+                          key={resource.path}
+                          type="button"
+                          role="menuitem"
+                          onClick={() => { setResourcesOpen(false); goToRoute(resource.path); }}
+                          className={`w-full rounded-xl px-3 py-2.5 text-start text-sm transition-colors hover:bg-secondary/50 ${
+                            isActiveRoute(resource.path) ? "text-primary font-bold bg-primary/5" : "text-foreground/80"
+                          }`}
+                        >
+                          {resource.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )
             )}
             <Button
@@ -280,7 +330,7 @@ export function SiteHeader() {
 
           {/* Mobile toggle */}
           <button
-            className="lg:hidden text-foreground p-1.5"
+            className="xl:hidden flex h-11 w-11 items-center justify-center rounded-lg text-foreground"
             onClick={() => setMobileOpen((o) => !o)}
             aria-label={isRtl ? "القائمة" : "Menu"}
           >
@@ -317,7 +367,7 @@ export function SiteHeader() {
                     >
                       {item.label}
                     </button>
-                  ) : (
+                  ) : item.kind === "route" ? (
                     <button
                       key={`m-route-${item.path}`}
                       onClick={() => goToRoute(item.path)}
@@ -327,6 +377,22 @@ export function SiteHeader() {
                     >
                       {item.label}
                     </button>
+                  ) : (
+                    <div key={`m-group-${item.label}`} className="border-b border-border py-3">
+                      <p className="text-xs font-bold text-muted-foreground mb-1">{item.label}</p>
+                      {item.items.map((resource) => (
+                        <button
+                          key={resource.path}
+                          type="button"
+                          onClick={() => goToRoute(resource.path)}
+                          className={`block w-full text-lg font-serif text-start py-2 ${
+                            isActiveRoute(resource.path) ? "text-primary font-bold" : "text-foreground/90"
+                          }`}
+                        >
+                          {resource.label}
+                        </button>
+                      ))}
+                    </div>
                   )
                 )}
               </nav>

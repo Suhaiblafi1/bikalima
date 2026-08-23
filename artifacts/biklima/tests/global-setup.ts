@@ -13,6 +13,8 @@ import {
   badgeDefinitionsTable,
   userBadgesTable,
   courseTrainersTable,
+  lessonActivitiesTable,
+  parentLinksTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { TEST_FIXTURES } from "./fixtures/data";
@@ -31,7 +33,7 @@ async function upsertUser(opts: {
   password: string;
   firstName: string;
   lastName: string;
-  role: "admin" | "trainer" | "student" | "sales";
+  role: "admin" | "trainer" | "student" | "sales" | "parent";
   isSuperAdmin?: boolean;
 }) {
   const passwordHash = await hashPassword(opts.password);
@@ -143,6 +145,64 @@ async function upsertFreeCourse() {
   return courseId;
 }
 
+async function upsertDraftCourse(): Promise<string> {
+  const slug = "e2e-private-draft";
+  const [existing] = await db.select().from(coursesTable).where(eq(coursesTable.slug, slug));
+  if (existing) {
+    await db.update(coursesTable).set({ isPublished: false }).where(eq(coursesTable.id, existing.id));
+    return existing.id;
+  }
+  const [created] = await db.insert(coursesTable).values({
+    slug,
+    programId: "core",
+    titleAr: "مسودة خاصة للاختبار",
+    titleEn: "Private E2E draft",
+    titleFr: "Private E2E draft",
+    descriptionAr: "يجب ألا تظهر هذه الدورة للعامة",
+    descriptionEn: "This course must not be public",
+    price: 0,
+    discountPrice: 0,
+    isPublished: false,
+  }).returning();
+  return created.id;
+}
+
+async function upsertQuizIntegrityFixture(courseId: string): Promise<{ lessonId: string; activityId: string }> {
+  const [lesson] = await db.select({ id: lessonsTable.id })
+    .from(lessonsTable)
+    .where(eq(lessonsTable.courseId, courseId))
+    .limit(1);
+  if (!lesson) throw new Error("E2E course has no lesson for quiz fixture");
+
+  const titleAr = "اختبار نزاهة E2E";
+  const config = {
+    questions: [{ q: "أي خيار صحيح؟", choices: ["الخيار الخاطئ", "الخيار الصحيح"], answer: 1 }],
+    passScore: 60,
+  };
+  const [existing] = await db.select({ id: lessonActivitiesTable.id })
+    .from(lessonActivitiesTable)
+    .where(and(eq(lessonActivitiesTable.lessonId, lesson.id), eq(lessonActivitiesTable.titleAr, titleAr)))
+    .limit(1);
+  if (existing) {
+    await db.update(lessonActivitiesTable)
+      .set({ type: "quiz", config, isPublished: true, isRequired: false })
+      .where(eq(lessonActivitiesTable.id, existing.id));
+    return { lessonId: lesson.id, activityId: existing.id };
+  }
+  const [created] = await db.insert(lessonActivitiesTable).values({
+    lessonId: lesson.id,
+    type: "quiz",
+    titleAr,
+    titleEn: "E2E integrity quiz",
+    config,
+    sortOrder: 99,
+    isRequired: false,
+    isPublished: true,
+    pointsReward: 0,
+  }).returning();
+  return { lessonId: lesson.id, activityId: created.id };
+}
+
 async function upsertCertificate(opts: { userId: string; fullName: string; email: string }) {
   const code = TEST_FIXTURES.certificate.code;
   const fileUrl = TEST_FIXTURES.certificate.fileUrl;
@@ -251,14 +311,12 @@ async function ensureBadgeAwarded(userId: string) {
 }
 
 async function ensureEnrollment(userId: string, courseId: string) {
-  const existing = await db
-    .select()
-    .from(enrollmentsTable)
-    .where(eq(enrollmentsTable.userId, userId));
-  const has = existing.some((e) => e.courseId === courseId);
-  if (!has) {
-    await db.insert(enrollmentsTable).values({ userId, courseId, status: "active" });
-  }
+  await db.insert(enrollmentsTable)
+    .values({ userId, courseId, status: "active" })
+    .onConflictDoUpdate({
+      target: [enrollmentsTable.userId, enrollmentsTable.courseId],
+      set: { status: "active" },
+    });
 }
 
 async function ensureTrainerCourse(userId: string, courseId: string) {
@@ -269,14 +327,66 @@ async function ensureTrainerCourse(userId: string, courseId: string) {
   if (!existing) await db.insert(courseTrainersTable).values({ userId, courseId });
 }
 
+async function ensureParentLink(parentUserId: string, studentUserId: string) {
+  const inviteCode = "E2EPARENT000001";
+  const [existing] = await db
+    .select({ id: parentLinksTable.id })
+    .from(parentLinksTable)
+    .where(eq(parentLinksTable.inviteCode, inviteCode))
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(parentLinksTable)
+      .set({
+        parentUserId,
+        studentUserId,
+        status: "active",
+        relationshipAr: "ولي أمر",
+        activatedAt: new Date(),
+      })
+      .where(eq(parentLinksTable.id, existing.id));
+    return;
+  }
+
+  await db.insert(parentLinksTable).values({
+    parentUserId,
+    studentUserId,
+    inviteCode,
+    status: "active",
+    relationshipAr: "ولي أمر",
+    createdById: studentUserId,
+    activatedAt: new Date(),
+  });
+}
+
 export default async function globalSetup() {
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
     throw new Error(
       "DATABASE_URL must be set for E2E tests. The api-server uses the same DB.",
     );
   }
+  if (process.env.E2E_ALLOW_DB_SEED !== "true") {
+    throw new Error(
+      "Refusing to seed E2E fixtures. Set E2E_ALLOW_DB_SEED=true only for an isolated test database.",
+    );
+  }
+  let databaseName = "";
+  try {
+    databaseName = new URL(databaseUrl).pathname.replace(/^\//, "");
+  } catch {
+    throw new Error("DATABASE_URL is not a valid PostgreSQL URL.");
+  }
+  if (!/(^|[_-])(e2e|test)([_-]|$)/i.test(databaseName)) {
+    throw new Error(
+      `Refusing to seed database "${databaseName || "(unknown)"}". Its name must explicitly contain "e2e" or "test".`,
+    );
+  }
 
   const courseId = await upsertFreeCourse();
+  const draftCourseId = await upsertDraftCourse();
+  const quizFixture = await upsertQuizIntegrityFixture(courseId);
 
   const adminId = await upsertUser({
     email: TEST_FIXTURES.admin.email,
@@ -303,8 +413,17 @@ export default async function globalSetup() {
     role: "trainer",
   });
 
+  const parentId = await upsertUser({
+    email: TEST_FIXTURES.parent.email,
+    password: TEST_FIXTURES.parent.password,
+    firstName: TEST_FIXTURES.parent.firstName,
+    lastName: TEST_FIXTURES.parent.lastName,
+    role: "parent",
+  });
+
   await ensureEnrollment(learnerId, courseId);
   await ensureTrainerCourse(trainerId, courseId);
+  await ensureParentLink(parentId, learnerId);
   const learnerFullName = `${TEST_FIXTURES.learner.firstName} ${TEST_FIXTURES.learner.lastName}`;
   await upsertCertificate({
     userId: learnerId,
@@ -322,10 +441,14 @@ export default async function globalSetup() {
   process.env.E2E_ADMIN_ID = adminId;
   process.env.E2E_LEARNER_ID = learnerId;
   process.env.E2E_TRAINER_ID = trainerId;
+  process.env.E2E_PARENT_ID = parentId;
   process.env.E2E_IN_PERSON_COURSE_ID = inPersonCourseId;
+  process.env.E2E_DRAFT_COURSE_ID = draftCourseId;
+  process.env.E2E_QUIZ_LESSON_ID = quizFixture.lessonId;
+  process.env.E2E_QUIZ_ACTIVITY_ID = quizFixture.activityId;
 
   // eslint-disable-next-line no-console
   console.log(
-    `[e2e setup] course=${courseId} admin=${adminId} learner=${learnerId} trainer=${trainerId}`,
+    `[e2e setup] course=${courseId} admin=${adminId} learner=${learnerId} trainer=${trainerId} parent=${parentId}`,
   );
 }

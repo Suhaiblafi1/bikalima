@@ -23,7 +23,7 @@ type GoalKey =
   | "goalConfidence" | "goalSpeak" | "goalCareer"
   | "goalTrain" | "goalTeach" | "goalChild" | "goalOther";
 type ProgramId = "core" | "tot" | "teachers" | "children";
-type ProgramChoice = ProgramId | "recommend";
+type ProgramChoice = ProgramId;
 
 const GOAL_ICONS: Record<GoalKey, React.ComponentType<{ className?: string }>> = {
   goalConfidence: Sparkles,
@@ -46,29 +46,6 @@ const AUDIENCE_DEFS: { key: Audience; icon: React.ComponentType<{ className?: st
   { key: "parent",      icon: Heart },
   { key: "institution", icon: Building2 },
 ];
-
-function recommendProgram(audience: Audience, goals: GoalKey[], goalText: string): ProgramId {
-  const has = (g: GoalKey) => goals.includes(g);
-  if (audience === "parent") {
-    return has("goalChild") ? "children" : "teachers";
-  }
-  if (audience === "teacher") {
-    return has("goalTeach") ? "teachers" : "tot";
-  }
-  if (audience === "institution") {
-    return has("goalChild") ? "children" : "teachers";
-  }
-  // individual — most specific goal wins
-  if (has("goalTrain")) return "tot";
-  if (has("goalTeach")) return "teachers";
-  if (has("goalChild")) return "children";
-  // weak hint from free text
-  const txt = goalText.toLowerCase();
-  if (/طفل|اطفال|أطفال|child|kid/i.test(txt)) return "children";
-  if (/مدرب|train|tot/i.test(txt)) return "tot";
-  if (/معلم|teach/i.test(txt)) return "teachers";
-  return "core";
-}
 
 interface Props {
   lang: Lang;
@@ -107,15 +84,7 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
 
   const isInstitution = audience === "institution";
 
-  // Resolve the effective program id (after recommendation)
-  const effectiveProgramId: ProgramId | null = useMemo(() => {
-    if (!programChoice) return null;
-    if (programChoice === "recommend") {
-      if (!audience) return null;
-      return recommendProgram(audience, goals, goalText);
-    }
-    return programChoice;
-  }, [programChoice, audience, goals, goalText]);
+  const effectiveProgramId: ProgramId | null = programChoice || null;
 
   const effectiveProgram = useMemo(
     () => effectiveProgramId ? localizedPrograms.find((p) => p.id === effectiveProgramId) ?? null : null,
@@ -158,8 +127,6 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
     }
 
     const programShortTitle = effectiveProgram?.shortTitle ?? "";
-    const isRecommend = programChoice === "recommend";
-
     // Build payload that the existing /api/enroll route understands
     const payload: Record<string, string> = {
       type: isInstitution ? "institution" : "individual",
@@ -184,9 +151,9 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
       reason: extraMessage,
       orgMessage: extraMessage,
       message: extraMessage,
-      // wizard extras for admin/CRM (server normalizes "recommended" → boolean)
+      // Context for admin/CRM; the visitor chooses the program explicitly.
       audience: audience || "",
-      recommended: isRecommend ? "true" : "false",
+      recommended: "false",
       leadSource: "wizard",
     };
 
@@ -204,7 +171,7 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
         source: "enrollment_wizard",
         programId: effectiveProgramId ?? "",
         audience: audience || "",
-        recommended: isRecommend,
+        recommended: false,
       });
       onSuccess({ name, program: programShortTitle });
     } catch {
@@ -393,30 +360,6 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                     </button>
                   );
                 })}
-                {/* Recommend option spans both columns */}
-                <button
-                  type="button"
-                  onClick={() => setProgramChoice("recommend")}
-                  data-testid="wizard-program-recommend"
-                  className={`sm:col-span-2 flex items-center gap-3 p-4 rounded-2xl border-2 text-start transition-all ${
-                    programChoice === "recommend"
-                      ? "border-primary bg-gradient-to-br from-primary/10 to-accent/10 shadow-md"
-                      : "border-dashed border-primary/40 bg-background hover:bg-primary/5"
-                  }`}
-                >
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-sm text-foreground">{w.recommendTitle}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{w.recommendDesc}</p>
-                  </div>
-                  {programChoice === "recommend" && effectiveProgram && (
-                    <span className="text-[10px] font-bold bg-primary text-white px-2 py-1 rounded-full whitespace-nowrap">
-                      {effectiveProgram.shortTitle}
-                    </span>
-                  )}
-                </button>
               </div>
             </div>
           )}
@@ -446,9 +389,6 @@ export function EnrollmentWizard({ lang, onSuccess }: Props) {
                   <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 border border-primary/30 text-primary px-2.5 py-1 rounded-full">
                     <span>{w.summaryProgram}:</span>
                     <span className="font-bold">{effectiveProgram.shortTitle}</span>
-                    {programChoice === "recommend" && (
-                      <Sparkles className="w-3 h-3" />
-                    )}
                   </span>
                 )}
               </div>

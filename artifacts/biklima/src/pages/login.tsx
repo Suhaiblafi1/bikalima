@@ -36,7 +36,7 @@ const t = {
     signUp: "أنشئ حسابًا",
     signIn: "سجّل الدخول",
     backHome: "العودة إلى الصفحة الرئيسية",
-    passwordMin: "كلمة المرور يجب أن تكون 6 أحرف على الأقل.",
+    passwordMin: "كلمة المرور الجديدة يجب أن تكون 10 أحرف على الأقل.",
     showPwd: "إظهار كلمة المرور",
     hidePwd: "إخفاء كلمة المرور",
     secureNote: "اتصالك مؤمَّن. لن نشارك بياناتك مع أي طرف ثالث.",
@@ -61,7 +61,7 @@ const t = {
     signUp: "Sign up",
     signIn: "Sign in",
     backHome: "Back to home",
-    passwordMin: "Password must be at least 6 characters.",
+    passwordMin: "A new password must be at least 10 characters.",
     showPwd: "Show password",
     hidePwd: "Hide password",
     secureNote: "Your connection is secure. We never share your details.",
@@ -130,7 +130,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 6) {
+    if (!isLogin && password.length < 10) {
       setError(tr.passwordMin);
       return;
     }
@@ -243,7 +243,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="rounded-xl pe-10 h-11"
                 dir="ltr"
-                minLength={6}
+                minLength={isLogin ? 1 : 10}
                 autoComplete={isLogin ? "current-password" : "new-password"}
                 data-testid="auth-input-password"
               />

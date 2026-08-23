@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { ChevronLeft, ChevronRight, Home as HomeIcon } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { getBaseUrl } from "@/lib/site-config";
+import { scrollToPageSection } from "@/lib/utils";
 
 export type BreadcrumbItem = {
   label: string;
@@ -26,9 +27,7 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
       const id = href.slice(hashIdx + 1);
       const onPath = location === path || (path === "/" && location === "");
       if (onPath) {
-        const el = document.getElementById(id);
-        if (el) {
-          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+        if (scrollToPageSection(id)) {
           return;
         }
       }

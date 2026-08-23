@@ -39,7 +39,7 @@ const StudentFamilyTab = lazy(() => import("@/components/dashboard/student-famil
 function TabSuspenseFallback() {
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-6 md:p-8 flex justify-center py-10">
+      <CardContent className="p-4 py-8 md:p-8 md:py-10 flex justify-center">
         <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
       </CardContent>
     </Card>
@@ -130,7 +130,7 @@ const dashT = {
       passwordChanged: "تم تغيير كلمة المرور ✓",
       passwordError: "كلمة المرور الحالية غير صحيحة",
       passwordMismatch: "كلمتا المرور غير متطابقتين",
-      passwordMinLen: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+      passwordMinLen: "كلمة المرور يجب أن تكون 10 أحرف على الأقل",
     },
     courses: {
       heading: "الدورات المسجلة",
@@ -209,7 +209,7 @@ const dashT = {
       passwordChanged: "Password changed ✓",
       passwordError: "Current password is incorrect",
       passwordMismatch: "Passwords do not match",
-      passwordMinLen: "Password must be at least 6 characters",
+      passwordMinLen: "Password must be at least 10 characters",
     },
     courses: {
       heading: "Enrolled Courses",
@@ -371,7 +371,7 @@ function AccountTab({ apiBase, lang, t, user }: { apiBase: string; lang: Lang; t
   const changePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwMsg(null);
-    if (newPassword.length < 6) {
+    if (newPassword.length < 10) {
       setPwMsg({ type: "err", text: t.account.passwordMinLen });
       return;
     }
@@ -410,7 +410,7 @@ function AccountTab({ apiBase, lang, t, user }: { apiBase: string; lang: Lang; t
   return (
     <div className="space-y-6">
       <Card className="rounded-2xl">
-        <CardContent className="p-6 md:p-8">
+        <CardContent className="p-4 md:p-8">
           <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
             <User className="w-5 h-5 text-primary" />
             {t.account.heading}
@@ -478,7 +478,7 @@ function AccountTab({ apiBase, lang, t, user }: { apiBase: string; lang: Lang; t
       </Card>
 
       <Card className="rounded-2xl">
-        <CardContent className="p-6 md:p-8">
+        <CardContent className="p-4 md:p-8">
           <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
             <KeyRound className="w-5 h-5 text-primary" />
             {t.account.passwordHeading}
@@ -490,11 +490,11 @@ function AccountTab({ apiBase, lang, t, user }: { apiBase: string; lang: Lang; t
             </div>
             <div className="space-y-1">
               <label htmlFor="new-password" className="text-xs text-muted-foreground font-medium">{t.account.newPassword}</label>
-              <Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-xl" required minLength={6} data-testid="input-new-password" />
+              <Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="rounded-xl" required minLength={10} data-testid="input-new-password" />
             </div>
             <div className="space-y-1">
               <label htmlFor="confirm-new-password" className="text-xs text-muted-foreground font-medium">{t.account.confirmNewPassword}</label>
-              <Input id="confirm-new-password" type="password" autoComplete="new-password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="rounded-xl" required minLength={6} data-testid="input-confirm-new-password" />
+              <Input id="confirm-new-password" type="password" autoComplete="new-password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="rounded-xl" required minLength={10} data-testid="input-confirm-new-password" />
             </div>
             <div className="flex items-center gap-3 pt-1">
               <Button type="submit" disabled={pwSaving || !currentPassword || !newPassword} className="rounded-full bg-primary text-white gap-2" data-testid="button-change-password">
@@ -531,12 +531,12 @@ function ScheduleTab({ lang, t, courses }: { lang: Lang; t: typeof dashT.ar; cou
   if (sorted.length === 0) {
     return (
       <Card className="rounded-2xl">
-        <CardContent className="p-6 md:p-8">
+        <CardContent className="p-4 md:p-8">
           <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
             {t.schedule.heading}
           </h3>
-          <div className="text-center py-16 space-y-4">
+          <div className="text-center py-8 md:py-16 space-y-4">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
               <Clock className="w-10 h-10 text-primary/50" />
             </div>
@@ -549,7 +549,7 @@ function ScheduleTab({ lang, t, courses }: { lang: Lang; t: typeof dashT.ar; cou
 
   return (
     <Card className="rounded-2xl">
-      <CardContent className="p-6 md:p-8">
+      <CardContent className="p-4 md:p-8">
         <h3 className="font-bold text-xl mb-2 flex items-center gap-2">
           <Calendar className="w-5 h-5 text-primary" />
           {t.schedule.heading}
@@ -1176,7 +1176,7 @@ export default function Dashboard() {
               );
             })}
             {currentCourse.lessons.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-8 md:py-12 text-muted-foreground">
                 <Video className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p>{isRtl ? "لم تُضَف دروس بعد" : "No lessons added yet"}</p>
               </div>
@@ -1397,13 +1397,13 @@ export default function Dashboard() {
 
             {activeTab === "courses" && (
               <Card className="rounded-2xl">
-                <CardContent className="p-6 md:p-8">
+                <CardContent className="p-4 md:p-8">
                   <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-primary" />
                     {t.courses.heading}
                   </h3>
                   {dataLoading ? (
-                    <div className="py-12 text-center"><div className="animate-spin w-6 h-6 border-3 border-primary border-t-transparent rounded-full mx-auto" /></div>
+                    <div className="py-8 text-center md:py-12"><div className="animate-spin w-6 h-6 border-3 border-primary border-t-transparent rounded-full mx-auto" /></div>
                   ) : courses.length > 0 ? (
                     <div className="space-y-3">
                       {courses.map(course => {
@@ -1464,7 +1464,7 @@ export default function Dashboard() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-16 space-y-4">
+                    <div className="text-center py-8 md:py-16 space-y-4">
                       <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
                         <BookOpen className="w-10 h-10 text-primary/50" />
                       </div>
@@ -1502,7 +1502,7 @@ export default function Dashboard() {
               <div className="space-y-6">
                 {/* LMS Course Orders */}
                 <Card className="rounded-2xl">
-                  <CardContent className="p-6 md:p-8">
+                  <CardContent className="p-4 md:p-8">
                     <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
                       <BookOpen className="w-5 h-5 text-primary" />
                       {isRtl ? "طلبات الدورات" : "Course Orders"}
@@ -1544,7 +1544,7 @@ export default function Dashboard() {
 
                 {/* Workbook Orders */}
                 <Card className="rounded-2xl">
-                  <CardContent className="p-6 md:p-8">
+                  <CardContent className="p-4 md:p-8">
                     <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
                       <ShoppingCart className="w-5 h-5 text-primary" />
                       {isRtl ? "طلبات الكراسات" : "Workbook Orders"}
@@ -1614,7 +1614,7 @@ export default function Dashboard() {
 
             {activeTab === "skills" && (
               <Card className="rounded-2xl">
-                <CardContent className="p-6 md:p-8">
+                <CardContent className="p-4 md:p-8">
                   <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
                     <Award className="w-5 h-5 text-primary" />
                     {t.tabs.skills}
@@ -1626,7 +1626,7 @@ export default function Dashboard() {
 
             {activeTab === "continue" && (
               <Card className="rounded-2xl" data-testid="continue-tab">
-                <CardContent className="p-6 md:p-8 space-y-4">
+                <CardContent className="p-4 md:p-8 space-y-4">
                   <h3 className="font-bold text-xl flex items-center gap-2">
                     <Play className="w-5 h-5 text-primary" />
                     {t.tabs.continue}

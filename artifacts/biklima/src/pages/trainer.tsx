@@ -12,7 +12,7 @@ const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-mes
 import {
   BookOpen, GraduationCap, Mic2, ClipboardList, CalendarCheck, Loader2,
   FileText, AlertTriangle, StickyNote, Megaphone, Send, LayoutDashboard,
-  UsersRound, MessagesSquare, LibraryBig, ArrowDown,
+  UsersRound, MessagesSquare, LibraryBig, ArrowDown, RefreshCw,
 } from "lucide-react";
 
 type CourseRow = { id: string; titleAr: string; titleEn: string; enrollmentCount: number };
@@ -42,6 +42,7 @@ export default function TrainerDashboardPage() {
   const [lessonsNeed, setLessonsNeed] = useState<LessonNeedingAttendance[]>([]);
   const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [openLearnerNotes, setOpenLearnerNotes] = useState<string | null>(null);
   const [broadcastCourseId, setBroadcastCourseId] = useState("");
   const [broadcastSubject, setBroadcastSubject] = useState("");
@@ -76,19 +77,27 @@ export default function TrainerDashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [c, e, sp, ov] = await Promise.all([
-      apiFetch("/admin/courses").then((r) => (r.ok ? r.json() : { courses: [] })),
-      apiFetch("/admin/enrollments").then((r) => (r.ok ? r.json() : { enrollments: [] })),
-      apiFetch("/admin/speech-evaluations").then((r) => (r.ok ? r.json() : { evaluations: [] })),
-      apiFetch("/admin/trainer/overview").then((r) => (r.ok ? r.json() : { pendingSubmissions: [], lessonsNeedingAttendance: [], upcomingLessons: [] })),
-    ]);
-    setCourses(c.courses ?? []);
-    setLearners(e.enrollments ?? []);
-    setEvals(sp.evaluations ?? []);
-    setPendingSubs(ov.pendingSubmissions ?? []);
-    setLessonsNeed(ov.lessonsNeedingAttendance ?? []);
-    setUpcomingLessons(ov.upcomingLessons ?? []);
-    setLoading(false);
+    setLoadError(null);
+    try {
+      const responses = await Promise.all([
+        apiFetch("/admin/courses"),
+        apiFetch("/admin/enrollments"),
+        apiFetch("/admin/speech-evaluations"),
+        apiFetch("/admin/trainer/overview"),
+      ]);
+      if (responses.some((response) => !response.ok)) throw new Error("dashboard-request-failed");
+      const [c, e, sp, ov] = await Promise.all(responses.map((response) => response.json()));
+      setCourses(c.courses ?? []);
+      setLearners(e.enrollments ?? []);
+      setEvals(sp.evaluations ?? []);
+      setPendingSubs(ov.pendingSubmissions ?? []);
+      setLessonsNeed(ov.lessonsNeedingAttendance ?? []);
+      setUpcomingLessons(ov.upcomingLessons ?? []);
+    } catch {
+      setLoadError("تعذّر تحميل مساحة المدرّب. تحقق من الاتصال ثم أعد المحاولة.");
+    } finally {
+      setLoading(false);
+    }
   }, [apiFetch]);
 
   useEffect(() => {
@@ -103,6 +112,21 @@ export default function TrainerDashboardPage() {
     return (
       <AppShell containerClassName="container mx-auto px-4 py-12 flex justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell containerClassName="container mx-auto px-4 py-12">
+        <div className="mx-auto max-w-lg rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center" role="alert">
+          <AlertTriangle className="mx-auto mb-3 h-9 w-9 text-rose-600" />
+          <h1 className="text-xl font-bold text-rose-950">لم نتمكن من تحميل مساحة المدرّب</h1>
+          <p className="mt-2 text-sm leading-relaxed text-rose-800">{loadError}</p>
+          <Button type="button" className="mt-5 gap-2" onClick={() => void load()}>
+            <RefreshCw className="h-4 w-4" /> إعادة المحاولة
+          </Button>
+        </div>
       </AppShell>
     );
   }

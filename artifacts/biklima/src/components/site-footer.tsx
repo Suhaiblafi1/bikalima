@@ -4,6 +4,7 @@ import { useLang } from "@/hooks/useLang";
 import { T } from "@/translations";
 import { programs, getLocalizedProgram } from "@/programsData";
 import { PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
+import { scrollToPageSection } from "@/lib/utils";
 
 export function SiteFooter() {
   const { lang } = useLang();
@@ -16,10 +17,7 @@ export function SiteFooter() {
 
   const goToSection = (id: string) => {
     if (isHome) {
-      const el = document.getElementById(id);
-      if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-      } else {
+      if (!scrollToPageSection(id)) {
         window.location.hash = id;
       }
     } else {
@@ -35,9 +33,9 @@ export function SiteFooter() {
   return (
     <footer className="bg-foreground text-background py-14">
       <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-5 gap-10 md:gap-12 mb-10 border-b border-background/10 pb-10">
+        <div className="grid md:grid-cols-4 gap-10 md:gap-12 mb-10 border-b border-background/10 pb-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="logo-biklima text-4xl text-accent mb-4 leading-none">بكلمة</div>
+            <div className="logo-biklima text-4xl text-primary mb-4 leading-none">بكلمة</div>
             <p className="text-background/60 leading-relaxed text-sm max-w-sm">
               {t.footer.about}
             </p>
@@ -63,6 +61,11 @@ export function SiteFooter() {
             <h4 className="font-bold text-lg mb-5">{t.footer.linksHeading}</h4>
             <ul className="space-y-3 text-background/70 text-sm">
               <li>
+                <button onClick={() => navigate("/about")} className="hover:text-accent transition text-start" data-testid="footer-link-about">
+                  {lang === "ar" ? "من نحن" : "About us"}
+                </button>
+              </li>
+              <li>
                 <button onClick={() => goToSection("structure")} className="hover:text-accent transition text-start">
                   {t.footer.linkLabels.structure}
                 </button>
@@ -80,6 +83,11 @@ export function SiteFooter() {
               <li>
                 <button onClick={() => navigate("/gallery")} className="hover:text-accent transition text-start">
                   {t.nav.gallery}
+                </button>
+              </li>
+              <li>
+                <button onClick={() => navigate("/library")} className="hover:text-accent transition text-start" data-testid="footer-link-library">
+                  {lang === "ar" ? "المكتبة التعليمية" : "Learning library"}
                 </button>
               </li>
               <li>
@@ -107,6 +115,11 @@ export function SiteFooter() {
                   {lang === "ar" ? "الشروط والسياسات" : "Terms & Policies"}
                 </button>
               </li>
+              <li>
+                <button onClick={() => navigate("/careers")} className="hover:text-accent transition text-start" data-testid="footer-link-careers">
+                  {lang === "ar" ? "انضم للفريق" : "Join the team"}
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -118,7 +131,7 @@ export function SiteFooter() {
                   href="https://wa.me/97455377065"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-accent transition"
+                  className="flex min-h-11 items-center gap-2 hover:text-accent transition"
                 >
                   <MessageCircle className="w-4 h-4" />
                   {t.footer.whatsappLabel}
@@ -127,7 +140,7 @@ export function SiteFooter() {
               <li>
                 <a
                   href="mailto:info@bikalima.com"
-                  className="flex items-center gap-2 hover:text-accent transition"
+                  className="flex min-h-11 items-center gap-2 hover:text-accent transition"
                   dir="ltr"
                 >
                   <Mail className="w-4 h-4" />
@@ -139,7 +152,7 @@ export function SiteFooter() {
                   href="https://www.linkedin.com/in/suhaiblafi/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-accent transition"
+                  className="flex min-h-11 items-center gap-2 hover:text-accent transition"
                 >
                   <Linkedin className="w-4 h-4" />
                   LinkedIn
@@ -150,7 +163,7 @@ export function SiteFooter() {
                   href="https://www.instagram.com/suhaiblafi/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-accent transition"
+                  className="flex min-h-11 items-center gap-2 hover:text-accent transition"
                 >
                   <Instagram className="w-4 h-4" />
                   Instagram
@@ -170,7 +183,7 @@ export function SiteFooter() {
                 e.preventDefault();
                 navigate("/terms");
               }}
-              className="hover:text-white transition"
+              className="inline-flex min-h-11 items-center hover:text-white transition"
               data-testid="footer-link-terms"
             >
               {t.footer.terms}
@@ -182,7 +195,7 @@ export function SiteFooter() {
                 e.preventDefault();
                 navigate("/privacy");
               }}
-              className="hover:text-white transition"
+              className="inline-flex min-h-11 items-center hover:text-white transition"
               data-testid="footer-link-privacy"
             >
               {t.footer.privacy}

@@ -66,6 +66,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
 import { StatsSection } from "@/components/stats-section";
 import { trackProgramDetailsClick } from "@/lib/analytics";
+import { scrollToPageSection } from "@/lib/utils";
 import { Star as StarIcon } from "lucide-react";
 import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
@@ -178,6 +179,7 @@ export default function Home() {
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
   const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [bioPageIdx, setBioPageIdx] = useState(0);
+  const [showBioMobile, setShowBioMobile] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
   const [consultDate, setConsultDate] = useState<string | null>(null);
   const [consultTime, setConsultTime] = useState<string | null>(null);
@@ -267,10 +269,7 @@ export default function Home() {
       if (!hash) return;
       // Wait one frame so target sections (which mount lazily) are present
       setTimeout(() => {
-        const el = document.getElementById(hash);
-        if (el) {
-          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-        }
+        scrollToPageSection(hash);
       }, 60);
     };
     scrollToHash();
@@ -279,10 +278,7 @@ export default function Home() {
   }, []);
 
   const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-    }
+    scrollToPageSection(id);
   };
 
   const getConsultAvailableDays = () => {
@@ -366,7 +362,12 @@ export default function Home() {
   const coreProgram = localizedPrograms.find((p) => p.id === "core")!;
   const branchPrograms = localizedPrograms.filter((p) => p.id !== "core");
   const cmsEventsHeading = getSectionContent(cms, "events", lang, "heading", t.structure.upcomingEventsHeading);
-  const eventsHeading = cmsEventsHeading === "الفعاليات القادمة" || cmsEventsHeading === "Upcoming Events"
+  const eventsHeading = [
+    "الفعاليات القادمة",
+    "الدورات الوجاهية القادمة",
+    "Upcoming Events",
+    "Upcoming In-Person Courses",
+  ].includes(cmsEventsHeading)
     ? t.structure.upcomingEventsHeading
     : cmsEventsHeading;
 
@@ -397,7 +398,7 @@ export default function Home() {
 
       <main>
         {/* ── HERO ── */}
-        <section className="relative pt-20 pb-10 md:pt-48 md:pb-32 overflow-hidden flex items-center md:min-h-[90vh]">
+        <section className="relative pt-20 pb-10 md:pt-28 md:pb-16 lg:pt-48 lg:pb-32 overflow-hidden flex items-center lg:min-h-[90vh]">
           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-secondary/60 blur-[100px] opacity-70 -z-10" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[100px] opacity-70 -z-10" />
           <div className="w-full px-3 md:px-6 flex">
@@ -416,7 +417,7 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                     <Button size="lg" onClick={() => scrollTo("structure")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaSecondary", t.hero.ctaSecondary)}</Button>
                   </div>
-                  <div className="mt-8 lg:hidden bg-primary/5 border border-primary/10 p-4 rounded-2xl">
+                  <div className="hidden">
                     <Quote className="text-primary w-4 h-4 mb-2 opacity-50" />
                     <AnimatePresence mode="wait">
                       <motion.div key={`m-${heroQuoteIdx}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
@@ -428,9 +429,17 @@ export default function Home() {
                 </motion.div>
               </div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative mt-2 lg:mt-0">
-                <div className="aspect-[4/3] lg:aspect-[5/4] rounded-[1.5rem] lg:rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
+                <div className="aspect-video md:aspect-[16/7] md:max-h-[22rem] lg:aspect-[5/4] lg:max-h-none rounded-[1.5rem] lg:rounded-[2rem] overflow-hidden relative shadow-2xl w-full mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
                   <img src={imgTedx} alt={t.hero.h1a} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
+                  <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl bg-white/90 px-3 py-2.5 shadow-lg backdrop-blur-md lg:hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.div key={`hero-mobile-${heroQuoteIdx}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+                        <p className="line-clamp-2 font-serif text-xs leading-relaxed text-foreground/80">“{t.hero.imageQuotes[heroQuoteIdx]?.text}”</p>
+                        <p className="mt-1 text-[11px] font-bold text-primary">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
                   <div className="absolute bottom-6 left-6 right-6 z-20 hidden lg:block">
                     <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/40">
                       <AnimatePresence mode="wait">
@@ -489,7 +498,7 @@ export default function Home() {
           <div className="container mx-auto px-6">
             <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
               <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-                <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-xl relative">
+                <div className="aspect-[16/7] md:aspect-[3/4] rounded-3xl overflow-hidden shadow-xl relative">
                   <img src={imgHeroCollage} alt={t.trainerBio.name} className="w-full h-full object-cover object-[8%_15%]" loading="lazy" decoding="async" />
                   <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 via-transparent to-transparent" />
                 </div>
@@ -508,11 +517,14 @@ export default function Home() {
                   return (
                     <div className="relative">
                       <AnimatePresence mode="wait">
-                        <motion.div key={bioPageIdx} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35 }} className="min-h-[120px]">
-                          <p className="text-base text-muted-foreground leading-relaxed">{bioPages[bioPageIdx]}</p>
+                        <motion.div key={bioPageIdx} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.35 }} className="min-h-0 md:min-h-[120px]">
+                          <p className={`text-base text-muted-foreground leading-relaxed ${showBioMobile ? "" : "max-md:line-clamp-3"}`}>{bioPages[bioPageIdx]}</p>
                         </motion.div>
                       </AnimatePresence>
-                      <div className="flex items-center gap-3 mt-5">
+                      <button type="button" onClick={() => setShowBioMobile((shown) => !shown)} className="mt-2 min-h-11 text-sm font-bold text-primary underline underline-offset-4 md:hidden">
+                        {showBioMobile ? (lang === "ar" ? "عرض أقل" : "Show less") : (lang === "ar" ? "اقرأ السيرة" : "Read biography")}
+                      </button>
+                      <div className={`${showBioMobile ? "flex" : "hidden"} items-center gap-3 mt-3 md:flex md:mt-5`}>
                         <button aria-label={lang === "ar" ? "الصفحة السابقة من السيرة" : "Previous biography page"} onClick={() => setBioPageIdx((p) => Math.max(0, p - 1))} disabled={bioPageIdx === 0} className="w-8 h-8 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30 transition-all">
                           <ChevronRight className={`w-4 h-4 ${lang === "ar" ? "" : "rotate-180"}`} />
                         </button>
@@ -530,11 +542,11 @@ export default function Home() {
                   );
                 })()}
                 <div className="flex items-center gap-4 mt-4">
-                  <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
+                  <a href="https://www.linkedin.com/in/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
                     <Linkedin className="w-5 h-5" />
                     LinkedIn
                   </a>
-                  <a href="https://www.instagram.com/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
+                  <a href="https://www.instagram.com/suhaiblafi/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 text-primary hover:text-primary/80 font-medium transition-colors">
                     <Instagram className="w-5 h-5" />
                     Instagram
                   </a>
@@ -546,16 +558,16 @@ export default function Home() {
         )}
 
         {/* ── AUTHOR'S MESSAGE ── */}
-        <section className="py-14 md:py-24 bg-primary text-primary-foreground relative overflow-hidden">
+        <section className="py-12 md:py-24 bg-primary text-primary-foreground relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
           <div className="container mx-auto px-6 max-w-4xl relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
-              <div className="text-5xl mb-6 opacity-30">✦</div>
-              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-10 opacity-90">{t.author.sectionTitle}</h2>
+              <div className="text-4xl mb-4 md:text-5xl md:mb-6 opacity-30">✦</div>
+              <h2 className="font-serif text-3xl md:text-4xl font-bold mb-7 md:mb-10 opacity-90">{t.author.sectionTitle}</h2>
             </motion.div>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 md:mx-0 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:px-0 md:pb-0">
               {t.author.cards.map((msg, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="bg-primary-foreground/10 backdrop-blur-sm p-7 rounded-3xl border border-primary-foreground/20">
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="min-w-[82vw] snap-center bg-primary-foreground/10 backdrop-blur-sm p-5 md:min-w-0 md:p-7 rounded-3xl border border-primary-foreground/20">
                   <div className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center mb-4">
                     {i === 0 ? <GraduationCap className="w-6 h-6" /> : i === 1 ? <Mic2 className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
                   </div>
@@ -569,7 +581,7 @@ export default function Home() {
 
         {/* ── WHY BIKLIMA ── */}
         {(cms["why-bikalima"]?.visible ?? true) && (
-        <section className="py-14 bg-secondary/30">
+        <section className="py-12 md:py-14 bg-secondary/30">
           <div className="container mx-auto px-6">
             <div className="text-center mb-10">
               <motion.h2
@@ -583,7 +595,7 @@ export default function Home() {
               </motion.h2>
               <p className="text-muted-foreground text-base max-w-xl mx-auto">{getSectionContent(cms, "why-bikalima", lang, "subheading", (t.why as any).sub)}</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 md:mx-0 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:pb-0">
               {(() => {
                 const fallback = (t.why as any).items as Array<{ title: string; desc: string }>;
                 const items = [0, 1, 2].map((i) => ({
@@ -597,7 +609,7 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.12, duration: 0.5 }}
-                  className="bg-background rounded-2xl p-6 border border-border hover:border-primary/40 hover:shadow-md transition-all duration-300 group"
+                  className="min-w-[82vw] snap-center bg-background rounded-2xl p-5 md:min-w-0 md:p-6 border border-border hover:border-primary/40 hover:shadow-md transition-all duration-300 group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                     <div className="w-3 h-3 rounded-full bg-primary" />
@@ -619,9 +631,9 @@ export default function Home() {
         <SpeechEvaluationForm lang={lang} />
 
         {/* ── BRANCHING DIAGRAM ── */}
-        <section id="structure" className="py-14 md:py-24 bg-background relative overflow-hidden">
+        <section id="structure" className="py-12 md:py-24 bg-background relative overflow-hidden">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-16">
+            <div className="text-center mb-9 md:mb-16">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                 <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6">{getSectionContent(cms, "programs", lang, "heading", t.structure.heading)}</h2>
                 <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{getSectionContent(cms, "programs", lang, "subheading", t.structure.sub)}</p>
@@ -672,15 +684,15 @@ export default function Home() {
               </div>
               <div className="w-full relative">
                 <div className="hidden md:block absolute top-0 left-[16.66%] right-[16.66%] h-px bg-border" />
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 md:mx-0 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
                   {branchPrograms.map((program, i) => (
-                    <motion.div key={program.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="flex flex-col items-center">
+                    <motion.div key={program.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="flex min-w-[84vw] snap-center flex-col items-center sm:min-w-[68vw] md:min-w-0">
                       <div className="hidden md:flex flex-col items-center mb-4">
                         <div className="w-px h-8 bg-border" />
                         <ArrowDown className="w-4 h-4 text-muted-foreground" />
                       </div>
                       <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => { trackProgramDetailsClick(program.id, "structure_branch_card"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }}>
-                        <div className="aspect-[4/3.2] relative overflow-hidden">
+                        <div className="aspect-video md:aspect-[4/3.2] relative overflow-hidden">
                           <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
                           <div className="absolute bottom-4 right-4 left-4">
@@ -707,8 +719,8 @@ export default function Home() {
                             )}
                           </div>
                         </div>
-                        <CardContent className="p-5 flex flex-col flex-1">
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1">{program.hook}</p>
+                        <CardContent className="p-4 md:p-5 flex flex-col flex-1">
+                          <p className="hidden text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1 md:block">{program.hook}</p>
                           <div className="flex gap-2 mb-2">
                             <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
                               {t.structure.viewDetails}
@@ -805,57 +817,33 @@ export default function Home() {
               </div>
             ) : (
               <div className="max-w-lg mx-auto relative">
-                <MiniCalendar lang={lang} />
-                <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-2xl flex items-center justify-center">
-                  <div className="text-center px-6">
-                    <Calendar className="w-8 h-8 text-primary/40 mx-auto mb-3" />
-                    <p className="text-sm font-semibold text-foreground/70">{t.structure.noUpcomingEvents}</p>
-                  </div>
+                <div className="rounded-2xl border border-dashed border-primary/30 bg-card px-6 py-7 text-center">
+                  <Calendar className="w-8 h-8 text-primary/50 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-foreground/70">{t.structure.noUpcomingEvents}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{lang === "ar" ? "ستظهر هنا المواعيد والمقاعد المتاحة فور نشرها." : "Dates and available seats will appear here as soon as they are published."}</p>
                 </div>
               </div>
             )}
             {/* ── FREE CONSULTATION BOOKING ── */}
             {consultationEnabled && (
-            <div className="mt-12 max-w-2xl mx-auto">
+            <div className="mt-7 max-w-2xl mx-auto">
               <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-                <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border-2 border-primary/20 rounded-3xl p-6 overflow-hidden">
-                  <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full -mr-12 -mt-12" />
-                  <div className="relative z-10 flex flex-col items-center text-center gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border border-primary/20 rounded-2xl p-4 overflow-hidden">
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-11 h-11 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center">
                       <Calendar className="w-6 h-6 text-primary" />
                     </div>
-                    <div>
-                      <h3 className="font-serif text-xl md:text-2xl font-bold mb-2">{t.structure.startHelpHeading}</h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed max-w-md mx-auto mb-3">
-                        {t.structure.startHelpSub}
-                      </p>
-                      <p className="text-sm text-foreground/80 leading-relaxed max-w-md mx-auto">
-                        {lang === "ar"
-                          ? "احجز جلسة استشارية مجانية فردية مع صهيب الخوالدة مدّتها ٢٠ دقيقة — اختر الموعد المناسب وسيصلك تأكيد فوري برابط Zoom ودعوة التقويم."
-                          : "Book a free 20-minute one-on-one consultation with Suhaib. Pick your slot and you'll instantly receive a Zoom link and calendar invite."}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-serif text-lg font-bold">{t.structure.startHelpHeading}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">{t.structure.startHelpSub}</p>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md">
-                      <a
-                        href="https://scheduler.zoom.us/suhaib-ahmad-x9pyfc"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 bg-[#2D8CFF] hover:bg-[#1a7de8] text-white font-bold px-6 py-3.5 rounded-full text-base transition-colors shadow-lg shadow-blue-500/20 w-full sm:flex-1"
-                      >
-                        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h10.667A2.667 2.667 0 0 1 17.333 6.667v6.666A2.667 2.667 0 0 1 14.667 16H4a2.667 2.667 0 0 1-2.667-2.667V6.667A2.667 2.667 0 0 1 4 4zm15.333 2.72 2.774-1.664A.667.667 0 0 1 23.333 5.627v12.746a.667.667 0 0 1-1.226.37l-2.774-1.663V6.72z"/></svg>
-                        {lang === "ar" ? "احجز موعدك الآن" : "Book Your Slot Now"}
-                      </a>
                       <button
                         type="button"
                         onClick={() => navigate("/consultation")}
-                        className="inline-flex items-center justify-center gap-2 border-2 border-primary/30 text-primary hover:bg-primary/5 font-bold px-6 py-3 rounded-full text-base transition-colors w-full sm:flex-1"
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
                       >
                         {t.structure.startHelpContact}
                       </button>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {lang === "ar" ? "ستصلك دعوة Zoom ودعوة التقويم تلقائياً فور الحجز" : "Zoom invite & calendar confirmation sent automatically on booking"}
-                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -885,8 +873,8 @@ export default function Home() {
               {(["cohorts", "speeches"] as const).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setGalleryTab(tab)}
-                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                onClick={() => setGalleryTab(tab)}
+                  className={`min-h-11 px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     galleryTab === tab
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"
@@ -898,22 +886,22 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div className="columns-2 md:columns-3 gap-3 md:gap-4">
-              {(galleryTab === "cohorts" ? galleryPhotos : speechPhotos).map((photo, i) => (
+            <div className="-mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3 md:gap-4">
+              {(galleryTab === "cohorts" ? galleryPhotos : speechPhotos).slice(0, 6).map((photo, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: (i % 3) * 0.05, duration: 0.4 }}
-                  className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                  className="relative min-w-[72vw] snap-center group cursor-pointer overflow-hidden rounded-xl sm:min-w-0"
                   onClick={() => {
                     const offset = galleryTab === "speeches" ? galleryPhotos.length : 0;
                     setLightboxIndex(offset + i);
                     setLightboxOpen(true);
                   }}
                 >
-                  <img src={photo.src} alt={photo.country[lang as keyof typeof photo.country] || photo.country.en} className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  <img src={photo.src} alt={photo.country[lang as keyof typeof photo.country] || photo.country.en} className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:aspect-auto" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   <div className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
@@ -931,15 +919,20 @@ export default function Home() {
                 </motion.div>
               ))}
             </div>
+            <div className="mt-7 flex justify-center">
+              <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/gallery")}>
+                {lang === "ar" ? "استكشف المعرض الكامل" : "Explore the full gallery"}
+              </Button>
+            </div>
           </div>
         </section>
         )}
 
         {/* ── VIDEOS ── */}
         {(cms["field-videos"]?.visible ?? true) && (
-        <section id="videos" className="py-14 md:py-24 bg-background">
+        <section id="videos" className="py-12 md:py-24 bg-background">
           <div className="container mx-auto px-6">
-            <div className="text-center mb-10">
+            <div className="text-center mb-7 md:mb-10">
               <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-5">
                   <PlayCircle className="w-4 h-4" />
@@ -969,9 +962,10 @@ export default function Home() {
                 );
               })}
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 lg:gap-6">
               {videoLibrary
                 .filter((v) => videoTab === "all" || v.category === videoTab)
+                .slice(0, 3)
                 .map((video, i) => {
                   const title = video.title[lang as keyof typeof video.title] || video.title.en;
                   const speaker = video.speaker[lang as keyof typeof video.speaker] || video.speaker.en;
@@ -986,7 +980,7 @@ export default function Home() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ delay: (i % 3) * 0.08, duration: 0.45 }}
-                      className={`bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group ${isSuhaib ? "border-primary/40 ring-1 ring-primary/20 hover:ring-primary/40" : "border-border hover:border-primary/20"}`}
+                      className={`min-w-[84vw] snap-center bg-card border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group sm:min-w-0 ${isSuhaib ? "border-primary/40 ring-1 ring-primary/20 hover:ring-primary/40" : "border-border hover:border-primary/20"}`}
                       onClick={() => setVideoModalId(video.youtubeId)}
                     >
                       <div className="relative aspect-video overflow-hidden">
@@ -1004,14 +998,14 @@ export default function Home() {
                           </div>
                         )}
                       </div>
-                      <div className="p-5">
+                      <div className="p-4 sm:p-5">
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-semibold mb-3 border border-accent/20">
                           <Lightbulb className="w-3 h-3 shrink-0" />
                           {skill}
                         </div>
                         <h3 className="font-serif text-base font-bold leading-snug mb-1">{title}</h3>
-                        <p className="text-muted-foreground text-sm mb-4">{speaker}</p>
-                        <div className="bg-secondary/40 rounded-xl p-3 border border-border/60">
+                        <p className="hidden text-muted-foreground text-sm mb-4 sm:block">{speaker}</p>
+                        <div className="hidden bg-secondary/40 rounded-xl p-3 border border-border/60 sm:block">
                           <p className="text-xs font-bold text-foreground/70 mb-1">{t.videos.skillLabel}</p>
                           <p className="text-xs text-muted-foreground leading-relaxed">{learn}</p>
                         </div>
@@ -1019,6 +1013,11 @@ export default function Home() {
                     </motion.div>
                   );
                 })}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <Button variant="outline" className="rounded-full px-6" onClick={() => navigate("/library")}>
+                {lang === "ar" ? "انتقل إلى المكتبة التعليمية" : "Open the learning library"}
+              </Button>
             </div>
           </div>
         </section>
@@ -1028,18 +1027,18 @@ export default function Home() {
         {(cms["testimonials"]?.visible ?? true) && (<TestimonialsSection />)}
 
         {/* ── REPEATING CTA ── */}
-        <JourneyCta testIdSuffix="after-testimonials" />
+        <div className="hidden md:block"><JourneyCta testIdSuffix="after-testimonials" /></div>
 
         {/* ── FAQ ── */}
         {(cms["faq"]?.visible ?? true) && (
-        <section className="py-14 md:py-24 bg-background">
+        <section className="py-12 md:py-24 bg-background">
           <div className="container mx-auto px-6 max-w-4xl">
-            <div className="text-center mb-16">
+            <div className="text-center mb-6 md:mb-16">
               <h2 className="font-serif text-4xl font-bold mb-4">{getSectionContent(cms, "faq", lang, "heading", t.faq.heading)}</h2>
               <p className="text-xl text-muted-foreground">{getSectionContent(cms, "faq", lang, "subheading", t.faq.sub)}</p>
             </div>
             {(() => {
-              const perPage = 5;
+              const perPage = 3;
               const totalPages = Math.ceil(faqItems.length / perPage);
               const paginated = faqItems.slice(faqPage * perPage, (faqPage + 1) * perPage);
               return (
@@ -1072,7 +1071,7 @@ export default function Home() {
                   {totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-8">
                       {Array.from({ length: totalPages }, (_, p) => (
-                        <button key={p} onClick={() => { setFaqPage(p); setExpandedFaq(null); }} className={`w-9 h-9 rounded-full text-sm font-bold transition-all ${p === faqPage ? "bg-primary text-white shadow-md" : "bg-secondary text-muted-foreground hover:bg-secondary/80"}`}>
+                        <button key={p} onClick={() => { setFaqPage(p); setExpandedFaq(null); }} className={`w-11 h-11 rounded-full text-sm font-bold transition-all ${p === faqPage ? "bg-primary text-white shadow-md" : "bg-secondary text-muted-foreground hover:bg-secondary/80"}`}>
                           {p + 1}
                         </button>
                       ))}
@@ -1087,10 +1086,10 @@ export default function Home() {
 
         {/* ── ENROLLMENT FORM ── */}
         {(cms["enrollment-form"]?.visible ?? true) && (
-        <section id="enroll" className="py-14 md:py-24 bg-secondary/20 border-t border-border">
+        <section id="enroll" className="py-10 md:py-24 bg-secondary/20 border-t border-border">
           <div className="container mx-auto px-6">
-            <div className="max-w-6xl mx-auto bg-card rounded-[2.5rem] shadow-xl overflow-hidden border border-border/50 grid lg:grid-cols-5">
-              <div className="lg:col-span-3 p-8 md:p-12">
+            <div className="max-w-6xl mx-auto bg-card rounded-3xl md:rounded-[2.5rem] shadow-xl overflow-hidden border border-border/50 grid lg:grid-cols-5">
+              <div className="lg:col-span-3 p-4 sm:p-6 md:p-12">
                 <AnimatePresence mode="wait">
                   {enrollSuccess ? (
                     <motion.div
@@ -1181,7 +1180,29 @@ export default function Home() {
               </div>
 
               {/* Legacy form removed — replaced by EnrollmentWizard above */}
-              <div className="lg:col-span-2 bg-primary text-primary-foreground p-8 md:p-12 flex flex-col justify-between relative overflow-hidden">
+              <details className="lg:hidden border-t border-primary/20 bg-primary text-primary-foreground">
+                <summary className="flex min-h-11 cursor-pointer items-center justify-between px-5 py-3 font-bold">
+                  <span>{lang === "ar" ? "ماذا يحدث بعد إرسال الطلب؟" : "What happens after submitting?"}</span>
+                  <ChevronDown className="h-5 w-5" aria-hidden />
+                </summary>
+                <div className="space-y-3 border-t border-primary-foreground/15 px-5 py-4">
+                  {[
+                    { num: "01", label: t.enroll.sidePanelStep1, desc: t.enroll.sidePanelStep1Desc },
+                    { num: "02", label: t.enroll.sidePanelStep2, desc: t.enroll.sidePanelStep2Desc },
+                    { num: "03", label: t.enroll.sidePanelStep3, desc: t.enroll.sidePanelStep3Desc },
+                  ].map((step) => (
+                    <div key={step.num} className="flex gap-3 border-b border-primary-foreground/10 pb-3 last:border-0 last:pb-0">
+                      <span className="font-serif text-xl font-bold text-primary-foreground/40">{step.num}</span>
+                      <div>
+                        <p className="text-sm font-semibold">{step.label}</p>
+                        <p className="mt-0.5 text-xs text-primary-foreground/65">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <a href="mailto:info@bikalima.com" className="inline-flex min-h-11 items-center text-sm font-bold underline underline-offset-4">info@bikalima.com</a>
+                </div>
+              </details>
+              <div className="lg:col-span-2 bg-primary text-primary-foreground p-8 md:p-12 hidden lg:flex flex-col justify-between relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-accent rounded-full blur-[100px] opacity-20 -mr-20 -mt-20" />
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-foreground/5 rounded-full blur-[80px] -ml-16 -mb-16" />
                 <div className="relative z-10">

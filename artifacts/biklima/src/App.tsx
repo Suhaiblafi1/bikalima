@@ -32,6 +32,9 @@ const TrainerDashboard = lazy(() => import("@/pages/trainer"));
 const ParentPage = lazy(() => import("@/pages/parent"));
 const LearnPage = lazy(() => import("@/pages/learn"));
 const GalleryPage = lazy(() => import("@/pages/gallery"));
+const LibraryPage = lazy(() => import("@/pages/library"));
+const AboutPage = lazy(() => import("@/pages/about"));
+const CareersPage = lazy(() => import("@/pages/careers"));
 const WorkbooksPage = lazy(() => import("@/pages/workbooks"));
 const VerifyPage = lazy(() => import("@/pages/verify"));
 const VerifyEmailPage = lazy(() => import("@/pages/verify-email"));
@@ -243,6 +246,9 @@ function AppRouter() {
           {() => (<AdminRoute><AdminPoliciesPage /></AdminRoute>)}
         </Route>
         <Route path="/gallery" component={GalleryPage} />
+        <Route path="/library" component={LibraryPage} />
+        <Route path="/about" component={AboutPage} />
+        <Route path="/careers" component={CareersPage} />
         <Route path="/workbooks" component={WorkbooksPage} />
         <Route path="/verify" component={VerifyPage} />
         <Route path="/verify-email" component={VerifyEmailPage} />

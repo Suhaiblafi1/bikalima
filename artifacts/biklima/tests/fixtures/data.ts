@@ -24,6 +24,12 @@ export const TEST_FIXTURES = {
     firstName: "تجربة",
     lastName: "مدرّب",
   },
+  parent: {
+    email: "e2e.parent@bikalima.test",
+    password: "E2eParent!23",
+    firstName: "تجربة",
+    lastName: "ولي أمر",
+  },
   course: {
     slug: "e2e-test-course",
     titleAr: "دورة اختبار E2E",

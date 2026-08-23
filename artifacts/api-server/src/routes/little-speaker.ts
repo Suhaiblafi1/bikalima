@@ -108,7 +108,7 @@ router.put("/admin/lessons/:lessonId/live-session", async (req: Request, res: Re
 
     // Notify enrolled students
     const students = await db.select({ userId: enrollmentsTable.userId })
-      .from(enrollmentsTable).where(eq(enrollmentsTable.courseId, lesson.courseId));
+      .from(enrollmentsTable).where(and(eq(enrollmentsTable.courseId, lesson.courseId), eq(enrollmentsTable.status, "active")));
     for (const s of students) {
       await createNotification({
         userId: s.userId,
@@ -133,7 +133,7 @@ router.get("/my/live-sessions", async (req: Request, res: Response) => {
   const userId = req.user.id;
   try {
     const enrolls = await db.select({ courseId: enrollmentsTable.courseId })
-      .from(enrollmentsTable).where(eq(enrollmentsTable.userId, userId));
+      .from(enrollmentsTable).where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.status, "active")));
     const courseIds = enrolls.map(e => e.courseId);
     if (courseIds.length === 0) { res.json({ sessions: [] }); return; }
     const lessons = await db.select({ id: lessonsTable.id, courseId: lessonsTable.courseId, lessonTitleAr: lessonsTable.titleAr })
@@ -167,7 +167,7 @@ router.get("/parent/live-sessions", async (req: Request, res: Response) => {
       .map(r => r.studentUserId);
     if (children.length === 0) { res.json({ sessions: [] }); return; }
     const enrolls = await db.select({ courseId: enrollmentsTable.courseId, userId: enrollmentsTable.userId })
-      .from(enrollmentsTable).where(inArray(enrollmentsTable.userId, children));
+      .from(enrollmentsTable).where(and(inArray(enrollmentsTable.userId, children), eq(enrollmentsTable.status, "active")));
     const courseIds = Array.from(new Set(enrolls.map(e => e.courseId)));
     if (courseIds.length === 0) { res.json({ sessions: [] }); return; }
     const lessons = await db.select({ id: lessonsTable.id, courseId: lessonsTable.courseId, lessonTitleAr: lessonsTable.titleAr })
@@ -325,7 +325,7 @@ router.get("/parent/children", async (req: Request, res: Response) => {
       const s = studentMap.get(link.studentUserId);
       if (!s) continue;
       const [enrollCount] = await db.select({ c: sql<number>`count(*)::int` })
-        .from(enrollmentsTable).where(eq(enrollmentsTable.userId, link.studentUserId));
+        .from(enrollmentsTable).where(and(eq(enrollmentsTable.userId, link.studentUserId), eq(enrollmentsTable.status, "active")));
       const [doneLessons] = await db.select({ c: sql<number>`count(*)::int` })
         .from(lessonProgressTable)
         .where(and(eq(lessonProgressTable.userId, link.studentUserId), eq(lessonProgressTable.completed, true)));
@@ -399,7 +399,7 @@ router.get("/messages/contacts", async (req: Request, res: Response) => {
         .from(courseTrainersTable).where(eq(courseTrainersTable.userId, me))).map(r => r.courseId);
       if (myCourses.length > 0) {
         const students = await db.select({ userId: enrollmentsTable.userId })
-          .from(enrollmentsTable).where(inArray(enrollmentsTable.courseId, myCourses));
+          .from(enrollmentsTable).where(and(inArray(enrollmentsTable.courseId, myCourses), eq(enrollmentsTable.status, "active")));
         const studentIds = students.map(s => s.userId);
         for (const sid of studentIds) ids.add(sid);
         if (studentIds.length > 0) {
@@ -417,7 +417,7 @@ router.get("/messages/contacts", async (req: Request, res: Response) => {
       for (const cid of children) ids.add(cid);
       if (children.length > 0) {
         const courseIds = (await db.select({ courseId: enrollmentsTable.courseId })
-          .from(enrollmentsTable).where(inArray(enrollmentsTable.userId, children))).map(r => r.courseId);
+          .from(enrollmentsTable).where(and(inArray(enrollmentsTable.userId, children), eq(enrollmentsTable.status, "active")))).map(r => r.courseId);
         if (courseIds.length > 0) {
           const trainers = await db.select({ userId: courseTrainersTable.userId })
             .from(courseTrainersTable).where(inArray(courseTrainersTable.courseId, courseIds));
@@ -427,7 +427,7 @@ router.get("/messages/contacts", async (req: Request, res: Response) => {
     } else {
       // Student → trainers of their enrolled courses.
       const myCourses = (await db.select({ courseId: enrollmentsTable.courseId })
-        .from(enrollmentsTable).where(eq(enrollmentsTable.userId, me))).map(r => r.courseId);
+        .from(enrollmentsTable).where(and(eq(enrollmentsTable.userId, me), eq(enrollmentsTable.status, "active")))).map(r => r.courseId);
       if (myCourses.length > 0) {
         const trainers = await db.select({ userId: courseTrainersTable.userId })
           .from(courseTrainersTable).where(inArray(courseTrainersTable.courseId, myCourses));
@@ -483,13 +483,13 @@ router.post("/messages/threads", async (req: Request, res: Response) => {
       if (myCourses.length > 0) {
         // Recipient is an enrolled student?
         const [enrolled] = await db.select({ id: enrollmentsTable.id }).from(enrollmentsTable)
-          .where(and(eq(enrollmentsTable.userId, recipientId), inArray(enrollmentsTable.courseId, myCourses)))
+          .where(and(eq(enrollmentsTable.userId, recipientId), inArray(enrollmentsTable.courseId, myCourses), eq(enrollmentsTable.status, "active")))
           .limit(1);
         if (enrolled) allowed = true;
         else {
           // Recipient is a parent of an enrolled student?
           const myStudentIds = (await db.select({ userId: enrollmentsTable.userId })
-            .from(enrollmentsTable).where(inArray(enrollmentsTable.courseId, myCourses))).map(r => r.userId);
+            .from(enrollmentsTable).where(and(inArray(enrollmentsTable.courseId, myCourses), eq(enrollmentsTable.status, "active")))).map(r => r.userId);
           if (myStudentIds.length > 0) {
             const [pl] = await db.select({ id: parentLinksTable.id }).from(parentLinksTable)
               .where(and(
@@ -513,14 +513,14 @@ router.post("/messages/threads", async (req: Request, res: Response) => {
             .map(r => r.studentUserId);
           if (myChildren.length > 0) {
             const [enr] = await db.select({ id: enrollmentsTable.id }).from(enrollmentsTable)
-              .where(and(inArray(enrollmentsTable.userId, myChildren), inArray(enrollmentsTable.courseId, trainerCourses)))
+              .where(and(inArray(enrollmentsTable.userId, myChildren), inArray(enrollmentsTable.courseId, trainerCourses), eq(enrollmentsTable.status, "active")))
               .limit(1);
             if (enr) allowed = true;
           }
         } else {
           // Student → must be enrolled in at least one of trainer's courses.
           const [enr] = await db.select({ id: enrollmentsTable.id }).from(enrollmentsTable)
-            .where(and(eq(enrollmentsTable.userId, me), inArray(enrollmentsTable.courseId, trainerCourses)))
+            .where(and(eq(enrollmentsTable.userId, me), inArray(enrollmentsTable.courseId, trainerCourses), eq(enrollmentsTable.status, "active")))
             .limit(1);
           if (enr) allowed = true;
         }
@@ -667,7 +667,7 @@ router.post("/messages/courses/:courseId/broadcast", async (req: Request, res: R
       res.status(403).json({ error: "Not authorized for this course" }); return;
     }
     const students = await db.select({ userId: enrollmentsTable.userId })
-      .from(enrollmentsTable).where(eq(enrollmentsTable.courseId, courseId));
+      .from(enrollmentsTable).where(and(eq(enrollmentsTable.courseId, courseId), eq(enrollmentsTable.status, "active")));
     if (students.length === 0) { res.json({ thread: null, recipients: 0 }); return; }
 
     const [thread] = await db.insert(messageThreadsTable).values({
@@ -802,7 +802,7 @@ async function runLiveSessionReminders(): Promise<number> {
         .from(lessonsTable).where(eq(lessonsTable.id, s.lessonId)).limit(1);
       if (!lesson) continue;
       const enrolled = await db.select({ userId: enrollmentsTable.userId })
-        .from(enrollmentsTable).where(eq(enrollmentsTable.courseId, lesson.courseId));
+        .from(enrollmentsTable).where(and(eq(enrollmentsTable.courseId, lesson.courseId), eq(enrollmentsTable.status, "active")));
       const studentIds = enrolled.map(e => e.userId);
       const parents = studentIds.length > 0
         ? await db.select({ parentUserId: parentLinksTable.parentUserId })

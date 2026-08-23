@@ -52,6 +52,7 @@ jobs:
       E2E_BASE_URL: http://localhost:8080
       PUBLIC_APP_URL: http://localhost:8080
       CRON_SECRET: e2e-only-cron-secret
+      E2E_ALLOW_DB_SEED: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

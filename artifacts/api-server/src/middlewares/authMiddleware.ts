@@ -5,7 +5,7 @@ import {
   getSessionId,
   getSession,
 } from "../lib/auth.js";
-import { getUserRole, type Role } from "../lib/admin.js";
+import { getUserAccess, type Role } from "../lib/admin.js";
 
 declare global {
   namespace Express {
@@ -44,16 +44,26 @@ export async function authMiddleware(
     return;
   }
 
-  // Always re-read role from the DB so promotions/demotions take effect
-  // immediately without forcing the user to re-login. Also bootstraps admin
-  // for any email in ADMIN_EMAILS.
+  // Always re-read authorization state from the DB so changes take effect
+  // immediately without forcing the user to log out. No privilege is inferred
+  // from an email address or from the stale session payload.
   let role: Role = "student";
+  let isSuperAdmin = false;
+  let emailVerified = false;
   try {
-    role = await getUserRole(session.user.id);
+    const access = await getUserAccess(session.user.id);
+    if (!access) {
+      await clearSession(res, sid);
+      next();
+      return;
+    }
+    role = access.role;
+    isSuperAdmin = access.isSuperAdmin;
+    emailVerified = access.emailVerified;
   } catch {
     role = "student";
   }
 
-  req.user = { ...session.user, role };
+  req.user = { ...session.user, role, isSuperAdmin, emailVerified };
   next();
 }

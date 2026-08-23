@@ -78,7 +78,7 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout activeKey="users">
-      <Card><CardContent className="p-5">
+      <Card><CardContent className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
           <h1 className="font-bold flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> المستخدمون ({filtered.length})</h1>
           <div className="flex items-center gap-2 flex-wrap">
@@ -93,13 +93,56 @@ export default function AdminUsersPage() {
                 <option key={r} value={r}>{ROLE_LABELS_AR[r]}</option>
               ))}
             </select>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="بحث..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
             </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="space-y-3 md:hidden" aria-label="قائمة المستخدمين">
+          {filtered.map((u) => (
+            <article key={u.id} className="rounded-2xl border border-border bg-background p-4 shadow-sm">
+              {editingId === u.id ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} placeholder="الاسم الأول" />
+                    <Input value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} placeholder="اسم العائلة" />
+                  </div>
+                  <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} dir="ltr" />
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" onClick={saveEdit} className="gap-2"><Save className="h-4 w-4" /> حفظ</Button>
+                    <Button variant="outline" size="sm" onClick={() => setEditingId(null)} className="gap-2"><X className="h-4 w-4" /> إلغاء</Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="font-bold">{u.firstName || u.lastName ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "بلا اسم"}</h2>
+                      <p className="mt-1 truncate text-sm text-muted-foreground" dir="ltr">{u.email}</p>
+                    </div>
+                    <span className="shrink-0 text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString("ar-SA")}</span>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                    {u.isSuperAdmin ? (
+                      <span className="text-xs font-bold text-primary">{ROLE_LABELS_AR[u.role]} 🛡️</span>
+                    ) : (
+                      <select value={u.role} onChange={(e) => updateRole(u.id, e.target.value as Role)} className="min-h-11 rounded-xl border border-border bg-background px-3 text-sm" aria-label={`دور ${u.email}`}>
+                        {(Object.keys(ROLE_LABELS_AR) as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABELS_AR[r]}</option>)}
+                      </select>
+                    )}
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => startEdit(u)} className="text-blue-600" aria-label={`تعديل ${u.email}`}><Edit3 className="h-4 w-4" /></Button>
+                      {!u.isSuperAdmin && <Button variant="ghost" size="icon" onClick={() => handleDelete(u.id)} className="text-destructive" aria-label={`حذف ${u.email}`}><Trash2 className="h-4 w-4" /></Button>}
+                    </div>
+                  </div>
+                </>
+              )}
+            </article>
+          ))}
+          {filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">لا يوجد مستخدمون مطابقون</p>}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead><tr className="border-b text-muted-foreground">
               <th className="text-start py-2 px-3 font-medium">الاسم</th>
@@ -119,7 +162,7 @@ export default function AdminUsersPage() {
                   ) : <span className="font-medium">{u.firstName || u.lastName ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "—"}</span>}</td>
                   <td className="py-2 px-3 text-muted-foreground">{editingId === u.id ? <Input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="h-7 text-xs w-40" /> : u.email}</td>
                   <td className="py-2 px-3">
-                    {u.email.toLowerCase() === "info@bikalima.com" ? (
+                    {u.isSuperAdmin ? (
                       <span className="text-xs font-bold text-primary" title="حساب المدير العام — لا يمكن تغيير دوره">
                         {ROLE_LABELS_AR[u.role]} 🛡️
                       </span>
@@ -146,7 +189,7 @@ export default function AdminUsersPage() {
                     ) : (
                       <>
                         <Button variant="ghost" size="sm" onClick={() => startEdit(u)} className="h-7 w-7 p-0 text-blue-600"><Edit3 className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(u.id)} className="h-7 w-7 p-0 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                        {!u.isSuperAdmin && <Button variant="ghost" size="sm" onClick={() => handleDelete(u.id)} className="h-7 w-7 p-0 text-destructive" aria-label="حذف المستخدم"><Trash2 className="w-3.5 h-3.5" /></Button>}
                       </>
                     )}
                   </td>

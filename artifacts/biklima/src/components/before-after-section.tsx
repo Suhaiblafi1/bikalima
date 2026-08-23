@@ -9,9 +9,9 @@ export function BeforeAfterSection() {
   const Arrow = lang === "ar" ? ArrowLeft : ArrowRight;
 
   return (
-    <section className="py-24 bg-secondary/20 border-t border-border" data-testid="section-before-after">
+    <section className="py-12 md:py-24 bg-secondary/20 border-t border-border" data-testid="section-before-after">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-14 max-w-2xl mx-auto">
+        <div className="text-center mb-8 md:mb-14 max-w-2xl mx-auto">
           <p className="uppercase tracking-[0.25em] text-xs sm:text-sm text-primary font-bold mb-3">
             {t.eyebrow}
           </p>
@@ -19,14 +19,14 @@ export function BeforeAfterSection() {
           <p className="text-muted-foreground text-base md:text-lg leading-relaxed">{t.sub}</p>
         </div>
 
-        <div className="max-w-5xl mx-auto grid md:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
+        <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 md:mx-auto md:grid md:max-w-5xl md:grid-cols-[1fr_auto_1fr] md:items-stretch md:gap-5 md:overflow-visible md:px-0 md:pb-0">
           {/* BEFORE */}
           <motion.div
             initial={{ opacity: 0, x: lang === "ar" ? 20 : -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="bg-card border border-border rounded-3xl p-6 md:p-8 relative overflow-hidden"
+            className="relative min-w-[84vw] snap-center overflow-hidden rounded-3xl border border-border bg-card p-5 sm:min-w-[70vw] md:min-w-0 md:p-8"
             data-testid="before-card"
           >
             <div className="inline-flex items-center gap-2 bg-destructive/10 text-destructive font-bold text-xs px-3 py-1 rounded-full mb-5">
@@ -61,7 +61,7 @@ export function BeforeAfterSection() {
               {t.transformLabel}
             </p>
           </div>
-          <div className="flex md:hidden items-center justify-center">
+          <div className="hidden items-center justify-center md:hidden">
             <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
               <Arrow className="w-5 h-5 rotate-90" strokeWidth={2.5} />
             </div>
@@ -73,7 +73,7 @@ export function BeforeAfterSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="bg-gradient-to-br from-primary/10 via-card to-card border-2 border-primary/30 rounded-3xl p-6 md:p-8 relative overflow-hidden"
+            className="relative min-w-[84vw] snap-center overflow-hidden rounded-3xl border-2 border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-5 sm:min-w-[70vw] md:min-w-0 md:p-8"
             data-testid="after-card"
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full mb-5">

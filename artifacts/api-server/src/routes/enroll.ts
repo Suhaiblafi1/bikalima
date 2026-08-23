@@ -1,13 +1,69 @@
 import { Router, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
+import { z } from "zod";
 import { db, enrollmentRequestsTable } from "@workspace/db";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { toWaPhone } from "../lib/phone.js";
+import { authRateLimit } from "../middlewares/security.js";
 
 const enrollRouter = Router();
 
 const RECIPIENT = "info@bikalima.com";
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
+const enrollLimiter = authRateLimit(15, 5 * 60_000);
+
+const optionalText = (max: number) => z.string().trim().max(max).optional().default("");
+const optionalCount = z.string().trim().regex(/^\d{0,6}$/).optional().default("");
+const EnrollmentRequestSchema = z.object({
+  type: z.enum(["individual", "institution"]).default("individual"),
+  lang: z.enum(["ar", "en", "fr"]).default("ar"),
+  name: optionalText(120),
+  contactPerson: optionalText(120),
+  orgName: optionalText(180),
+  phone: z.string().trim().min(7).max(40),
+  email: z.string().trim().email().max(200),
+  program: z.string().trim().min(1).max(180),
+  programId: optionalText(60),
+  programTitle: optionalText(180),
+  category: optionalText(120),
+  mode: optionalText(60),
+  privateMode: optionalText(60),
+  youtube: optionalText(500).refine(
+    (value) => !value || /^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(value),
+    "YouTube link must use HTTPS",
+  ),
+  discount: optionalText(80),
+  reason: optionalText(2_000),
+  orgMessage: optionalText(2_000),
+  message: optionalText(2_000),
+  goal: optionalText(500),
+  goalText: optionalText(500),
+  audience: optionalText(100),
+  recommended: z.enum(["true", "false", ""]).optional().default(""),
+  studentCount: optionalCount,
+  teacherCount: optionalCount,
+  workbookCount: optionalCount,
+  leadSource: optionalText(80),
+}).superRefine((value, context) => {
+  const fullName = value.type === "institution" ? value.contactPerson || value.orgName : value.name;
+  if (!fullName) context.addIssue({ code: "custom", path: ["name"], message: "Applicant name is required" });
+  if (value.type === "institution" && !value.orgName) {
+    context.addIssue({ code: "custom", path: ["orgName"], message: "Institution name is required" });
+  }
+});
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapedEmailPayload(payload: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(payload).map(([key, value]) => [key, escapeHtml(value)]));
+}
 
 function buildTransporter() {
   const host = process.env.SMTP_HOST;
@@ -379,8 +435,13 @@ function buildApplicantConfirmationHtml(p: Record<string, string>, isInstitution
 </div>`;
 }
 
-enrollRouter.post("/enroll", async (req: Request, res: Response) => {
-  const payload = req.body as Record<string, string>;
+enrollRouter.post("/enroll", enrollLimiter, async (req: Request, res: Response) => {
+  const parsed = EnrollmentRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, message: "Invalid enrollment request", issues: parsed.error.issues });
+    return;
+  }
+  const payload = parsed.data as Record<string, string>;
   const log = req.log ?? console;
 
   let dbStored = false;
@@ -459,13 +520,14 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
 
   const transporter = buildTransporter();
   if (transporter) {
+    const mailPayload = escapedEmailPayload(payload);
     const isInstitution = payload.type === "institution";
     const subject = isInstitution
-      ? `بكلمة ✦ طلب مؤسسي — ${payload.orgName}`
-      : `بكلمة ✦ طلب تسجيل جديد — ${payload.name} / ${payload.program}`;
+      ? `بكلمة ✦ طلب مؤسسي — ${payload.orgName.replace(/[\r\n]/g, " ")}`
+      : `بكلمة ✦ طلب تسجيل جديد — ${payload.name.replace(/[\r\n]/g, " ")} / ${payload.program.replace(/[\r\n]/g, " ")}`;
     const html = isInstitution
-      ? buildInstitutionHtml(payload)
-      : buildIndividualHtml(payload);
+      ? buildInstitutionHtml(mailPayload)
+      : buildIndividualHtml(mailPayload);
     log.info({ from: FROM_ADDRESS, admin: RECIPIENT, applicant: payload.email }, "[SMTP] Sending enrollment emails");
     try {
       await transporter.sendMail({
@@ -495,7 +557,7 @@ enrollRouter.post("/enroll", async (req: Request, res: Response) => {
           to: payload.email,
           replyTo: RECIPIENT,
           subject: confirmSubject,
-          html: buildApplicantConfirmationHtml(payload, isInstitution),
+          html: buildApplicantConfirmationHtml(mailPayload, isInstitution),
         });
         log.info({ to: payload.email }, "Confirmation email sent to applicant");
       } catch (err) {

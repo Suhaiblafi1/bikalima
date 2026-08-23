@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLang } from "@/hooks/useLang";
 import { T } from "@/translations";
+import { scrollToPageSection } from "@/lib/utils";
 
 type Props = {
   variant?: "soft" | "primary";
@@ -10,10 +11,7 @@ type Props = {
 };
 
 function scrollToStructure() {
-  const el = document.getElementById("structure");
-  if (el) {
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
-  } else {
+  if (!scrollToPageSection("structure")) {
     window.location.hash = "structure";
   }
 }

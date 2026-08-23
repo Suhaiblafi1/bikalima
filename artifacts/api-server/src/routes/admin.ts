@@ -20,7 +20,6 @@ import {
 import { db as _db, courseTrainersTable, trainerLearnerNotesTable, assignmentsTable, assignmentSubmissionsTable, lessonSessionAttendanceTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 import {
-  ADMIN_EMAILS,
   isAdmin,
   isSupervisorOrAdmin,
   isMasterAccount,
@@ -113,6 +112,7 @@ router.get("/admin/users", async (req: Request, res: Response) => {
     const users = await db.select({
       id: usersTable.id, email: usersTable.email, firstName: usersTable.firstName,
       lastName: usersTable.lastName, role: usersTable.role,
+      isSuperAdmin: usersTable.isSuperAdmin, emailVerified: usersTable.emailVerified,
       createdAt: usersTable.createdAt, updatedAt: usersTable.updatedAt,
     }).from(usersTable).orderBy(desc(usersTable.createdAt));
     res.json({ users });
@@ -152,19 +152,19 @@ router.patch("/admin/users/:id/role", async (req: Request, res: Response) => {
       // touching the same user. This blocks a parallel demotion attempt
       // until we either commit or roll back.
       const lockedTargets = await tx.execute(sql`
-        SELECT id, email, role
+        SELECT id, email, role, is_super_admin AS "isSuperAdmin"
         FROM ${usersTable}
         WHERE id = ${id}
         FOR UPDATE
       `);
-      const targetRow = (lockedTargets as unknown as { rows?: Array<{ id: string; email: string; role: string }> }).rows?.[0]
-        ?? (lockedTargets as unknown as Array<{ id: string; email: string; role: string }>)[0];
+      type LockedTarget = { id: string; email: string; role: string; isSuperAdmin: boolean };
+      const targetRow = (lockedTargets as unknown as { rows?: LockedTarget[] }).rows?.[0]
+        ?? (lockedTargets as unknown as LockedTarget[])[0];
       if (!targetRow) return { ok: false, status: 404, error: "Not found" };
 
-      // The master account is hard-pinned: its role can never be changed by
-      // any caller (including the master itself). The bootstrap re-promotion
-      // in getUserRole guarantees admin even if the DB is tampered with.
-      if (ADMIN_EMAILS.includes(targetRow.email.toLowerCase())) {
+      // Explicitly provisioned super-admin accounts cannot be demoted through
+      // this general role endpoint.
+      if (targetRow.isSuperAdmin) {
         return { ok: false, status: 403, error: "Cannot change the role of the master account" };
       }
 
@@ -312,13 +312,44 @@ router.patch("/admin/users/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { firstName, lastName, email } = req.body;
-    const updates: Record<string, string> = {};
-    if (firstName !== undefined) updates.firstName = firstName;
-    if (lastName !== undefined) updates.lastName = lastName;
-    if (email !== undefined) updates.email = email.toLowerCase().trim();
+    const [target] = await db.select({
+      id: usersTable.id,
+      email: usersTable.email,
+      isSuperAdmin: usersTable.isSuperAdmin,
+    }).from(usersTable).where(eq(usersTable.id, id));
+    if (!target) { res.status(404).json({ error: "Not found" }); return; }
+    const updates: Partial<typeof usersTable.$inferInsert> = {};
+    if (firstName !== undefined) updates.firstName = String(firstName).trim().slice(0, 120);
+    if (lastName !== undefined) updates.lastName = String(lastName).trim().slice(0, 120);
+    if (email !== undefined) {
+      if (target.isSuperAdmin) {
+        res.status(403).json({ error: "The super-admin email cannot be changed from this endpoint" });
+        return;
+      }
+      const normalizedEmail = String(email).toLowerCase().trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 200) {
+        res.status(400).json({ error: "Invalid email" });
+        return;
+      }
+      updates.email = normalizedEmail;
+      updates.emailVerified = false;
+      updates.emailVerificationToken = null;
+      updates.emailVerificationExpiresAt = null;
+    }
     if (Object.keys(updates).length === 0) { res.status(400).json({ error: "No fields" }); return; }
     const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, id)).returning();
-    if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+    try {
+      await recordAuditLog({
+        actor: { id: req.user?.id ?? null, email: req.user?.email ?? null },
+        action: "user.profile_admin_update",
+        entityType: "user",
+        entityId: id,
+        before: { email: target.email },
+        after: { email: updated.email, emailVerified: updated.emailVerified },
+      });
+    } catch (auditError) {
+      req.log.warn({ err: auditError, userId: id }, "Failed to record user update audit event");
+    }
     res.json({ user: updated });
   } catch (err) {
     res.status(500).json({ error: "Failed to update user" });
@@ -331,7 +362,7 @@ router.delete("/admin/users/:id", async (req: Request, res: Response) => {
     const { id } = req.params;
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id));
     if (!user) { res.status(404).json({ error: "Not found" }); return; }
-    if (ADMIN_EMAILS.includes(user.email.toLowerCase())) { res.status(403).json({ error: "Cannot delete admin" }); return; }
+    if (user.isSuperAdmin) { res.status(403).json({ error: "Cannot delete admin" }); return; }
     await db.delete(usersTable).where(eq(usersTable.id, id));
     res.json({ success: true });
   } catch (err) {
@@ -621,10 +652,11 @@ router.post("/admin/enrollments", async (req: Request, res: Response) => {
   if (!requireSupervisorOrAdmin(req, res)) return;
   try {
     const { userId, courseId } = req.body;
-    const existing = await db.select().from(enrollmentsTable)
-      .where(sql`${enrollmentsTable.userId} = ${userId} AND ${enrollmentsTable.courseId} = ${courseId}`);
-    if (existing.length > 0) { res.status(409).json({ error: "Already enrolled" }); return; }
-    const [enrollment] = await db.insert(enrollmentsTable).values({ userId, courseId }).returning();
+    const [enrollment] = await db.insert(enrollmentsTable)
+      .values({ userId, courseId })
+      .onConflictDoNothing({ target: [enrollmentsTable.userId, enrollmentsTable.courseId] })
+      .returning();
+    if (!enrollment) { res.status(409).json({ error: "Already enrolled" }); return; }
     res.json({ enrollment });
   } catch (err) {
     res.status(500).json({ error: "Failed to enroll user" });
@@ -827,7 +859,11 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
     const [lesson] = await db.select().from(lessonsTable).where(eq(lessonsTable.id, lessonId));
     if (!lesson) { res.status(404).json({ error: "Lesson not found" }); return; }
     const enrollment = await db.select().from(enrollmentsTable)
-      .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.courseId, lesson.courseId)));
+      .where(and(
+        eq(enrollmentsTable.userId, userId),
+        eq(enrollmentsTable.courseId, lesson.courseId),
+        eq(enrollmentsTable.status, "active"),
+      ));
     if (enrollment.length === 0) { res.status(403).json({ error: "Not enrolled in this course" }); return; }
 
     // Gate: when the lesson has any required+published interactive activity,
@@ -850,12 +886,12 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
     const existing = await db.select().from(lessonProgressTable)
       .where(and(eq(lessonProgressTable.userId, userId), eq(lessonProgressTable.lessonId, lessonId)));
     const wasAlreadyCompleted = existing.length > 0 && existing[0].completed === true;
-    if (existing.length > 0) {
-      await db.update(lessonProgressTable).set({ completed: true, completedAt: new Date() })
-        .where(eq(lessonProgressTable.id, existing[0].id));
-    } else {
-      await db.insert(lessonProgressTable).values({ userId, lessonId, completed: true, completedAt: new Date() });
-    }
+    await db.insert(lessonProgressTable)
+      .values({ userId, lessonId, completed: true, completedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [lessonProgressTable.userId, lessonProgressTable.lessonId],
+        set: { completed: true, completedAt: new Date() },
+      });
 
     // ── Badges: only fire on a fresh completion to avoid spam on re-clicks
     const newlyAwarded: { key: string; titleAr: string; titleEn: string; icon: string; colorClass: string }[] = [];

@@ -13,7 +13,7 @@ import type { Role } from "@/hooks/use-me";
 import { AdminActivityEditor } from "@/components/admin-activity-editor";
 
 // ── Types ───────────────────────────────────────────────────────────────
-export type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; role: Role; createdAt: string };
+export type UserRecord = { id: string; email: string; firstName: string | null; lastName: string | null; role: Role; isSuperAdmin?: boolean; emailVerified?: boolean; createdAt: string };
 export type CourseTrainerRecord = { id: string; userId: string; courseId: string; assignedAt: string; email: string; firstName: string | null; lastName: string | null; role: Role };
 export type SectionRecord = { id: string; courseId: string; titleAr: string; titleEn: string; sortOrder: number; isPublished: boolean };
 export type LessonResource = { titleAr: string; titleEn: string; url: string; type: string };

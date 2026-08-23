@@ -149,7 +149,7 @@ export default function AdminInPersonCoursesPage() {
   return (
     <AdminLayout activeKey="in-person-courses">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div><h1 className="text-xl font-bold flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary" /> الدورات الوجاهية القادمة</h1><p className="text-sm text-muted-foreground mt-1">إدارة المواعيد والسعة والتسجيل وقائمة الانتظار من دون تعديل الكود.</p></div>
+        <div><h1 className="text-xl font-bold flex items-center gap-2"><CalendarDays className="w-5 h-5 text-primary" /> الدورات الحضورية</h1><p className="text-sm text-muted-foreground mt-1">إدارة المواعيد والسعة والتسجيل وقائمة الانتظار من دون تعديل الكود.</p></div>
         <Button onClick={() => { setEditingId(null); setForm(EMPTY); setShowForm((value) => !value); }}><Plus className="w-4 h-4 me-2" /> موعد جديد</Button>
       </div>
 

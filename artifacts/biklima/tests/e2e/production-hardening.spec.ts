@@ -100,6 +100,9 @@ test.describe("production hardening", () => {
     const xml = await sitemap.text();
     expect(xml).toContain("<urlset");
     expect(xml).toContain("/programs/influential-speaker");
+    expect(xml).toContain("/about");
+    expect(xml).toContain("/library");
+    expect(xml).toContain("/careers");
   });
 
   test("global fetch interceptor injects CSRF on in-app POSTs (logout works)", async ({ browser, baseURL, request }) => {
@@ -146,6 +149,42 @@ test.describe("production hardening", () => {
     expect(body.error).toMatch(/Invalid request body/i);
     expect(Array.isArray(body.issues)).toBe(true);
     expect(body.issues.length).toBeGreaterThan(0);
+  });
+
+  test("public enrollment rejects unbounded or unsafe input", async ({ request }) => {
+    const response = await request.post("/api/enroll", {
+      data: {
+        type: "individual",
+        name: "Test learner",
+        phone: "123456789",
+        email: "learner@example.com",
+        program: "E2E Test Course",
+        youtube: "javascript:alert(1)",
+        message: "x".repeat(2_001),
+      },
+    });
+    expect(response.status()).toBe(400);
+    const body = await response.json();
+    expect(body.message).toBe("Invalid enrollment request");
+    expect(Array.isArray(body.issues)).toBe(true);
+  });
+
+  test("workbook order rejects client-controlled quantity and totals", async ({ request }) => {
+    const response = await request.post("/api/workbook-order", {
+      data: {
+        workbookId: "core",
+        workbookTitle: "Test workbook",
+        quantity: 10_000,
+        format: "pdf",
+        buyerName: "Test Buyer",
+        buyerPhone: "123456789",
+        buyerEmail: "buyer@example.com",
+        unitPrice: 0.01,
+        totalPrice: 0.01,
+        currency: "USD",
+      },
+    });
+    expect(response.status()).toBe(400);
   });
 
   test("rate-limit responses include Retry-After header", async ({ request }) => {

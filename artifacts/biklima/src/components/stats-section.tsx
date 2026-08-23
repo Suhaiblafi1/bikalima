@@ -56,7 +56,7 @@ export function StatsSection() {
     <section
       ref={ref}
       id="stats"
-      className="py-12 md:py-20 bg-gradient-to-b from-primary to-primary/90 text-primary-foreground relative overflow-hidden"
+      className="py-10 md:py-20 bg-gradient-to-b from-primary to-primary/90 text-primary-foreground relative overflow-hidden"
       data-testid="section-stats"
     >
       <div aria-hidden className="absolute inset-0 opacity-10">
@@ -70,7 +70,7 @@ export function StatsSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-12 max-w-2xl mx-auto"
+          className="text-center mb-8 md:mb-12 max-w-2xl mx-auto"
         >
           <p className="uppercase tracking-[0.25em] text-xs sm:text-sm text-white/70 font-bold mb-3">
             {t.eyebrow}
@@ -89,14 +89,14 @@ export function StatsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.45 }}
-              className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-3xl p-5 sm:p-6 text-center"
+              className="bg-white/10 backdrop-blur-sm border border-white/15 rounded-2xl md:rounded-3xl p-3 sm:p-6 text-center"
               data-testid={`stat-card-${i}`}
             >
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 text-white mb-4">
+              <div className="inline-flex items-center justify-center w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/15 text-white mb-2 md:mb-4">
                 {item.icon}
               </div>
               <div
-                className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-none mb-2 tabular-nums"
+                className="font-serif text-2xl sm:text-4xl md:text-5xl font-bold leading-none mb-1 md:mb-2 tabular-nums"
                 data-testid={`stat-value-${i}`}
               >
                 {formatNumber(item.value, lang)}

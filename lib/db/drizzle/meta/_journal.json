@@ -57,6 +57,13 @@
       "when": 1787359707000,
       "tag": "0007_commerce_events_privacy",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787450000000,
+      "tag": "0008_lms_integrity_constraints",
+      "breakpoints": true
     }
   ]
 }

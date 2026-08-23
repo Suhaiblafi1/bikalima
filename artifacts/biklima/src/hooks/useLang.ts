@@ -32,6 +32,11 @@ export function useLang() {
     return () => window.removeEventListener(LANG_EVENT, handler);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  }, [lang]);
+
   const switchLang = (l: Lang) => {
     setLang(l);
     try { localStorage.setItem("biklima-lang", l); } catch {}

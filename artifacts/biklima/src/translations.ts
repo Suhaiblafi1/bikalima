@@ -9,7 +9,7 @@ export const T = {
       testimonials: "آراء",
       gallery: "معرضنا",
       videos: "فيديوهات",
-      events: "الدورات الوجاهية القادمة",
+      events: "الدورات الحضورية",
       courses: "الدورات",
       cta: "ابدأ رحلتك",
       mobileCta: "ابدأ رحلتك الآن",
@@ -108,7 +108,7 @@ export const T = {
       privateLabel: "تدريب خاص ١:١",
       privateDesc: "حسب الطلب — الموعد والسعر يُحددان لاحقاً",
       contactForPrivate: "تواصل معنا",
-      upcomingEventsHeading: "الدورات الوجاهية القادمة",
+      upcomingEventsHeading: "الدورات الحضورية",
       upcomingEventsSub: "مواعيد التدريب الحضوري القادمة — اطّلع على التفاصيل وسجّل مباشرة من هنا",
       noUpcomingEvents: "لا توجد دورات وجاهية معلنة حالياً — تابعنا لمعرفة المواعيد الجديدة",
       countriesHeading: "الدول التي نقدّم فيها دوراتنا الوجاهية",
@@ -202,7 +202,7 @@ export const T = {
       sub: "ست خطوات واضحة من لحظة اهتمامك حتى استلامك للشهادة المعتمدة.",
       steps: [
         { title: "سجّل اهتمامك", desc: "املأ نموذج التسجيل أو احجز استشارة مجانية." },
-        { title: "نرشح لك البرنامج", desc: "يحدّد فريقنا المسار الأنسب لمستواك وأهدافك." },
+        { title: "تختار برنامجك", desc: "راجع تفاصيل البرامج واختر المسار الذي تريد التسجيل فيه." },
         { title: "تبدأ التدريب", desc: "حضور جلسات وجاهية أو عن بُعد مع المدرّب." },
         { title: "تطبّق عملياً", desc: "تمارين أداء حقيقية وتغذية راجعة فردية." },
         { title: "تحصل على تقييم", desc: "تقييم احترافي لخطابك مع توصيات للنمو." },
@@ -272,7 +272,7 @@ export const T = {
       sidePanelStep1: "التقديم",
       sidePanelStep1Desc: "أرسل طلبك الآن",
       sidePanelStep2: "التوجيه",
-      sidePanelStep2Desc: "نحدد البرنامج الأنسب",
+      sidePanelStep2Desc: "نؤكد البرنامج المختار",
       sidePanelStep3: "الانطلاق",
       sidePanelStep3Desc: "تبدأ رحلتك التحويلية",
       sideQuote: "لا تُقاس الكلمات بعددها، بل بالأثر الذي تتركه في القلوب.",
@@ -299,7 +299,7 @@ export const T = {
         optional: "اختياري",
         // Step 1
         step1Title: "من أنت؟",
-        step1Sub: "اختر ما يصفك لنرشدك إلى أفضل برنامج",
+        step1Sub: "اختر ما يصفك لإكمال طلب التسجيل",
         audIndividual: "فرد",
         audIndividualDesc: "أريد تطوير نفسي",
         audTeacher: "معلم",
@@ -321,10 +321,7 @@ export const T = {
         goalOtherPlaceholder: "اكتب هدفك بإيجاز...",
         // Step 3
         step3Title: "اختر برنامجك",
-        step3Sub: "أو دعنا نرشّح لك البرنامج الأنسب",
-        recommendTitle: "دعنا نرشّح لك",
-        recommendDesc: "سنختار البرنامج الأمثل بناءً على إجاباتك",
-        recommendBadge: "مرشّح لك",
+        step3Sub: "اختر البرنامج الذي ترغب بالتسجيل فيه",
         // Step 4
         step4Title: "بيانات التواصل",
         step4Sub: "آخر خطوة — سنتواصل معك خلال 24 ساعة",
@@ -333,7 +330,7 @@ export const T = {
         // Validation
         errPickAudience: "يرجى اختيار من أنت",
         errPickGoal: "يرجى اختيار هدفك",
-        errPickProgram: "يرجى اختيار برنامج أو طلب التوصية",
+        errPickProgram: "يرجى اختيار البرنامج الذي ترغب بالتسجيل فيه",
         errFillContact: "يرجى تعبئة الاسم والهاتف والبريد",
         errInstitutionName: "يرجى إدخال اسم المؤسسة",
         // Summary chips on step 4
@@ -468,7 +465,7 @@ export const T = {
       testimonials: "Reviews",
       gallery: "Gallery",
       videos: "Videos",
-      events: "Upcoming In-Person Courses",
+      events: "In-Person Courses",
       courses: "Courses",
       cta: "Start Now",
       mobileCta: "Start Your Journey",
@@ -567,7 +564,7 @@ export const T = {
       privateLabel: "Private Training 1:1",
       privateDesc: "On demand — schedule and price determined later",
       contactForPrivate: "Contact Us",
-      upcomingEventsHeading: "Upcoming In-Person Courses",
+      upcomingEventsHeading: "In-Person Courses",
       upcomingEventsSub: "Upcoming classroom training dates — review the details and register here",
       noUpcomingEvents: "No in-person courses are currently announced — follow us for new dates",
       countriesHeading: "Countries where we offer in-person courses",
@@ -661,7 +658,7 @@ export const T = {
       sub: "Six clear steps from the moment you're interested to the moment you receive your certificate.",
       steps: [
         { title: "Register your interest", desc: "Fill out the registration form or book a free consultation." },
-        { title: "We recommend a program", desc: "Our team picks the right path for your level and goals." },
+        { title: "You choose your program", desc: "Review the program details and choose the path you want to join." },
         { title: "You start training", desc: "Attend in-person or online sessions with the trainer." },
         { title: "You practice", desc: "Real performance exercises with personal feedback." },
         { title: "You get evaluated", desc: "Professional assessment of your speech with growth recommendations." },
@@ -731,7 +728,7 @@ export const T = {
       sidePanelStep1: "Apply",
       sidePanelStep1Desc: "Submit your request now",
       sidePanelStep2: "Guidance",
-      sidePanelStep2Desc: "We match you to the right program",
+      sidePanelStep2Desc: "We confirm your selected program",
       sidePanelStep3: "Launch",
       sidePanelStep3Desc: "Your transformation begins",
       sideQuote: "Words are not measured by their count, but by the impression they leave on hearts.",
@@ -758,7 +755,7 @@ export const T = {
         optional: "optional",
         // Step 1
         step1Title: "Who are you?",
-        step1Sub: "Pick what describes you so we can guide you to the best program",
+        step1Sub: "Pick what describes you to continue your registration",
         audIndividual: "Individual",
         audIndividualDesc: "I want to develop myself",
         audTeacher: "Teacher",
@@ -780,10 +777,7 @@ export const T = {
         goalOtherPlaceholder: "Briefly describe your goal...",
         // Step 3
         step3Title: "Choose your program",
-        step3Sub: "Or let us recommend the best fit",
-        recommendTitle: "Let us recommend",
-        recommendDesc: "We'll pick the best program based on your answers",
-        recommendBadge: "Recommended for you",
+        step3Sub: "Choose the program you want to join",
         // Step 4
         step4Title: "Contact details",
         step4Sub: "Last step — we'll reach out within 24 hours",
@@ -792,7 +786,7 @@ export const T = {
         // Validation
         errPickAudience: "Please select who you are",
         errPickGoal: "Please choose your goal",
-        errPickProgram: "Please choose a program or request a recommendation",
+        errPickProgram: "Please choose the program you want to join",
         errFillContact: "Please fill in name, phone and email",
         errInstitutionName: "Please enter the institution name",
         // Summary chips on step 4

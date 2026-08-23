@@ -339,11 +339,42 @@
     box-shadow: 0 0 0 2px hsl(var(--accent) / .55), 0 4px 18px -4px hsl(var(--accent) / .35);
   }
 
-  /* Add safe-area-aware bottom padding so the mobile sticky CTA never
-     hides the last page section on phones. */
-  @media (max-width: 767px) {
-    main {
-      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  button,
+  [role="button"],
+  [role="tab"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Tablets and touch-enabled laptops need the same physical target size even
+   when their viewport crosses the mobile breakpoint. */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  [role="tab"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+}
+
+@layer utilities {
+  .platform-shell {
+    --platform-header-height: 4rem;
+    --lesson-subheader-height: 3.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .platform-shell {
+      --platform-header-height: 4.5rem;
     }
   }
 }
