@@ -17,7 +17,7 @@ import {
   discountCodesTable,
   orderEventsTable,
 } from "@workspace/db";
-import { db as _db, courseTrainersTable, trainerLearnerNotesTable, assignmentsTable, assignmentSubmissionsTable, lessonSessionAttendanceTable } from "@workspace/db";
+import { db as _db, courseTrainersTable, trainerLearnerNotesTable, assignmentsTable, assignmentSubmissionsTable, lessonSessionAttendanceTable, liveSessionsTable } from "@workspace/db";
 import { eq, desc, sql, asc, inArray, and, gte } from "drizzle-orm";
 import {
   isAdmin,
@@ -1670,7 +1670,9 @@ router.get("/admin/trainer/overview", async (req: Request, res: Response) => {
         .limit(50);
     }
 
-    // Lessons in scope, plus how many attendance entries each has
+    // A lesson only enters the trainer's schedule when it has a real
+    // live_sessions row. Recorded/asynchronous lessons never create a fake
+    // attendance task.
     const lessonsQ = db
       .select({
         id: lessonsTable.id,
@@ -1686,25 +1688,91 @@ router.get("/admin/trainer/overview", async (req: Request, res: Response) => {
       : await lessonsQ.where(inArray(lessonsTable.courseId, courseIds)).orderBy(asc(lessonsTable.sortOrder)).limit(200);
 
     const lessonIds = lessons.map((l) => l.id);
-    const attCounts = lessonIds.length
+    const activeEnrollmentCourses = courseIds.length
+      ? await db
+          .selectDistinct({ courseId: enrollmentsTable.courseId })
+          .from(enrollmentsTable)
+          .where(and(
+            inArray(enrollmentsTable.courseId, courseIds),
+            eq(enrollmentsTable.status, "active"),
+          ))
+      : [];
+    const activeCourseIds = new Set(activeEnrollmentCourses.map((row) => row.courseId));
+    const liveSessions = lessonIds.length
+      ? await db
+          .select({
+            id: liveSessionsTable.id,
+            lessonId: liveSessionsTable.lessonId,
+            scheduledAt: liveSessionsTable.scheduledAt,
+            durationMinutes: liveSessionsTable.durationMinutes,
+            status: liveSessionsTable.status,
+            zoomJoinUrl: liveSessionsTable.zoomJoinUrl,
+            recordingUrl: liveSessionsTable.recordingUrl,
+          })
+          .from(liveSessionsTable)
+          .where(inArray(liveSessionsTable.lessonId, lessonIds))
+          .orderBy(asc(liveSessionsTable.scheduledAt))
+      : [];
+
+    const nowMs = Date.now();
+    const endedSessions = liveSessions.filter((session) => {
+      if (session.status === "cancelled") return false;
+      if (session.status === "ended") return true;
+      const endMs = session.scheduledAt.getTime() + session.durationMinutes * 60_000;
+      return endMs < nowMs;
+    });
+    const endedLessonIds = endedSessions.map((session) => session.lessonId);
+    const attCounts = endedLessonIds.length
       ? await db
           .select({ lessonId: lessonSessionAttendanceTable.lessonId, c: sql<number>`count(*)::int` })
           .from(lessonSessionAttendanceTable)
-          .where(inArray(lessonSessionAttendanceTable.lessonId, lessonIds))
+          .where(inArray(lessonSessionAttendanceTable.lessonId, endedLessonIds))
           .groupBy(lessonSessionAttendanceTable.lessonId)
       : [];
     const cMap = new Map<string, number>();
     for (const r of attCounts) cMap.set(r.lessonId, r.c);
-    const lessonsNeedingAttendance = lessons
-      .map((l) => ({ ...l, attendanceCount: cMap.get(l.id) ?? 0 }))
-      .filter((l) => l.attendanceCount === 0)
+    const lessonMap = new Map(lessons.map((lesson) => [lesson.id, lesson]));
+    const lessonsNeedingAttendance = endedSessions
+      .filter((session) => {
+        const lesson = lessonMap.get(session.lessonId);
+        return Boolean(
+          lesson &&
+          activeCourseIds.has(lesson.courseId) &&
+          (cMap.get(session.lessonId) ?? 0) === 0,
+        );
+      })
+      .map((session) => ({
+        ...lessonMap.get(session.lessonId)!,
+        sessionId: session.id,
+        scheduledAt: session.scheduledAt,
+        attendanceCount: 0,
+      }))
       .slice(0, 20);
 
-    // "Upcoming lessons" — next published lessons across the trainer's courses.
-    const upcomingLessons = lessons
-      .filter((l) => true)
+    const upcomingLessons = liveSessions
+      .filter((session) => {
+        if (session.status === "cancelled" || session.status === "ended") return false;
+        const endMs = session.scheduledAt.getTime() + session.durationMinutes * 60_000;
+        return endMs >= nowMs;
+      })
       .slice(0, 10)
-      .map((l) => ({ id: l.id, titleAr: l.titleAr, courseId: l.courseId, courseTitleAr: l.courseTitleAr }));
+      .map((session) => {
+        const lesson = lessonMap.get(session.lessonId)!;
+        const startMs = session.scheduledAt.getTime();
+        const derivedStatus = session.status === "scheduled" && startMs <= nowMs ? "live" : session.status;
+        return {
+          id: lesson.id,
+          sessionId: session.id,
+          titleAr: lesson.titleAr,
+          courseId: lesson.courseId,
+          courseTitleAr: lesson.courseTitleAr,
+          scheduledAt: session.scheduledAt,
+          durationMinutes: session.durationMinutes,
+          status: derivedStatus,
+          zoomJoinUrl: session.zoomJoinUrl,
+          recordingUrl: session.recordingUrl,
+        };
+      });
 
     res.json({ pendingSubmissions, lessonsNeedingAttendance, upcomingLessons });
   } catch (err) {

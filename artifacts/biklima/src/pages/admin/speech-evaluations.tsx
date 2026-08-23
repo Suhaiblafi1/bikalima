@@ -283,7 +283,13 @@ function RubricEditor({
   );
 }
 
-export default function AdminSpeechEvaluationsPage() {
+export default function AdminSpeechEvaluationsPage({
+  standalone = true,
+  initialEvaluationId,
+}: {
+  standalone?: boolean;
+  initialEvaluationId?: string | null;
+} = {}) {
   const apiFetch = useApiFetch();
   const { user: me, role } = useMe();
   const [items, setItems] = useState<SpeechEvaluationRecord[]>([]);
@@ -318,6 +324,15 @@ export default function AdminSpeechEvaluationsPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  useEffect(() => {
+    if (!initialEvaluationId || !items.some((item) => item.id === initialEvaluationId)) return;
+    setExpandedId(initialEvaluationId);
+    requestAnimationFrame(() => {
+      document.querySelector(`[data-evaluation-id="${CSS.escape(initialEvaluationId)}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [initialEvaluationId, items]);
+
   const updateStatus = async (id: string, status: SpeechEvaluationRecord["status"]) => {
     const res = await apiFetch(`/admin/speech-evaluations/${id}`, {
       method: "PATCH",
@@ -344,8 +359,8 @@ export default function AdminSpeechEvaluationsPage() {
     return m;
   }, [items]);
 
-  return (
-    <AdminLayout activeKey="speech-evaluations">
+  const content = (
+    <>
       <h1 className="sr-only">طلبات تقييم الفيديو البشرية</h1>
       <Card>
         <CardContent className="p-5">
@@ -422,7 +437,7 @@ export default function AdminSpeechEvaluationsPage() {
                   const waPhone = i.phone.replace(/[^0-9]/g, "");
                   return (
                     <>
-                      <tr key={i.id} className="border-b border-border/30 hover:bg-muted/20">
+                      <tr key={i.id} data-evaluation-id={i.id} className={`border-b border-border/30 hover:bg-muted/20 ${initialEvaluationId === i.id ? "bg-primary/5" : ""}`}>
                         <td className="py-2 px-2 align-top">
                           <button
                             onClick={() => setExpandedId(isOpen ? null : i.id)}
@@ -547,6 +562,8 @@ export default function AdminSpeechEvaluationsPage() {
           </div>
         </CardContent>
       </Card>
-    </AdminLayout>
+    </>
   );
+
+  return standalone ? <AdminLayout activeKey="speech-evaluations">{content}</AdminLayout> : content;
 }

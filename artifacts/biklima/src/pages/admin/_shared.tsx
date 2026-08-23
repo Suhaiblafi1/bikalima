@@ -607,7 +607,15 @@ type AttStatus = "present" | "absent" | "excused";
 type LearnerRow = { userId: string; firstName: string | null; lastName: string | null; email: string };
 type AttendanceEntry = { id: string; lessonId: string; userId: string; status: AttStatus; note: string | null };
 
-export function AttendanceButton({ lesson }: { lesson: LessonRecord }) {
+export function AttendanceButton({
+  lesson,
+  onSaved,
+  triggerLabel,
+}: {
+  lesson: LessonRecord;
+  onSaved?: () => void;
+  triggerLabel?: string;
+}) {
   const apiBase = getApiBase();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -661,6 +669,7 @@ export function AttendanceButton({ lesson }: { lesson: LessonRecord }) {
       if (r.ok) {
         const d = await r.json();
         setSavedMsg(`تم حفظ ${d.written ?? 0} تغيير`);
+        onSaved?.();
         setTimeout(() => setSavedMsg(""), 3000);
       } else {
         setSavedMsg("فشل الحفظ");
@@ -671,14 +680,15 @@ export function AttendanceButton({ lesson }: { lesson: LessonRecord }) {
   return (
     <>
       <Button
-        variant="ghost"
+        variant={triggerLabel ? "outline" : "ghost"}
         size="sm"
         onClick={handleOpen}
-        className="h-6 w-6 p-0 text-emerald-600 shrink-0"
+        className={triggerLabel ? "min-h-11 gap-1.5 text-emerald-700 shrink-0" : "h-6 w-6 p-0 text-emerald-600 shrink-0"}
         title="حضور الجلسة"
         data-testid={`attendance-btn-${lesson.id}`}
       >
-        <Users className="w-3 h-3" />
+        <Users className="w-3.5 h-3.5" />
+        {triggerLabel}
       </Button>
       {open && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>

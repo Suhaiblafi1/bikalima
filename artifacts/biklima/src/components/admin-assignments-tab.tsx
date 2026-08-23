@@ -99,9 +99,15 @@ function fmtDate(iso: string | null) {
 export default function AdminAssignmentsTab({
   apiFetch,
   courses,
+  initialAssignmentId,
+  initialSubmissionId,
+  onEvaluated,
 }: {
   apiFetch: ApiFetch;
   courses: CourseOption[];
+  initialAssignmentId?: string | null;
+  initialSubmissionId?: string | null;
+  onEvaluated?: () => void;
 }) {
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +161,19 @@ export default function AdminAssignmentsTab({
     },
     [apiFetch],
   );
+
+  useEffect(() => {
+    if (!initialAssignmentId || loading || expandedId === initialAssignmentId) return;
+    if (!assignments.some((assignment) => assignment.id === initialAssignmentId)) return;
+    setExpandedId(initialAssignmentId);
+    void loadSubmissions(initialAssignmentId);
+  }, [assignments, expandedId, initialAssignmentId, loadSubmissions, loading]);
+
+  useEffect(() => {
+    if (!initialSubmissionId || submissionsLoading) return;
+    const target = document.querySelector(`[data-submission-id="${CSS.escape(initialSubmissionId)}"]`);
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [initialSubmissionId, submissions, submissionsLoading]);
 
   const toggleExpand = (id: string) => {
     if (expandedId === id) {
@@ -242,6 +261,7 @@ export default function AdminAssignmentsTab({
     if (res.ok && expandedId) {
       loadSubmissions(expandedId);
       fetchAssignments();
+      onEvaluated?.();
     }
   };
 
@@ -460,7 +480,8 @@ export default function AdminAssignmentsTab({
                             return (
                               <div
                                 key={s.id}
-                                className="border border-border/40 rounded-xl p-3 space-y-3"
+                                data-submission-id={s.id}
+                                className={`border border-border/40 rounded-xl p-3 space-y-3 ${initialSubmissionId === s.id ? "ring-2 ring-primary/30" : ""}`}
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                   <div>

@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 import { useApiFetch } from "@/pages/admin/_shared";
+import { AttendanceButton, type LessonRecord } from "@/pages/admin/_shared";
+import AdminAssignmentsTab from "@/components/admin-assignments-tab";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
 import { toast } from "@/hooks/use-toast";
 import { lazy, Suspense } from "react";
@@ -26,10 +28,40 @@ type PendingSubmission = {
 };
 type LessonNeedingAttendance = {
   id: string; titleAr: string; courseId: string; courseTitleAr: string | null;
+  sessionId: string; scheduledAt: string;
 };
 type UpcomingLesson = {
   id: string; titleAr: string; courseId: string | null; courseTitleAr: string | null;
+  sessionId: string; scheduledAt: string; durationMinutes: number;
+  status: "scheduled" | "live"; zoomJoinUrl: string; recordingUrl: string | null;
 };
+
+function attendanceLesson(lesson: LessonNeedingAttendance): LessonRecord {
+  return {
+    id: lesson.id,
+    courseId: lesson.courseId,
+    sectionId: null,
+    titleAr: lesson.titleAr,
+    titleEn: lesson.titleAr,
+    videoUrl: null,
+    videoType: "zoom",
+    durationMinutes: null,
+    sortOrder: 0,
+    isFreePreview: false,
+    isPublished: true,
+    descriptionAr: null,
+    descriptionEn: null,
+    resources: null,
+  };
+}
+
+function formatSessionDate(value: string): string {
+  return new Intl.DateTimeFormat("ar-JO", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Amman",
+  }).format(new Date(value));
+}
 
 export default function TrainerDashboardPage() {
   const apiFetch = useApiFetch();
@@ -48,9 +80,18 @@ export default function TrainerDashboardPage() {
   const [broadcastSubject, setBroadcastSubject] = useState("");
   const [broadcastBody, setBroadcastBody] = useState("");
   const [broadcastSending, setBroadcastSending] = useState(false);
+  const [focusedAssignmentId, setFocusedAssignmentId] = useState<string | null>(null);
+  const [focusedSubmissionId, setFocusedSubmissionId] = useState<string | null>(null);
+  const [focusedCourseId, setFocusedCourseId] = useState<string | null>(null);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const openSubmission = (submission: PendingSubmission) => {
+    setFocusedAssignmentId(submission.assignmentId);
+    setFocusedSubmissionId(submission.id);
+    requestAnimationFrame(() => scrollToSection("trainer-assignments-section"));
   };
 
   const sendBroadcast = useCallback(async () => {
@@ -102,7 +143,7 @@ export default function TrainerDashboardPage() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user) { navigate("/dashboard", { replace: true }); return; }
+    if (!user) { navigate("/login?redirect=%2Ftrainer", { replace: true }); return; }
     if (role === "admin") { navigate("/admin/overview", { replace: true }); return; }
     if (role !== "trainer") { navigate("/dashboard", { replace: true }); return; }
     void load();
@@ -132,7 +173,11 @@ export default function TrainerDashboardPage() {
   }
 
   const uniqueLearners = new Map<string, EnrollmentRow>();
-  for (const en of learners) if (!uniqueLearners.has(en.userId)) uniqueLearners.set(en.userId, en);
+  for (const en of learners) {
+    if (focusedCourseId && en.courseId !== focusedCourseId) continue;
+    if (!uniqueLearners.has(en.userId)) uniqueLearners.set(en.userId, en);
+  }
+  const focusedCourse = courses.find((course) => course.id === focusedCourseId) ?? null;
 
   return (
     <AppShell containerClassName="container mx-auto px-4 py-6" breadcrumb={[{ label: "لوحة المدرّب", href: "/trainer" }]}>
@@ -199,7 +244,7 @@ export default function TrainerDashboardPage() {
                           {s.courseTitleAr ? ` · ${s.courseTitleAr}` : ""}
                         </div>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => navigate("/admin/assignments")}>تقييم</Button>
+                      <Button size="sm" variant="outline" onClick={() => openSubmission(s)}>تقييم التسليم</Button>
                     </li>
                   ))}
                 </ul>
@@ -220,9 +265,11 @@ export default function TrainerDashboardPage() {
                         <div className="font-medium truncate">{l.titleAr}</div>
                         <div className="text-xs text-muted-foreground truncate">{l.courseTitleAr ?? "—"}</div>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/courses`)}>
-                        <AlertTriangle className="w-3 h-3 ms-1" /> تسجيل
-                      </Button>
+                      <AttendanceButton
+                        lesson={attendanceLesson(l)}
+                        triggerLabel="تسجيل الحضور"
+                        onSaved={() => void load()}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -241,9 +288,15 @@ export default function TrainerDashboardPage() {
                     <li key={l.id} className="flex items-center justify-between border border-border rounded-xl px-3 py-2">
                       <div className="min-w-0">
                         <div className="font-medium truncate">{l.titleAr}</div>
-                        <div className="text-xs text-muted-foreground truncate">{l.courseTitleAr ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground truncate">{l.courseTitleAr ?? "—"} · {formatSessionDate(l.scheduledAt)}</div>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/courses`)}>فتح</Button>
+                      <Button
+                        size="sm"
+                        variant={l.status === "live" ? "default" : "outline"}
+                        onClick={() => window.open(l.zoomJoinUrl, "_blank", "noopener,noreferrer")}
+                      >
+                        {l.status === "live" ? "انضم الآن" : "فتح الجلسة"}
+                      </Button>
                     </li>
                   ))}
                 </ul>
@@ -264,16 +317,47 @@ export default function TrainerDashboardPage() {
                         <div className="font-medium">{c.titleAr}</div>
                         <div className="text-xs text-muted-foreground">{c.enrollmentCount} طلاب مسجلون</div>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => navigate(`/admin/courses`)}>إدارة</Button>
+                      <Button
+                        size="sm"
+                        variant={focusedCourseId === c.id ? "default" : "outline"}
+                        onClick={() => setFocusedCourseId(c.id)}
+                      >
+                        {focusedCourseId === c.id ? "محددة" : "إدارة"}
+                      </Button>
                     </li>
                   ))}
                 </ul>
+              )}
+              {focusedCourse && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3" data-testid="trainer-course-workspace">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-primary">مساحة الدورة</p>
+                      <p className="mt-0.5 font-semibold">{focusedCourse.titleAr}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setFocusedCourseId(null)}>عرض الكل</Button>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <Button size="sm" variant="outline" onClick={() => scrollToSection("trainer-learners-section")}>طلاب الدورة</Button>
+                    <Button size="sm" variant="outline" onClick={() => scrollToSection("trainer-assignments-section")}>الواجبات والتقييم</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setBroadcastCourseId(focusedCourse.id);
+                        scrollToSection("trainer-broadcast-section");
+                      }}
+                    >
+                      إرسال إعلان
+                    </Button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {courses.length > 0 && (
-            <Card>
+            <Card id="trainer-broadcast-section" className="scroll-mt-36">
               <CardContent className="p-4 space-y-3">
                 <h2 className="font-semibold flex items-center gap-2"><Megaphone className="w-4 h-4 text-primary" /> إعلان لطلاب الدورة</h2>
                 <p className="text-xs text-muted-foreground">سيتم إرسال الرسالة كمحادثة لكل طالب مسجّل في الدورة المختارة.</p>
@@ -325,9 +409,29 @@ export default function TrainerDashboardPage() {
           </Card>
         </section>
 
+        <section id="trainer-assignments-section" className="scroll-mt-36 space-y-3" aria-labelledby="trainer-assignments-heading">
+          <div>
+            <h2 id="trainer-assignments-heading" className="text-xl font-bold">الواجبات والتقييم</h2>
+            <p className="mt-1 text-sm text-muted-foreground">أنشئ الواجبات وقيّم تسليمات طلاب دوراتك من مساحة المدرب نفسها.</p>
+          </div>
+          <AdminAssignmentsTab
+            apiFetch={apiFetch}
+            courses={courses.map((course) => ({ id: course.id, titleAr: course.titleAr, titleEn: course.titleEn }))}
+            initialAssignmentId={focusedAssignmentId}
+            initialSubmissionId={focusedSubmissionId}
+            onEvaluated={() => {
+              setFocusedSubmissionId(null);
+              void load();
+            }}
+          />
+        </section>
+
         <Card id="trainer-learners-section" className="scroll-mt-36">
           <CardContent className="p-4 space-y-3">
-            <h2 className="font-semibold flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary" /> طلابي</h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold flex items-center gap-2"><GraduationCap className="w-4 h-4 text-primary" /> {focusedCourse ? `طلاب ${focusedCourse.titleAr}` : "طلابي"}</h2>
+              {focusedCourse && <Button size="sm" variant="ghost" onClick={() => setFocusedCourseId(null)}>كل الطلاب</Button>}
+            </div>
             {uniqueLearners.size === 0 ? (
               <p className="text-sm text-muted-foreground">لا يوجد طلاب مسجّلون في دوراتك حاليًا.</p>
             ) : (
@@ -396,8 +500,8 @@ export default function TrainerDashboardPage() {
         <Card>
           <CardContent className="p-4 flex items-center gap-3 text-sm">
             <ClipboardList className="w-5 h-5 text-primary" />
-            <span>لإدارة الحضور والواجبات والشهادات استخدم القائمة الجانبية في لوحة الإدارة.</span>
-            <Button size="sm" variant="outline" className="ms-auto" onClick={() => navigate("/admin/courses")}>فتح لوحة الإدارة</Button>
+            <span>الحضور والواجبات والتواصل متاحة من مساحة المدرب نفسها.</span>
+            <Button size="sm" variant="outline" className="ms-auto" onClick={() => scrollToSection("trainer-today")}>العودة إلى مهام اليوم</Button>
           </CardContent>
         </Card>
       </div>
