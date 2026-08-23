@@ -53,6 +53,11 @@ test.describe.serial("learner happy path", () => {
         `${TEST_FIXTURES.course.titleEn}|${TEST_FIXTURES.course.titleAr.slice(0, 6)}`,
       ),
     );
+    await expect(page.getByText("تم اكتشاف أدوات المطوّر")).toHaveCount(0);
+    const selectionPolicy = await page.locator(".content-protected").evaluate((element) =>
+      getComputedStyle(element).userSelect,
+    );
+    expect(selectionPolicy).not.toBe("none");
     await page.close();
   });
 
