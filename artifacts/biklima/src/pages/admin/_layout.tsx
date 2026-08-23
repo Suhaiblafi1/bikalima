@@ -207,7 +207,7 @@ export function AdminLayout({
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 space-y-4" data-admin-workspace>{children}</main>
+        <section className="flex-1 min-w-0 space-y-4" data-admin-workspace aria-label="محتوى لوحة الإدارة">{children}</section>
       </div>
     </AppShell>
   );

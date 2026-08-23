@@ -1361,7 +1361,7 @@ export default function Dashboard() {
             </div>
           </nav>
 
-          <main className="flex-1 min-w-0">
+          <section className="flex-1 min-w-0" aria-label={isRtl ? "محتوى منصة الطالب" : "Learner workspace content"}>
             {activeSection && activeSection.tabs.length > 1 && (
               <nav className="mb-4 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-card p-2" aria-label={isRtl ? "تفاصيل القسم" : "Section pages"}>
                 {activeSection.tabs.map((tab) => {
@@ -1708,7 +1708,7 @@ export default function Dashboard() {
                 <StudentWorkbooksTab lang={lang} heading={t.tabs.workbooks} />
               </Suspense>
             )}
-          </main>
+          </section>
         </div>
 
         <nav

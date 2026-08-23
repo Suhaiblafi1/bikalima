@@ -935,7 +935,7 @@ export default function LearnPage() {
         </AnimatePresence>
 
         {/* Main content */}
-        <main className="flex-1 min-w-0 overflow-y-auto pb-24">
+        <section className="flex-1 min-w-0 overflow-y-auto pb-24" aria-label={isRtl ? "محتوى الدرس" : "Lesson content"}>
           {currentLesson ? (
             <div className="max-w-4xl mx-auto px-4 py-6">
               {PendingBanner}
@@ -1189,7 +1189,7 @@ export default function LearnPage() {
               )}
             </div>
           )}
-        </main>
+        </section>
       </div>
 
       {/* Bottom nav bar */}
