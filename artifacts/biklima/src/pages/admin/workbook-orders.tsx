@@ -67,18 +67,18 @@ export default function AdminWorkbookOrdersPage() {
           <h1 className="font-bold flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" /> طلبات الكراسات ({filtered.length})
           </h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative min-w-56">
+          <div className="flex w-full items-center gap-2 flex-wrap sm:w-auto">
+            <div className="relative w-full sm:min-w-56 sm:w-auto">
               <Search className="absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
               <label htmlFor="workbook-orders-search" className="sr-only">البحث في طلبات الكراسات</label>
               <Input id="workbook-orders-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث بالاسم أو البريد أو الكراسة" className="pe-9" />
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
+            <Button type="button" variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="min-h-11 sm:min-h-0">
               <Download className="h-4 w-4" /> تصدير CSV
             </Button>
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+              className={`min-h-11 px-3 py-1 rounded-full text-xs font-medium border transition-colors sm:min-h-0 ${
                 statusFilter === "all"
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background border-border text-muted-foreground hover:bg-muted"
@@ -90,7 +90,7 @@ export default function AdminWorkbookOrdersPage() {
               <button
                 key={s.value}
                 onClick={() => setStatusFilter(s.value)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                className={`min-h-11 px-3 py-1 rounded-full text-xs font-medium border transition-colors sm:min-h-0 ${
                   statusFilter === s.value
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background border-border text-muted-foreground hover:bg-muted"
@@ -101,7 +101,37 @@ export default function AdminWorkbookOrdersPage() {
             ))}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="space-y-3 md:hidden" data-testid="admin-workbook-orders-mobile">
+          {filtered.map((order) => (
+            <article key={order.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-bold">{order.buyerName}</h2>
+                  <p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{order.buyerEmail}</p>
+                </div>
+                <StatusBadge status={order.status} />
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">الكراسة</dt><dd className="mt-1 truncate font-bold">{order.workbookId}</dd></div>
+                <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">الطلب</dt><dd className="mt-1 font-bold">{order.format === "pdf" ? "رقمية" : "مطبوعة"} × {order.quantity}</dd></div>
+                <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">المجموع</dt><dd className="mt-1 font-bold text-primary">{order.totalPrice} JOD</dd></div>
+                <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">التاريخ</dt><dd className="mt-1 font-bold">{new Date(order.createdAt).toLocaleDateString("ar-SA")}</dd></div>
+              </dl>
+              <label className="mt-4 block text-xs font-bold" htmlFor={`workbook-order-status-${order.id}`}>تحديث حالة الطلب</label>
+              <select
+                id={`workbook-order-status-${order.id}`}
+                value={order.status}
+                onChange={(event) => updateStatus(order.id, event.target.value)}
+                className="mt-1 min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              >
+                {ORDER_STATUS_OPTIONS.map((status) => <option key={status.value} value={status.value}>{status.labelAr}</option>)}
+                {!ORDER_STATUS_OPTIONS.some((status) => status.value === order.status) && <option value={order.status}>{order.status}</option>}
+              </select>
+            </article>
+          ))}
+          {filtered.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">لا توجد طلبات</p>}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead><tr className="border-b text-muted-foreground">
               <th className="text-start py-2 px-3 font-medium">المشتري</th>

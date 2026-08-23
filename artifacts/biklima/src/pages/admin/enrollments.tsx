@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -147,7 +147,7 @@ export default function AdminEnrollmentsPage() {
           <button
             key={s.key}
             onClick={() => setSubTab(s.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`flex min-h-11 items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors sm:min-h-0 ${
               subTab === s.key
                 ? "bg-primary text-white"
                 : "bg-background border border-border text-muted-foreground hover:text-foreground"
@@ -162,7 +162,37 @@ export default function AdminEnrollmentsPage() {
       {subTab === "requests" && (
         <Card><CardContent className="p-5">
           <h2 className="font-bold flex items-center gap-2 mb-4"><FileText className="w-5 h-5 text-primary" /> طلبات التسجيل ({requests.length})</h2>
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden" data-testid="admin-enrollment-requests-mobile">
+            {requests.map((request) => {
+              const formData = (request.formData ?? {}) as Record<string, unknown>;
+              const audience = typeof formData.audience === "string" ? formData.audience : null;
+              const goal = typeof formData.goal === "string" ? formData.goal : null;
+              const goalText = typeof formData.goalText === "string" ? formData.goalText : null;
+              const audienceLabel = audience === "teacher" ? "معلّم" : audience === "parent" ? "ولي أمر" : audience === "institution" ? "مؤسسة" : audience === "individual" ? "فرد" : request.applicantType === "institution" ? "مؤسسة" : "فرد";
+              const goalLabel = goal === "goalConfidence" ? "بناء الثقة" : goal === "goalSpeak" ? "تحدّث بثقة" : goal === "goalCareer" ? "تطوير المسيرة" : goal === "goalTrain" ? "تدريب الآخرين" : goal === "goalTeach" ? "تعليم اللغة" : goal === "goalChild" ? "تنمية ابني" : goal === "goalOther" ? goalText || "أخرى" : goalText || "—";
+              return (
+                <article key={request.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0"><h2 className="truncate text-sm font-bold">{request.fullName}</h2><p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{request.email}</p></div>
+                    <StatusBadge status={request.status} />
+                  </div>
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">الفئة</dt><dd className="mt-1 font-bold">{audienceLabel}</dd></div>
+                    <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">الهدف</dt><dd className="mt-1 font-bold">{goalLabel}</dd></div>
+                    <div className="col-span-2 rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">البرنامج</dt><dd className="mt-1 font-bold">{request.programId}</dd></div>
+                  </dl>
+                  {(request.status === "pending" || request.status === "new") && (
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <Button className="min-h-11 bg-green-600 text-white hover:bg-green-700" onClick={() => updateRequestStatus(request.id, "approved")}><CheckCircle className="me-1.5 h-4 w-4" /> قبول</Button>
+                      <Button variant="outline" className="min-h-11 border-destructive/30 text-destructive" onClick={() => updateRequestStatus(request.id, "rejected")}><XCircle className="me-1.5 h-4 w-4" /> رفض</Button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+            {requests.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">لا توجد طلبات</p>}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead><tr className="border-b text-muted-foreground">
                 <th className="text-start py-2 px-3 font-medium">الاسم</th>
@@ -237,7 +267,7 @@ export default function AdminEnrollmentsPage() {
                 <button
                   key={s}
                   onClick={() => setLmsStatusFilter(s)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  className={`min-h-11 px-3 py-1 rounded-full text-xs font-medium border transition-colors sm:min-h-0 ${
                     lmsStatusFilter === s
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-background border-border text-muted-foreground hover:bg-muted"
@@ -246,7 +276,7 @@ export default function AdminEnrollmentsPage() {
                   {s === "all" ? "الكل" : s === "pending" ? "قيد المراجعة" : s === "paid" ? "مدفوع" : s === "refunded" ? "مسترد" : "ملغى"}
                 </button>
               ))}
-              <Button size="sm" variant="outline" onClick={() => exportCsv(filteredLmsOrders)} className="h-7 text-xs gap-1">
+              <Button size="sm" variant="outline" onClick={() => exportCsv(filteredLmsOrders)} className="min-h-11 text-xs gap-1 sm:min-h-7">
                 <FileText className="w-3 h-3" /> تصدير CSV
               </Button>
             </div>
@@ -254,26 +284,56 @@ export default function AdminEnrollmentsPage() {
 
           {/* Manual enroll */}
           <div className="mb-4">
-            <Button size="sm" variant="outline" onClick={() => setShowEnrollForm(!showEnrollForm)} className="gap-1 text-xs h-7">
+            <Button size="sm" variant="outline" onClick={() => setShowEnrollForm(!showEnrollForm)} className="min-h-11 gap-1 text-xs sm:min-h-7">
               <UserPlus className="w-3 h-3" /> تسجيل يدوي
             </Button>
             {showEnrollForm && (
               <div className="mt-2 flex flex-wrap gap-2 items-end">
-                <select value={enrollForm.userId} onChange={(e) => setEnrollForm({ ...enrollForm, userId: e.target.value })} className="border rounded-lg p-1.5 text-xs bg-background">
+                <select value={enrollForm.userId} onChange={(e) => setEnrollForm({ ...enrollForm, userId: e.target.value })} className="min-h-11 border rounded-lg p-1.5 text-xs bg-background">
                   <option value="">اختر المستخدم...</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
                 </select>
-                <select value={enrollForm.courseId} onChange={(e) => setEnrollForm({ ...enrollForm, courseId: e.target.value })} className="border rounded-lg p-1.5 text-xs bg-background">
+                <select value={enrollForm.courseId} onChange={(e) => setEnrollForm({ ...enrollForm, courseId: e.target.value })} className="min-h-11 border rounded-lg p-1.5 text-xs bg-background">
                   <option value="">اختر الدورة...</option>
                   {courses.map((c) => <option key={c.id} value={c.id}>{c.titleAr}</option>)}
                 </select>
-                <Button size="sm" onClick={enrollUser} disabled={!enrollForm.userId || !enrollForm.courseId} className="bg-primary text-white h-7 text-xs">تسجيل</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowEnrollForm(false)} className="h-7 text-xs">إلغاء</Button>
+                <Button size="sm" onClick={enrollUser} disabled={!enrollForm.userId || !enrollForm.courseId} className="min-h-11 bg-primary text-white text-xs">تسجيل</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowEnrollForm(false)} className="min-h-11 text-xs">إلغاء</Button>
               </div>
             )}
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden" data-testid="admin-course-orders-mobile">
+            {filteredLmsOrders.map((order) => (
+              <article key={order.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0"><h2 className="truncate text-sm font-bold">{order.buyerName}</h2><p className="mt-1 truncate text-xs text-muted-foreground">{order.courseTitle || "دورة غير محددة"}</p></div>
+                  <StatusBadge status={order.status} />
+                </div>
+                <div className="mt-3 space-y-1 text-xs text-muted-foreground" dir="ltr"><p className="truncate">{order.buyerEmail}</p>{order.buyerPhone && <p>{order.buyerPhone}</p>}</div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">المبلغ</dt><dd className="mt-1 font-bold text-primary">{order.amount !== null ? `${order.amount} JOD` : "—"}</dd></div>
+                  <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">التاريخ</dt><dd className="mt-1 font-bold">{new Date(order.createdAt).toLocaleDateString("ar-SA")}</dd></div>
+                </dl>
+                <div className="mt-4">
+                  {order.status === "pending" ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button className="min-h-11 bg-green-600 text-white hover:bg-green-700" onClick={() => updateLmsOrderStatus(order.id, "paid")}><CheckCircle className="me-1.5 h-4 w-4" /> قبول</Button>
+                      <Button variant="outline" className="min-h-11 border-destructive/30 text-destructive" onClick={() => updateLmsOrderStatus(order.id, "cancelled")}><XCircle className="me-1.5 h-4 w-4" /> رفض</Button>
+                    </div>
+                  ) : order.status === "paid" && order.paymentIntentId ? (
+                    <Button variant="outline" className="min-h-11 w-full text-amber-700" onClick={() => refundOrder(order)}><RotateCcw className="me-1.5 h-4 w-4" /> استرداد الدفعة</Button>
+                  ) : (
+                    <select value={order.status} onChange={(event) => updateLmsOrderStatus(order.id, event.target.value)} aria-label={`حالة طلب ${order.buyerName}`} className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm">
+                      <option value="pending">قيد المراجعة</option><option value="awaiting_payment">بانتظار الدفع</option><option value="paid">مدفوع</option><option value="failed">فشل</option><option value="expired">منتهي</option><option value="cancelled">ملغى</option><option value="partially_refunded">مسترد جزئياً</option><option value="refunded">مسترد</option>
+                    </select>
+                  )}
+                </div>
+              </article>
+            ))}
+            {filteredLmsOrders.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">لا توجد طلبات</p>}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead><tr className="border-b text-muted-foreground">
                 <th className="text-start py-2 px-3 font-medium">التاريخ</th>
@@ -348,9 +408,9 @@ export default function AdminEnrollmentsPage() {
                   value={progressSearch}
                   onChange={(e) => setProgressSearch(e.target.value)}
                   placeholder="بحث بالاسم/الإيميل/الدورة..."
-                  className="text-xs h-8 w-full sm:w-64"
+                  className="min-h-11 text-xs w-full sm:min-h-8 sm:w-64"
                 />
-                <Button size="sm" variant="outline" onClick={fetchProgress} className="h-8 text-xs gap-1 shrink-0">
+                <Button size="sm" variant="outline" onClick={fetchProgress} className="min-h-11 text-xs gap-1 shrink-0 sm:min-h-8">
                   <TrendingUp className="w-3.5 h-3.5" /> تحديث
                 </Button>
               </div>
@@ -361,7 +421,24 @@ export default function AdminEnrollmentsPage() {
                 {progress.length === 0 ? "لا توجد تسجيلات بعد." : "لا توجد نتائج مطابقة."}
               </div>
             ) : (
-              <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <>
+              <div className="space-y-3 md:hidden" data-testid="admin-student-progress-mobile">
+                {filteredProgress.map((student) => {
+                  const fullName = [student.userFirstName, student.userLastName].filter(Boolean).join(" ") || "طالب";
+                  const notesOpen = openProgressNotes === student.userId;
+                  return (
+                    <article key={student.enrollmentId} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-sm font-bold">{fullName}</h3><p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{student.userEmail || "—"}</p></div><span className="shrink-0 text-sm font-bold text-primary">{student.progressPct}%</span></div>
+                      <p className="mt-3 truncate text-xs font-bold">{student.courseTitleAr || student.courseTitleEn || "—"}</p>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${student.progressPct === 100 ? "bg-green-600" : "bg-primary"}`} style={{ width: `${student.progressPct}%` }} /></div>
+                      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>{student.completedLessons} من {student.totalLessons} درس</span><span>{student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString("ar-EG") : "لا يوجد نشاط"}</span></div>
+                      {(role === "trainer" || role === "admin") && <Button variant="outline" className="mt-4 min-h-11 w-full" onClick={() => setOpenProgressNotes(notesOpen ? null : student.userId)} aria-expanded={notesOpen}><StickyNote className="me-1.5 h-4 w-4" />{notesOpen ? "إغلاق الملاحظات" : "ملاحظاتي على الطالب"}</Button>}
+                      {notesOpen && <div className="mt-4 border-t border-border pt-4"><TrainerNotesPanel learnerId={student.userId} courseId={student.courseId} currentTrainerId={me?.id ?? null} /></div>}
+                    </article>
+                  );
+                })}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-xs sm:text-sm">
                   <thead className="bg-muted/40 text-right">
                     <tr>
@@ -379,7 +456,7 @@ export default function AdminEnrollmentsPage() {
                       const fullName = [p.userFirstName, p.userLastName].filter(Boolean).join(" ") || "—";
                       const last = p.lastActivityAt ? new Date(p.lastActivityAt).toLocaleDateString("ar-EG") : "—";
                       return (
-                        <>
+                        <Fragment key={p.enrollmentId}>
                         <tr key={p.enrollmentId} className="border-t border-border hover:bg-muted/20 transition-colors">
                           <td className="px-3 py-2.5">
                             <div className="font-medium">{fullName}</div>
@@ -436,12 +513,13 @@ export default function AdminEnrollmentsPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                        </Fragment>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </CardContent>
         </Card>
