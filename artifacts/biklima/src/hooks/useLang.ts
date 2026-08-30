@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
 import type { Lang } from "../translations";
 
-const ARABIC_TZ = new Set([
-  "Asia/Amman","Asia/Riyadh","Asia/Dubai","Asia/Kuwait","Asia/Qatar",
-  "Asia/Bahrain","Asia/Muscat","Africa/Cairo","Asia/Baghdad","Asia/Damascus",
-  "Asia/Beirut","Asia/Gaza","Asia/Hebron","Asia/Aden","Africa/Tripoli",
-  "Africa/Khartoum","Africa/Juba",
-]);
-
 const LANG_EVENT = "bikalima-lang-change";
 
+// Arabic is the site's default language: visitors who have never picked one
+// get Arabic regardless of where they are browsing from. English is only ever
+// reached through an explicit choice in the language switcher.
 function detectLang(): Lang {
   try {
     const stored = localStorage.getItem("biklima-lang") as Lang | null;
     if (stored && (["ar", "en"] as string[]).includes(stored)) return stored as Lang;
   } catch {}
-  const tz = (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "") || "";
-  if (ARABIC_TZ.has(tz)) return "ar";
-  return "en";
+  return "ar";
 }
 
 export function useLang() {
