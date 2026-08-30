@@ -103,7 +103,7 @@ export default function CertificateDetailPage() {
                   <h2 className="font-bold">شارك إنجازك برابط موثّق</h2>
                   <p className="mt-1 text-xs text-muted-foreground">يمكن لأي جهة فتح الرابط والتحقق من بيانات الشهادة مباشرة.</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2" data-testid="certificate-share-actions">
                   <Button type="button" size="sm" onClick={() => void shareCertificate()} className="gap-2 rounded-full">
                     {copied ? <Check className="h-4 w-4" /> : canNativeShare ? <Share2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {copied ? "تم نسخ الرابط" : "مشاركة"}

@@ -5,9 +5,24 @@ import { TEST_FIXTURES } from "../fixtures/data";
  * Production-hardening spec. These tests run against the live dev server
  * (no DB writes, no auth fixtures) and exercise the public surface that
  * the security pass added: CSP / no-X-Powered-By, CORS allowlist, CSRF
- * enforcement, the checkout preview-before-login experience, sitemap and
- * robots files, and an admin route returning 401 without a session.
+ * enforcement, the checkout login redirect, sitemap and robots files, and
+ * an admin route returning 401 without a session.
  */
+
+/**
+ * Prime the CSRF cookie on this request context and return the matching
+ * token. csrfProtection guards every unsafe write, including
+ * unauthenticated POSTs, so a test that wants to reach request validation
+ * has to present the token — otherwise it is rejected with 403 first and
+ * never exercises the validator it is asserting on.
+ */
+async function csrfToken(
+  request: import("@playwright/test").APIRequestContext,
+): Promise<string> {
+  const res = await request.get("/api/csrf");
+  return (await res.json()).token as string;
+}
+
 test.describe("production hardening", () => {
   test("API returns hardened response headers", async ({ request }) => {
     const res = await request.get("/api/healthz");
@@ -77,11 +92,15 @@ test.describe("production hardening", () => {
   });
 
   test("analytics endpoint rejects unknown events and personal-data-shaped payloads", async ({ request }) => {
+    const token = await csrfToken(request);
+    const headers = { "Content-Type": "application/json", "x-csrf-token": token };
     const unknown = await request.post("/api/analytics/events", {
+      headers,
       data: { anonymousId: crypto.randomUUID(), eventName: "email_collected", path: "/", properties: { email: "person@example.com" } },
     });
     expect(unknown.status()).toBe(400);
     const personalData = await request.post("/api/analytics/events", {
+      headers,
       data: { anonymousId: crypto.randomUUID(), eventName: "page_view", path: "/", properties: { email: "person@example.com" } },
     });
     expect(personalData.status()).toBe(400);
@@ -153,6 +172,7 @@ test.describe("production hardening", () => {
 
   test("public enrollment rejects unbounded or unsafe input", async ({ request }) => {
     const response = await request.post("/api/enroll", {
+      headers: { "Content-Type": "application/json", "x-csrf-token": await csrfToken(request) },
       data: {
         type: "individual",
         name: "Test learner",
@@ -171,6 +191,7 @@ test.describe("production hardening", () => {
 
   test("workbook order rejects client-controlled quantity and totals", async ({ request }) => {
     const response = await request.post("/api/workbook-order", {
+      headers: { "Content-Type": "application/json", "x-csrf-token": await csrfToken(request) },
       data: {
         workbookId: "core",
         workbookTitle: "Test workbook",
@@ -188,14 +209,26 @@ test.describe("production hardening", () => {
   });
 
   test("rate-limit responses include Retry-After header", async ({ request }) => {
-    // Hammer login from this fresh request context until we hit the limit;
-    // verify the 429 response includes a Retry-After header in seconds.
+    // Hammer login until we hit the limit; verify the 429 response includes a
+    // Retry-After header in seconds.
+    //
+    // The login limiter buckets failed attempts per client IP for a full
+    // minute. The whole suite runs serially from one IP, so exhausting the
+    // real bucket here would 429 every later test that logs in, for up to a
+    // minute. Present a documentation-range IP (RFC 5737) instead: the
+    // api-server runs with `trust proxy = 1`, so X-Forwarded-For becomes
+    // req.ip and this test burns a bucket nothing else shares.
+    const RATE_LIMIT_PROBE_IP = "203.0.113.99";
     const csrf = await request.get("/api/csrf");
     const token = (await csrf.json()).token as string;
     let last: import("@playwright/test").APIResponse | null = null;
     for (let i = 0; i < 25; i++) {
       last = await request.post("/api/auth/login", {
-        headers: { "Content-Type": "application/json", "x-csrf-token": token },
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": token,
+          "X-Forwarded-For": RATE_LIMIT_PROBE_IP,
+        },
         data: { email: "no-such-user@example.com", password: "wrong-password" },
       });
       if (last.status() === 429) break;
@@ -229,17 +262,16 @@ test.describe("production hardening", () => {
     await expect(page.locator("form").first()).toBeVisible({ timeout: 5000 });
   });
 
-  test("checkout shows course preview + login CTA when not authenticated", async ({ page }) => {
-    await page.goto("/checkout?slug=influential-speaker");
-    // Login gate appears (preview-before-login)
-    await expect(page.getByTestId("checkout-login-gate")).toBeVisible();
-    const cta = page.getByTestId("checkout-login-cta");
-    await expect(cta).toBeVisible();
-    // Course summary visible BEFORE auth (price + title)
-    await expect(page.getByTestId("checkout-course-summary")).toBeVisible();
-    // The login CTA goes to /login with a redirect param back to checkout
-    await cta.click();
+  test("checkout sends an unauthenticated visitor to login and back", async ({ page }) => {
+    // Checkout redirects visitors who aren't signed in straight to /login,
+    // carrying a redirect param that returns them to this exact checkout URL.
+    // Use the seeded course: the page renders an "unavailable" card instead
+    // when the slug lookup 404s, so a production-only slug would test nothing.
+    const checkoutPath = `/checkout?slug=${TEST_FIXTURES.course.slug}`;
+    await page.goto(checkoutPath);
     await page.waitForURL(/\/login\?redirect=/, { timeout: 5000 });
-    expect(page.url()).toMatch(/redirect=%2Fcheckout%3Fslug%3Dinfluential-speaker/);
+    expect(page.url()).toContain(`redirect=${encodeURIComponent(checkoutPath)}`);
+    // The login form is what greets them there.
+    await expect(page.locator("form").first()).toBeVisible();
   });
 });

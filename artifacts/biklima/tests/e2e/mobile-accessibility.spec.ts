@@ -33,7 +33,11 @@ test("reduced-motion preference is respected", async ({ browser, baseURL }) => {
   const page = await context.newPage();
   await page.goto(baseURL!);
   const duration = await page.locator("body").evaluate((element) => getComputedStyle(element).transitionDuration);
-  expect(duration).toBe("0.00001s");
+  // The stylesheet collapses transitions to 0.01ms under reduced motion.
+  // Assert the value rather than its spelling: Chromium serializes that
+  // same computed duration as "0.00001s" on some versions and "1e-05s" on
+  // others, and either one satisfies the preference.
+  expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.001);
   await context.close();
 });
 

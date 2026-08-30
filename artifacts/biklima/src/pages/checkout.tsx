@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Mail, Phone, AlertCircle, ArrowRight, Home, LogIn, BadgePercent, CheckCircle2, Loader2, X } from "lucide-react";
+import { User, Mail, Phone, AlertCircle, ArrowRight, Home, BadgePercent, CheckCircle2, Loader2, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -318,8 +318,6 @@ export default function CheckoutPage() {
     );
   }
 
-  const loginRedirect = `/login?redirect=${encodeURIComponent(`/checkout?slug=${slug}`)}`;
-
   return (
     <AppShell
       containerClassName=""
@@ -352,33 +350,7 @@ export default function CheckoutPage() {
 
         {courseSummary}
 
-        {!isAuthenticated ? (
-          <Card data-testid="checkout-login-gate">
-            <CardContent className="p-6 sm:p-8 space-y-5 text-center">
-              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <LogIn className="w-6 h-6 text-primary" />
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold">
-                {lang === "ar" ? "خطوة واحدة قبل الدفع" : "One step before payment"}
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {lang === "ar"
-                  ? "سجّل الدخول أو أنشئ حسابك لإتمام التسجيل في هذه الدورة. سنُعيدك إلى نفس الصفحة فورًا بعد الدخول."
-                  : "Sign in or create your account to complete enrollment. We'll bring you right back to this page after login."}
-              </p>
-              <Button
-                className="w-full rounded-full font-bold"
-                onClick={() => navigate(loginRedirect)}
-                data-testid="checkout-login-cta"
-              >
-                {lang === "ar" ? "تسجيل الدخول لإكمال الطلب" : "Sign in to complete order"}
-              </Button>
-              <Button variant="ghost" onClick={() => navigate(programPage)} className="w-full">
-                {lang === "ar" ? "العودة للدورة" : "Back to course"}
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
+        {isAuthenticated && (
           <Card>
             <CardContent className="p-6 space-y-5">
               <p className="text-sm text-muted-foreground leading-relaxed">

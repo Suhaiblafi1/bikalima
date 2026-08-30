@@ -47,7 +47,11 @@ test("public certificate page offers verified sharing actions", async ({ anon })
   const page = await anon.newPage();
   await page.goto(`/certificates/${encodeURIComponent(TEST_FIXTURES.certificate.code)}`);
   await expect(page.getByRole("heading", { name: "شارك إنجازك برابط موثّق" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /LinkedIn/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /واتساب/ })).toBeVisible();
+  // Scope to the share card: the site footer carries its own LinkedIn and
+  // WhatsApp links, so an unscoped role lookup matches two elements and
+  // trips Playwright's strict mode.
+  const shareActions = page.getByTestId("certificate-share-actions");
+  await expect(shareActions.getByRole("link", { name: /LinkedIn/ })).toBeVisible();
+  await expect(shareActions.getByRole("link", { name: /واتساب/ })).toBeVisible();
   await page.close();
 });
