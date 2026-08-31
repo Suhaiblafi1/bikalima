@@ -542,6 +542,27 @@ workbookOrderRouter.get("/my/workbooks", async (req: Request, res: Response) => 
       : [];
     const catalogById = new Map(catalog.map((w) => [w.id, w]));
 
+    // How many pages a buyer can actually read. A workbook whose pages have
+    // not been authored yet is still owned and still downloadable, but the
+    // reader would open on nothing — so the client uses this to decide
+    // whether offering "Read" is honest.
+    const { sql: rawSql } = await import("drizzle-orm");
+    const { workbookPagesTable } = await import("@workspace/db");
+    const pageCounts = new Map<string, number>();
+    if (workbookIds.length) {
+      const rows = await db
+        .select({ workbookId: workbookPagesTable.workbookId, n: rawSql<number>`count(*)::int` })
+        .from(workbookPagesTable)
+        .where(
+          and(
+            inArray(workbookPagesTable.workbookId, workbookIds),
+            eq(workbookPagesTable.isPublished, true),
+          ),
+        )
+        .groupBy(workbookPagesTable.workbookId);
+      for (const r of rows) pageCounts.set(r.workbookId, r.n);
+    }
+
     const seen = new Set<string>();
     const items: Array<Record<string, unknown>> = [];
     for (const o of orders) {
@@ -561,6 +582,7 @@ workbookOrderRouter.get("/my/workbooks", async (req: Request, res: Response) => 
         descriptionEn: wb?.descriptionEn ?? null,
         coverImageUrl: wb?.coverImageUrl ?? null,
         samplePdfUrl: wb?.samplePdfUrl ?? null,
+        publishedPages: pageCounts.get(o.workbookId) ?? 0,
       });
     }
 

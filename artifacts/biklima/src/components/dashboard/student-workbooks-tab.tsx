@@ -92,7 +92,7 @@ export default function StudentWorkbooksTab({ lang, heading }: { lang: Lang; hea
                     <p className="font-bold text-sm">{title || (isRtl ? "كرّاسة" : "Workbook")}</p>
                     {desc && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{desc}</p>}
                     <div className="mt-auto pt-3 flex items-center gap-2">
-                      {w.slug && (
+                      {w.slug && (w.publishedPages ?? 0) > 0 && (
                         <button
                           onClick={() => navigate(`/workbooks/${w.slug}/read`)}
                           className="text-xs px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-1.5 font-medium"

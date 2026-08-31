@@ -114,6 +114,8 @@ export type DashOwnedWorkbook = {
   samplePdfUrl: string | null;
   format: string;
   status: string;
+  /** Published pages the buyer can read. 0 means the reader has nothing to show. */
+  publishedPages?: number;
 };
 
 export type DashBadge = {
