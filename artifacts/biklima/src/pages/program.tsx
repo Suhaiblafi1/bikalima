@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-fetch";
+import { ProgramProof } from "@/components/program-proof";
 import {
   useStructuredData,
   graph,
@@ -695,6 +696,11 @@ export default function ProgramPage() {
                     <p className="text-xs text-muted-foreground leading-relaxed">{t.reassure}</p>
                   )}
                 </div>
+
+                {/* Someone else's word and an answer to "what if it doesn't
+                    work for me" — the page carried neither, next to a price
+                    it repeats four times. */}
+                {!isSchoolsOnly && <ProgramProof />}
               </TabsContent>
 
               {/* FAQ */}
