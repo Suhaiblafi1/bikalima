@@ -1,0 +1,70 @@
+name: Grant admin access (production)
+
+# Roles live in the database, never in a config file or an email allow-list,
+# so the only way to create the first admin is to write the row. This does it
+# without the production URL leaving GitHub Secrets, and GitHub records who
+# ran it and when.
+#
+# Leave `email` empty to just list the accounts that already have a role
+# above student — useful for answering "who is admin already?".
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Email of the account to promote. Leave empty to only LIST existing admins."
+        required: false
+        default: ""
+      confirm:
+        description: 'To promote, type "grant". Ignored when listing.'
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grant-admin
+  cancel-in-progress: false
+
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Check the confirmation
+        run: |
+          if [ -n "${{ inputs.email }}" ] && [ "${{ inputs.confirm }}" != "grant" ]; then
+            echo "::error::An email was given but the confirmation is missing — type exactly: grant"
+            exit 1
+          fi
+          if [ -z "${{ inputs.email }}" ]; then
+            echo "No email given — listing existing admins only, nothing will be changed."
+          fi
+
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Same pre-flight as the migration workflow: refuse a URL that cannot
+      # work and name the broken part, rather than failing mid-statement.
+      - name: Check the connection
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        # pnpm links `pg` under lib/db only, so resolve from there.
+        working-directory: lib/db
+        run: node check-connection.mjs
+
+      - name: List or grant
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          ADMIN_EMAIL: ${{ inputs.email }}
+          MODE: ${{ inputs.email != '' && 'grant' || 'list' }}
+        working-directory: lib/db
+        run: node grant-admin.mjs

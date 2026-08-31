@@ -38,7 +38,6 @@ export default function CheckoutPage() {
   const [coursePrice, setCoursePrice] = useState<number | null>(null);
   const [deliveryFormat, setDeliveryFormat] = useState<"recorded" | "zoom" | "blended">("recorded");
   const [availableFormats, setAvailableFormats] = useState<Array<"recorded" | "zoom" | "blended">>(["recorded"]);
-  const [formatPrices, setFormatPrices] = useState<Record<"recorded" | "zoom" | "blended", number | null>>({ recorded: null, zoom: null, blended: null });
   const [courseLoading, setCourseLoading] = useState(!!slug);
   const [courseError, setCourseError] = useState(
     !slug ? (lang === "ar" ? "لم يتم تحديد دورة. يرجى العودة واختيار دورة." : "No course selected. Please go back and choose a course.") : ""
@@ -90,7 +89,6 @@ export default function CheckoutPage() {
             blended: data.course.blendedPrice ?? data.course.price ?? null,
           };
           setAvailableFormats(formats);
-          setFormatPrices(prices);
           setDeliveryFormat(initialFormat);
           setCoursePrice(prices[initialFormat]);
           setAppliedDiscount(null);
@@ -232,7 +230,12 @@ export default function CheckoutPage() {
           {lang === "ar" ? "الدورة المختارة" : "Selected Course"}
         </p>
         <p className="font-bold text-foreground" data-testid="checkout-course-title">{courseTitle}</p>
-        <p className="text-xs text-primary font-semibold mt-1">{formatLabel(deliveryFormat)}</p>
+        {/* The buyer no longer picks a format, so name one only when the
+            course offers exactly one — otherwise this would advertise an
+            arbitrary auto-selection as though it were their choice. */}
+        {availableFormats.length === 1 && (
+          <p className="text-xs text-primary font-semibold mt-1">{formatLabel(deliveryFormat)}</p>
+        )}
       </div>
       {coursePrice !== null && (
         <div className="text-end shrink-0">
@@ -376,33 +379,6 @@ export default function CheckoutPage() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4" aria-describedby={error ? "checkout-error" : undefined}>
-                {availableFormats.length > 1 && (
-                  <fieldset className="space-y-2">
-                    <legend className="text-sm font-medium text-foreground">{lang === "ar" ? "اختر صيغة الدراسة" : "Choose learning format"}</legend>
-                    <div className="grid sm:grid-cols-3 gap-2">
-                      {availableFormats.map((format) => (
-                        <label key={format} className={`rounded-xl border p-3 cursor-pointer transition-colors ${deliveryFormat === format ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
-                          <input
-                            className="sr-only"
-                            type="radio"
-                            name="delivery-format"
-                            value={format}
-                            checked={deliveryFormat === format}
-                            onChange={() => {
-                              setDeliveryFormat(format);
-                              setCoursePrice(formatPrices[format]);
-                              setAppliedDiscount(null);
-                              setDiscountCode("");
-                              setDiscountError("");
-                            }}
-                          />
-                          <span className="block text-sm font-semibold">{formatLabel(format)}</span>
-                          {formatPrices[format] != null && <span className="block text-xs text-muted-foreground mt-1">{formatPrices[format]} JOD</span>}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
                 <div className="space-y-1.5">
                   <label htmlFor="checkout-name" className="text-sm font-medium flex items-center gap-1.5 text-foreground">
                     <User className="w-4 h-4 text-primary" />
