@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useInView } from "framer-motion";
 import { Users, Globe, BookOpen, GraduationCap } from "lucide-react";
 import { useLang } from "@/hooks/useLang";
 import { T } from "@/translations";
+import {
+  PUBLISHED_FIGURES,
+  formatFigure,
+  type PublishedFigureKey,
+} from "@/publishedFigures";
 
-const TARGETS = {
-  trainees: 850,
-  countries: 7,
-  programs: 4,
-  trainers: 32,
-} as const;
+// The figures live in one place now — this section and the impact page were
+// each carrying their own copy, and the trainee count differed between them.
+const TARGETS = Object.fromEntries(
+  PUBLISHED_FIGURES.map((f) => [f.key, f.value]),
+) as Record<PublishedFigureKey, number>;
 
 function useCountUp(target: number, run: boolean, durationMs = 1600) {
   const [value, setValue] = useState(0);
@@ -30,10 +34,6 @@ function useCountUp(target: number, run: boolean, durationMs = 1600) {
   return value;
 }
 
-function formatNumber(n: number, lang: "ar" | "en"): string {
-  return new Intl.NumberFormat(lang === "ar" ? "ar-EG" : "en-US").format(n);
-}
-
 export function StatsSection() {
   const { lang } = useLang();
   const t = T[lang].stats;
@@ -45,12 +45,19 @@ export function StatsSection() {
   const programs = useCountUp(TARGETS.programs, inView);
   const trainers = useCountUp(TARGETS.trainers, inView);
 
-  const items = [
-    { icon: <Users className="w-7 h-7" />, value: trainees, suffix: "+", label: t.trainees },
-    { icon: <Globe className="w-7 h-7" />, value: countries, suffix: "", label: t.countries },
-    { icon: <BookOpen className="w-7 h-7" />, value: programs, suffix: "", label: t.programs },
-    { icon: <GraduationCap className="w-7 h-7" />, value: trainers, suffix: "+", label: t.trainers },
-  ];
+  const ICONS: Record<PublishedFigureKey, ReactNode> = {
+    trainees: <Users className="w-7 h-7" />,
+    countries: <Globe className="w-7 h-7" />,
+    programs: <BookOpen className="w-7 h-7" />,
+    trainers: <GraduationCap className="w-7 h-7" />,
+  };
+  const counted: Record<PublishedFigureKey, number> = { trainees, countries, programs, trainers };
+  const items = PUBLISHED_FIGURES.map((f) => ({
+    icon: ICONS[f.key],
+    value: counted[f.key],
+    suffix: f.suffix,
+    label: t[f.key],
+  }));
 
   return (
     <section
@@ -99,7 +106,7 @@ export function StatsSection() {
                 className="font-serif text-2xl sm:text-4xl md:text-5xl font-bold leading-none mb-1 md:mb-2 tabular-nums"
                 data-testid={`stat-value-${i}`}
               >
-                {formatNumber(item.value, lang)}
+                {formatFigure(item.value, lang)}
                 <span className="text-accent">{item.suffix}</span>
               </div>
               <p className="text-xs sm:text-sm text-white/85 leading-snug font-medium">{item.label}</p>

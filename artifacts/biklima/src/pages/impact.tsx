@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Quote, Users, Mic2, ShieldCheck, TrendingUp, Sparkles, MessageCircle } from "lucide-react";
+import { BookOpen, Globe, GraduationCap, Quote, Users, Mic2, ShieldCheck, TrendingUp, Sparkles, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useLang } from "@/hooks/useLang";
 import { SiteHeader } from "@/components/site-header";
@@ -9,6 +9,8 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/pages/admin/_shared";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { T } from "@/translations";
+import { PUBLISHED_FIGURES, formatFigure } from "@/publishedFigures";
 
 type ImpactStat = {
   key: string;
@@ -29,6 +31,25 @@ type ImpactStat = {
  * An overridden zero is kept: someone typed it on purpose, and overruling a
  * deliberate choice is not this component's business.
  */
+/**
+ * The published figures, shaped as stats so the same card renders them.
+ *
+ * Used only when nothing computed survives hasRealValue. The page was showing
+ * four zeros; filtering them left it empty, which is honest but says nothing
+ * on a page whose whole job is to say something. These are the numbers the
+ * home page already stands behind, and the live counts replace them the
+ * moment any one of them is real.
+ */
+function publishedAsStats(lang: "ar" | "en"): ImpactStat[] {
+  return PUBLISHED_FIGURES.map((f) => ({
+    key: f.key,
+    labelAr: T.ar.stats[f.key],
+    labelEn: T.en.stats[f.key],
+    value: `${formatFigure(f.value, lang)}${f.suffix}`,
+    isOverridden: false,
+  }));
+}
+
 function hasRealValue(stat: ImpactStat): boolean {
   if (stat.isOverridden) return stat.value.trim().length > 0;
   const digits = stat.value.replace(/[^0-9]/g, "");
@@ -46,6 +67,10 @@ type ImpactStory = {
 };
 
 const KEY_ICON: Record<string, React.ReactNode> = {
+  trainees:            <Users className="w-7 h-7" />,
+  countries:           <Globe className="w-7 h-7" />,
+  programs:            <BookOpen className="w-7 h-7" />,
+  trainers:            <GraduationCap className="w-7 h-7" />,
   trainees_total:      <Users className="w-7 h-7" />,
   speeches_evaluated:  <Mic2 className="w-7 h-7" />,
   certificates_issued: <ShieldCheck className="w-7 h-7" />,
@@ -71,6 +96,10 @@ export default function ImpactPage() {
   const { lang, dir } = useLang();
   const [, navigate] = useLocation();
   const [stats, setStats] = useState<ImpactStat[]>([]);
+  // Live counts when any of them is real; the published figures otherwise.
+  // Never both at once — a grid mixing "6 speeches evaluated" with "800+
+  // trainees" reads as one set of measurements and is not.
+  const shown = stats.length > 0 ? stats : publishedAsStats(lang);
   const [stories, setStories] = useState<ImpactStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -128,15 +157,9 @@ export default function ImpactPage() {
             <div className="py-10 text-center text-white/90">
               {lang === "ar" ? "تعذّر تحميل الأرقام، حاول لاحقاً." : "Could not load numbers, please try again later."}
             </div>
-          ) : stats.length === 0 ? (
-            <div className="py-10 text-center text-white/90">
-              {lang === "ar"
-                ? "نعمل على جمع الأرقام، ستظهر قريباً."
-                : "We're collecting numbers, they will appear soon."}
-            </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
-              {stats.map((s, i) => (
+              {shown.map((s, i) => (
                 <motion.div
                   key={s.key}
                   initial={{ opacity: 0, y: 18 }}
