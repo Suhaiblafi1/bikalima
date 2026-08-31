@@ -51,30 +51,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # What the repository has, and what the database already applied.
-      - name: Show what is pending
+      # Refuses to continue on a URL that cannot work, and names which part
+      # is wrong. Run #1 failed here with a bare "EAI_AGAIN host" from inside
+      # drizzle because this step used to swallow connection errors as
+      # "no migrations applied yet".
+      - name: Check the connection and show what is pending
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
         # pnpm links `pg` under lib/db only, so resolve from there.
         working-directory: lib/db
-        run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "::error::Secret PRODUCTION_DATABASE_URL is not set on this repository."
-            exit 1
-          fi
-          echo "Migrations in the repository:"
-          ls -1 drizzle/*.sql | xargs -n1 basename | sed 's/^/  /'
-          echo
-          echo "Already applied (drizzle's own ledger; empty on a first run):"
-          node -e "
-            const pg = require('pg');
-            const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
-            c.connect()
-              .then(() => c.query(\"select hash, to_timestamp(created_at/1000) as applied_at from drizzle.__drizzle_migrations order by created_at\"))
-              .then(r => { for (const row of r.rows) console.log('  ' + row.applied_at.toISOString() + '  ' + row.hash.slice(0, 12)); })
-              .catch(e => console.log('  (none — ' + e.code + ')'))
-              .finally(() => c.end());
-          "
+        run: node check-connection.mjs
 
       - name: Apply migrations
         env:
