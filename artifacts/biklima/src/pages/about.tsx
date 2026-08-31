@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,15 +15,18 @@ import {
   School,
   ShieldCheck,
   Sparkles,
+  Mic2,
   Users,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLang } from "@/hooks/useLang";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { T } from "@/translations";
 
 export default function AboutPage() {
   const { lang } = useLang();
+  const t = T[lang];
   const [, navigate] = useLocation();
   const isArabic = lang === "ar";
   const DirectionArrow = isArabic ? ArrowLeft : ArrowRight;
@@ -251,6 +255,27 @@ export default function AboutPage() {
                   <DirectionArrow className="w-4 h-4 ms-2 transition-transform group-hover:-translate-x-1 ltr:group-hover:translate-x-1" aria-hidden />
                 </span>
               </button>
+            ))}
+          </div>
+        </div>
+      </section>
+      {/* ── AUTHOR'S MESSAGE ── */}
+      <section className="py-12 md:py-24 bg-primary text-primary-foreground relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        <div className="container mx-auto px-6 max-w-4xl relative z-10">
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+            <div className="text-4xl mb-4 md:text-5xl md:mb-6 opacity-30">✦</div>
+            <h2 className="font-serif text-3xl md:text-4xl font-bold mb-7 md:mb-10 opacity-90">{t.author.sectionTitle}</h2>
+          </motion.div>
+          <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 md:mx-0 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:px-0 md:pb-0">
+            {t.author.cards.map((msg, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="min-w-[82vw] snap-center bg-primary-foreground/10 backdrop-blur-sm p-5 md:min-w-0 md:p-7 rounded-3xl border border-primary-foreground/20">
+                <div className="w-10 h-10 rounded-full bg-primary-foreground/10 flex items-center justify-center mb-4">
+                  {i === 0 ? <GraduationCap className="w-6 h-6" /> : i === 1 ? <Mic2 className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+                </div>
+                <div className="text-xs font-bold uppercase tracking-widest opacity-60 mb-3">{msg.to}</div>
+                <p className="font-serif text-base leading-relaxed opacity-90">{msg.text}</p>
+              </motion.div>
             ))}
           </div>
         </div>

@@ -1,9 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api-fetch";
 import { useRoute, useLocation } from "wouter";
 import {
-  ArrowLeft, ArrowRight, Clock, Calendar, Users, Target,
-  CheckCircle2, BookOpen, Sparkles, MessageSquare,
-  Share2, Check, Layers, FileText, Ticket, Building2,
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Building2,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+  Download,
+  FileText,
+  Layers,
+  Library,
+  MessageSquare,
+  Share2,
+  Sparkles,
+  Target,
+  Ticket,
+  Trophy,
+  Users,
+  Users2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,10 +55,19 @@ const HERO_GRADIENT: Record<string, string> = {
 const ADMIN_EMAIL = "info@bikalima.com";
 
 type TabId = "overview" | "audience" | "outcomes" | "modules" | "workbook" | "booking" | "faq";
-const TAB_ORDER: TabId[] = ["overview", "audience", "outcomes", "modules", "workbook", "booking", "faq"];
+// Five tabs, not seven. "Who it's for" reads as part of the overview, and
+// the workbook is one of the materials a module ships with rather than a
+// destination of its own. Both old ids still resolve so shared links and
+// bookmarks land on the tab that absorbed them.
+const TAB_ORDER: TabId[] = ["overview", "outcomes", "modules", "booking", "faq"];
+const MERGED_TABS: Record<string, TabId> = { audience: "overview", workbook: "modules" };
 
 function isInternalHash(h: string): h is TabId {
-  return (TAB_ORDER as string[]).includes(h);
+  return (TAB_ORDER as string[]).includes(h) || h in MERGED_TABS;
+}
+
+function resolveTab(h: string): TabId {
+  return MERGED_TABS[h] ?? (h as TabId);
 }
 
 export default function ProgramPage() {
@@ -55,6 +83,25 @@ export default function ProgramPage() {
   const program = programs.find((p) => p.id === programId);
   const courseData = programId ? getCoursePageData(programId) : undefined;
   const workbookFacts = programId ? WORKBOOK_FACTS[programId] : undefined;
+
+  // The workbook's sample PDF is the one thing a visitor can hold before
+  // paying, so it is worth a request of its own. Failure is silent: no sample
+  // simply means no button, never a broken page.
+  const [samplePdfUrl, setSamplePdfUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!programId) return;
+    let cancelled = false;
+    apiFetch("/workbooks-cms")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.workbooks) return;
+        const match = (data.workbooks as Array<{ linkedProgramId: string | null; samplePdfUrl: string | null }>)
+          .find((w) => w.linkedProgramId === programId && w.samplePdfUrl);
+        setSamplePdfUrl(match?.samplePdfUrl ?? null);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [programId]);
   const dbLessons: DbLesson[] = useMemo(() => [], []);
   const [shareCopied, setShareCopied] = useState(false);
 
@@ -66,7 +113,7 @@ export default function ProgramPage() {
   const initialTab: TabId = (() => {
     if (typeof window === "undefined") return "overview";
     const h = window.location.hash.replace(/^#/, "");
-    return isInternalHash(h) ? h : "overview";
+    return isInternalHash(h) ? resolveTab(h) : "overview";
   })();
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
 
@@ -190,8 +237,9 @@ export default function ProgramPage() {
 
   const onTabChange = (next: string) => {
     if (!isInternalHash(next)) return;
-    setActiveTab(next);
-    trackTabChange(programId, next);
+    const tab = resolveTab(next);
+    setActiveTab(tab);
+    trackTabChange(programId, tab);
   };
 
   // Reusable button blocks
@@ -382,10 +430,7 @@ export default function ProgramPage() {
                     {loc.transformation}
                   </p>
                 </div>
-              </TabsContent>
-
-              {/* AUDIENCE */}
-              <TabsContent value="audience" className="mt-0 focus-visible:outline-none">
+                <div className="pt-2 border-t border-border/60">
                 {courseData?.audienceItems ? (
                   <AudienceSection items={courseData.audienceItems} lang={lang} />
                 ) : (
@@ -397,8 +442,10 @@ export default function ProgramPage() {
                     <p className="text-base text-foreground/85 leading-relaxed">{loc.audience}</p>
                   </section>
                 )}
+                </div>
               </TabsContent>
 
+              {/* AUDIENCE */}
               {/* OUTCOMES */}
               <TabsContent value="outcomes" className="mt-0 focus-visible:outline-none">
                 {courseData?.outcomes ? (
@@ -419,6 +466,39 @@ export default function ProgramPage() {
                     </div>
                   </section>
                 )}
+
+                {/* What the fee actually buys. "Recorded course" undersells a
+                    programme that also grades work and ends on a stage, and a
+                    visitor deciding whether to pay has no other place to learn
+                    that before checkout. */}
+                <section className="pt-8 mt-8 border-t border-border/60">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center gap-3">
+                    <span className="w-1 h-8 bg-primary rounded-full inline-block" />
+                    {t.includes.heading}
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6 max-w-2xl">
+                    {t.includes.sub}
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-3" data-testid="program-includes">
+                    {t.includes.items.map((item, i) => {
+                      const Icon = [BookOpen, Library, FileText, ClipboardList, Target, Trophy][i] ?? CheckCircle2;
+                      return (
+                        <div
+                          key={item.title}
+                          className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4"
+                        >
+                          <span className="shrink-0 w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                            <Icon className="w-5 h-5" aria-hidden />
+                          </span>
+                          <div>
+                            <h3 className="font-bold text-sm mb-1">{item.title}</h3>
+                            <p className="text-[13px] text-muted-foreground leading-relaxed">{item.body}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
               </TabsContent>
 
               {/* MODULES */}
@@ -443,10 +523,7 @@ export default function ProgramPage() {
                     </ol>
                   </section>
                 )}
-              </TabsContent>
-
-              {/* WORKBOOK */}
-              <TabsContent value="workbook" className="mt-0 focus-visible:outline-none space-y-6">
+                <div className="pt-8 mt-8 border-t border-border/60 space-y-6">
                 <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
                   <span className="w-1 h-8 bg-primary rounded-full inline-block" />
                   {t.sectionWorkbook}
@@ -460,6 +537,18 @@ export default function ProgramPage() {
                     <p className="text-sm md:text-base text-foreground/80 leading-relaxed">
                       {loc.workbook.description}
                     </p>
+                    {samplePdfUrl && (
+                      <a
+                        href={samplePdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-background/70 px-4 py-2 text-sm font-bold text-amber-800 transition-colors hover:bg-amber-500/10 dark:text-amber-200"
+                        data-testid="program-workbook-sample"
+                      >
+                        <Download className="w-4 h-4" aria-hidden />
+                        {lang === "ar" ? "حمّل عيّنة من الكرّاسة (PDF)" : "Download a sample (PDF)"}
+                      </a>
+                    )}
                   </div>
                 </div>
 
@@ -508,8 +597,10 @@ export default function ProgramPage() {
                     </ol>
                   </div>
                 )}
+                </div>
               </TabsContent>
 
+              {/* WORKBOOK */}
               {/* PRICE & BOOKING */}
               <TabsContent value="booking" className="mt-0 focus-visible:outline-none space-y-6">
                 <div>

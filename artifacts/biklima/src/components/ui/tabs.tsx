@@ -3,7 +3,21 @@ import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
-const Tabs = TabsPrimitive.Root
+/**
+ * Radix defaults its direction to "ltr" and stamps dir="ltr" onto the tab
+ * list, which overrides the rtl the document is set to — so on an Arabic page
+ * the first tab lands on the left and the strip reads backwards. Default to
+ * the direction the document is actually in; an explicit dir still wins.
+ */
+const Tabs = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>
+>(({ dir, ...props }, ref) => {
+  const documentDir =
+    typeof document !== "undefined" && document.documentElement.dir === "rtl" ? "rtl" : "ltr";
+  return <TabsPrimitive.Root ref={ref} dir={dir ?? documentDir} {...props} />;
+});
+Tabs.displayName = TabsPrimitive.Root.displayName
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,

@@ -16,7 +16,13 @@ import { getRoleHome, isStaffRole } from "@/lib/role-routing";
 type NavTarget =
   | { kind: "section"; id: string; label: string }
   | { kind: "route"; path: string; label: string }
-  | { kind: "group"; label: string; items: Array<{ path: string; label: string }> };
+  | { kind: "group"; label: string; items: Array<GroupItem> };
+
+type GroupItem =
+  | { path: string; label: string }
+  | { sectionId: string; label: string };
+
+const groupKey = (i: GroupItem) => ("path" in i ? i.path : `#${i.sectionId}`);
 
 export function SiteHeader() {
   const { lang, switchLang } = useLang();
@@ -58,20 +64,26 @@ export function SiteHeader() {
     return undefined;
   }, [mobileOpen]);
 
+  // What a visitor is here to find sits on the bar itself; the errands people
+  // arrive already looking for — a certificate to check, a way to get in
+  // touch — move into one menu so they stop competing with the catalogue.
   const navItems: NavTarget[] = [
-    { kind: "route",   path: "/about",     label: lang === "ar" ? "من نحن" : "About" },
-    { kind: "section", id: "structure", label: t.nav.structure },
+    { kind: "route",   path: "/about",    label: lang === "ar" ? "من نحن" : "About" },
+    { kind: "section", id: "structure",   label: t.nav.structure },
+    { kind: "route",   path: "/workbooks", label: t.nav.workbooks },
+    { kind: "route",   path: "/gallery",   label: t.nav.gallery },
+    { kind: "route",   path: "/library",   label: lang === "ar" ? "المكتبة التعليمية" : "Learning library" },
     {
       kind: "group",
-      label: lang === "ar" ? "الموارد" : "Resources",
+      label: lang === "ar" ? "المزيد" : "More",
       items: [
-        { path: "/workbooks", label: t.nav.workbooks },
-        { path: "/gallery", label: t.nav.gallery },
-        { path: "/library", label: lang === "ar" ? "المكتبة التعليمية" : "Learning library" },
+        { path: "/verify", label: lang === "ar" ? "تحقق من شهادة" : "Verify certificate" },
+        { sectionId: "events", label: t.nav.events },
+        { path: "/careers", label: lang === "ar" ? "انضم للفريق" : "Join the team" },
+        { path: "/impact", label: lang === "ar" ? "أثرنا بالأرقام" : "Our impact" },
+        { path: "/consultation", label: lang === "ar" ? "تواصل معنا" : "Contact us" },
       ],
     },
-    { kind: "section", id: "events",      label: t.nav.events },
-    { kind: "route",   path: "/verify",    label: lang === "ar" ? "تحقق من شهادة" : "Verify certificate" },
   ];
 
   const isHome = location === "/" || location === "";
@@ -98,6 +110,9 @@ export function SiteHeader() {
   };
 
   const initials = (user?.firstName?.[0] || user?.email?.[0] || "U").toUpperCase();
+  // Fall back to the email only when there is no name to show.
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.email || "";
 
   const handleLogout = async () => {
     const returnTo = platformHome;
@@ -169,7 +184,7 @@ export function SiteHeader() {
                     aria-haspopup="menu"
                     aria-expanded={resourcesOpen}
                     className={`inline-flex items-center gap-1 text-sm transition-colors ${
-                      item.items.some(({ path }) => isActiveRoute(path))
+                      item.items.some((i) => "path" in i && isActiveRoute(i.path))
                         ? "text-primary font-bold"
                         : "text-foreground/80 hover:text-primary"
                     }`}
@@ -180,19 +195,25 @@ export function SiteHeader() {
                   {resourcesOpen && (
                     <div
                       role="menu"
-                      className="absolute top-full start-1/2 -translate-x-1/2 mt-3 w-52 rounded-2xl border border-border bg-background p-2 shadow-xl"
+                      className="absolute top-full end-0 mt-3 w-52 rounded-2xl border border-border bg-background p-2 shadow-xl"
                     >
-                      {item.items.map((resource) => (
+                      {item.items.map((entry) => (
                         <button
-                          key={resource.path}
+                          key={groupKey(entry)}
                           type="button"
                           role="menuitem"
-                          onClick={() => { setResourcesOpen(false); goToRoute(resource.path); }}
+                          onClick={() => {
+                            setResourcesOpen(false);
+                            if ("path" in entry) goToRoute(entry.path);
+                            else goToSection(entry.sectionId);
+                          }}
                           className={`w-full rounded-xl px-3 py-2.5 text-start text-sm transition-colors hover:bg-secondary/50 ${
-                            isActiveRoute(resource.path) ? "text-primary font-bold bg-primary/5" : "text-foreground/80"
+                            "path" in entry && isActiveRoute(entry.path)
+                              ? "text-primary font-bold bg-primary/5"
+                              : "text-foreground/80"
                           }`}
                         >
-                          {resource.label}
+                          {entry.label}
                         </button>
                       ))}
                     </div>
@@ -274,9 +295,14 @@ export function SiteHeader() {
                 {userMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setUserMenuOpen(false)} />
-                    <div className={`absolute top-full mt-1 w-56 bg-background border border-border rounded-xl shadow-lg overflow-hidden z-40 ${isRtl ? "start-0" : "end-0"}`}>
+                    <div className="absolute top-full mt-1 w-56 max-w-[calc(100vw-1.5rem)] bg-background border border-border rounded-xl shadow-lg overflow-hidden z-40 end-0">
                       <div className="px-3 py-2 border-b border-border">
-                        <p className="text-xs text-muted-foreground truncate" dir="ltr">{user?.email}</p>
+                        <p className="text-sm font-bold truncate" data-testid="account-menu-name">
+                          {displayName}
+                        </p>
+                        {displayName !== user?.email && (
+                          <p className="text-[11px] text-muted-foreground truncate" dir="ltr">{user?.email}</p>
+                        )}
                       </div>
                       <button
                         onClick={() => { setUserMenuOpen(false); navigate(platformHome); }}
@@ -375,16 +401,21 @@ export function SiteHeader() {
                   ) : (
                     <div key={`m-group-${item.label}`} className="border-b border-border py-3">
                       <p className="text-xs font-bold text-muted-foreground mb-1">{item.label}</p>
-                      {item.items.map((resource) => (
+                      {item.items.map((entry) => (
                         <button
-                          key={resource.path}
+                          key={groupKey(entry)}
                           type="button"
-                          onClick={() => goToRoute(resource.path)}
+                          onClick={() => {
+                            if ("path" in entry) goToRoute(entry.path);
+                            else goToSection(entry.sectionId);
+                          }}
                           className={`block w-full text-lg font-serif text-start py-2 ${
-                            isActiveRoute(resource.path) ? "text-primary font-bold" : "text-foreground/90"
+                            "path" in entry && isActiveRoute(entry.path)
+                              ? "text-primary font-bold"
+                              : "text-foreground/90"
                           }`}
                         >
-                          {resource.label}
+                          {entry.label}
                         </button>
                       ))}
                     </div>
