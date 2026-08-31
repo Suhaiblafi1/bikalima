@@ -67,10 +67,6 @@ router.post("/speech-suggestions", async (req: Request, res: Response) => {
   }
   const userId = req.user.id;
 
-  // Ten an hour per person is generous for a real suggestion and useless for
-  // anyone pasting links in bulk.
-  if (!applyAdHocLimit(res, `speech-suggestion:${userId}`, 10, 60 * 60 * 1000)) return;
-
   const parsed = SuggestionSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "تحقّق من الرابط ثم أعد المحاولة.", issues: parsed.error.issues });
@@ -82,6 +78,12 @@ router.post("/speech-suggestions", async (req: Request, res: Response) => {
     res.status(400).json({ error: problem });
     return;
   }
+
+  // Counted after validation, so a mistyped link does not spend the budget of
+  // someone who is genuinely trying. What the limit protects is rows written,
+  // and a refused request writes none; malformed floods are cheap to reject
+  // and are an IP-level concern, not this person's quota.
+  if (!applyAdHocLimit(res, `speech-suggestion:${userId}`, 30, 60 * 60 * 1000)) return;
 
   const videoUrl = new URL(parsed.data.videoUrl).toString();
   const opinion = parsed.data.opinion?.length ? parsed.data.opinion : null;

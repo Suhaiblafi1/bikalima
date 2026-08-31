@@ -18,6 +18,7 @@ import {
   workbooksTable,
   workbookPagesTable,
   workbookOrdersTable,
+  speechSuggestionsTable,
   workbookSubmissionsTable,
   studentSkillScoresTable,
   inPersonCourseRegistrationsTable,
@@ -348,6 +349,9 @@ async function upsertWorkbook(opts: {
 async function resetPerRunState(learnerId: string, inPersonCourseId: string) {
   await db.delete(workbookSubmissionsTable).where(eq(workbookSubmissionsTable.userId, learnerId));
   await db.delete(studentSkillScoresTable).where(eq(studentSkillScoresTable.userId, learnerId));
+  // A suggestion sent on an earlier run makes the next "first" one an update
+  // and return 200 where the spec names 201.
+  await db.delete(speechSuggestionsTable).where(eq(speechSuggestionsTable.userId, learnerId));
   await db
     .delete(inPersonCourseRegistrationsTable)
     .where(eq(inPersonCourseRegistrationsTable.eventId, inPersonCourseId));
