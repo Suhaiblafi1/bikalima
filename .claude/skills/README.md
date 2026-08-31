@@ -10,8 +10,9 @@
 | تعليم صفّي | 6 | [Jellypod-Inc/school-skills](https://github.com/Jellypod-Inc/school-skills) | خطة الدرس، وسلالم التقييم (rubric)، والمعلّم السقراطي، وتحويل محاضرة إلى دليل مراجعة — تخدم برامج المعلمين والمدرّبين |
 | تسويق | 22 | [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) | كتابة نصوص، وتحسين التحويل، والعروض، والتسعير، والتسجيل، وSEO — لبيع الدورات |
 | هوية وتصميم | 4 | [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) | الهوية، ونظام التصميم، واللافتات، والعروض |
+| اختبار وتصميم واجهات | 2 | [anthropics/skills](https://github.com/anthropics/skills) @ `3b3fad9` | `webapp-testing` يقود Playwright على تطبيق محلي — وهو ما كنّا نبنيه يدوياً طول اليوم؛ و`frontend-design` للاتجاه البصري والطباعة |
 
-جميعها بترخيص MIT، ونسخ الرخص محفوظة في `_licenses/`.
+الأربعة الأولى بترخيص MIT، و`anthropics/skills` بترخيص **Apache 2.0**. نسخ الرخص في `_licenses/`.
 
 ## ما استُثني، وبسببٍ
 
@@ -20,7 +21,8 @@
 - **`ui-styling`** (٥٫٨م) — نسخ مكوّنات shadcn، والمشروع يستعملها أصلاً.
 - **`ui-ux-pro-max`** (٣٫٦م) — بيانات خطوط وأيقونات، أغلبها لا يلزمنا.
 - **`design`** — يشترط `GEMINI_API_KEY` من Google لتوليد الصور. تركته لأنه يستدعي خدمة خارجية بمفتاح، وهو قرارك لا قراري.
-- **`anthropics/skills`** — **لا ملف رخصة فيه**، أي لا إذن صريح بإعادة النشر. مهاراته العشرون متوفّرة أصلاً في Claude Code.
+- **`mcp-builder`** — طُلب، ولم يُدرَج: **مثبَّت ومُفعَّل أصلاً** في Claude Code، وإدراج نسخة ثانية بالاسم نفسه يخلق تعارضاً لا فائدة.
+- **`docx`، `pdf`، `pptx`، `xlsx`** من `anthropics/skills` — الـREADME يصفها *"source-available, not open source"*، بخلاف بقيّة المستودع (Apache 2.0). فلا تُعاد نشرها هنا، وهي متوفّرة أصلاً في Claude Code.
 - **`ECC`، `claude-skills`، `ai-berkshire`** — ٢٣٦ ميجابايت، وأغلب ما تعدّه «مهارات» نسخٌ مكرّرة (`.gemini/`) أو ترجمات (`docs/ja-JP`, `docs/zh-CN`).
 - **`PERSONALIZED-LEARNING-PLATFORM`** و**`public-apis`** — ليسا مستودعَي مهارات: الأول مشروع منصّة، والثاني قائمة واجهات برمجية.
 
@@ -28,7 +30,9 @@
 
 **المهارة ليست مكتبة، بل تعليمات يتبعها Claude.** كل ملف هنا يُحمَّل ويُطاع في الجلسات القادمة على هذا المستودع — وفيه بوابة دفع وقاعدة بيانات إنتاج.
 
-قبل إدراج هذه الملفات مُسِحت آلياً بحثاً عن حقن تعليمات (`ignore previous instructions`)، وقراءة أسرار (`.env`, `process.env`, `API_KEY`)، وتسريب بيانات، وأوامر مدمّرة. المطابقات الوحيدة كانت حميدة: كلمة «secret method» مثالاً على نصّ تسويقي رديء، وحقل «password» في نموذج تسجيل، ومخطّط تحقّق في مثال شيفرة.
+قبل إدراج هذه الملفات مُسِحت آلياً بحثاً عن حقن تعليمات (`ignore previous instructions`)، وقراءة أسرار (`.env`, `process.env`, `API_KEY`)، وتسريب بيانات، وأوامر مدمّرة. المطابقات الوحيدة كانت حميدة: كلمة «secret method» مثالاً على نصّ تسويقي رديء، وحقل «password» في نموذج تسجيل، ومخطّط تحقّق في مثال شيفرة، و`process.env.EXAMPLE_API_KEY` في مثال شيفرة يوضّح كيف يقرأ خادم MCP مفتاحه.
+
+وسكربتات `webapp-testing` و`mcp-builder` قُرئت: `with_server.py` يشغّل خادم تطوير وينتظر جهوزيته ثم ينفّذ أمراً وينظّف، و`connections.py` و`evaluation.py` أدوات عميل MCP. لا شيء منها يتّصل بجهة خارجية من تلقاء نفسه.
 
 **عند تحديث أي منها من المصدر، أعِد الفحص.** ولا تُدرِج مهارةً لم تُقرأ.
 

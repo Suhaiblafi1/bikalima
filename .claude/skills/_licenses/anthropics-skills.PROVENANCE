@@ -1,0 +1,3 @@
+anthropics/skills @ 3b3fad96af16a10759d930941b4520ba0c40edae — Apache 2.0
+Installed: webapp-testing, frontend-design.
+mcp-builder was requested but is already built into Claude Code (enabled), so it was not duplicated.
