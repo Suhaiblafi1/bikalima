@@ -254,14 +254,14 @@ export default function ConfirmationPage() {
   const steps =
     lang === "ar"
       ? [
-          { num: "1", text: "ستصلك رسالة تأكيد على بريدك الإلكتروني" },
-          { num: "2", text: "سيتواصل معك فريقنا لتأكيد الدفع وتفعيل وصولك للدورة" },
-          { num: "3", text: "ابدأ التعلم فور تفعيل حسابك" },
+          { num: "1", text: "رسالة تأكيد بتفاصيل حجزك تصلك على بريدك الآن" },
+          { num: "2", text: "يليها رابط دفع آمن عبر Stripe — بطاقتك تُدخَل على صفحتهم لا على موقعنا" },
+          { num: "3", text: "بمجرد إتمام الدفع يُفتح لك محتوى الدورة والكرّاسة مباشرة" },
         ]
       : [
-          { num: "1", text: "A confirmation email will be sent to your inbox" },
-          { num: "2", text: "Our team will reach out to confirm payment and activate your course access" },
-          { num: "3", text: "Start learning as soon as your account is activated" },
+          { num: "1", text: "A confirmation email with your booking details is on its way" },
+          { num: "2", text: "A secure Stripe payment link follows — your card is entered on their page, never on ours" },
+          { num: "3", text: "The course and workbook open the moment payment completes" },
         ];
 
   return (
@@ -276,12 +276,12 @@ export default function ConfirmationPage() {
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-black text-foreground">
-              {lang === "ar" ? "تم استلام طلبك ✓" : "Request Received ✓"}
+              {lang === "ar" ? "تم تثبيت مقعدك ✓" : "Your seat is held ✓"}
             </h1>
             <p className="text-muted-foreground text-sm leading-relaxed">
               {lang === "ar"
-                ? "شكراً لاهتمامك بالانضمام لبرنامج بكلمة. سيتواصل معك الفريق قريباً."
-                : "Thank you for your interest in joining the Bikalima program. Our team will be in touch soon."}
+                ? "سجّلناك في البرنامج وحجزنا مكانك. يصلك رابط الدفع الآمن على بريدك، وبإتمامه يُفتح لك المحتوى مباشرة."
+                : "You are registered and your place is reserved. A secure payment link is on its way to your inbox; completing it opens the content straight away."}
             </p>
           </div>
         </div>

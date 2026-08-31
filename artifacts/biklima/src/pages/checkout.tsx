@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/phone-input";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Mail, Phone, AlertCircle, ArrowRight, Home, BadgePercent, CheckCircle2, Loader2, X } from "lucide-react";
+import { User, Mail, Phone, AlertCircle, ArrowRight, Home, BadgePercent, CheckCircle2, Loader2, Lock, ShieldCheck, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
@@ -203,6 +203,11 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
+  // What the button says it will take is what the order is for, discount
+  // included — a button reading "ادفع ٧٠" beside a discounted total of ٥٦ is
+  // the kind of mismatch that stops a purchase.
+  const payableAmount = appliedDiscount?.finalAmount ?? coursePrice;
 
   // Reusable: course summary card the visitor sees regardless of auth state.
   const programPage = `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`;
@@ -453,10 +458,10 @@ export default function CheckoutPage() {
                 </div>
 
                 {!paymentsEnabled && (
-                  <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm p-3" data-testid="checkout-payments-disabled">
+                  <div role="status" className="rounded-xl border border-border bg-muted/50 text-muted-foreground text-sm p-3" data-testid="checkout-payments-disabled">
                     {lang === "ar"
-                      ? "خدمة الدفع متوقفة مؤقتاً. يرجى المحاولة لاحقاً أو التواصل معنا."
-                      : "Payments are temporarily disabled. Please try again later or contact us."}
+                      ? "الدفع الإلكتروني قيد التفعيل. سجّل الآن ويصلك رابط الدفع الآمن على بريدك."
+                      : "Online payment is being switched on. Enrol now and a secure payment link will reach you by email."}
                   </div>
                 )}
                 <Button
@@ -465,10 +470,43 @@ export default function CheckoutPage() {
                   className="w-full rounded-xl py-6 font-bold text-base gap-2"
                   data-testid="checkout-submit"
                 >
-                  {submitting
-                    ? (lang === "ar" ? "جاري الإرسال..." : "Submitting...")
-                    : (lang === "ar" ? "إرسال الطلب" : "Submit Request")}
+                  {submitting ? (
+                    lang === "ar" ? "جارٍ التحويل إلى الدفع…" : "Taking you to payment…"
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" aria-hidden />
+                      {payableAmount !== null && payableAmount > 0
+                        ? (lang === "ar" ? `ادفع ${payableAmount} د.أ` : `Pay ${payableAmount} JOD`)
+                        : payableAmount === 0
+                          ? (lang === "ar" ? "أكمل التسجيل مجاناً" : "Complete free enrolment")
+                          : (lang === "ar" ? "متابعة الدفع" : "Continue to payment")}
+                    </>
+                  )}
                 </Button>
+
+                {/* Where the card is actually entered, said plainly. The card
+                    number is never typed on this page and there is no field
+                    here that could take one — Stripe's own hosted page
+                    collects it, which is what keeps this site out of scope for
+                    handling card data at all. */}
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <ShieldCheck className="w-3.5 h-3.5 text-success" aria-hidden />
+                    {lang === "ar"
+                      ? "الدفع يتم على صفحة Stripe الآمنة — لا نرى رقم بطاقتك ولا نحفظه."
+                      : "Payment is completed on Stripe's secure page — we never see or store your card number."}
+                  </p>
+                  <div className="flex items-center gap-2 opacity-70" aria-hidden>
+                    {["VISA", "Mastercard", "Click to Pay"].map((brand) => (
+                      <span
+                        key={brand}
+                        className="rounded border border-border bg-card px-2 py-0.5 text-[10px] font-bold tracking-wide text-muted-foreground"
+                      >
+                        {brand}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </form>
             </CardContent>
           </Card>
