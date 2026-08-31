@@ -85,23 +85,52 @@ jobs:
         working-directory: lib/db
         run: node check-connection.mjs
 
+      # continue-on-error, because "some of these need a person" must not stop
+      # the ones that do not. The run is still failed at the end by the last
+      # step, so nothing is quietly forgotten.
       - name: Decide whether the pending migrations may apply unattended
         id: safety
+        continue-on-error: true
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
         working-directory: lib/db
         run: node check-safe-to-autoapply.mjs
 
+      # Migrations run in order, so only a prefix can be applied: everything
+      # behind a migration that needs a person waits with it. Trimming the
+      # journal to that prefix is how drizzle is told to stop there — the
+      # checkout is a throwaway copy, so nothing is edited that outlives the
+      # run.
+      - name: Hold back the migrations that need a person
+        if: steps.safety.outputs.safe_count != '0' && steps.safety.outputs.blocked_count != '0'
+        working-directory: lib/db
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'drizzle/meta/_journal.json';
+            const journal = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const keep = Number(process.env.APPLY_THROUGH);
+            const held = journal.entries.slice(keep).map((e) => e.tag);
+            journal.entries = journal.entries.slice(0, keep);
+            fs.writeFileSync(path, JSON.stringify(journal, null, 2) + '\n');
+            console.log('applying through: ' + journal.entries[journal.entries.length - 1].tag);
+            console.log('held back for a person: ' + held.join(', '));
+          "
+        env:
+          APPLY_THROUGH: ${{ steps.safety.outputs.apply_through }}
+
       - name: Apply migrations
-        if: steps.safety.outputs.pending != '0'
+        if: steps.safety.outputs.safe_count != '0'
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
         run: pnpm --filter @workspace/db migrate
 
       # Compares drizzle's own ledger against the journal — no bundler, no
       # schema import, nothing that can break on a dependency layout change.
+      # Compares against the journal as it stands after any trimming, so the
+      # held-back migrations are not counted as a failure to apply.
       - name: Verify every migration applied
-        if: steps.safety.outputs.pending != '0'
+        if: steps.safety.outputs.safe_count != '0'
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
         working-directory: lib/db
@@ -126,3 +155,16 @@ jobs:
               .catch((e) => { console.error('::error::Could not read the migration ledger: ' + e.message); process.exitCode = 1; })
               .finally(() => c.end());
           "
+
+      # Last, so the safe prefix is already in before the run goes red.
+      - name: Report the migrations still waiting for a person
+        if: steps.safety.outputs.blocked_count != '0'
+        run: |
+          echo "::error::${{ steps.safety.outputs.blocked_count }} migration(s) need a person: take a backup, then run 'Apply database migrations (production)'."
+          exit 1
+
+      - name: Fail if the safety check itself could not run
+        if: steps.safety.outputs.pending == ''
+        run: |
+          echo "::error::The safety check did not report — treat this run as having applied nothing."
+          exit 1
