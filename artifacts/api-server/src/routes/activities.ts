@@ -25,10 +25,9 @@ import { awardBadgeIfEligible } from "../lib/platform.js";
 const router: IRouter = Router();
 
 // ── Constants ──────────────────────────────────────────────────────────
-export const SKILL_KEYS = [
-  "idea", "structure", "voice", "body", "improvisation",
-  "impact", "confidence", "fear_management",
-] as const;
+import { SKILL_KEYS, creditSkillPoints } from "../lib/skills.js";
+// Re-exported so existing importers of this module keep working.
+export { SKILL_KEYS };
 
 export const SKILL_LABELS_AR: Record<string, string> = {
   idea: "الفكرة",
@@ -294,16 +293,7 @@ async function recomputeLessonProgress(userId: string, lessonId: string): Promis
 }
 
 async function awardSkillPoints(userId: string, skillKeys: string[], points: number): Promise<void> {
-  for (const key of skillKeys) {
-    if (!SKILL_KEYS.includes(key as (typeof SKILL_KEYS)[number])) continue;
-    await db.execute(sql`
-      INSERT INTO student_skill_scores (user_id, skill_key, points)
-      VALUES (${userId}, ${key}, ${points})
-      ON CONFLICT (user_id, skill_key) DO UPDATE
-        SET points = student_skill_scores.points + ${points},
-            updated_at = NOW()
-    `);
-  }
+  for (const key of skillKeys) await creditSkillPoints(userId, key, points);
 }
 
 async function checkAndAwardBadges(userId: string): Promise<void> {

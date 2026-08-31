@@ -1,14 +1,18 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   db,
+  usersTable,
   workbooksTable,
   workbookPagesTable,
   workbookNotesTable,
   workbookOrdersTable,
+  workbookSubmissionsTable,
+  courseTrainersTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { isAdmin, requireAdmin } from "../lib/admin.js";
+import { isAdmin, isSupervisorOrAdmin, requireAdmin, requireRole } from "../lib/admin.js";
+import { SKILL_KEYS, creditSkillPoints } from "../lib/skills.js";
 import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
@@ -142,7 +146,19 @@ router.get("/workbooks/:slug/pages/:pageNumber", async (req: Request, res: Respo
         ),
       )
       .orderBy(desc(workbookNotesTable.createdAt));
-    res.json({ page, notes });
+    // The reader needs the learner's own attempt to render the exercise box in
+    // the right state: empty, awaiting review, passed, or sent back.
+    const [submission] = await db
+      .select()
+      .from(workbookSubmissionsTable)
+      .where(
+        and(
+          eq(workbookSubmissionsTable.userId, req.user!.id),
+          eq(workbookSubmissionsTable.pageId, page.id),
+        ),
+      )
+      .limit(1);
+    res.json({ page, notes, submission: submission ?? null });
   } catch (err) {
     req.log.error({ err }, "Workbook page read failed");
     res.status(500).json({ error: "Could not load page" });
@@ -316,6 +332,12 @@ const PageInput = z.object({
   bodyEn: z.string().trim().max(20_000).optional(),
   exerciseAr: z.string().trim().max(4000).optional(),
   exerciseEn: z.string().trim().max(4000).optional(),
+  // What the exercise asks for, and what a pass is worth. skillKey is
+  // validated against the eight real skills so a typo cannot create a ninth
+  // counter that no screen ever shows.
+  exerciseType: z.enum(["none", "text", "video_link"]).optional(),
+  skillKey: z.enum(SKILL_KEYS).nullish(),
+  skillPoints: z.number().int().min(0).max(1000).optional(),
   isPublished: z.boolean().optional(),
 });
 
@@ -395,6 +417,288 @@ router.delete("/admin/workbook-pages/:id", async (req: Request, res: Response) =
   } catch (err) {
     req.log.error({ err }, "Admin workbook page delete failed");
     res.status(500).json({ error: "Could not delete page" });
+  }
+});
+
+// ── Exercises: the learner submits, a trainer judges ───────────────────
+
+const submissionSchema = z.object({
+  content: z.string().trim().min(1).max(8000).optional(),
+  videoUrl: z.string().trim().url().max(2000).optional(),
+});
+
+const reviewSchema = z.object({
+  decision: z.enum(["pass", "needs_revision"]),
+  feedback: z.string().trim().max(4000).optional(),
+});
+
+/**
+ * Submit, or resubmit, the exercise on one page.
+ *
+ * Entitlement is checked against the page's own workbook rather than anything
+ * the client sends, so a learner cannot answer an exercise in a workbook they
+ * have not bought by quoting someone else's page id.
+ */
+router.post("/workbook-pages/:pageId/submission", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
+  const parsed = submissionSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid submission", details: parsed.error.flatten() });
+    return;
+  }
+  try {
+    const [page] = await db
+      .select()
+      .from(workbookPagesTable)
+      .where(eq(workbookPagesTable.id, req.params.pageId))
+      .limit(1);
+    if (!page || !page.isPublished) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
+    if (!(await canRead(req, page.workbookId))) {
+      res.status(403).json({ error: "لا تملك هذه الكرّاسة بعد" });
+      return;
+    }
+    if (page.exerciseType === "none") {
+      res.status(400).json({ error: "لا يوجد تمرين على هذه الصفحة" });
+      return;
+    }
+    // Each exercise type accepts exactly the answer it asked for. Taking the
+    // other field would let a learner satisfy a speech exercise by typing.
+    const content = page.exerciseType === "text" ? parsed.data.content : undefined;
+    const videoUrl = page.exerciseType === "video_link" ? parsed.data.videoUrl : undefined;
+    if (page.exerciseType === "text" && !content) {
+      res.status(400).json({ error: "اكتب إجابتك أولاً" });
+      return;
+    }
+    if (page.exerciseType === "video_link" && !videoUrl) {
+      res.status(400).json({ error: "أضف رابط الفيديو أولاً" });
+      return;
+    }
+
+    // One row per learner per page: a resubmission after "needs_revision"
+    // reopens this row rather than queueing a second copy of the same work.
+    // The verdict is cleared so a reviewed row cannot sit in the queue still
+    // showing the previous decision.
+    const [saved] = await db
+      .insert(workbookSubmissionsTable)
+      .values({
+        userId: req.user!.id,
+        workbookId: page.workbookId,
+        pageId: page.id,
+        content: content ?? null,
+        videoUrl: videoUrl ?? null,
+        status: "submitted",
+      })
+      .onConflictDoUpdate({
+        target: [workbookSubmissionsTable.userId, workbookSubmissionsTable.pageId],
+        set: {
+          content: content ?? null,
+          videoUrl: videoUrl ?? null,
+          status: "submitted",
+          decision: null,
+          feedback: null,
+          reviewedById: null,
+          reviewedAt: null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    res.status(201).json({ submission: saved });
+  } catch (err) {
+    req.log.error({ err }, "Workbook submission failed");
+    res.status(500).json({ error: "Could not save your answer" });
+  }
+});
+
+/** Everything this learner has submitted in one workbook — their progress. */
+router.get("/workbooks/:slug/submissions", async (req: Request, res: Response) => {
+  if (!requireAuth(req, res)) return;
+  try {
+    const workbook = await findWorkbookBySlug(req.params.slug);
+    if (!workbook) {
+      res.status(404).json({ error: "Workbook not found" });
+      return;
+    }
+    if (!(await canRead(req, workbook.id))) {
+      res.status(403).json({ error: "لا تملك هذه الكرّاسة بعد" });
+      return;
+    }
+    const rows = await db
+      .select({
+        id: workbookSubmissionsTable.id,
+        pageId: workbookSubmissionsTable.pageId,
+        pageNumber: workbookPagesTable.pageNumber,
+        status: workbookSubmissionsTable.status,
+        decision: workbookSubmissionsTable.decision,
+        feedback: workbookSubmissionsTable.feedback,
+        awardedPoints: workbookSubmissionsTable.awardedPoints,
+        updatedAt: workbookSubmissionsTable.updatedAt,
+      })
+      .from(workbookSubmissionsTable)
+      .innerJoin(workbookPagesTable, eq(workbookPagesTable.id, workbookSubmissionsTable.pageId))
+      .where(
+        and(
+          eq(workbookSubmissionsTable.userId, req.user!.id),
+          eq(workbookSubmissionsTable.workbookId, workbook.id),
+        ),
+      )
+      .orderBy(asc(workbookPagesTable.pageNumber));
+    res.json({ submissions: rows });
+  } catch (err) {
+    req.log.error({ err }, "Workbook submissions read failed");
+    res.status(500).json({ error: "Could not load your progress" });
+  }
+});
+
+/**
+ * The trainer's queue: work waiting on a verdict, newest first.
+ *
+ * A plain trainer sees only workbooks linked to a course they teach — the
+ * same rule the lesson-activity queue applies, and for the same reason: a
+ * learner's written answer is theirs, not every trainer's to read. A workbook
+ * with no linked course therefore reaches supervisors and admins only, which
+ * is the safe direction to fail; linking it to its course is what puts it in
+ * front of the right trainer.
+ */
+router.get("/instructor/workbook-submissions", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
+  const status = req.query.status === "reviewed" ? "reviewed" : "submitted";
+  try {
+    let scope = null as null | string[];
+    if (!isSupervisorOrAdmin(req)) {
+      const taught = await db
+        .select({ courseId: courseTrainersTable.courseId })
+        .from(courseTrainersTable)
+        .where(eq(courseTrainersTable.userId, req.user!.id));
+      scope = taught.map((r) => r.courseId);
+      if (scope.length === 0) {
+        res.json({ submissions: [] });
+        return;
+      }
+    }
+    const rows = await db
+      .select({
+        id: workbookSubmissionsTable.id,
+        content: workbookSubmissionsTable.content,
+        videoUrl: workbookSubmissionsTable.videoUrl,
+        status: workbookSubmissionsTable.status,
+        decision: workbookSubmissionsTable.decision,
+        feedback: workbookSubmissionsTable.feedback,
+        awardedPoints: workbookSubmissionsTable.awardedPoints,
+        createdAt: workbookSubmissionsTable.createdAt,
+        updatedAt: workbookSubmissionsTable.updatedAt,
+        pageNumber: workbookPagesTable.pageNumber,
+        pageTitleAr: workbookPagesTable.titleAr,
+        exerciseAr: workbookPagesTable.exerciseAr,
+        exerciseType: workbookPagesTable.exerciseType,
+        skillKey: workbookPagesTable.skillKey,
+        skillPoints: workbookPagesTable.skillPoints,
+        workbookTitleAr: workbooksTable.titleAr,
+        workbookSlug: workbooksTable.slug,
+        studentEmail: usersTable.email,
+        studentFirst: usersTable.firstName,
+        studentLast: usersTable.lastName,
+      })
+      .from(workbookSubmissionsTable)
+      .innerJoin(workbookPagesTable, eq(workbookPagesTable.id, workbookSubmissionsTable.pageId))
+      .innerJoin(workbooksTable, eq(workbooksTable.id, workbookSubmissionsTable.workbookId))
+      .innerJoin(usersTable, eq(usersTable.id, workbookSubmissionsTable.userId))
+      .where(
+        and(
+          eq(workbookSubmissionsTable.status, status),
+          ...(scope ? [inArray(workbooksTable.linkedCourseId, scope)] : []),
+        ),
+      )
+      .orderBy(desc(workbookSubmissionsTable.updatedAt))
+      .limit(200);
+    res.json({ submissions: rows });
+  } catch (err) {
+    req.log.error({ err }, "Workbook submission queue failed");
+    res.status(500).json({ error: "Could not load the queue" });
+  }
+});
+
+/**
+ * Record a verdict, and settle the skill points it is worth.
+ *
+ * The award is expressed as a difference against awardedPoints rather than as
+ * an addition, because a trainer may review the same row more than once:
+ * passing twice must not pay twice, and downgrading a pass to
+ * "needs_revision" must take back exactly what that pass granted.
+ */
+router.post("/instructor/workbook-submissions/:id/review", async (req: Request, res: Response) => {
+  if (!requireRole(req, res, "supervisor", "trainer")) return;
+  const parsed = reviewSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid review", details: parsed.error.flatten() });
+    return;
+  }
+  const { decision, feedback } = parsed.data;
+  try {
+    // Scoped exactly like the queue. Reading the queue and acting on a row
+    // are the same privilege, so an id learned elsewhere must not be a way
+    // around it — the scope goes in the WHERE clause, not a later check.
+    let scope = null as null | string[];
+    if (!isSupervisorOrAdmin(req)) {
+      const taught = await db
+        .select({ courseId: courseTrainersTable.courseId })
+        .from(courseTrainersTable)
+        .where(eq(courseTrainersTable.userId, req.user!.id));
+      scope = taught.map((r) => r.courseId);
+      if (scope.length === 0) {
+        res.status(404).json({ error: "Submission not found" });
+        return;
+      }
+    }
+    const [row] = await db
+      .select({
+        submissionId: workbookSubmissionsTable.id,
+        userId: workbookSubmissionsTable.userId,
+        awardedPoints: workbookSubmissionsTable.awardedPoints,
+        skillKey: workbookPagesTable.skillKey,
+        skillPoints: workbookPagesTable.skillPoints,
+      })
+      .from(workbookSubmissionsTable)
+      .innerJoin(workbookPagesTable, eq(workbookPagesTable.id, workbookSubmissionsTable.pageId))
+      .innerJoin(workbooksTable, eq(workbooksTable.id, workbookSubmissionsTable.workbookId))
+      .where(
+        and(
+          eq(workbookSubmissionsTable.id, req.params.id),
+          ...(scope ? [inArray(workbooksTable.linkedCourseId, scope)] : []),
+        ),
+      )
+      .limit(1);
+    if (!row) {
+      res.status(404).json({ error: "Submission not found" });
+      return;
+    }
+
+    const shouldBeWorth = decision === "pass" && row.skillKey ? row.skillPoints : 0;
+    const delta = shouldBeWorth - row.awardedPoints;
+
+    const [saved] = await db
+      .update(workbookSubmissionsTable)
+      .set({
+        status: "reviewed",
+        decision,
+        feedback: feedback ?? null,
+        reviewedById: req.user!.id,
+        reviewedAt: new Date(),
+        awardedPoints: shouldBeWorth,
+        updatedAt: new Date(),
+      })
+      .where(eq(workbookSubmissionsTable.id, row.submissionId))
+      .returning();
+
+    if (delta !== 0 && row.skillKey) {
+      await creditSkillPoints(row.userId, row.skillKey, delta);
+    }
+    res.json({ submission: saved, skillPointsChanged: delta });
+  } catch (err) {
+    req.log.error({ err }, "Workbook submission review failed");
+    res.status(500).json({ error: "Could not save the review" });
   }
 });
 
