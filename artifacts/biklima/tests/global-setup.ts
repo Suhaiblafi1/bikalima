@@ -18,6 +18,9 @@ import {
   workbooksTable,
   workbookPagesTable,
   workbookOrdersTable,
+  workbookSubmissionsTable,
+  studentSkillScoresTable,
+  inPersonCourseRegistrationsTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { TEST_FIXTURES } from "./fixtures/data";
@@ -338,6 +341,18 @@ async function upsertWorkbook(opts: {
   return workbookId;
 }
 
+/**
+ * Clear what a run leaves behind, so the suite is re-runnable against the same
+ * database. Scoped to the seeded learner — it must never touch other rows.
+ */
+async function resetPerRunState(learnerId: string, inPersonCourseId: string) {
+  await db.delete(workbookSubmissionsTable).where(eq(workbookSubmissionsTable.userId, learnerId));
+  await db.delete(studentSkillScoresTable).where(eq(studentSkillScoresTable.userId, learnerId));
+  await db
+    .delete(inPersonCourseRegistrationsTable)
+    .where(eq(inPersonCourseRegistrationsTable.eventId, inPersonCourseId));
+}
+
 /** A confirmed order is what entitles the learner to read the workbook. */
 async function ensureWorkbookOrder(userId: string, workbookId: string) {
   const [existing] = await db
@@ -592,6 +607,14 @@ export default async function globalSetup() {
   process.env.E2E_DRAFT_COURSE_ID = draftCourseId;
   process.env.E2E_QUIZ_LESSON_ID = quizFixture.lessonId;
   process.env.E2E_QUIZ_ACTIVITY_ID = quizFixture.activityId;
+  // Per-run state the specs create and then assert exact numbers about.
+  // Seeding is idempotent, but this is not: a submission left passed from an
+  // earlier run makes the next "pass" worth zero, and a leftover in-person
+  // registration makes the next one a duplicate. Both showed up as failures
+  // on a re-used database while passing on a fresh one — which is the worst
+  // shape of flake, since CI never sees it.
+  await resetPerRunState(learnerId, inPersonCourseId);
+
   process.env.E2E_WORKBOOK_ID = workbookId;
   process.env.E2E_LOCKED_WORKBOOK_ID = lockedWorkbookId;
 
