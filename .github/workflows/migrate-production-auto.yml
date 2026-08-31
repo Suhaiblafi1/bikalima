@@ -1,0 +1,128 @@
+name: Apply additive migrations (production, automatic)
+
+# The problem this solves is not hypothetical. 0011 and 0012 sat unapplied
+# from the day they merged until someone noticed the workbook reader erroring
+# in production; 0013 and 0014 then repeated it. Nothing applies migrations on
+# deploy — Vercel builds and ships the code, and the schema it expects is left
+# to a person remembering a manual workflow.
+#
+# So this applies them, but only the ones that cannot lose data and cannot
+# break the code already running. check-safe-to-autoapply.mjs sorts the
+# pending migrations and fails this run on anything that drops, renames,
+# retypes, tightens or rewrites — those still belong to a person who has taken
+# a backup, through the manual workflow, which stays exactly as it is.
+#
+# Measured against the fifteen migrations in this repository: eleven would
+# apply here, and four (0002, 0006, 0007, 0008) would be handed back.
+on:
+  push:
+    branches: [main]
+    # Only when a migration actually changed. Every other push skips this
+    # entirely rather than connecting to production to learn there is nothing
+    # to do.
+    paths:
+      - "lib/db/drizzle/**"
+      - ".github/workflows/migrate-production-auto.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Shares its group with the manual workflow, so an automatic run and a person
+# applying a migration by hand can never touch the database at the same time.
+# Never cancel-in-progress: a run killed midway is the one outcome worse than
+# a migration not running at all.
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    # A throwaway database to rehearse on. Applying the whole journal from
+    # nothing proves the pending SQL is valid before production sees it —
+    # cheap insurance that does not depend on another workflow having finished.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bikalima
+          POSTGRES_PASSWORD: rehearsal
+          POSTGRES_DB: bikalima_rehearsal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bikalima -d bikalima_rehearsal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Rehearse the whole journal on a throwaway database
+        env:
+          DATABASE_URL: postgresql://bikalima:rehearsal@localhost:5432/bikalima_rehearsal
+        run: pnpm --filter @workspace/db migrate
+
+      # Refuses a URL that cannot work and names which part is wrong, rather
+      # than surfacing a bare EAI_AGAIN from inside drizzle. Prints host and
+      # port only — never the user, password or database name.
+      - name: Check the production connection
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        working-directory: lib/db
+        run: node check-connection.mjs
+
+      - name: Decide whether the pending migrations may apply unattended
+        id: safety
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        working-directory: lib/db
+        run: node check-safe-to-autoapply.mjs
+
+      - name: Apply migrations
+        if: steps.safety.outputs.pending != '0'
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: pnpm --filter @workspace/db migrate
+
+      # Compares drizzle's own ledger against the journal — no bundler, no
+      # schema import, nothing that can break on a dependency layout change.
+      - name: Verify every migration applied
+        if: steps.safety.outputs.pending != '0'
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        working-directory: lib/db
+        run: |
+          node -e "
+            const pg = require('pg');
+            const expected = require('./drizzle/meta/_journal.json').entries.length;
+            const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
+            c.connect()
+              .then(() => c.query('select count(*)::int as n from drizzle.__drizzle_migrations'))
+              .then((r) => {
+                const applied = r.rows[0].n;
+                console.log('migrations in repository: ' + expected);
+                console.log('applied in production:    ' + applied);
+                if (applied === expected) {
+                  console.log('Production is up to date.');
+                } else {
+                  console.error('::error::' + (expected - applied) + ' migration(s) still pending.');
+                  process.exitCode = 1;
+                }
+              })
+              .catch((e) => { console.error('::error::Could not read the migration ledger: ' + e.message); process.exitCode = 1; })
+              .finally(() => c.end());
+          "
