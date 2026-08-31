@@ -1,21 +1,32 @@
-name: Grant admin access (production)
+name: Manage admin access (production)
 
 # Roles live in the database, never in a config file or an email allow-list,
 # so the only way to create the first admin is to write the row. This does it
 # without the production URL leaving GitHub Secrets, and GitHub records who
 # ran it and when.
 #
-# Leave `email` empty to just list the accounts that already have a role
-# above student — useful for answering "who is admin already?".
+# "list" changes nothing and needs no confirmation — use it to answer
+# "who is admin already?".
 on:
   workflow_dispatch:
     inputs:
+      action:
+        description: "What to do"
+        type: choice
+        required: true
+        default: list
+        options:
+          - list
+          - inspect
+          - grant
+          - revoke
+          - delete
       email:
-        description: "Email of the account to promote. Leave empty to only LIST existing admins."
+        description: "Account to act on. Ignored by list."
         required: false
         default: ""
       confirm:
-        description: 'To promote, type "grant". Ignored when listing.'
+        description: 'Retype the action word ("grant", "revoke" or "delete") to confirm.'
         required: false
         default: ""
 
@@ -34,12 +45,29 @@ jobs:
     steps:
       - name: Check the confirmation
         run: |
-          if [ -n "${{ inputs.email }}" ] && [ "${{ inputs.confirm }}" != "grant" ]; then
-            echo "::error::An email was given but the confirmation is missing — type exactly: grant"
+          ACTION='${{ inputs.action }}'
+          if [ "$ACTION" = "list" ]; then
+            echo "Listing only — nothing will be changed."
+            exit 0
+          fi
+          if [ "$ACTION" = "inspect" ]; then
+            if [ -z '${{ inputs.email }}' ]; then
+              echo "::error::inspect needs an email address."
+              exit 1
+            fi
+            echo "Read-only report — nothing will be changed."
+            exit 0
+          fi
+          if [ -z '${{ inputs.email }}' ]; then
+            echo "::error::$ACTION needs an email address."
             exit 1
           fi
-          if [ -z "${{ inputs.email }}" ]; then
-            echo "No email given — listing existing admins only, nothing will be changed."
+          if [ '${{ inputs.confirm }}' != "$ACTION" ]; then
+            echo "::error::Confirmation missing — type exactly: $ACTION"
+            exit 1
+          fi
+          if [ "$ACTION" = "delete" ]; then
+            echo "::warning::delete removes the account row and every row cascading from it. This cannot be undone."
           fi
 
       - uses: actions/checkout@v4
@@ -61,10 +89,10 @@ jobs:
         working-directory: lib/db
         run: node check-connection.mjs
 
-      - name: List or grant
+      - name: Run the action
         env:
           DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
           ADMIN_EMAIL: ${{ inputs.email }}
-          MODE: ${{ inputs.email != '' && 'grant' || 'list' }}
+          ACTION: ${{ inputs.action }}
         working-directory: lib/db
         run: node grant-admin.mjs
