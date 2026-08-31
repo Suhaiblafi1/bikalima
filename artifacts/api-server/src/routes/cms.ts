@@ -10,6 +10,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { requireRole, requireSupervisorOrAdmin } from "../lib/admin.js";
 import { HOME_SECTION_KEYS, isSectionKey } from "../cms/sections-schema.js";
 import { SECTION_DEFAULTS } from "../cms/sections-defaults.js";
+import { isUniqueViolation } from "../lib/db-errors.js";
 
 // Allow trainers to also manage the field-media library + analysis (UI shows
 // the page to admin+trainer; keep the API authorization aligned with that).
@@ -235,8 +236,7 @@ router.post("/admin/workbooks", async (req: Request, res: Response) => {
     await logActivity(req, "create", "workbook", row.id, `Created workbook "${row.titleAr}"`);
     res.status(201).json({ workbook: row });
   } catch (err) {
-    const code = (err as { code?: string }).code;
-    if (code === "23505") {
+    if (isUniqueViolation(err)) {
       return res.status(409).json({ error: "duplicate-slug", message: "هذا الـ slug مستخدم بالفعل لكراسة أخرى." });
     }
     req.log.error({ err }, "Failed to create workbook");
@@ -267,8 +267,7 @@ router.patch("/admin/workbooks/:id", async (req: Request, res: Response) => {
     await logActivity(req, "update", "workbook", row.id, `Updated workbook "${row.titleAr}"`);
     res.json({ workbook: row });
   } catch (err) {
-    const code = (err as { code?: string }).code;
-    if (code === "23505") {
+    if (isUniqueViolation(err)) {
       return res.status(409).json({ error: "duplicate-slug", message: "هذا الـ slug مستخدم بالفعل لكراسة أخرى." });
     }
     req.log.error({ err, id }, "Failed to update workbook");

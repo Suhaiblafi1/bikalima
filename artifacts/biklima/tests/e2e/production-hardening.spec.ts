@@ -157,10 +157,22 @@ test.describe("production hardening", () => {
   test("zod validation: POST /api/orders with invalid body returns 400 with issues", async ({ request }) => {
     // Anonymous request hits the auth check first (401), so we test the
     // schema on a public-but-validated endpoint instead: book-consultation.
+    //
+    // That endpoint allows 3 requests per hour per IP. On a freshly started
+    // server this test is the only caller and passes, but the limiter lives
+    // in memory for an hour, so a second run against a still-warm server
+    // gets 429 and the assertion below fails for a reason that has nothing
+    // to do with validation. Present a documentation-range IP (RFC 5737) —
+    // `trust proxy = 1` makes X-Forwarded-For the req.ip the limiter keys
+    // on — so each run gets a bucket of its own.
     const csrf = await request.get("/api/csrf");
     const token = (await csrf.json()).token as string;
     const r = await request.post("/api/book-consultation", {
-      headers: { "Content-Type": "application/json", "x-csrf-token": token },
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf-token": token,
+        "X-Forwarded-For": `203.0.113.${(Date.now() % 200) + 20}`,
+      },
       data: { name: "x", email: "not-an-email", date: "", time: "" },
     });
     expect(r.status()).toBe(400);

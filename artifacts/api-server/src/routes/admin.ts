@@ -34,6 +34,7 @@ import { createNotification } from "../lib/notifications.js";
 import { recordAuditLog, awardBadgeIfEligible } from "../lib/platform.js";
 import { paymentService } from "../integrations/paymentService.js";
 import { markOrderPaid, releaseDiscountReservation } from "./orders.js";
+import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
 
@@ -1498,7 +1499,7 @@ router.post("/admin/discount-codes", async (req: Request, res: Response) => {
     });
     res.json({ code: created });
   } catch (err) {
-    if ((err as { code?: string }).code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "هذا الكود مستخدم مسبقاً" });
       return;
     }

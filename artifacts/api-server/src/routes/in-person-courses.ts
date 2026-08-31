@@ -14,6 +14,7 @@ import { recordAuditLog } from "../lib/platform.js";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { sendWhatsAppText } from "../lib/whatsapp.js";
 import { applyAdHocLimit } from "../middlewares/security.js";
+import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
 const EVENT_STATUSES = ["draft", "published", "closed", "cancelled"] as const;
@@ -358,7 +359,7 @@ router.post("/in-person-courses/:id/register", async (req: Request, res: Respons
       manageToken: token,
     });
   } catch (err) {
-    if ((err as { code?: string }).code === "23505") {
+    if (isUniqueViolation(err)) {
       res.status(409).json({ error: "لديك تسجيل قائم بالفعل في هذه الدورة" });
       return;
     }

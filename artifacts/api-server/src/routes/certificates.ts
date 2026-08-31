@@ -10,6 +10,7 @@ import { requireAdmin, requireRole, requireSupervisorOrAdmin, isSupervisorOrAdmi
 import { createNotification } from "../lib/notifications.js";
 import { awardBadgeIfEligible, recordAuditLog } from "../lib/platform.js";
 import { authRateLimit } from "../middlewares/security.js";
+import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
 const publicCertificateLookupLimiter = authRateLimit(30, 60_000);
@@ -369,8 +370,7 @@ router.post("/admin/certificates", async (req: Request, res: Response) => {
     }
     res.status(201).json({ certificate: row });
   } catch (err) {
-    const code = (err as { code?: string }).code;
-    if (code === "23505") {
+    if (isUniqueViolation(err)) {
       return res.status(409).json({
         error: "duplicate-code",
         message: "هذا الرقم مستخدم بالفعل لشهادة أخرى.",
@@ -437,8 +437,7 @@ router.patch("/admin/certificates/:id", async (req: Request, res: Response) => {
     }
     res.json({ certificate: row });
   } catch (err) {
-    const code = (err as { code?: string }).code;
-    if (code === "23505") {
+    if (isUniqueViolation(err)) {
       return res.status(409).json({
         error: "duplicate-code",
         message: "هذا الرقم مستخدم بالفعل لشهادة أخرى.",

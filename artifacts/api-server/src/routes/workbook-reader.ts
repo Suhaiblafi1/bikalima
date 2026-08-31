@@ -9,6 +9,7 @@ import {
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { isAdmin, requireAdmin } from "../lib/admin.js";
+import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
 
@@ -16,19 +17,6 @@ const router: IRouter = Router();
 // "pending" state — the same rule /my/workbooks already uses to decide what
 // appears in "مكتباتي". Admins read everything so they can proof a draft.
 const OWNED_STATUSES = ["confirmed", "shipped", "delivered"] as const;
-
-/**
- * True for a Postgres unique-violation. Drizzle wraps driver errors in a
- * _DrizzleQueryError, so the pg `code` sits on the cause rather than on the
- * error itself — checking only the top level silently misses every conflict.
- */
-function isUniqueViolation(err: unknown): boolean {
-  for (let e: unknown = err, depth = 0; e && depth < 5; depth++) {
-    if ((e as { code?: string }).code === "23505") return true;
-    e = (e as { cause?: unknown }).cause;
-  }
-  return false;
-}
 
 function requireAuth(req: Request, res: Response): boolean {
   if (!req.isAuthenticated?.() || !req.user) {
