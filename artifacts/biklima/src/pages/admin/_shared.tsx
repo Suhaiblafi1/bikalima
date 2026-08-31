@@ -1,3 +1,4 @@
+import { SPEECH_EVAL_RUBRIC } from "@workspace/assessment";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -289,15 +290,9 @@ export type SpeechEvaluationRecord = {
   updatedAt: string;
 };
 
-export const RUBRIC_CRITERIA: { key: string; labelAr: string }[] = [
-  { key: "clarity", labelAr: "الوضوح" },
-  { key: "voice", labelAr: "الصوت" },
-  { key: "body_language", labelAr: "لغة الجسد" },
-  { key: "structure", labelAr: "الهيكلة" },
-  { key: "content", labelAr: "المحتوى" },
-  { key: "presence", labelAr: "الحضور" },
-  { key: "impact", labelAr: "التأثير" },
-];
+export const RUBRIC_CRITERIA: { key: string; labelAr: string }[] = SPEECH_EVAL_RUBRIC.criteria.map(
+  (c) => ({ key: c.key, labelAr: c.titleAr }),
+);
 
 export const PROGRAM_RECOMMENDATION_OPTIONS: {
   value: "core" | "tot" | "teachers" | "children" | "none";

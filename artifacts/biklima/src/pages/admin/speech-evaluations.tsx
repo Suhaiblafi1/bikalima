@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic2, ExternalLink, ChevronDown, ChevronUp, Mail, Phone, Calendar, Send, Save, CheckCircle2, AlertCircle } from "lucide-react";
+import { SPEECH_EVAL_RUBRIC, bandFor } from "@workspace/assessment";
 import { AdminLayout } from "./_layout";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
 import { useMe } from "@/hooks/use-me";
@@ -16,6 +17,58 @@ import {
   type SpeechEvaluationRecord,
   type TrainerOption,
 } from "./_shared";
+
+/**
+ * The four described bands for one criterion, with the current score's band
+ * marked. The descriptors are the point: a grader who has read "لحظة واحدة
+ * على الأقلّ يستطيع السامع أن يحكيها لغيره بعد أيام" and one who has read
+ * nothing are not applying the same standard, however close their numbers
+ * happen to land.
+ */
+function BandPicker({
+  criterionKey,
+  score,
+  onPick,
+  evaluationId,
+}: {
+  criterionKey: string;
+  score: number | null;
+  onPick: (value: number) => void;
+  evaluationId: string;
+}) {
+  const criterion = SPEECH_EVAL_RUBRIC.criteria.find((c) => c.key === criterionKey);
+  if (!criterion) return null;
+  const current = bandFor(SPEECH_EVAL_RUBRIC, criterionKey, score);
+
+  return (
+    <div className="mt-1 space-y-1" data-testid={`rubric-bands-${criterionKey}-${evaluationId}`}>
+      {criterion.bands.map((band) => {
+        const on = current?.from === band.from;
+        return (
+          <button
+            key={band.from}
+            type="button"
+            onClick={() => onPick(band.represents)}
+            aria-pressed={on}
+            className={`flex w-full items-start gap-2 rounded-md border p-1.5 text-start transition-colors ${
+              on ? "border-primary bg-primary/5" : "border-border/60 hover:border-primary/40"
+            }`}
+            data-testid={`rubric-band-${criterionKey}-${band.from}`}
+          >
+            <span
+              className={`mt-px shrink-0 rounded px-1 py-0.5 text-[9px] font-bold tabular-nums ${
+                on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {band.from}–{band.to} · {band.labelAr}
+            </span>
+            <span className="text-[11px] leading-relaxed text-foreground/75">{band.descriptorAr}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 type Toast = { type: "success" | "error"; text: string } | null;
 
@@ -206,6 +259,18 @@ function RubricEditor({
                   data-testid={`rubric-${c.key}-${evaluation.id}`}
                 />
               </div>
+              {/* What a number on this criterion means. Seven bare 0–100 inputs
+                  gave a grader no definition of any criterion and a scale
+                  precise enough to invite a choice between 71 and 74 that
+                  nobody could defend. Clicking a band records its middle; the
+                  input above still takes any value, so evaluations already
+                  recorded keep their exact scores. */}
+              <BandPicker
+                criterionKey={c.key}
+                score={rubric[c.key] === "" ? null : Number(rubric[c.key])}
+                onPick={(value) => setRubric((p) => ({ ...p, [c.key]: value }))}
+                evaluationId={evaluation.id}
+              />
               <Textarea
                 value={notes[c.key] ?? ""}
                 onChange={(e) => setNotes((p) => ({ ...p, [c.key]: e.target.value.slice(0, 2000) }))}

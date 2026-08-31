@@ -18,6 +18,23 @@ type ImpactStat = {
   isOverridden: boolean;
 };
 
+/**
+ * Whether a stat is worth putting on a public page.
+ *
+ * It is not, when it is a computed zero. The value arrives as a string, and
+ * "0" is truthy in JavaScript, so `{s.value || "—"}` printed four zeros in
+ * 5xl bold type to every visitor of a page that sells training — worse than
+ * the page not existing. Only an empty string ever reached the dash.
+ *
+ * An overridden zero is kept: someone typed it on purpose, and overruling a
+ * deliberate choice is not this component's business.
+ */
+function hasRealValue(stat: ImpactStat): boolean {
+  if (stat.isOverridden) return stat.value.trim().length > 0;
+  const digits = stat.value.replace(/[^0-9]/g, "");
+  return digits.length > 0 && Number(digits) > 0;
+}
+
 type ImpactStory = {
   id: string;
   name: string;
@@ -66,7 +83,7 @@ export default function ImpactPage() {
         if (!r.ok) throw new Error("failed");
         const d = (await r.json()) as { stats: ImpactStat[]; stories: ImpactStory[] };
         if (cancelled) return;
-        setStats(d.stats ?? []);
+        setStats((d.stats ?? []).filter(hasRealValue));
         setStories(d.stories ?? []);
       })
       .catch(() => { if (!cancelled) setError(true); })

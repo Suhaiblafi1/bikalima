@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import {
+  SPEECH_EVAL_RUBRIC,
   TEXT_RUBRIC,
   VIDEO_RUBRIC,
+  bandFor,
   distributeSkillPoints,
   rubricSkills,
   scoreRubric,
@@ -151,5 +153,55 @@ test.describe("re-review settlement", () => {
   test("raising the marks pays only the difference", () => {
     const raised = distributeSkillPoints(VIDEO_RUBRIC, all(VIDEO_RUBRIC, 4), 15);
     expect(sum(settleSkillPoints(first, raised))).toBe(sum(raised) - sum(first));
+  });
+});
+
+test.describe("speech evaluation bands", () => {
+  test("every band is written, distinct, and covers the scale with no gap", () => {
+    const seen = new Set<string>();
+    for (const c of SPEECH_EVAL_RUBRIC.criteria) {
+      expect(c.bands, `${c.key} must offer four bands`).toHaveLength(4);
+      let previousTo = -1;
+      for (const band of c.bands) {
+        // A band nobody can read is the state this replaced: seven bare 0–100
+        // inputs with no definition of any criterion.
+        expect(band.descriptorAr.trim().length, `${c.key}/${band.from}`).toBeGreaterThan(30);
+        expect(band.descriptorAr).not.toMatch(/TBD|كما سبق/);
+        expect(seen.has(band.descriptorAr), `duplicate: ${band.descriptorAr}`).toBe(false);
+        seen.add(band.descriptorAr);
+
+        // Contiguous and ascending: a score must never fall between bands.
+        expect(band.from).toBe(previousTo + 1);
+        expect(band.to).toBeGreaterThanOrEqual(band.from);
+        previousTo = band.to;
+
+        // Clicking a band records a score inside it, not on its edge.
+        expect(band.represents).toBeGreaterThanOrEqual(band.from);
+        expect(band.represents).toBeLessThanOrEqual(band.to);
+      }
+      expect(c.bands[0].from).toBe(SPEECH_EVAL_RUBRIC.min);
+      expect(c.bands[3].to).toBe(SPEECH_EVAL_RUBRIC.max);
+    }
+  });
+
+  test("every score on the scale resolves to exactly one band", () => {
+    for (const c of SPEECH_EVAL_RUBRIC.criteria) {
+      for (let score = SPEECH_EVAL_RUBRIC.min; score <= SPEECH_EVAL_RUBRIC.max; score++) {
+        const band = bandFor(SPEECH_EVAL_RUBRIC, c.key, score);
+        expect(band, `${c.key} @ ${score}`).not.toBeNull();
+        const matches = c.bands.filter((b) => score >= b.from && score <= b.to);
+        expect(matches).toHaveLength(1);
+      }
+      // Round-trip: the score a band records reads back as that same band.
+      for (const band of c.bands) {
+        expect(bandFor(SPEECH_EVAL_RUBRIC, c.key, band.represents)?.from).toBe(band.from);
+      }
+    }
+  });
+
+  test("an unscored criterion has no band, and an unknown criterion none either", () => {
+    expect(bandFor(SPEECH_EVAL_RUBRIC, "clarity", null)).toBeNull();
+    expect(bandFor(SPEECH_EVAL_RUBRIC, "clarity", undefined)).toBeNull();
+    expect(bandFor(SPEECH_EVAL_RUBRIC, "no_such_criterion", 80)).toBeNull();
   });
 });
