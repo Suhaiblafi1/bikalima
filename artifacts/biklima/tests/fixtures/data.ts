@@ -47,4 +47,22 @@ export const TEST_FIXTURES = {
   badge: {
     key: "e2e_test_badge",
   },
+  // A workbook the learner owns (a confirmed order is seeded), carrying one
+  // published page and one draft the learner must never see.
+  workbook: {
+    slug: "e2e-workbook",
+    titleAr: "كرّاسة اختبار E2E",
+    sectionAr: "الفصل الأول · النطاق اللفظي",
+    pageTitleAr: "بناء الافتتاحية",
+    bodyFirstParagraph: "الافتتاحية عقدٌ تعقده مع المستمع في أول عشر ثوانٍ.",
+    bodySecondParagraph: "ابدأ بسؤال لا يملك المستمع إجابته، ثم اصمت ثانيةً كاملة.",
+    exerciseAr: "اكتب ثلاث افتتاحيات لموضوعك، ثم احذف اثنتين.",
+    draftTitleAr: "صفحة مسودة",
+  },
+  // A published workbook with no order for the learner: reading it must be
+  // refused, which is what proves the entitlement gate is load-bearing.
+  lockedWorkbook: {
+    slug: "e2e-workbook-locked",
+    titleAr: "كرّاسة غير مملوكة",
+  },
 } as const;

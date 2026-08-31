@@ -15,6 +15,9 @@ import {
   courseTrainersTable,
   lessonActivitiesTable,
   parentLinksTable,
+  workbooksTable,
+  workbookPagesTable,
+  workbookOrdersTable,
 } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { TEST_FIXTURES } from "./fixtures/data";
@@ -270,6 +273,90 @@ async function upsertInPersonCourse(courseId: string) {
   return created.id;
 }
 
+/**
+ * Seed a workbook and its pages. Pages are keyed by their number so a re-run
+ * updates in place rather than tripping uq_workbook_pages_number.
+ */
+async function upsertWorkbook(opts: {
+  slug: string;
+  titleAr: string;
+  pages: Array<{
+    pageNumber: number;
+    sectionAr?: string;
+    titleAr?: string;
+    bodyAr: string;
+    exerciseAr?: string;
+    isPublished?: boolean;
+  }>;
+}): Promise<string> {
+  const [existing] = await db.select().from(workbooksTable).where(eq(workbooksTable.slug, opts.slug));
+  const values = {
+    slug: opts.slug,
+    titleAr: opts.titleAr,
+    status: "published" as const,
+    format: "digital" as const,
+  };
+  const workbookId = existing
+    ? (await db.update(workbooksTable).set(values).where(eq(workbooksTable.id, existing.id)).returning())[0].id
+    : (await db.insert(workbooksTable).values(values).returning())[0].id;
+
+  for (const page of opts.pages) {
+    const [row] = await db
+      .select()
+      .from(workbookPagesTable)
+      .where(
+        and(
+          eq(workbookPagesTable.workbookId, workbookId),
+          eq(workbookPagesTable.pageNumber, page.pageNumber),
+        ),
+      );
+    const pageValues = {
+      workbookId,
+      pageNumber: page.pageNumber,
+      sectionAr: page.sectionAr ?? null,
+      titleAr: page.titleAr ?? null,
+      bodyAr: page.bodyAr,
+      exerciseAr: page.exerciseAr ?? null,
+      isPublished: page.isPublished ?? true,
+    };
+    if (row) {
+      await db.update(workbookPagesTable).set(pageValues).where(eq(workbookPagesTable.id, row.id));
+    } else {
+      await db.insert(workbookPagesTable).values(pageValues);
+    }
+  }
+  return workbookId;
+}
+
+/** A confirmed order is what entitles the learner to read the workbook. */
+async function ensureWorkbookOrder(userId: string, workbookId: string) {
+  const [existing] = await db
+    .select()
+    .from(workbookOrdersTable)
+    .where(
+      and(
+        eq(workbookOrdersTable.userId, userId),
+        eq(workbookOrdersTable.workbookId, workbookId),
+      ),
+    );
+  if (existing) {
+    await db
+      .update(workbookOrdersTable)
+      .set({ status: "confirmed" })
+      .where(eq(workbookOrdersTable.id, existing.id));
+    return;
+  }
+  await db.insert(workbookOrdersTable).values({
+    userId,
+    workbookId,
+    format: "pdf",
+    buyerName: `${TEST_FIXTURES.learner.firstName} ${TEST_FIXTURES.learner.lastName}`,
+    buyerEmail: TEST_FIXTURES.learner.email,
+    buyerPhone: "0790000000",
+    status: "confirmed",
+  });
+}
+
 async function ensureFeatureFlag(key: string, enabled: boolean) {
   const [existing] = await db
     .select()
@@ -432,6 +519,29 @@ export default async function globalSetup() {
   });
   const inPersonCourseId = await upsertInPersonCourse(courseId);
   await ensureBadgeAwarded(learnerId);
+
+  const wb = TEST_FIXTURES.workbook;
+  const workbookId = await upsertWorkbook({
+    slug: wb.slug,
+    titleAr: wb.titleAr,
+    pages: [
+      {
+        pageNumber: 1,
+        sectionAr: wb.sectionAr,
+        titleAr: wb.pageTitleAr,
+        // A blank line between paragraphs is what the reader splits on.
+        bodyAr: `${wb.bodyFirstParagraph}\n\n${wb.bodySecondParagraph}`,
+        exerciseAr: wb.exerciseAr,
+      },
+      { pageNumber: 2, titleAr: wb.draftTitleAr, bodyAr: "مسودة لا يراها الطالب.", isPublished: false },
+    ],
+  });
+  await ensureWorkbookOrder(learnerId, workbookId);
+  const lockedWorkbookId = await upsertWorkbook({
+    slug: TEST_FIXTURES.lockedWorkbook.slug,
+    titleAr: TEST_FIXTURES.lockedWorkbook.titleAr,
+    pages: [{ pageNumber: 1, bodyAr: "صفحة في كرّاسة لا يملكها الطالب." }],
+  });
   // Make sure the public graduates registry is enabled so the spec can
   // assert the seeded card renders deterministically.
   await ensureFeatureFlag("graduates_page", true);
@@ -446,6 +556,8 @@ export default async function globalSetup() {
   process.env.E2E_DRAFT_COURSE_ID = draftCourseId;
   process.env.E2E_QUIZ_LESSON_ID = quizFixture.lessonId;
   process.env.E2E_QUIZ_ACTIVITY_ID = quizFixture.activityId;
+  process.env.E2E_WORKBOOK_ID = workbookId;
+  process.env.E2E_LOCKED_WORKBOOK_ID = lockedWorkbookId;
 
   // eslint-disable-next-line no-console
   console.log(
