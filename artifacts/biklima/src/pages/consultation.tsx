@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { CalendarCheck, MessageCircle, CheckCircle2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 type Settings = {
   whatsappNumber?: string | null;
@@ -18,6 +19,7 @@ const apiBase = (() => {
 })();
 
 export default function ConsultationPage() {
+  usePageMeta({ title: "استشارة", description: "احجز استشارة مع فريق بكلمة لاختيار البرنامج الأنسب لمسارك.", canonicalPath: "/consultation" });
   const { lang } = useLang();
   const isArabic = lang === "ar";
   const [settings, setSettings] = useState<Settings | null>(null);

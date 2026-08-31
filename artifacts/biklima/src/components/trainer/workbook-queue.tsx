@@ -172,7 +172,7 @@ export function TrainerWorkbookQueue({ onReviewed }: { onReviewed?: () => void }
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold ${
                         row.decision === "pass"
-                          ? "bg-green-600/10 text-green-700"
+                          ? "bg-success-muted text-success"
                           : "bg-accent/15 text-accent-foreground"
                       }`}
                     >

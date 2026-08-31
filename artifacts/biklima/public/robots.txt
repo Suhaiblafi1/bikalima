@@ -14,3 +14,6 @@ Disallow: /api
 Disallow: /api/
 
 Sitemap: https://bikalima.com/sitemap.xml
+
+# Agent-readable summary of the site
+# https://bikalima.com/llms.txt

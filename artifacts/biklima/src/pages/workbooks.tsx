@@ -14,6 +14,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { WorkbookOrderModal } from "@/components/workbook-order-modal";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 type WisdomArticle = { source: string; category: string; icon: React.ReactNode; quote: string; body: string };
 
@@ -51,6 +52,7 @@ const wisdomArticles: Record<Lang | "fr", WisdomArticle[]> = {
 };
 
 export default function WorkbooksPage() {
+  usePageMeta({ title: "الكرّاسات", description: "كرّاسات بكلمة التدريبية في فن الخطابة والإلقاء — اطلبها مطبوعة أو رقمية.", canonicalPath: "/workbooks" });
   const { lang, dir } = useLang();
   const t = T[lang];
   const { format: formatPrice } = useCurrency();

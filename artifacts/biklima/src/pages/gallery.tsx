@@ -10,8 +10,10 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { VideoLibrarySection } from "@/components/video-library-section";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 export default function GalleryPage() {
+  usePageMeta({ title: "معرضنا", description: "صور من ورش وبرامج بكلمة التدريبية في الأردن والعالم العربي.", canonicalPath: "/gallery" });
   const { lang, dir } = useLang();
   const t = T[lang];
 

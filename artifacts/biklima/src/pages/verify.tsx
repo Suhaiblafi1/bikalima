@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { ShieldCheck, Search, AlertCircle, CheckCircle2, MessageCircle, ExternalLink } from "lucide-react";
 
 type PublicCert = {
@@ -170,6 +171,7 @@ export function CertificateCard({ cert }: { cert: PublicCert }) {
 }
 
 export default function VerifyPage() {
+  usePageMeta({ title: "تحقق من شهادة", description: "تحقّق من صحة أي شهادة أو اعتماد صادر عن بكلمة برقم الشهادة أو الاسم.", canonicalPath: "/verify" });
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);

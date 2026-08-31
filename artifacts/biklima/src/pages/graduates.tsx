@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePageMeta } from "@/hooks/use-page-meta";
 import { GraduationCap, ShieldCheck, Search } from "lucide-react";
 
 type Graduate = {
@@ -40,6 +41,7 @@ function getApiBase(): string {
 }
 
 export default function GraduatesPage() {
+  usePageMeta({ title: "سجل الخريجين", description: "خريجو بكلمة وشركاؤها المعتمدون — تحقّق من أي شهادة من بطاقتها.", canonicalPath: "/graduates" });
   const [, navigate] = useLocation();
   const [items, setItems] = useState<Graduate[]>([]);
   const [loading, setLoading] = useState(true);

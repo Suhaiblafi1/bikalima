@@ -326,7 +326,7 @@ export default function WorkbookReaderPage() {
                       <h2 className="font-serif text-xl font-bold leading-relaxed">{title}</h2>
                     )}
                     {!body.isPublished && (
-                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+                      <span className="inline-flex items-center rounded-full bg-warning-muted px-2.5 py-0.5 text-[11px] font-bold text-warning">
                         {t.draft}
                       </span>
                     )}
@@ -364,7 +364,7 @@ export default function WorkbookReaderPage() {
                               <div
                                 className={`rounded-lg p-3 space-y-1 border ${
                                   submission.decision === "pass"
-                                    ? "border-green-600/30 bg-green-600/10"
+                                    ? "border-success/30 bg-success-muted"
                                     : "border-accent/40 bg-accent/10"
                                 }`}
                                 data-testid="workbook-exercise-verdict"
@@ -372,10 +372,10 @@ export default function WorkbookReaderPage() {
                                 <p className="text-xs font-bold flex items-center gap-1.5">
                                   {submission.decision === "pass" ? (
                                     <>
-                                      <CheckCircle2 className="h-3.5 w-3.5 text-green-700" />
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                                       {t.passed}
                                       {submission.awardedPoints > 0 && (
-                                        <span className="text-green-700">
+                                        <span className="text-success">
                                           {t.earned(submission.awardedPoints)}
                                         </span>
                                       )}

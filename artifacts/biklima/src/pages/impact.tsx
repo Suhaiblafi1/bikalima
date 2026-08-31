@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/pages/admin/_shared";
+import { usePageMeta } from "@/hooks/use-page-meta";
 
 type ImpactStat = {
   key: string;
@@ -49,6 +50,7 @@ const AVATAR_BG = [
 ];
 
 export default function ImpactPage() {
+  usePageMeta({ title: "أثرنا بالأرقام", description: "أرقام بكلمة: المتدربون والبرامج والساعات التدريبية والشهادات الممنوحة.", canonicalPath: "/impact" });
   const { lang, dir } = useLang();
   const [, navigate] = useLocation();
   const [stats, setStats] = useState<ImpactStat[]>([]);
