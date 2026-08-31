@@ -1,5 +1,6 @@
 import { BookOpen, Eye, MousePointerClick } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { SpeechSuggestionBox } from "@/components/speech-suggestion-box";
 import { VideoLibrarySection } from "@/components/video-library-section";
 import { useLang } from "@/hooks/useLang";
 import { usePageMeta } from "@/hooks/use-page-meta";
@@ -68,6 +69,8 @@ export default function LibraryPage() {
       </section>
 
       <VideoLibrarySection className="py-16 md:py-20 bg-background" />
+
+      <SpeechSuggestionBox />
     </AppShell>
   );
 }

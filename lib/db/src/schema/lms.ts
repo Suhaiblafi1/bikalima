@@ -637,6 +637,40 @@ export type WorkbookPage = typeof workbookPagesTable.$inferSelect;
 export type WorkbookNote = typeof workbookNotesTable.$inferSelect;
 export type WorkbookSubmission = typeof workbookSubmissionsTable.$inferSelect;
 
+/**
+ * A speech someone found worth watching, and what they made of it.
+ *
+ * Sign-in is required — userId is not nullable — because the value of this box
+ * is a named person's judgement, and an anonymous form on a public page
+ * collects spam instead. The opinion is optional: a link with nothing said
+ * about it is still a useful pointer, and demanding a paragraph would lose
+ * most of them.
+ */
+export const speechSuggestionsTable = pgTable(
+  "speech_suggestions",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    videoUrl: text("video_url").notNull(),
+    opinion: text("opinion"),
+    status: varchar("status", { length: 16 })
+      .$type<"new" | "reviewed" | "published" | "rejected">()
+      .notNull()
+      .default("new"),
+    adminNote: text("admin_note"),
+    reviewedById: varchar("reviewed_by_id").references(() => usersTable.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [
+    index("idx_speech_suggestions_status").on(t.status, t.createdAt),
+    index("idx_speech_suggestions_user").on(t.userId),
+  ],
+);
+
+export type SpeechSuggestion = typeof speechSuggestionsTable.$inferSelect;
+
 // ── CMS: Field Media + embedded Media Analysis ──────────────────────────
 // "من الميدان" library. Each row carries the media metadata AND optional
 // training analysis (skill, what to observe, why it matters, etc).
