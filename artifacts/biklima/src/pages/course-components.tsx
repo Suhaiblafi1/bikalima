@@ -406,11 +406,14 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
   const baseUrl = import.meta.env.BASE_URL?.replace(/\/$/, "") ?? "";
 
   return (
-    <div className={`relative bg-gradient-to-br ${heroGradient} text-white overflow-hidden`}>
+    <div className={`relative ${coverImage ? "bg-foreground" : `bg-gradient-to-br ${heroGradient}`} text-white overflow-hidden`}>
+      {/* Same correction as the programme hero: the image at 25% under an 80%
+          wash left almost nothing of the photograph visible. */}
       {coverImage && (
         <div className="absolute inset-0">
-          <img src={coverImage} alt={title} className="w-full h-full object-cover opacity-25" loading="lazy" decoding="async" />
-          <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-80`} />
+          <img src={coverImage} alt={title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-[0.82]`} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
         </div>
       )}
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CalendarCheck, MessageCircle, CheckCircle2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { useLang } from "@/hooks/useLang";
 
 type Settings = {
   whatsappNumber?: string | null;
@@ -17,6 +18,8 @@ const apiBase = (() => {
 })();
 
 export default function ConsultationPage() {
+  const { lang } = useLang();
+  const isArabic = lang === "ar";
   const [settings, setSettings] = useState<Settings | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -66,7 +69,7 @@ export default function ConsultationPage() {
     const wa = settings?.whatsappNumber?.replace(/\D/g, "");
     const waText = encodeURIComponent(`مرحباً، حجزت جلسة استشارة بتاريخ ${date} الساعة ${time}. اسمي ${name}.`);
     return (
-      <AppShell>
+      <AppShell breadcrumb={[{ label: isArabic ? "استشارة" : "Consultation" }]}>
         <div className="container mx-auto px-4 py-12 max-w-xl">
           <Card>
             <CardContent className="p-8 text-center space-y-4">
@@ -100,7 +103,7 @@ export default function ConsultationPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell breadcrumb={[{ label: isArabic ? "استشارة" : "Consultation" }]}>
       <div className="container mx-auto px-4 py-10 max-w-xl">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">

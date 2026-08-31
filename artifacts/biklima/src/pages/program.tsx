@@ -45,11 +45,14 @@ import {
   FAQSection, getCoursePageData, type DbLesson,
 } from "./course-components";
 
+// A wash laid over the photograph, not a replacement for it. The stops stay
+// deep enough on the text side to keep white legible and lift towards the
+// far corner so the image reads through.
 const HERO_GRADIENT: Record<string, string> = {
-  core: "from-primary via-primary/90 to-primary/70",
-  tot: "from-amber-800 via-amber-700 to-amber-600",
-  teachers: "from-teal-800 via-teal-700 to-teal-600",
-  children: "from-sky-800 via-sky-700 to-sky-600",
+  core: "from-primary via-primary/85 to-primary/55",
+  tot: "from-amber-900 via-amber-800/85 to-amber-700/55",
+  teachers: "from-teal-900 via-teal-800/85 to-teal-700/55",
+  children: "from-sky-900 via-sky-800/85 to-sky-700/55",
 };
 
 const ADMIN_EMAIL = "info@bikalima.com";
@@ -283,16 +286,22 @@ export default function ProgramPage() {
       ]}
     >
       {/* ── HERO ── */}
-      <section className={`relative bg-gradient-to-br ${heroGradient} text-white overflow-hidden`}>
+      {/* The photograph carries the hero; the brand colour tints it. It used to
+          be the other way round — a solid gradient with the image at 15%,
+          which read as a flat slab of colour with a ghost behind it. */}
+      <section className="relative bg-foreground text-white overflow-hidden">
         <img
           src={program.image}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover opacity-15"
+          className="absolute inset-0 h-full w-full object-cover"
           loading="eager"
           fetchPriority="high"
           decoding="async"
         />
+        <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-[0.72]`} aria-hidden />
+        {/* Keeps white text legible over whatever the photo happens to be. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" aria-hidden />
         <div className="relative container mx-auto px-6 py-12 md:py-20">
           <div className="max-w-3xl">
             <button

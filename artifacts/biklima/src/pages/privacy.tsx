@@ -124,7 +124,7 @@ export default function PrivacyPage() {
   const content = (fromDb && fromDb.trim().length > 0) ? fromDb : FALLBACK[lang];
 
   return (
-    <AppShell containerClassName="container mx-auto px-6 py-10">
+    <AppShell breadcrumb={[{ label: heading }]} containerClassName="container mx-auto px-6 py-10">
       <div className="max-w-3xl mx-auto">
         <h1 className="font-serif text-3xl font-bold md:text-4xl">{heading}</h1>
         {isLoading && (

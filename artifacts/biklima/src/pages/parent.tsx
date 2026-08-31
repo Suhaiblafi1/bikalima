@@ -3,6 +3,7 @@ import { Redirect } from "wouter";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useMe } from "@/hooks/use-me";
 import { AppShell } from "@/components/app-shell";
+import { useLang } from "@/hooks/useLang";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound, AlertTriangle, RefreshCw } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -72,6 +73,8 @@ function getApiBase(): string {
 }
 
 export default function ParentPage() {
+  const { lang } = useLang();
+  const isRtl = lang === "ar";
   const { isLoading: authLoading, isAuthenticated } = useAuth();
   const { user } = useMe();
   const apiBase = getApiBase();
@@ -145,7 +148,7 @@ export default function ParentPage() {
 
   if (authLoading) {
     return (
-      <AppShell containerClassName="flex-1 flex items-center justify-center">
+      <AppShell breadcrumb={[{ label: isRtl ? "متابعة ابني" : "Parent" }]} containerClassName="flex-1 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </AppShell>
     );
@@ -158,7 +161,7 @@ export default function ParentPage() {
   )) ?? null;
 
   return (
-    <AppShell>
+    <AppShell breadcrumb={[{ label: isRtl ? "متابعة ابني" : "Parent" }]}>
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6" dir="rtl">
         <PlatformIntro
           tone="family"
