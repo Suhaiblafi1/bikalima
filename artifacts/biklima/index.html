@@ -26,6 +26,43 @@
     <meta property="og:image:alt" content="بكلمة - صناعة الأثر وفن الإلقاء والخطابة" />
     <meta property="og:locale" content="ar_AR" />
 
+
+    <!-- schema.org: the site-wide graph. Static on purpose — a crawler that
+         does not run JavaScript still gets the organisation and the site,
+         which the per-page Course and FAQPage blocks cannot promise. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "EducationalOrganization",
+            "@id": "https://bikalima.com/#organization",
+            "name": "بكلمة",
+            "alternateName": "Bikalima",
+            "url": "https://bikalima.com",
+            "logo": "https://bikalima.com/opengraph.jpg",
+            "email": "info@bikalima.com",
+            "description": "مؤسسة تعليمية وتدريبية متخصصة في بناء مهارات الخطابة والتواصل للشباب والمهنيين والمعلمين.",
+            "address": { "@type": "PostalAddress", "addressCountry": "JO" },
+            "areaServed": { "@type": "Place", "name": "الأردن والعالم العربي" },
+            "founder": { "@type": "Person", "name": "صهيب الخوالدة" },
+            "sameAs": [
+              "https://www.instagram.com/suhaiblafi/",
+              "https://www.linkedin.com/in/suhaiblafi/"
+            ]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://bikalima.com/#website",
+            "url": "https://bikalima.com",
+            "name": "بكلمة",
+            "inLanguage": "ar",
+            "publisher": { "@id": "https://bikalima.com/#organization" }
+          }
+        ]
+      }
+    </script>
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="بكلمة - صناعة الأثر وفن الإلقاء والخطابة" />

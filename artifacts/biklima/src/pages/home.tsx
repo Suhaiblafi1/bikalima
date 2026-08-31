@@ -76,6 +76,7 @@ import { UpcomingCourseRegistration, type InPersonCoursePublic } from "@/compone
 import { useHomeSections } from "@/hooks/use-home-sections";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { useStructuredData, graph, faqPage as faqPageSchema } from "@/hooks/use-structured-data";
 import { getSectionContent } from "@/cms/sections-schema";
 
 import imgHeroCollage from "@assets/speeches_1774983233277.jpeg";
@@ -170,6 +171,10 @@ export default function Home() {
   const [, navigate] = useLocation();
   const articles = wisdomArticles[lang];
   const faqItems = t.faq.items;
+  // The home page renders these same questions, which is Google's condition
+  // for the FAQ rich result. Organization and WebSite are static in
+  // index.html, so this adds only what varies.
+  useStructuredData(graph(faqPageSchema(faqItems)));
   const localizedPrograms = programs.map((p) => getLocalizedProgram(p, lang));
   const localizedTestimonials = testimonialsData[lang];
 

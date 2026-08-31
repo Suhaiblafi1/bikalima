@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api-fetch";
+import {
+  useStructuredData,
+  graph,
+  courseGraph,
+  faqPage,
+  breadcrumbList,
+} from "@/hooks/use-structured-data";
 import { useRoute, useLocation } from "wouter";
 import {
   ArrowLeft,
@@ -164,6 +171,7 @@ export default function ProgramPage() {
     ogImage: program?.image,
   });
 
+
   if (!program) {
     return (
       <AppShell containerClassName="flex-1 flex items-center justify-center p-8">
@@ -177,6 +185,32 @@ export default function ProgramPage() {
 
   const loc = getLocalizedProgram(program, lang);
   const price = RECORDED_PRICES[programId as keyof typeof RECORDED_PRICES];
+
+  // Course + Offer put the price and duration in a Google result; FAQPage is
+  // emitted only when the questions are genuinely rendered on this page, which
+  // is Google's own condition for the rich result.
+  useStructuredData(
+    program && pageLoc
+      ? graph(
+          courseGraph({
+            name: pageLoc.shortTitle ?? pageLoc.title,
+            description: pageLoc.hook ?? pageLoc.description,
+            path: `/programs/${slug}`,
+            hours: program.hours,
+            sessions: program.sessions,
+            priceJod: typeof price === "number" ? price : null,
+            inLanguage: lang,
+            image: program.image,
+          }),
+          courseData?.faqItems?.length ? faqPage(courseData.faqItems) : null,
+          breadcrumbList([
+            { name: lang === "ar" ? "الرئيسية" : "Home", path: "/" },
+            { name: lang === "ar" ? "البرامج" : "Programs", path: "/programs" },
+            { name: pageLoc.shortTitle ?? pageLoc.title },
+          ]),
+        )
+      : null,
+  );
   const heroGradient = HERO_GRADIENT[programId] || "from-primary to-primary/80";
   const isSchoolsOnly = programId === "children";
   const courseSlug = PROGRAM_SLUGS[programId];
