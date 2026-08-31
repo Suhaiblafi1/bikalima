@@ -521,6 +521,18 @@ export const workbookPagesTable = pgTable(
     // Optional "تمرين الصفحة" callout.
     exerciseAr: text("exercise_ar"),
     exerciseEn: text("exercise_en"),
+    // What the learner does with that callout. "none" leaves it as prose to
+    // read; "text" collects a written answer; "video_link" collects a link to
+    // a recording of their own speech.
+    exerciseType: varchar("exercise_type", { length: 16 })
+      .$type<"none" | "text" | "video_link">()
+      .notNull()
+      .default("none"),
+    // Which of the eight public-speaking skills a passing review credits, and
+    // by how much. Held here rather than on the submission so the author sets
+    // the reward once and every learner's pass is worth the same.
+    skillKey: varchar("skill_key", { length: 32 }),
+    skillPoints: integer("skill_points").notNull().default(0),
     isPublished: boolean("is_published").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -553,8 +565,54 @@ export const workbookNotesTable = pgTable(
   ],
 );
 
+/**
+ * A learner's answer to one page's exercise, and the trainer's verdict on it.
+ *
+ * One row per learner per page (uq_workbook_submissions_user_page): a
+ * resubmission after "needs_revision" updates this row rather than adding a
+ * second, so the trainer's queue never shows the same exercise twice and the
+ * learner sees one continuous thread.
+ *
+ * awardedPoints records what the pass actually granted. Skill points are
+ * cumulative and a trainer may review the same row more than once, so the
+ * award has to be idempotent: crediting the difference against this column
+ * is what stops a second "pass" paying twice.
+ */
+export const workbookSubmissionsTable = pgTable(
+  "workbook_submissions",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    // Denormalised from the page so a trainer's queue for one workbook is a
+    // single indexed read rather than a join through every page.
+    workbookId: varchar("workbook_id").notNull().references(() => workbooksTable.id, { onDelete: "cascade" }),
+    pageId: varchar("page_id").notNull().references(() => workbookPagesTable.id, { onDelete: "cascade" }),
+    // Written answer for a "text" exercise.
+    content: text("content"),
+    // Link to the learner's own recording for a "video_link" exercise.
+    videoUrl: text("video_url"),
+    status: varchar("status", { length: 16 })
+      .$type<"submitted" | "reviewed">()
+      .notNull()
+      .default("submitted"),
+    decision: varchar("decision", { length: 16 }).$type<"pass" | "needs_revision">(),
+    feedback: text("feedback"),
+    reviewedById: varchar("reviewed_by_id").references(() => usersTable.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    awardedPoints: integer("awarded_points").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("uq_workbook_submissions_user_page").on(t.userId, t.pageId),
+    index("idx_workbook_submissions_queue").on(t.workbookId, t.status),
+    index("idx_workbook_submissions_user").on(t.userId, t.workbookId),
+  ],
+);
+
 export type WorkbookPage = typeof workbookPagesTable.$inferSelect;
 export type WorkbookNote = typeof workbookNotesTable.$inferSelect;
+export type WorkbookSubmission = typeof workbookSubmissionsTable.$inferSelect;
 
 // ── CMS: Field Media + embedded Media Analysis ──────────────────────────
 // "من الميدان" library. Each row carries the media metadata AND optional
