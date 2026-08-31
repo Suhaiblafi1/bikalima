@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Award, Heart, Loader2, Trophy, Sparkles, Shield, Mic, GraduationCap } from "lucide-react";
 
-import { SKILL_LABELS_AR } from "@/lib/skills";
+import { SKILL_KEYS, SKILL_LABELS_AR } from "@/lib/skills";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Sparkles, Award, Shield, Mic, GraduationCap, Trophy,
@@ -59,7 +59,7 @@ export function SkillsAndBadgesSection() {
     } finally { setSavingFear(false); }
   };
 
-  const skillKeys = Object.keys(SKILL_LABELS_AR);
+  const skillKeys = SKILL_KEYS;
   const maxScore = Math.max(50, ...Object.values(skills));
   const latestFear = fearEntries[0];
 

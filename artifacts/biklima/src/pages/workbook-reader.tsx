@@ -8,7 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { LoadingState } from "@/components/states";
 import { useLang } from "@/hooks/useLang";
 import { apiFetch } from "@/lib/api-fetch";
-import { skillLabel } from "@/lib/skills";
+import { rubricFor, rubricSkills, skillLabel } from "@workspace/assessment";
+import { RubricBrief } from "@/components/rubric-brief";
+import { RubricResult } from "@/components/rubric-result";
 
 type PageSummary = {
   id: string;
@@ -38,6 +40,12 @@ type Submission = {
   decision: "pass" | "needs_revision" | null;
   feedback: string | null;
   awardedPoints: number;
+  awardedBreakdown: Record<string, number> | null;
+  rubricKey: string | null;
+  rubricVersion: number | null;
+  rubricScores: Record<string, number> | null;
+  rubricNotes: Record<string, string> | null;
+  rubricPercent: number | null;
   updatedAt: string;
 };
 
@@ -87,7 +95,7 @@ const copy = {
     passed: "اجتزت التمرين",
     needsRevision: "يحتاج تعديلاً",
     trainerFeedback: "ملاحظة المدرّب",
-    worth: (n: number, skill: string) => `${n} نقطة في ${skill}`,
+    worth: (n: number, skills: string) => `حتى ${n} نقطة · ${skills}`,
     earned: (n: number) => `+${n} نقطة`,
     notPrivate: "يراها المدرّب لتصحيحها",
     yourAnswer: "إجابتك",
@@ -124,7 +132,7 @@ const copy = {
     passed: "Passed",
     needsRevision: "Needs revision",
     trainerFeedback: "Trainer's note",
-    worth: (n: number, skill: string) => `${n} points in ${skill}`,
+    worth: (n: number, skills: string) => `up to ${n} points · ${skills}`,
     earned: (n: number) => `+${n} points`,
     notPrivate: "Your trainer reads this to grade it",
     yourAnswer: "Your answer",
@@ -347,9 +355,23 @@ export default function WorkbookReaderPage() {
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-xs font-bold text-primary">{t.exercise}</p>
-                          {body!.skillKey && body!.skillPoints > 0 && (
+                          {body!.skillPoints > 0 && (
                             <span className="text-[11px] font-semibold text-muted-foreground">
-                              {t.worth(body!.skillPoints, skillLabel(body!.skillKey, lang))}
+                              {t.worth(
+                                body!.skillPoints,
+                                // Which skills a pass can credit is the rubric's
+                                // answer now, and a recording credits four of
+                                // them at once. The page's own skill_key only
+                                // stands in where there is no rubric.
+                                (rubricFor(body!.exerciseType)
+                                  ? rubricSkills(rubricFor(body!.exerciseType)!)
+                                  : body!.skillKey
+                                    ? [body!.skillKey]
+                                    : []
+                                )
+                                  .map((k) => skillLabel(k, lang))
+                                  .join(" · "),
+                              )}
                             </span>
                           )}
                         </div>
@@ -357,6 +379,16 @@ export default function WorkbookReaderPage() {
 
                         {body!.exerciseType !== "none" && (
                           <div className="space-y-2 pt-1">
+                            {/* The standard, before the attempt — not only after
+                                the verdict. Hidden once the page is passed, where
+                                the marks themselves are the better answer. */}
+                            {submission?.decision !== "pass" && (
+                              <RubricBrief
+                                exerciseType={body!.exerciseType}
+                                pot={body!.skillPoints}
+                                lang={lang}
+                              />
+                            )}
                             {/* The verdict, when there is one. Shown above the input so a
                                 learner reading their trainer's note sees it before the box
                                 they are about to type into again. */}
@@ -389,6 +421,18 @@ export default function WorkbookReaderPage() {
                                     <span className="font-semibold">{t.trainerFeedback}: </span>
                                     {submission.feedback}
                                   </p>
+                                )}
+                                {/* The criterion-by-criterion marks, with what the
+                                    level above asks for. A learner told only
+                                    "يحتاج تعديلاً" has to guess what to change. */}
+                                {submission.rubricScores && (
+                                  <div className="pt-1">
+                                    <RubricResult
+                                      data={submission}
+                                      lang={lang}
+                                      showNextLevel={submission.decision !== "pass"}
+                                    />
+                                  </div>
                                 )}
                               </div>
                             )}

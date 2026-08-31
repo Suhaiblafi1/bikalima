@@ -528,9 +528,15 @@ export const workbookPagesTable = pgTable(
       .$type<"none" | "text" | "video_link">()
       .notNull()
       .default("none"),
-    // Which of the eight public-speaking skills a passing review credits, and
-    // by how much. Held here rather than on the submission so the author sets
-    // the reward once and every learner's pass is worth the same.
+    // How much a page's exercise is worth, and the skill its author had in
+    // mind. skillPoints is the ceiling: since migration 0014 a review earns a
+    // share of it rather than all or nothing.
+    //
+    // skillKey no longer decides where the points go — the rubric's criteria
+    // do, because one recording is evidence of four skills at once and a
+    // single column could only name one of them. It is kept for pages graded
+    // before 0014, whose award has to be read back against it to be taken
+    // back correctly, and as the author's stated intent for a page.
     skillKey: varchar("skill_key", { length: 32 }),
     skillPoints: integer("skill_points").notNull().default(0),
     isPublished: boolean("is_published").notNull().default(true),
@@ -600,6 +606,23 @@ export const workbookSubmissionsTable = pgTable(
     reviewedById: varchar("reviewed_by_id").references(() => usersTable.id, { onDelete: "set null" }),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     awardedPoints: integer("awarded_points").notNull().default(0),
+    // Which rubric was applied, and which revision of its wording. Stored
+    // rather than re-derived so a later reading of an old mark is honest: the
+    // descriptors get reworded, and a "3" awarded against version 1 must not
+    // silently become a "3" against version 2's stricter text.
+    rubricKey: varchar("rubric_key", { length: 24 }).$type<"text" | "video_link">(),
+    rubricVersion: integer("rubric_version"),
+    // The grader's level (1-4) per criterion key, and their note on each.
+    rubricScores: jsonb("rubric_scores").$type<Record<string, number>>(),
+    rubricNotes: jsonb("rubric_notes").$type<Record<string, string>>(),
+    // The share of the rubric's marks earned, 0-100. Denormalised so a queue
+    // or a progress list can show and sort by it without rescoring every row.
+    rubricPercent: integer("rubric_percent"),
+    // What this review paid into each skill. awardedPoints is its total; the
+    // breakdown is what makes a re-review settle correctly now that one pass
+    // touches several counters — a recording shows voice, body language,
+    // impact and composure at once, so it credits all four.
+    awardedBreakdown: jsonb("awarded_breakdown").$type<Record<string, number>>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },

@@ -26,19 +26,11 @@ const router: IRouter = Router();
 
 // ── Constants ──────────────────────────────────────────────────────────
 import { SKILL_KEYS, creditSkillPoints } from "../lib/skills.js";
+import { SKILL_LABELS_AR } from "@workspace/assessment";
 // Re-exported so existing importers of this module keep working.
 export { SKILL_KEYS };
 
-export const SKILL_LABELS_AR: Record<string, string> = {
-  idea: "الفكرة",
-  structure: "البناء",
-  voice: "الصوت",
-  body: "لغة الجسد",
-  improvisation: "الارتجال",
-  impact: "التأثير",
-  confidence: "الثقة",
-  fear_management: "إدارة الخوف",
-};
+export { SKILL_LABELS_AR } from "@workspace/assessment";
 
 export const RUBRIC_CRITERIA = [
   { key: "clarity",     ar: "وضوح الفكرة" },

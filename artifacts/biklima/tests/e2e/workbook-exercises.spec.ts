@@ -1,33 +1,59 @@
 import { expect, test } from "../fixtures/auth";
 import { TEST_FIXTURES } from "../fixtures/data";
+import { TEXT_RUBRIC, VIDEO_RUBRIC } from "@workspace/assessment";
 
 const WB = TEST_FIXTURES.workbook;
-const READ_PATH = `/workbooks/${WB.slug}/read`;
+
+/** Full marks on every criterion — what an unqualified "pass" used to mean. */
+const TEXT_TOP = { idea_clarity: 4, structure: 4, impact: 4, brief: 4 };
+const VIDEO_TOP = { voice: 4, body: 4, impact: 4, composure: 4 };
 
 /**
  * Every assertion here covers something that fails silently. A broken
  * entitlement check still returns 200; a trainer scope that stops filtering
- * still returns a list; an award that pays twice still returns success. The
- * only way any of it surfaces is a test that names the number.
+ * still returns a list; an award that pays twice still returns success; a
+ * rubric gate that stops biting still records a pass. The only way any of it
+ * surfaces is a test that names the number.
  */
 
+type Ctx = { request: { get: (u: string) => Promise<{ json: () => Promise<unknown> }> } };
+
 /** The learner's own submission for a page, via their session. */
-async function submissionFor(learner: { request: { get: (u: string) => Promise<{ json: () => Promise<unknown> }> } }, pageNumber: number) {
+async function submissionFor(learner: Ctx, pageNumber: number) {
   const res = await learner.request.get(`/api/workbooks/${WB.slug}/pages/${pageNumber}`);
-  const body = (await res.json()) as { submission: { id: string; status: string; decision: string | null; awardedPoints: number } | null };
+  const body = (await res.json()) as {
+    submission: {
+      id: string;
+      status: string;
+      decision: string | null;
+      awardedPoints: number;
+      awardedBreakdown: Record<string, number> | null;
+      rubricKey: string | null;
+      rubricVersion: number | null;
+      rubricScores: Record<string, number> | null;
+      rubricPercent: number | null;
+    } | null;
+  };
   return body.submission;
 }
 
-async function skillPoints(learner: { request: { get: (u: string) => Promise<{ json: () => Promise<unknown> }> } }, key: string) {
+async function skillPoints(learner: Ctx, key: string) {
   const res = await learner.request.get("/api/me/skills");
   const body = (await res.json()) as { skills: Record<string, number> };
   return body.skills[key] ?? 0;
 }
 
-test("a written exercise is submitted, graded, and pays its skill points once", async ({ learner, trainer }) => {
-  const before = await skillPoints(learner, WB.skillKey);
+async function skillMap(learner: Ctx, keys: readonly string[]) {
+  const res = await learner.request.get("/api/me/skills");
+  const body = (await res.json()) as { skills: Record<string, number> };
+  return Object.fromEntries(keys.map((k) => [k, body.skills[k] ?? 0]));
+}
 
-  const posted = await learner.request.post(`/api/workbook-pages/${(await pageId(learner, 1))}/submission`, {
+test("a written exercise is graded on the rubric and pays each skill once", async ({ learner, trainer }) => {
+  const skills = ["idea", "structure", "impact"] as const;
+  const before = await skillMap(learner, skills);
+
+  const posted = await learner.request.post(`/api/workbook-pages/${await pageId(learner, 1)}/submission`, {
     data: { content: "افتتاحيتي الأولى، ثم الثانية، ثم الثالثة." },
   });
   expect(posted.status()).toBe(201);
@@ -39,33 +65,210 @@ test("a written exercise is submitted, graded, and pays its skill points once", 
   // The trainer teaches the course this workbook is linked to, so it is theirs.
   const queue = await trainer.request.get("/api/instructor/workbook-submissions?status=submitted");
   expect(queue.ok()).toBeTruthy();
-  const { submissions } = (await queue.json()) as { submissions: Array<{ id: string; skillKey: string; skillPoints: number }> };
+  const { submissions } = (await queue.json()) as {
+    submissions: Array<{ id: string; exerciseType: string; skillPoints: number }>;
+  };
   const row = submissions.find((s) => s.id === mine!.id);
   expect(row, "the trainer's queue must contain their learner's submission").toBeTruthy();
-  expect(row!.skillKey).toBe(WB.skillKey);
+  expect(row!.exerciseType).toBe("text");
   expect(row!.skillPoints).toBe(WB.skillPoints);
 
   const pass = await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
-    data: { decision: "pass", feedback: "افتتاحية قوية." },
+    data: {
+      decision: "pass",
+      feedback: "افتتاحية قوية.",
+      rubric: TEXT_TOP,
+      rubricVersion: TEXT_RUBRIC.version,
+      rubricNotes: { structure: "الترتيب هو ما رفع النصّ." },
+    },
   });
   expect(pass.ok()).toBeTruthy();
-  expect(((await pass.json()) as { skillPointsChanged: number }).skillPointsChanged).toBe(WB.skillPoints);
-  expect(await skillPoints(learner, WB.skillKey)).toBe(before + WB.skillPoints);
+  const paid = (await pass.json()) as {
+    skillPointsChanged: number;
+    awardedBreakdown: Record<string, number>;
+    rubricPercent: number;
+  };
+
+  // Full marks pay the page's points in full, split across the three skills a
+  // written answer can actually demonstrate.
+  expect(paid.rubricPercent).toBe(100);
+  expect(paid.skillPointsChanged).toBe(WB.skillPoints);
+  expect(paid.awardedBreakdown).toEqual({ idea: 8, structure: 7, impact: 5 });
+  const after = await skillMap(learner, skills);
+  for (const key of skills) {
+    expect(after[key] - before[key], `skill ${key}`).toBe(paid.awardedBreakdown[key]);
+  }
+
+  // The marks themselves are recorded, with the rubric revision they were made
+  // against — a reworded descriptor must not silently redefine an old "3".
+  const graded = await submissionFor(learner, 1);
+  expect(graded!.rubricKey).toBe("text");
+  expect(graded!.rubricVersion).toBe(TEXT_RUBRIC.version);
+  expect(graded!.rubricScores).toEqual(TEXT_TOP);
+  expect(graded!.awardedPoints).toBe(WB.skillPoints);
 
   // Passing the same row again must move nothing. This is the assertion the
-  // awardedPoints column exists for: without it a re-review pays twice.
+  // awardedBreakdown column exists for: without it a re-review pays twice.
   const again = await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
-    data: { decision: "pass" },
+    data: { decision: "pass", rubric: TEXT_TOP, rubricVersion: TEXT_RUBRIC.version },
   });
   expect(((await again.json()) as { skillPointsChanged: number }).skillPointsChanged).toBe(0);
-  expect(await skillPoints(learner, WB.skillKey)).toBe(before + WB.skillPoints);
+  expect(await skillMap(learner, skills)).toEqual(after);
 
-  // Downgrading takes back exactly what the pass granted — no more.
+  // Downgrading takes back exactly what the pass granted, from every skill it
+  // touched — not just the one the page names.
   const down = await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
     data: { decision: "needs_revision", feedback: "وسّع الجملة الأخيرة." },
   });
   expect(((await down.json()) as { skillPointsChanged: number }).skillPointsChanged).toBe(-WB.skillPoints);
-  expect(await skillPoints(learner, WB.skillKey)).toBe(before);
+  expect(await skillMap(learner, skills)).toEqual(before);
+});
+
+test("a weaker answer earns part of the points, not none and not all", async ({ learner, trainer }) => {
+  // The old grading had two outcomes: the whole 20 or nothing. Solid-but-not-
+  // outstanding work is the case that had nowhere to land.
+  const skills = ["idea", "structure", "impact"] as const;
+  const before = await skillMap(learner, skills);
+  await learner.request.post(`/api/workbook-pages/${await pageId(learner, 1)}/submission`, {
+    data: { content: "إجابة متوسّطة المستوى." },
+  });
+  const mine = await submissionFor(learner, 1);
+
+  const res = await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
+    data: {
+      decision: "pass",
+      rubric: { idea_clarity: 3, structure: 3, impact: 3, brief: 3 },
+      rubricVersion: TEXT_RUBRIC.version,
+    },
+  });
+  expect(res.ok()).toBeTruthy();
+  const body = (await res.json()) as {
+    skillPointsChanged: number;
+    awardedBreakdown: Record<string, number>;
+    rubricPercent: number;
+  };
+  expect(body.rubricPercent).toBe(67);
+  expect(body.awardedBreakdown).toEqual({ idea: 5, structure: 5, impact: 3 });
+  expect(body.skillPointsChanged).toBe(13);
+  expect(body.skillPointsChanged).toBeLessThan(WB.skillPoints);
+
+  const after = await skillMap(learner, skills);
+  for (const key of skills) expect(after[key] - before[key], key).toBe(body.awardedBreakdown[key]);
+
+  // Put the learner back where the test found them.
+  await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
+    data: { decision: "needs_revision" },
+  });
+  expect(await skillMap(learner, skills)).toEqual(before);
+});
+
+test("a recorded speech credits the four skills it shows at once", async ({ learner, trainer }) => {
+  // This is what the single skill_key could not express: one recording is
+  // evidence of voice, body language, impact and composure together, and the
+  // old award picked one of them and discarded the rest.
+  const skills = ["voice", "body", "impact", "confidence"] as const;
+  const before = await skillMap(learner, skills);
+
+  await learner.request.post(`/api/workbook-pages/${await pageId(learner, WB.videoPageNumber)}/submission`, {
+    data: { videoUrl: "https://example.com/my-speech" },
+  });
+  const mine = await submissionFor(learner, WB.videoPageNumber);
+
+  const res = await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
+    data: { decision: "pass", rubric: VIDEO_TOP, rubricVersion: VIDEO_RUBRIC.version },
+  });
+  expect(res.ok()).toBeTruthy();
+  const body = (await res.json()) as { awardedBreakdown: Record<string, number>; skillPointsChanged: number };
+  expect(body.awardedBreakdown).toEqual({ voice: 5, body: 4, impact: 3, confidence: 3 });
+  expect(body.skillPointsChanged).toBe(WB.videoSkillPoints);
+
+  const after = await skillMap(learner, skills);
+  for (const key of skills) expect(after[key] - before[key], key).toBe(body.awardedBreakdown[key]);
+
+  await trainer.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
+    data: { decision: "needs_revision" },
+  });
+  expect(await skillMap(learner, skills)).toEqual(before);
+});
+
+test("a pass without a complete rubric is refused, and pays nothing", async ({ learner, trainer }) => {
+  // The gate that makes the rest of this meaningful. If it stops biting, a
+  // trainer can still certify a skill without saying against what.
+  const before = await skillMap(learner, ["idea", "structure", "impact"]);
+  await learner.request.post(`/api/workbook-pages/${await pageId(learner, 1)}/submission`, {
+    data: { content: "إجابة تنتظر التقييم." },
+  });
+  const mine = await submissionFor(learner, 1);
+  const url = `/api/instructor/workbook-submissions/${mine!.id}/review`;
+
+  const bare = await trainer.request.post(url, { data: { decision: "pass" } });
+  expect(bare.status()).toBe(400);
+  expect(((await bare.json()) as { missing: string[] }).missing).toHaveLength(TEXT_RUBRIC.criteria.length);
+
+  const partial = await trainer.request.post(url, {
+    data: { decision: "pass", rubric: { idea_clarity: 4 }, rubricVersion: TEXT_RUBRIC.version },
+  });
+  expect(partial.status()).toBe(400);
+  expect(((await partial.json()) as { missing: string[] }).missing).toEqual([
+    "structure",
+    "impact",
+    "brief",
+  ]);
+
+  // A criterion this rubric does not define is a stale client, not a mark.
+  const unknown = await trainer.request.post(url, {
+    data: { decision: "pass", rubric: { ...TEXT_TOP, charisma: 4 }, rubricVersion: TEXT_RUBRIC.version },
+  });
+  expect(unknown.status()).toBe(400);
+  expect(((await unknown.json()) as { unexpected: string[] }).unexpected).toEqual(["charisma"]);
+
+  // Levels outside 1–4 are refused rather than clamped into a mark nobody made.
+  const outOfRange = await trainer.request.post(url, {
+    data: { decision: "pass", rubric: { ...TEXT_TOP, impact: 7 }, rubricVersion: TEXT_RUBRIC.version },
+  });
+  expect(outOfRange.status()).toBe(400);
+
+  // Marks made against wording that has since changed are refused, not stored.
+  const stale = await trainer.request.post(url, {
+    data: { decision: "pass", rubric: TEXT_TOP, rubricVersion: TEXT_RUBRIC.version + 1 },
+  });
+  expect(stale.status()).toBe(409);
+
+  // Not one of the five refusals moved a point or recorded a verdict.
+  expect(await skillMap(learner, ["idea", "structure", "impact"])).toEqual(before);
+  expect((await submissionFor(learner, 1))!.status).toBe("submitted");
+});
+
+test("sending work back needs no rubric, but keeps the marks already made", async ({ learner, trainer }) => {
+  await learner.request.post(`/api/workbook-pages/${await pageId(learner, 1)}/submission`, {
+    data: { content: "محاولة أخرى." },
+  });
+  const mine = await submissionFor(learner, 1);
+  const url = `/api/instructor/workbook-submissions/${mine!.id}/review`;
+
+  // A grader declining work is not certifying anything, so prose is enough.
+  const sentBack = await trainer.request.post(url, {
+    data: { decision: "needs_revision", feedback: "الفكرة غير واضحة." },
+  });
+  expect(sentBack.ok()).toBeTruthy();
+  expect((await submissionFor(learner, 1))!.awardedPoints).toBe(0);
+
+  // Marked, then sent back anyway: a high score and a revision are a legitimate
+  // pair, and the marks must survive to explain the request.
+  const marked = await trainer.request.post(url, {
+    data: {
+      decision: "needs_revision",
+      rubric: { idea_clarity: 3, structure: 2, impact: 3, brief: 4 },
+      rubricVersion: TEXT_RUBRIC.version,
+      feedback: "قوي، لكن رتّبه.",
+    },
+  });
+  expect(marked.ok()).toBeTruthy();
+  const graded = await submissionFor(learner, 1);
+  expect(graded!.rubricScores).toEqual({ idea_clarity: 3, structure: 2, impact: 3, brief: 4 });
+  expect(graded!.rubricPercent).toBe(63);
+  expect(graded!.awardedPoints).toBe(0);
+  expect(graded!.awardedBreakdown).toEqual({});
 });
 
 test("resubmitting after a revision reuses the one row and clears the stale verdict", async ({ learner }) => {
@@ -133,16 +336,13 @@ test("a learner cannot read the trainer queue or grade their own work", async ({
 
   expect((await learner.request.get("/api/instructor/workbook-submissions")).status()).toBe(403);
   const selfGrade = await learner.request.post(`/api/instructor/workbook-submissions/${mine!.id}/review`, {
-    data: { decision: "pass" },
+    data: { decision: "pass", rubric: TEXT_TOP, rubricVersion: TEXT_RUBRIC.version },
   });
   expect(selfGrade.status()).toBe(403);
 });
 
 /** Page ids are not stable across runs, so read them from the reader itself. */
-async function pageId(
-  ctx: { request: { get: (u: string) => Promise<{ json: () => Promise<unknown> }> } },
-  pageNumber: number,
-): Promise<string> {
+async function pageId(ctx: Ctx, pageNumber: number): Promise<string> {
   const res = await ctx.request.get(`/api/workbooks/${WB.slug}/pages/${pageNumber}`);
   const body = (await res.json()) as { page: { id: string } };
   return body.page.id;

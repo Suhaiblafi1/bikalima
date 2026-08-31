@@ -13,6 +13,12 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { isAdmin, isSupervisorOrAdmin, requireAdmin, requireRole } from "../lib/admin.js";
 import { SKILL_KEYS, creditSkillPoints } from "../lib/skills.js";
+import {
+  distributeSkillPoints,
+  rubricFor,
+  scoreRubric,
+  settleSkillPoints,
+} from "@workspace/assessment";
 import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
@@ -430,6 +436,14 @@ const submissionSchema = z.object({
 const reviewSchema = z.object({
   decision: z.enum(["pass", "needs_revision"]),
   feedback: z.string().trim().max(4000).optional(),
+  // The grader's level per rubric criterion, and their note on each. The keys
+  // are checked against the page's own rubric below, not accepted as sent.
+  rubric: z.record(z.string().max(40), z.number().int()).optional(),
+  rubricNotes: z.record(z.string().max(40), z.string().trim().max(1000)).optional(),
+  // Which revision of the rubric wording the grader was looking at. A tab left
+  // open across a deploy would otherwise record marks against descriptors that
+  // no longer say what the grader read.
+  rubricVersion: z.number().int().optional(),
 });
 
 /**
@@ -481,6 +495,13 @@ router.post("/workbook-pages/:pageId/submission", async (req: Request, res: Resp
     // reopens this row rather than queueing a second copy of the same work.
     // The verdict is cleared so a reviewed row cannot sit in the queue still
     // showing the previous decision.
+    //
+    // The rubric marks go with it. They describe the answer that has just been
+    // replaced, and leaving them would let a grader pass brand-new work on the
+    // strength of marks given to the draft before it. What is deliberately
+    // kept is awardedBreakdown: those points are still credited to the learner
+    // until a review settles them, and forgetting what was paid is how a
+    // resubmission turns into free points.
     const [saved] = await db
       .insert(workbookSubmissionsTable)
       .values({
@@ -501,6 +522,11 @@ router.post("/workbook-pages/:pageId/submission", async (req: Request, res: Resp
           feedback: null,
           reviewedById: null,
           reviewedAt: null,
+          rubricKey: null,
+          rubricVersion: null,
+          rubricScores: null,
+          rubricNotes: null,
+          rubricPercent: null,
           updatedAt: new Date(),
         },
       })
@@ -534,6 +560,8 @@ router.get("/workbooks/:slug/submissions", async (req: Request, res: Response) =
         decision: workbookSubmissionsTable.decision,
         feedback: workbookSubmissionsTable.feedback,
         awardedPoints: workbookSubmissionsTable.awardedPoints,
+        awardedBreakdown: workbookSubmissionsTable.awardedBreakdown,
+        rubricPercent: workbookSubmissionsTable.rubricPercent,
         updatedAt: workbookSubmissionsTable.updatedAt,
       })
       .from(workbookSubmissionsTable)
@@ -587,6 +615,12 @@ router.get("/instructor/workbook-submissions", async (req: Request, res: Respons
         decision: workbookSubmissionsTable.decision,
         feedback: workbookSubmissionsTable.feedback,
         awardedPoints: workbookSubmissionsTable.awardedPoints,
+        awardedBreakdown: workbookSubmissionsTable.awardedBreakdown,
+        rubricKey: workbookSubmissionsTable.rubricKey,
+        rubricVersion: workbookSubmissionsTable.rubricVersion,
+        rubricScores: workbookSubmissionsTable.rubricScores,
+        rubricNotes: workbookSubmissionsTable.rubricNotes,
+        rubricPercent: workbookSubmissionsTable.rubricPercent,
         createdAt: workbookSubmissionsTable.createdAt,
         updatedAt: workbookSubmissionsTable.updatedAt,
         pageNumber: workbookPagesTable.pageNumber,
@@ -621,12 +655,19 @@ router.get("/instructor/workbook-submissions", async (req: Request, res: Respons
 });
 
 /**
- * Record a verdict, and settle the skill points it is worth.
+ * Record a verdict against the page's rubric, and settle the skill points it
+ * earned.
  *
- * The award is expressed as a difference against awardedPoints rather than as
- * an addition, because a trainer may review the same row more than once:
- * passing twice must not pay twice, and downgrading a pass to
- * "needs_revision" must take back exactly what that pass granted.
+ * A pass has to carry a complete rubric. That is the whole point of the
+ * change: "اجتاز" on its own is one grader's private judgement, and two
+ * graders holding the same recording to different standards is exactly what a
+ * rubric exists to stop. A "needs_revision" may be recorded without one — a
+ * grader sending work back for a stated reason is not certifying anything.
+ *
+ * The award is settled per skill as a difference against what this submission
+ * already paid, because a trainer may review the same row more than once:
+ * passing twice must not pay twice, and downgrading must take back exactly
+ * what the pass granted — from each of the several counters a rubric touches.
  */
 router.post("/instructor/workbook-submissions/:id/review", async (req: Request, res: Response) => {
   if (!requireRole(req, res, "supervisor", "trainer")) return;
@@ -657,6 +698,10 @@ router.post("/instructor/workbook-submissions/:id/review", async (req: Request, 
         submissionId: workbookSubmissionsTable.id,
         userId: workbookSubmissionsTable.userId,
         awardedPoints: workbookSubmissionsTable.awardedPoints,
+        awardedBreakdown: workbookSubmissionsTable.awardedBreakdown,
+        storedRubricScores: workbookSubmissionsTable.rubricScores,
+        storedRubricNotes: workbookSubmissionsTable.rubricNotes,
+        exerciseType: workbookPagesTable.exerciseType,
         skillKey: workbookPagesTable.skillKey,
         skillPoints: workbookPagesTable.skillPoints,
       })
@@ -675,27 +720,105 @@ router.post("/instructor/workbook-submissions/:id/review", async (req: Request, 
       return;
     }
 
-    const shouldBeWorth = decision === "pass" && row.skillKey ? row.skillPoints : 0;
-    const delta = shouldBeWorth - row.awardedPoints;
-
-    const [saved] = await db
-      .update(workbookSubmissionsTable)
-      .set({
-        status: "reviewed",
-        decision,
-        feedback: feedback ?? null,
-        reviewedById: req.user!.id,
-        reviewedAt: new Date(),
-        awardedPoints: shouldBeWorth,
-        updatedAt: new Date(),
-      })
-      .where(eq(workbookSubmissionsTable.id, row.submissionId))
-      .returning();
-
-    if (delta !== 0 && row.skillKey) {
-      await creditSkillPoints(row.userId, row.skillKey, delta);
+    const rubric = rubricFor(row.exerciseType);
+    if (rubric && parsed.data.rubricVersion !== undefined && parsed.data.rubricVersion !== rubric.version) {
+      res.status(409).json({
+        error: "تغيّرت معايير التقييم منذ فتح هذه الصفحة. حدّث الصفحة ثم أعد التقييم.",
+        rubricVersion: rubric.version,
+      });
+      return;
     }
-    res.json({ submission: saved, skillPointsChanged: delta });
+
+    // Marks carried over from a previous review keep a re-review honest: a
+    // grader flipping a verdict without re-marking should not silently erase
+    // what they recorded the first time.
+    const marks = parsed.data.rubric ?? (row.storedRubricScores ?? undefined);
+    const score = rubric && marks ? scoreRubric(rubric, marks) : null;
+
+    if (rubric && decision === "pass" && (!score || !score.complete)) {
+      res.status(400).json({
+        error: "قيّم كل معيار قبل اعتماد الاجتياز.",
+        rubricKey: rubric.key,
+        missing: score?.missing ?? rubric.criteria.map((c) => c.key),
+        invalid: score?.invalid ?? [],
+        unexpected: score?.unexpected ?? [],
+      });
+      return;
+    }
+    if (rubric && marks && score && !score.complete && parsed.data.rubric) {
+      res.status(400).json({
+        error: "معايير التقييم غير مكتملة أو غير معروفة.",
+        rubricKey: rubric.key,
+        missing: score.missing,
+        invalid: score.invalid,
+        unexpected: score.unexpected,
+      });
+      return;
+    }
+
+    // Where the points go is the rubric's call, not the page's skill_key: a
+    // recording earns voice, body language, impact and composure together, in
+    // the proportions the criteria were weighted. The page still decides how
+    // large the pot is.
+    const nextBreakdown =
+      decision === "pass" && rubric && marks && score?.complete
+        ? distributeSkillPoints(rubric, marks, row.skillPoints)
+        : {};
+
+    // Rows graded before the rubric existed recorded a single lump against the
+    // page's skill_key. Reading them back that way is what lets this review
+    // take those points back correctly instead of stranding them.
+    const previousBreakdown: Record<string, number> =
+      row.awardedBreakdown ??
+      (row.awardedPoints > 0 && row.skillKey ? { [row.skillKey]: row.awardedPoints } : {});
+
+    const deltas = settleSkillPoints(previousBreakdown, nextBreakdown);
+    const awardedTotal = Object.values(nextBreakdown).reduce((sum, n) => sum + n, 0);
+    const skillPointsChanged = Object.values(deltas).reduce((sum, n) => sum + n, 0);
+
+    // Blank notes are dropped rather than stored as empty strings, so "has a
+    // note on this criterion" stays a question the reader can answer.
+    const rawNotes = parsed.data.rubricNotes ?? row.storedRubricNotes ?? null;
+    const notes = rawNotes
+      ? Object.fromEntries(Object.entries(rawNotes).filter(([, text]) => text.trim().length > 0))
+      : null;
+
+    // The verdict and the points it moves land together or not at all. Four
+    // separate credits outside a transaction leaves a window where the row
+    // claims to have paid points the learner never received.
+    const saved = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(workbookSubmissionsTable)
+        .set({
+          status: "reviewed",
+          decision,
+          feedback: feedback ?? null,
+          reviewedById: req.user!.id,
+          reviewedAt: new Date(),
+          awardedPoints: awardedTotal,
+          awardedBreakdown: nextBreakdown,
+          rubricKey: rubric?.key ?? null,
+          rubricVersion: rubric && marks ? rubric.version : null,
+          rubricScores: marks ?? null,
+          rubricNotes: notes && Object.keys(notes).length > 0 ? notes : null,
+          rubricPercent: score?.complete ? score.percent : null,
+          updatedAt: new Date(),
+        })
+        .where(eq(workbookSubmissionsTable.id, row.submissionId))
+        .returning();
+      for (const [skillKey, delta] of Object.entries(deltas)) {
+        await creditSkillPoints(row.userId, skillKey, delta, tx);
+      }
+      return updated;
+    });
+
+    res.json({
+      submission: saved,
+      skillPointsChanged,
+      awardedBreakdown: nextBreakdown,
+      rubricPercent: score?.complete ? score.percent : null,
+      suggestedDecision: score?.suggestedDecision ?? null,
+    });
   } catch (err) {
     req.log.error({ err }, "Workbook submission review failed");
     res.status(500).json({ error: "Could not save the review" });

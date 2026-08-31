@@ -1,25 +1,24 @@
 /**
- * The eight public-speaking skills a learner accumulates points in, and the
- * one place those points are written.
+ * Writing to the eight public-speaking skill counters.
  *
- * Two features credit the same eight counters — lesson activities and, since
- * migration 0013, workbook page exercises. The UPSERT below lived privately
- * inside the activities route; it is here so a second copy never drifts from
- * the first.
+ * The key list, the labels and the rubrics that decide where points go all
+ * live in @workspace/assessment, shared with the web app so a criterion can
+ * never credit a skill the counters do not have. What stays here is the one
+ * thing that needs a database: the write itself.
  */
 import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
+import { isSkillKey } from "@workspace/assessment";
 
-export const SKILL_KEYS = [
-  "idea", "structure", "voice", "body", "improvisation",
-  "impact", "confidence", "fear_management",
-] as const;
+/**
+ * Anything that can run SQL: the pool, or a transaction inside it. A review
+ * now settles several counters at once, so it needs to hand this one function
+ * a transaction and have all of them land or none.
+ */
+type Executor = Pick<typeof db, "execute">;
 
-export type SkillKey = (typeof SKILL_KEYS)[number];
-
-export function isSkillKey(value: unknown): value is SkillKey {
-  return typeof value === "string" && (SKILL_KEYS as readonly string[]).includes(value);
-}
+export { SKILL_KEYS, isSkillKey } from "@workspace/assessment";
+export type { SkillKey } from "@workspace/assessment";
 
 /**
  * Add `delta` to a learner's running total for one skill, creating the row on
@@ -30,9 +29,14 @@ export function isSkillKey(value: unknown): value is SkillKey {
  * A total is never allowed below zero — points come from several features and
  * a correction in one should not eat what another awarded.
  */
-export async function creditSkillPoints(userId: string, skillKey: string, delta: number): Promise<void> {
+export async function creditSkillPoints(
+  userId: string,
+  skillKey: string,
+  delta: number,
+  executor: Executor = db,
+): Promise<void> {
   if (!isSkillKey(skillKey) || delta === 0) return;
-  await db.execute(sql`
+  await executor.execute(sql`
     INSERT INTO student_skill_scores (user_id, skill_key, points)
     VALUES (${userId}, ${skillKey}, ${Math.max(0, delta)})
     ON CONFLICT (user_id, skill_key) DO UPDATE

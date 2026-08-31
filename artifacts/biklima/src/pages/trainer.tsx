@@ -490,7 +490,7 @@ export default function TrainerDashboardPage() {
             <div>
               <h2 id="trainer-workbooks-heading" className="text-xl font-bold">تمارين الكرّاسة</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                إجابات طلابك على تمارين صفحات الكرّاسة. الاجتياز يمنح الطالب نقاط المهارة المحدَّدة للصفحة.
+                إجابات طلابك على تمارين صفحات الكرّاسة. التقييم على سلّم معايير: أربعة معايير لكل تمرين، والنقاط جزئية وتُوزَّع على المهارات التي يقيسها كل معيار.
               </p>
             </div>
             <TrainerWorkbookQueue />
