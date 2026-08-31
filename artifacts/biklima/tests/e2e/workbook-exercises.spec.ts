@@ -1,3 +1,4 @@
+import type { APIRequestContext } from "@playwright/test";
 import { expect, test } from "../fixtures/auth";
 import { TEST_FIXTURES } from "../fixtures/data";
 import { TEXT_RUBRIC, VIDEO_RUBRIC } from "@workspace/assessment";
@@ -16,7 +17,7 @@ const VIDEO_TOP = { voice: 4, body: 4, impact: 4, composure: 4 };
  * surfaces is a test that names the number.
  */
 
-type Ctx = { request: { get: (u: string) => Promise<{ json: () => Promise<unknown> }> } };
+type Ctx = { request: APIRequestContext };
 
 /** The learner's own submission for a page, via their session. */
 async function submissionFor(learner: Ctx, pageNumber: number) {
@@ -43,6 +44,29 @@ async function skillPoints(learner: Ctx, key: string) {
   return body.skills[key] ?? 0;
 }
 
+/**
+ * Return one page's row to "nothing paid yet".
+ *
+ * The assertions below name absolute amounts — a top-marks pass moves exactly
+ * 20 — and an amount is only absolute if the row had paid nothing before it.
+ * rubric-grading-ui.spec.ts grades this same fixture page earlier in the run
+ * and leaves a pass standing, which made those numbers deltas against 17.
+ *
+ * So the precondition is declared here rather than assumed, and declared
+ * through the real review endpoint: clearing the award is the refund path, so
+ * the setup exercises the thing it depends on.
+ */
+async function clearAward(learner: Ctx, trainer: Ctx, pageNumber: number) {
+  const mine = await submissionFor(learner, pageNumber);
+  if (!mine || mine.awardedPoints === 0) return;
+  const res = await trainer.request.post(
+    `/api/instructor/workbook-submissions/${mine.id}/review`,
+    { data: { decision: "needs_revision" } },
+  );
+  expect(res.ok(), "clearing a standing award must succeed").toBeTruthy();
+  expect((await submissionFor(learner, pageNumber))!.awardedPoints).toBe(0);
+}
+
 async function skillMap(learner: Ctx, keys: readonly string[]) {
   const res = await learner.request.get("/api/me/skills");
   const body = (await res.json()) as { skills: Record<string, number> };
@@ -50,6 +74,7 @@ async function skillMap(learner: Ctx, keys: readonly string[]) {
 }
 
 test("a written exercise is graded on the rubric and pays each skill once", async ({ learner, trainer }) => {
+  await clearAward(learner, trainer, 1);
   const skills = ["idea", "structure", "impact"] as const;
   const before = await skillMap(learner, skills);
 
@@ -127,6 +152,7 @@ test("a written exercise is graded on the rubric and pays each skill once", asyn
 test("a weaker answer earns part of the points, not none and not all", async ({ learner, trainer }) => {
   // The old grading had two outcomes: the whole 20 or nothing. Solid-but-not-
   // outstanding work is the case that had nowhere to land.
+  await clearAward(learner, trainer, 1);
   const skills = ["idea", "structure", "impact"] as const;
   const before = await skillMap(learner, skills);
   await learner.request.post(`/api/workbook-pages/${await pageId(learner, 1)}/submission`, {
@@ -166,6 +192,7 @@ test("a recorded speech credits the four skills it shows at once", async ({ lear
   // This is what the single skill_key could not express: one recording is
   // evidence of voice, body language, impact and composure together, and the
   // old award picked one of them and discarded the rest.
+  await clearAward(learner, trainer, WB.videoPageNumber);
   const skills = ["voice", "body", "impact", "confidence"] as const;
   const before = await skillMap(learner, skills);
 
@@ -194,6 +221,7 @@ test("a recorded speech credits the four skills it shows at once", async ({ lear
 test("a pass without a complete rubric is refused, and pays nothing", async ({ learner, trainer }) => {
   // The gate that makes the rest of this meaningful. If it stops biting, a
   // trainer can still certify a skill without saying against what.
+  await clearAward(learner, trainer, 1);
   const before = await skillMap(learner, ["idea", "structure", "impact"]);
   await learner.request.post(`/api/workbook-pages/${await pageId(learner, 1)}/submission`, {
     data: { content: "إجابة تنتظر التقييم." },

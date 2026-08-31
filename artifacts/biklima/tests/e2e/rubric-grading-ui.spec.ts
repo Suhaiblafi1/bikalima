@@ -98,6 +98,17 @@ test("a trainer grades on the rubric, and the learner reads the marks back", asy
 
   await page.close();
   await readerPage.close();
+
+  // Hand the fixture page back the way it was found. A pass left standing
+  // makes the exercise read-only for whatever runs next, and turns the API
+  // spec's absolute amounts into deltas against this test's 17 points.
+  const graded = await learner.request.get(`/api/workbooks/${WB.slug}/pages/1`);
+  const { submission } = (await graded.json()) as { submission: { id: string } | null };
+  if (submission) {
+    await trainer.request.post(`/api/instructor/workbook-submissions/${submission.id}/review`, {
+      data: { decision: "needs_revision" },
+    });
+  }
 });
 
 /** Page ids are not stable across runs, so read them from the reader itself. */
