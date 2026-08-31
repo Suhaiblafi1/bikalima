@@ -10,6 +10,9 @@ import {
   useApiFetch, type WorkbookRecord, StatusBadge,
 } from "./_shared";
 import { toast } from "@/hooks/use-toast";
+import { lazy, Suspense } from "react";
+
+const AdminWorkbookPages = lazy(() => import("@/components/admin-workbook-pages"));
 
 type Form = {
   slug: string; titleAr: string; titleEn: string;
@@ -73,6 +76,7 @@ export default function AdminWorkbooksPage() {
   const [form, setForm] = useState<Form>(toForm(null));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagesFor, setPagesFor] = useState<WorkbookRecord | null>(null);
   const [search, setSearch] = useState("");
 
   const fetchItems = useCallback(async () => {
@@ -318,6 +322,10 @@ export default function AdminWorkbooksPage() {
                       <td className="px-3 py-2">{w.orderIndex}</td>
                       <td className="px-3 py-2">
                         <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" className="h-8 gap-1.5 px-2 text-xs font-bold" onClick={() => setPagesFor(w)} data-testid={`wb-pages-${w.id}`}>
+                            <BookOpen className="w-4 h-4" />
+                            الصفحات
+                          </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(w)} aria-label="تعديل" data-testid={`wb-edit-${w.id}`}>
                             <Edit3 className="w-4 h-4" />
                           </Button>
@@ -334,6 +342,18 @@ export default function AdminWorkbooksPage() {
           )}
         </CardContent>
       </Card>
+
+      {pagesFor && (
+        <div className="mt-4">
+          <Suspense fallback={null}>
+            <AdminWorkbookPages
+              workbookId={pagesFor.id}
+              workbookTitle={pagesFor.titleAr}
+              onClose={() => setPagesFor(null)}
+            />
+          </Suspense>
+        </div>
+      )}
     </AdminLayout>
   );
 }

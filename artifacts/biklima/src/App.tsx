@@ -41,6 +41,7 @@ const LibraryPage = lazy(() => import("@/pages/library"));
 const AboutPage = lazy(() => import("@/pages/about"));
 const CareersPage = lazy(() => import("@/pages/careers"));
 const WorkbooksPage = lazy(() => import("@/pages/workbooks"));
+const WorkbookReaderPage = lazy(() => import("@/pages/workbook-reader"));
 const VerifyPage = lazy(() => import("@/pages/verify"));
 const VerifyEmailPage = lazy(() => import("@/pages/verify-email"));
 const CertificateDetailPage = lazy(() => import("@/pages/certificate-detail"));
@@ -244,6 +245,9 @@ function AppRouter() {
         <Route path="/library" component={LibraryPage} />
         <Route path="/about" component={AboutPage} />
         <Route path="/careers" component={CareersPage} />
+        <Route path="/workbooks/:slug/read">
+          {() => <StudentRoute><WorkbookReaderPage /></StudentRoute>}
+        </Route>
         <Route path="/workbooks" component={WorkbooksPage} />
         <Route path="/verify" component={VerifyPage} />
         <Route path="/verify-email" component={VerifyEmailPage} />

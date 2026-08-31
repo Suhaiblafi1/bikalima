@@ -499,6 +499,63 @@ export const workbooksTable = pgTable("workbooks", {
   uniqueIndex("UQ_workbooks_slug").on(t.slug),
 ]);
 
+// ── Workbook reading: pages an admin authors, notes a learner writes ────
+// A workbook is sold through workbook_orders; its readable content lives
+// here, one row per page, so it can be read inside the platform instead of
+// only downloaded as a PDF. Authoring is admin-side; nothing is seeded.
+export const workbookPagesTable = pgTable(
+  "workbook_pages",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    workbookId: varchar("workbook_id").notNull().references(() => workbooksTable.id, { onDelete: "cascade" }),
+    pageNumber: integer("page_number").notNull(),
+    // Chapter / part label shown above the page title ("الفصل الثاني · النطاق اللفظي").
+    sectionAr: varchar("section_ar"),
+    sectionEn: varchar("section_en"),
+    titleAr: varchar("title_ar"),
+    titleEn: varchar("title_en"),
+    // Page prose. Paragraphs are separated by blank lines; rendered as text,
+    // never as HTML, so authored content can't inject markup.
+    bodyAr: text("body_ar").notNull(),
+    bodyEn: text("body_en"),
+    // Optional "تمرين الصفحة" callout.
+    exerciseAr: text("exercise_ar"),
+    exerciseEn: text("exercise_en"),
+    isPublished: boolean("is_published").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex("uq_workbook_pages_number").on(t.workbookId, t.pageNumber),
+    index("idx_workbook_pages_workbook").on(t.workbookId, t.pageNumber),
+  ],
+);
+
+// A learner's private notes on a workbook page. Unlike lesson_notes there is
+// no one-per-page limit: a page can carry several notes, each optionally
+// anchored to a quoted passage the learner highlighted.
+export const workbookNotesTable = pgTable(
+  "workbook_notes",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+    workbookId: varchar("workbook_id").notNull().references(() => workbooksTable.id, { onDelete: "cascade" }),
+    pageId: varchar("page_id").notNull().references(() => workbookPagesTable.id, { onDelete: "cascade" }),
+    // The highlighted passage this note hangs off, when there is one.
+    quote: text("quote"),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [
+    index("idx_workbook_notes_user_workbook").on(t.userId, t.workbookId),
+    index("idx_workbook_notes_page").on(t.pageId),
+  ],
+);
+
+export type WorkbookPage = typeof workbookPagesTable.$inferSelect;
+export type WorkbookNote = typeof workbookNotesTable.$inferSelect;
+
 // ── CMS: Field Media + embedded Media Analysis ──────────────────────────
 // "من الميدان" library. Each row carries the media metadata AND optional
 // training analysis (skill, what to observe, why it matters, etc).

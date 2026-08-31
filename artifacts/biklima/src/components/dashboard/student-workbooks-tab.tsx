@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookMarked, Download } from "lucide-react";
+import { BookMarked, BookOpen, Download } from "lucide-react";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useMyWorkbooks, useMyWorkbookOrders } from "@/hooks/use-dashboard-data";
 
@@ -92,12 +92,22 @@ export default function StudentWorkbooksTab({ lang, heading }: { lang: Lang; hea
                     <p className="font-bold text-sm">{title || (isRtl ? "كرّاسة" : "Workbook")}</p>
                     {desc && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{desc}</p>}
                     <div className="mt-auto pt-3 flex items-center gap-2">
+                      {w.slug && (
+                        <button
+                          onClick={() => navigate(`/workbooks/${w.slug}/read`)}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-1.5 font-medium"
+                          data-testid={`read-workbook-${w.workbookId}`}
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                          {isRtl ? "اقرأ" : "Read"}
+                        </button>
+                      )}
                       {w.samplePdfUrl && (
                         <a
                           href={w.samplePdfUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 inline-flex items-center gap-1.5 font-medium"
+                          className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-muted text-muted-foreground inline-flex items-center gap-1.5 font-medium"
                         >
                           <Download className="w-3.5 h-3.5" />
                           {isRtl ? "تنزيل" : "Download"}
