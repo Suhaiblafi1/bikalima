@@ -23,10 +23,23 @@ test("trainer workspace leads with a four-part daily workflow", async ({ trainer
   await page.goto("/trainer");
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText(TEST_FIXTURES.trainer.firstName);
-  const navigation = page.getByRole("navigation", { name: "أقسام مساحة المدرب" });
-  await expect(navigation.getByRole("button")).toHaveCount(4);
+  const tabs = page.getByRole("tablist", { name: "أقسام مساحة المدرب" });
+  await expect(tabs.getByRole("tab")).toHaveCount(4);
   await expect(page.getByRole("heading", { name: "ما يحتاجك الآن" })).toBeVisible();
   await expect(page.getByText("البرامج التدريبية", { exact: true })).toHaveCount(0);
+
+  // The tabs must swap the panel, not scroll one long page: opening الرسائل
+  // hides today's work instead of leaving it above the fold.
+  await expect(page.getByRole("tab", { name: "اليوم" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("tab", { name: "الرسائل" }).click();
+  await expect(page.getByRole("tab", { name: "الرسائل" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "رسائل الطلاب" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "ما يحتاجك الآن" })).toBeHidden();
+
+  await page.getByRole("tab", { name: "طلابي" }).click();
+  await expect(page.getByRole("heading", { name: "رسائل الطلاب" })).toBeHidden();
+  await expect(page.getByRole("heading", { name: "الواجبات والتقييم" })).toBeHidden();
+
   await page.close();
 });
 
