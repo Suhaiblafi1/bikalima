@@ -207,12 +207,6 @@ export default function CheckoutPage() {
   // Reusable: course summary card the visitor sees regardless of auth state.
   const programPage = `/programs/${programPageSlugFromCourseSlug(slug) ?? slug}`;
   const courseTitle = lang === "ar" ? courseTitleAr : (courseTitleEn || courseTitleAr);
-  const formatLabel = (format: "recorded" | "zoom" | "blended") => format === "recorded"
-    ? (lang === "ar" ? "مسجّلة" : "Recorded")
-    : format === "zoom"
-      ? (lang === "ar" ? "مباشر عبر Zoom" : "Live on Zoom")
-      : (lang === "ar" ? "مسجّل + Zoom" : "Recorded + Zoom");
-
   const courseSummary = courseLoading ? (
     <div className="h-20 bg-muted/40 rounded-xl animate-pulse" />
   ) : courseError ? (
@@ -230,12 +224,6 @@ export default function CheckoutPage() {
           {lang === "ar" ? "الدورة المختارة" : "Selected Course"}
         </p>
         <p className="font-bold text-foreground" data-testid="checkout-course-title">{courseTitle}</p>
-        {/* The buyer no longer picks a format, so name one only when the
-            course offers exactly one — otherwise this would advertise an
-            arbitrary auto-selection as though it were their choice. */}
-        {availableFormats.length === 1 && (
-          <p className="text-xs text-primary font-semibold mt-1">{formatLabel(deliveryFormat)}</p>
-        )}
       </div>
       {coursePrice !== null && (
         <div className="text-end shrink-0">

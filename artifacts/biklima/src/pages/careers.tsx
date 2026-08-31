@@ -33,16 +33,16 @@ export default function CareersPage() {
     ? [
         {
           icon: BriefcaseBusiness,
-          eyebrow: "الفريق الإداري والإبداعي",
-          title: "ابنِ التجربة من خلف الكواليس",
+          eyebrow: "ابنِ التجربة من خلف الكواليس",
+          title: "الفريق الإداري والإبداعي",
           body: "نبحث عن أشخاص يحبون تحويل الأفكار إلى تجربة تعليمية واضحة، جميلة، ومنظمة.",
           roles: ["التسويق والمحتوى", "إدارة البرامج والعمليات", "خدمة المتعلمين", "التصميم وتجربة المستخدم", "التقنية والمنتج", "الشراكات"],
           subject: "طلب انضمام إلى فريق بكلمة الإداري",
         },
         {
           icon: Presentation,
-          eyebrow: "شبكة المدربين",
-          title: "ساعد الآخرين على امتلاك كلمتهم",
+          eyebrow: "ساعد الآخرين على امتلاك كلمتهم",
+          title: "شبكة المدربين",
           body: "نرحب بالمدربين الذين يجمعون بين الخبرة، الحضور الإنساني، واحترام رحلة المتعلم.",
           roles: ["الخطابة والإلقاء", "الصوت والأداء", "السرد وصناعة القصة", "كتابة المحتوى", "تدريب الأطفال والناشئة", "تيسير المجموعات"],
           subject: "طلب انضمام إلى شبكة مدربي بكلمة",
@@ -51,16 +51,16 @@ export default function CareersPage() {
     : [
         {
           icon: BriefcaseBusiness,
-          eyebrow: "Operations and creative team",
-          title: "Build the experience behind the scenes",
+          eyebrow: "Build the experience behind the scenes",
+          title: "Operations and creative team",
           body: "We look for people who enjoy turning ideas into learning experiences that are clear, beautiful, and organised.",
           roles: ["Marketing and content", "Programme operations", "Learner support", "Design and UX", "Technology and product", "Partnerships"],
           subject: "Application to Bikalima's operations team",
         },
         {
           icon: Presentation,
-          eyebrow: "Trainer network",
-          title: "Help others own their words",
+          eyebrow: "Help others own their words",
+          title: "Trainer network",
           body: "We welcome trainers who combine expertise, human presence, and respect for every learner's journey.",
           roles: ["Public speaking", "Voice and performance", "Storytelling", "Content writing", "Children and youth training", "Group facilitation"],
           subject: "Application to Bikalima's trainer network",

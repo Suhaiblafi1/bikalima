@@ -66,7 +66,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
 import { StatsSection } from "@/components/stats-section";
 import { trackProgramDetailsClick } from "@/lib/analytics";
-import { scrollToPageSection } from "@/lib/utils";
+import { scrollToPageSection, scrollToPageSectionWhenReady } from "@/lib/utils";
 import { Star as StarIcon } from "lucide-react";
 import { TestimonialsSection } from "@/components/testimonials-section";
 import { BeforeAfterSection } from "@/components/before-after-section";
@@ -272,10 +272,9 @@ export default function Home() {
     const scrollToHash = () => {
       const hash = window.location.hash.replace(/^#/, "");
       if (!hash) return;
-      // Wait one frame so target sections (which mount lazily) are present
-      setTimeout(() => {
-        scrollToPageSection(hash);
-      }, 60);
+      // Waits for the section to mount and re-aims while images above it load,
+      // instead of one attempt 60ms in that usually landed at the top.
+      scrollToPageSectionWhenReady(hash);
     };
     scrollToHash();
     window.addEventListener("hashchange", scrollToHash);

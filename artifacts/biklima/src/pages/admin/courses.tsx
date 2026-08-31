@@ -413,17 +413,6 @@ export default function AdminCoursesPage() {
                     <option value="en">English</option>
                   </select>
                 </div>
-                <fieldset className="mt-3">
-                  <legend className="text-xs font-semibold text-muted-foreground mb-2">صيغ الدراسة المتاحة</legend>
-                  <div className="flex flex-wrap gap-4">
-                    {(["recorded", "zoom", "blended"] as const).map((format) => (
-                      <label key={format} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <input type="checkbox" checked={courseForm.deliveryFormats.includes(format)} onChange={(e) => setCourseForm({ ...courseForm, deliveryFormats: e.target.checked ? [...courseForm.deliveryFormats, format] : courseForm.deliveryFormats.filter((item) => item !== format) })} />
-                        {format === "recorded" ? "مسجّلة" : format === "zoom" ? "Zoom مباشر" : "مسجّل + Zoom"}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
                   <Input placeholder="التصنيف (category)" value={courseForm.category} onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })} />
                   <select value={courseForm.instructorId} onChange={(e) => setCourseForm({ ...courseForm, instructorId: e.target.value })} className="border rounded-lg p-2 text-sm bg-background">

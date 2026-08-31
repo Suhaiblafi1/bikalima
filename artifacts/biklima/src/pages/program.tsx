@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { programs, getLocalizedProgram, RECORDED_PRICES, WORKBOOK_FACTS } from "@/programsData";
+import { programs, getLocalizedProgram, RECORDED_PRICES } from "@/programsData";
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { T as Translations } from "@/translations";
@@ -93,7 +93,6 @@ export default function ProgramPage() {
   const programId = SLUG_TO_PROGRAM_ID[slug];
   const program = programs.find((p) => p.id === programId);
   const courseData = programId ? getCoursePageData(programId) : undefined;
-  const workbookFacts = programId ? WORKBOOK_FACTS[programId] : undefined;
 
   // The workbook's sample PDF is the one thing a visitor can hold before
   // paying, so it is worth a request of its own. Failure is silent: no sample
@@ -340,7 +339,7 @@ export default function ProgramPage() {
         <div className="relative container mx-auto px-6 py-12 md:py-20">
           <div className="max-w-3xl">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => { window.location.assign(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/#structure`); }}
               className="inline-flex items-center gap-2 text-white/80 hover:text-white text-sm mb-6 transition-colors"
               data-testid="link-back-to-programs"
             >
@@ -596,51 +595,6 @@ export default function ProgramPage() {
                   </div>
                 </div>
 
-                {workbookFacts && (
-                  <div className="bg-card border border-border rounded-2xl p-6 md:p-8">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Layers className="w-5 h-5 text-primary" />
-                      <h3 className="font-serif text-lg md:text-xl font-bold">{t.sectionWorkbookStructure}</h3>
-                    </div>
-                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">
-                      {t.workbookFactsIntro}
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                      <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 text-center">
-                        <div className="text-3xl md:text-4xl font-black text-primary leading-none mb-1">
-                          {workbookFacts.sections}
-                        </div>
-                        <div className="text-[11px] md:text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                          {t.workbookSectionsLabel}
-                        </div>
-                      </div>
-                      <div className="bg-primary/5 border border-primary/15 rounded-xl p-4 text-center">
-                        <div className="text-3xl md:text-4xl font-black text-primary leading-none mb-1">
-                          {workbookFacts.units.length}
-                        </div>
-                        <div className="text-[11px] md:text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                          {t.workbookUnitsLabel}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-3 flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5" />
-                      {workbookFacts.unitsLabel[lang === "ar" ? "ar" : "en"]}
-                    </div>
-                    <ol className="space-y-2">
-                      {workbookFacts.units.map((u, i) => (
-                        <li key={i} className="flex items-start gap-3 bg-background/60 border border-border rounded-xl p-3">
-                          <span className="shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center">
-                            {i + 1}
-                          </span>
-                          <span className="text-sm md:text-base font-semibold leading-relaxed pt-0.5">
-                            {u[lang === "ar" ? "ar" : "en"]}
-                          </span>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
                 </div>
               </TabsContent>
 
@@ -656,12 +610,6 @@ export default function ProgramPage() {
                 </div>
 
                 <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                  {!isSchoolsOnly && (
-                    <div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
-                      <p className="font-bold text-foreground mb-1">{t.deliveryHeading}</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{t.deliveryBody}</p>
-                    </div>
-                  )}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{t.metaPrice}</p>
