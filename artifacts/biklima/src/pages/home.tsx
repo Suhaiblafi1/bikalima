@@ -212,6 +212,14 @@ export default function Home() {
   const [videoTab, setVideoTab] = useState<VideoCategory | "all">("opening");
   const [upcomingInPersonCourses, setUpcomingInPersonCourses] = useState<InPersonCoursePublic[]>([]);
   const [upcomingCoursesLoading, setUpcomingCoursesLoading] = useState(true);
+  // The placeholder only earns its place if the wait is long enough to notice.
+  // /api/in-person-courses is served by a serverless function that cold-starts:
+  // measured on production, the first call of the hour takes 2.6s and warm ones
+  // 0.3s. Showing two pulsing grey blocks for either was the same thing the
+  // page did, and after a jump to this section it reads as the page hanging and
+  // changing colour — then resolving to nothing, because there are usually no
+  // in-person courses at all.
+  const [placeholderDue, setPlaceholderDue] = useState(false);
 
   useEffect(() => {
     document.documentElement.dir = dir;
@@ -220,6 +228,7 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
+    const timer = window.setTimeout(() => { if (active) setPlaceholderDue(true); }, 500);
     const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "").replace(/\/[^/]+$/, "");
     fetch(`${base}/api/in-person-courses`)
       .then(async (response) => {
@@ -229,7 +238,7 @@ export default function Home() {
       .then((data) => { if (active) setUpcomingInPersonCourses(data.courses ?? []); })
       .catch(() => { if (active) setUpcomingInPersonCourses([]); })
       .finally(() => { if (active) setUpcomingCoursesLoading(false); });
-    return () => { active = false; };
+    return () => { active = false; window.clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
@@ -737,22 +746,22 @@ export default function Home() {
         {consultationEnabled && (
         <div className="mt-7 max-w-2xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-            <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border border-primary/20 rounded-2xl p-4 overflow-hidden">
-              <div className="relative z-10 flex items-center gap-4">
+            <div className="relative bg-gradient-to-br from-primary/5 via-background to-accent/5 border border-primary/20 rounded-2xl p-6 overflow-hidden">
+              <div className="relative z-10 flex flex-col items-center gap-3 text-center">
                 <div className="w-11 h-11 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-primary" />
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0">
                   <h3 className="font-serif text-lg font-bold">{t.structure.startHelpHeading}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{t.structure.startHelpSub}</p>
                 </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/consultation")}
-                    className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-                  >
-                    {t.structure.startHelpContact}
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/consultation")}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  {t.structure.startHelpContact}
+                </button>
               </div>
             </div>
           </motion.div>
@@ -782,9 +791,11 @@ export default function Home() {
             </motion.div>
 
             {upcomingCoursesLoading ? (
-              <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto" aria-busy="true" aria-label={lang === "ar" ? "جارٍ تحميل الدورات الوجاهية" : "Loading in-person courses"}>
-                {[0, 1].map((item) => <div key={item} className="h-64 rounded-2xl bg-muted/60 animate-pulse" />)}
-              </div>
+              placeholderDue ? (
+                <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto" aria-busy="true" aria-label={lang === "ar" ? "جارٍ تحميل الدورات الوجاهية" : "Loading in-person courses"}>
+                  {[0, 1].map((item) => <div key={item} className="h-64 rounded-2xl bg-muted/60 animate-pulse" />)}
+                </div>
+              ) : null
             ) : upcomingInPersonCourses.length > 0 ? (
               <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
                 {upcomingInPersonCourses.map((ev) => {
