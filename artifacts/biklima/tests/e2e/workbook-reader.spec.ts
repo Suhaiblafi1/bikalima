@@ -31,8 +31,8 @@ test("the draft page is absent from the reader and refused on a direct request",
   await page.goto(READ_PATH);
   await expect(page.getByTestId("workbook-reader")).toBeVisible();
 
-  // Only page 1 is published, so paging forward is not offered...
-  await expect(page.getByTestId("workbook-next")).toBeDisabled();
+  // Page 2 is a draft, so the learner's index skips it: the reader offers
+  // page 3 next, never the draft.
   await expect(page.getByText(WB.draftTitleAr)).toHaveCount(0);
 
   // ...and asking for the draft by number is refused rather than served.
@@ -42,8 +42,10 @@ test("the draft page is absent from the reader and refused on a direct request",
   const toc = await learner.request.get(`/api/workbooks/${WB.slug}/pages`);
   expect(toc.ok()).toBeTruthy();
   const body = (await toc.json()) as { totalPages: number; pages: Array<{ pageNumber: number }> };
-  expect(body.totalPages).toBe(1);
-  expect(body.pages.map((p) => p.pageNumber)).toEqual([1]);
+  // The two published pages, with the draft in between omitted — the point of
+  // the assertion is the absence of 2, not the count itself.
+  expect(body.pages.map((p) => p.pageNumber)).toEqual([1, WB.videoPageNumber]);
+  expect(body.totalPages).toBe(2);
 
   await page.close();
 });
@@ -51,8 +53,10 @@ test("the draft page is absent from the reader and refused on a direct request",
 test("an admin proofing the workbook sees the draft the learner cannot", async ({ admin }) => {
   const toc = await admin.request.get(`/api/workbooks/${WB.slug}/pages`);
   expect(toc.ok()).toBeTruthy();
-  const body = (await toc.json()) as { totalPages: number };
-  expect(body.totalPages).toBe(2);
+  const body = (await toc.json()) as { totalPages: number; pages: Array<{ pageNumber: number }> };
+  // An admin sees the draft too, so their index is one longer than a learner's.
+  expect(body.pages.map((p) => p.pageNumber)).toEqual([1, 2, WB.videoPageNumber]);
+  expect(body.totalPages).toBe(3);
 
   const draft = await admin.request.get(`/api/workbooks/${WB.slug}/pages/2`);
   expect(draft.ok()).toBeTruthy();

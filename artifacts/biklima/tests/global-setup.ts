@@ -280,12 +280,18 @@ async function upsertInPersonCourse(courseId: string) {
 async function upsertWorkbook(opts: {
   slug: string;
   titleAr: string;
+  /** The trainer queue is scoped through this, so an unlinked workbook is
+   *  invisible to a plain trainer — which is a case worth seeding too. */
+  linkedCourseId?: string;
   pages: Array<{
     pageNumber: number;
     sectionAr?: string;
     titleAr?: string;
     bodyAr: string;
     exerciseAr?: string;
+    exerciseType?: "none" | "text" | "video_link";
+    skillKey?: string;
+    skillPoints?: number;
     isPublished?: boolean;
   }>;
 }): Promise<string> {
@@ -295,6 +301,7 @@ async function upsertWorkbook(opts: {
     titleAr: opts.titleAr,
     status: "published" as const,
     format: "digital" as const,
+    linkedCourseId: opts.linkedCourseId ?? null,
   };
   const workbookId = existing
     ? (await db.update(workbooksTable).set(values).where(eq(workbooksTable.id, existing.id)).returning())[0].id
@@ -317,6 +324,9 @@ async function upsertWorkbook(opts: {
       titleAr: page.titleAr ?? null,
       bodyAr: page.bodyAr,
       exerciseAr: page.exerciseAr ?? null,
+      exerciseType: page.exerciseType ?? "none",
+      skillKey: page.skillKey ?? null,
+      skillPoints: page.skillPoints ?? 0,
       isPublished: page.isPublished ?? true,
     };
     if (row) {
@@ -524,6 +534,7 @@ export default async function globalSetup() {
   const workbookId = await upsertWorkbook({
     slug: wb.slug,
     titleAr: wb.titleAr,
+    linkedCourseId: courseId,
     pages: [
       {
         pageNumber: 1,
@@ -532,15 +543,40 @@ export default async function globalSetup() {
         // A blank line between paragraphs is what the reader splits on.
         bodyAr: `${wb.bodyFirstParagraph}\n\n${wb.bodySecondParagraph}`,
         exerciseAr: wb.exerciseAr,
+        exerciseType: "text",
+        skillKey: wb.skillKey,
+        skillPoints: wb.skillPoints,
       },
       { pageNumber: 2, titleAr: wb.draftTitleAr, bodyAr: "مسودة لا يراها الطالب.", isPublished: false },
+      {
+        pageNumber: wb.videoPageNumber,
+        titleAr: wb.videoPageTitleAr,
+        bodyAr: "صفحة تطلب رابط تسجيل.",
+        exerciseAr: wb.videoExerciseAr,
+        exerciseType: "video_link",
+        skillKey: wb.videoSkillKey,
+        skillPoints: wb.videoSkillPoints,
+      },
     ],
   });
   await ensureWorkbookOrder(learnerId, workbookId);
   const lockedWorkbookId = await upsertWorkbook({
     slug: TEST_FIXTURES.lockedWorkbook.slug,
     titleAr: TEST_FIXTURES.lockedWorkbook.titleAr,
-    pages: [{ pageNumber: 1, bodyAr: "صفحة في كرّاسة لا يملكها الطالب." }],
+    // Carries a real exercise on purpose: if the entitlement gate on
+    // submission ever stops working, the write succeeds with 201 rather than
+    // being turned away by some later validation, so the spec sees a breach
+    // instead of an unrelated 400.
+    pages: [
+      {
+        pageNumber: 1,
+        bodyAr: "صفحة في كرّاسة لا يملكها الطالب.",
+        exerciseAr: "تمرين لا ينبغي أن يصل إليه من لا يملك الكرّاسة.",
+        exerciseType: "text",
+        skillKey: "confidence",
+        skillPoints: 5,
+      },
+    ],
   });
   // Make sure the public graduates registry is enabled so the spec can
   // assert the seeded card renders deterministically.

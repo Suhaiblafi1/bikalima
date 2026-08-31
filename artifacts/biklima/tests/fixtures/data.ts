@@ -58,6 +58,16 @@ export const TEST_FIXTURES = {
     bodySecondParagraph: "ابدأ بسؤال لا يملك المستمع إجابته، ثم اصمت ثانيةً كاملة.",
     exerciseAr: "اكتب ثلاث افتتاحيات لموضوعك، ثم احذف اثنتين.",
     draftTitleAr: "صفحة مسودة",
+    // Page 1 collects a written answer; page 3 collects a link to the
+    // learner's own recording. Both are published and both credit a skill,
+    // so a pass has points to move and the award logic is exercised.
+    skillKey: "idea",
+    skillPoints: 20,
+    videoPageNumber: 3,
+    videoPageTitleAr: "خطبتك الأولى",
+    videoExerciseAr: "ارفع رابط تسجيل خطبتك.",
+    videoSkillKey: "impact",
+    videoSkillPoints: 15,
   },
   // A published workbook with no order for the learner: reading it must be
   // refused, which is what proves the entitlement gate is load-bearing.
