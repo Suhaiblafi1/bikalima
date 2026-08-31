@@ -7,6 +7,7 @@ import { useMe } from "@/hooks/use-me";
 import { useApiFetch } from "@/pages/admin/_shared";
 import { AttendanceButton, type LessonRecord } from "@/pages/admin/_shared";
 import AdminAssignmentsTab from "@/components/admin-assignments-tab";
+import { TrainerWorkbookQueue } from "@/components/trainer/workbook-queue";
 import { PlatformIntro } from "@/components/platform-intro";
 import { TrainerNotesPanel } from "@/components/trainer-notes-panel";
 import { toast } from "@/hooks/use-toast";
@@ -79,6 +80,7 @@ const SECTION_TAB: Record<string, TrainerTab> = {
   "trainer-courses-section": "courses",
   "trainer-broadcast-section": "courses",
   "trainer-assignments-section": "courses",
+  "trainer-workbooks-section": "courses",
   "trainer-learners-section": "learners",
   "trainer-messages-section": "messages",
 };
@@ -482,6 +484,16 @@ export default function TrainerDashboardPage() {
               </Card>
             )}
 
+          </section>
+
+          <section id="trainer-workbooks-section" className="scroll-mt-36 space-y-3" aria-labelledby="trainer-workbooks-heading">
+            <div>
+              <h2 id="trainer-workbooks-heading" className="text-xl font-bold">تمارين الكرّاسة</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                إجابات طلابك على تمارين صفحات الكرّاسة. الاجتياز يمنح الطالب نقاط المهارة المحدَّدة للصفحة.
+              </p>
+            </div>
+            <TrainerWorkbookQueue />
           </section>
 
           <section id="trainer-assignments-section" className="scroll-mt-36 space-y-3" aria-labelledby="trainer-assignments-heading">

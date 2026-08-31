@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, BookOpen, Lock, NotebookPen, Trash2 } from "lucide-react";
+import { ArrowRight, BookOpen, CheckCircle2, Lock, NotebookPen, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingState } from "@/components/states";
 import { useLang } from "@/hooks/useLang";
 import { apiFetch } from "@/lib/api-fetch";
+import { skillLabel } from "@/lib/skills";
 
 type PageSummary = {
   id: string;
@@ -24,6 +25,20 @@ type WorkbookPage = PageSummary & {
   bodyEn: string | null;
   exerciseAr: string | null;
   exerciseEn: string | null;
+  exerciseType: "none" | "text" | "video_link";
+  skillKey: string | null;
+  skillPoints: number;
+};
+
+type Submission = {
+  id: string;
+  content: string | null;
+  videoUrl: string | null;
+  status: "submitted" | "reviewed";
+  decision: "pass" | "needs_revision" | null;
+  feedback: string | null;
+  awardedPoints: number;
+  updatedAt: string;
 };
 
 type Note = {
@@ -63,6 +78,20 @@ const copy = {
     delete: "حذف",
     noNotes: "لا ملاحظات على هذه الصفحة بعد.",
     draft: "مسودة",
+    answerPlaceholder: "اكتب إجابتك على التمرين…",
+    videoPlaceholder: "الصق رابط الفيديو (يوتيوب، درايف، …)",
+    submit: "سلّم للمدرّب",
+    resubmit: "أعد التسليم",
+    submitting: "جارٍ التسليم…",
+    awaiting: "بانتظار تصحيح المدرّب",
+    passed: "اجتزت التمرين",
+    needsRevision: "يحتاج تعديلاً",
+    trainerFeedback: "ملاحظة المدرّب",
+    worth: (n: number, skill: string) => `${n} نقطة في ${skill}`,
+    earned: (n: number) => `+${n} نقطة`,
+    notPrivate: "يراها المدرّب لتصحيحها",
+    yourAnswer: "إجابتك",
+    openVideo: "فتح الفيديو",
   },
   en: {
     back: "Back",
@@ -86,6 +115,20 @@ const copy = {
     delete: "Delete",
     noNotes: "No notes on this page yet.",
     draft: "Draft",
+    answerPlaceholder: "Write your answer to the exercise…",
+    videoPlaceholder: "Paste the video link (YouTube, Drive, …)",
+    submit: "Send to trainer",
+    resubmit: "Submit again",
+    submitting: "Submitting…",
+    awaiting: "Waiting for your trainer",
+    passed: "Passed",
+    needsRevision: "Needs revision",
+    trainerFeedback: "Trainer's note",
+    worth: (n: number, skill: string) => `${n} points in ${skill}`,
+    earned: (n: number) => `+${n} points`,
+    notPrivate: "Your trainer reads this to grade it",
+    yourAnswer: "Your answer",
+    openVideo: "Open video",
   },
 } as const;
 
@@ -101,6 +144,8 @@ export default function WorkbookReaderPage() {
   const [pageNumber, setPageNumber] = useState(1);
   const [draft, setDraft] = useState("");
   const [quote, setQuote] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [answerTouched, setAnswerTouched] = useState(false);
 
   const toc = useQuery<TocResponse | { forbidden: true }>({
     queryKey: ["workbook-toc", slug],
@@ -123,7 +168,7 @@ export default function WorkbookReaderPage() {
     if (tocData && tocData.pages.length > 0) setPageNumber((n) => (n === 1 ? firstPageNumber : n));
   }, [tocData, firstPageNumber]);
 
-  const page = useQuery<{ page: WorkbookPage; notes: Note[] }>({
+  const page = useQuery<{ page: WorkbookPage; notes: Note[]; submission: Submission | null }>({
     queryKey: ["workbook-page", slug, pageNumber],
     enabled: !!slug && !!tocData && tocData.pages.length > 0,
     queryFn: async () => {
@@ -135,6 +180,27 @@ export default function WorkbookReaderPage() {
 
   const invalidatePage = () =>
     queryClient.invalidateQueries({ queryKey: ["workbook-page", slug, pageNumber] });
+
+  const submitExercise = useMutation({
+    mutationFn: async () => {
+      const p = page.data!.page;
+      const res = await apiFetch(`/workbook-pages/${p.id}/submission`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          p.exerciseType === "video_link"
+            ? { videoUrl: answer.trim() }
+            : { content: answer.trim() },
+        ),
+      });
+      if (!res.ok) throw new Error("submit");
+      return res.json();
+    },
+    onSuccess: () => {
+      setAnswerTouched(false);
+      void invalidatePage();
+    },
+  });
 
   const addNote = useMutation({
     mutationFn: async () => {
@@ -177,11 +243,21 @@ export default function WorkbookReaderPage() {
   }
 
   const body = page.data?.page;
+  const submission = page.data?.submission ?? null;
   const prose = (lang === "en" && body?.bodyEn ? body.bodyEn : body?.bodyAr ?? "")
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean);
   const exercise = lang === "en" && body?.exerciseEn ? body.exerciseEn : body?.exerciseAr;
+
+  // Seed the answer box with what this learner last sent for this page, so a
+  // revision starts from their own words rather than a blank field. Keyed on
+  // the page id so turning the page swaps the answer with it, and skipped once
+  // they start typing so a background refetch cannot overwrite them mid-edit.
+  useEffect(() => {
+    if (answerTouched) return;
+    setAnswer(submission?.videoUrl ?? submission?.content ?? "");
+  }, [submission?.id, submission?.updatedAt, body?.id, answerTouched]);
   const section = lang === "en" && body?.sectionEn ? body.sectionEn : body?.sectionAr;
   const title = lang === "en" && body?.titleEn ? body.titleEn : body?.titleAr;
 
@@ -265,9 +341,145 @@ export default function WorkbookReaderPage() {
                       ))}
                     </div>
                     {exercise && (
-                      <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-1.5">
-                        <p className="text-xs font-bold text-primary">{t.exercise}</p>
+                      <div
+                        className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3"
+                        data-testid="workbook-exercise"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-bold text-primary">{t.exercise}</p>
+                          {body!.skillKey && body!.skillPoints > 0 && (
+                            <span className="text-[11px] font-semibold text-muted-foreground">
+                              {t.worth(body!.skillPoints, skillLabel(body!.skillKey, lang))}
+                            </span>
+                          )}
+                        </div>
                         <p className="font-serif text-[14px] leading-loose">{exercise}</p>
+
+                        {body!.exerciseType !== "none" && (
+                          <div className="space-y-2 pt-1">
+                            {/* The verdict, when there is one. Shown above the input so a
+                                learner reading their trainer's note sees it before the box
+                                they are about to type into again. */}
+                            {submission && submission.status === "reviewed" && (
+                              <div
+                                className={`rounded-lg p-3 space-y-1 border ${
+                                  submission.decision === "pass"
+                                    ? "border-green-600/30 bg-green-600/10"
+                                    : "border-accent/40 bg-accent/10"
+                                }`}
+                                data-testid="workbook-exercise-verdict"
+                              >
+                                <p className="text-xs font-bold flex items-center gap-1.5">
+                                  {submission.decision === "pass" ? (
+                                    <>
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-green-700" />
+                                      {t.passed}
+                                      {submission.awardedPoints > 0 && (
+                                        <span className="text-green-700">
+                                          {t.earned(submission.awardedPoints)}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    t.needsRevision
+                                  )}
+                                </p>
+                                {submission.feedback && (
+                                  <p className="text-[13px] leading-relaxed">
+                                    <span className="font-semibold">{t.trainerFeedback}: </span>
+                                    {submission.feedback}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {submission && submission.status === "submitted" && (
+                              <p
+                                className="text-xs font-semibold text-muted-foreground"
+                                data-testid="workbook-exercise-awaiting"
+                              >
+                                {t.awaiting}
+                              </p>
+                            )}
+
+                            {/* A passed exercise is finished. Offering the box again
+                                would invite a learner to resubmit work that already
+                                earned its points and put it back in the queue, where a
+                                second verdict could take them away. Their answer stays
+                                visible; only the way to undo it is gone. */}
+                            {submission?.decision === "pass" ? (
+                              <div
+                                className="rounded-lg border border-border bg-card p-3"
+                                data-testid="workbook-exercise-final"
+                              >
+                                <p className="text-[11px] font-semibold text-muted-foreground mb-1">
+                                  {t.yourAnswer}
+                                </p>
+                                {submission.videoUrl ? (
+                                  <a
+                                    href={submission.videoUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    dir="ltr"
+                                    className="break-all text-sm font-medium text-primary hover:underline"
+                                  >
+                                    {submission.videoUrl}
+                                  </a>
+                                ) : (
+                                  <p className="whitespace-pre-wrap font-serif text-[14px] leading-loose">
+                                    {submission.content}
+                                  </p>
+                                )}
+                              </div>
+                            ) : body!.exerciseType === "video_link" ? (
+                              <input
+                                type="url"
+                                dir="ltr"
+                                value={answer}
+                                onChange={(e) => {
+                                  setAnswer(e.target.value);
+                                  setAnswerTouched(true);
+                                }}
+                                placeholder={t.videoPlaceholder}
+                                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                                data-testid="workbook-exercise-input"
+                              />
+                            ) : (
+                              <textarea
+                                value={answer}
+                                onChange={(e) => {
+                                  setAnswer(e.target.value);
+                                  setAnswerTouched(true);
+                                }}
+                                rows={4}
+                                placeholder={t.answerPlaceholder}
+                                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm leading-relaxed outline-none focus:border-primary resize-y"
+                                data-testid="workbook-exercise-input"
+                              />
+                            )}
+
+                            <div
+                              className={`items-center justify-between gap-2 ${
+                                submission?.decision === "pass" ? "hidden" : "flex"
+                              }`}
+                            >
+                              <p className="text-[11px] text-muted-foreground">{t.notPrivate}</p>
+                              <Button
+                                size="sm"
+                                className="rounded-lg font-bold"
+                                disabled={!answer.trim() || submitExercise.isPending || !answerTouched}
+                                onClick={() => submitExercise.mutate()}
+                                data-testid="workbook-exercise-submit"
+                              >
+                                {submitExercise.isPending
+                                  ? t.submitting
+                                  : submission
+                                    ? t.resubmit
+                                    : t.submit}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

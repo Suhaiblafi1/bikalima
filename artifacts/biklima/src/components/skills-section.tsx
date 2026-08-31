@@ -3,10 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Award, Heart, Loader2, Trophy, Sparkles, Shield, Mic, GraduationCap } from "lucide-react";
 
-const SKILL_LABELS_AR: Record<string, string> = {
-  idea: "الفكرة", structure: "البناء", voice: "الصوت", body: "لغة الجسد",
-  improvisation: "الارتجال", impact: "التأثير", confidence: "الثقة", fear_management: "إدارة الخوف",
-};
+import { SKILL_LABELS_AR } from "@/lib/skills";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Sparkles, Award, Shield, Mic, GraduationCap, Trophy,
