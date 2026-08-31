@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Mail,
+  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -26,10 +27,15 @@ const t = {
   ar: {
     pageTitle: "الدخول إلى منصّتك",
     pageSubLogin: "أدخل بياناتك للوصول إلى منصّتك.",
-    pageSubRegister: "بريدك وكلمة مرور فقط — وتكمل ملفك بعد الدخول.",
+    pageSubRegister: "بريدك وكلمة مرور — وأضِف رقمك إن أردت الدخول به لاحقاً.",
     loginTitle: "تسجيل الدخول",
     registerTitle: "إنشاء حساب",
     email: "البريد الإلكتروني",
+    identifier: "البريد الإلكتروني أو رقم الهاتف",
+    identifierHint: "يمكنك الدخول بأيّهما.",
+    phone: "رقم الهاتف",
+    phoneOptional: "اختياري",
+    phoneHint: "أضِفه لتستطيع الدخول برقمك بدل بريدك.",
     password: "كلمة المرور",
     confirmPassword: "تأكيد كلمة المرور",
     loginBtn: "تسجيل الدخول",
@@ -53,10 +59,15 @@ const t = {
   en: {
     pageTitle: "Sign in to your platform",
     pageSubLogin: "Enter your details to access your platform.",
-    pageSubRegister: "Just your email and a password — complete your profile after signing in.",
+    pageSubRegister: "An email and a password — add your number if you would rather sign in with it.",
     loginTitle: "Sign in",
     registerTitle: "Create account",
     email: "Email",
+    identifier: "Email or phone number",
+    identifierHint: "Either one signs you in.",
+    phone: "Phone number",
+    phoneOptional: "optional",
+    phoneHint: "Add it and you can sign in with your number instead of your email.",
     password: "Password",
     confirmPassword: "Confirm password",
     loginBtn: "Sign in",
@@ -94,6 +105,7 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -136,7 +148,7 @@ export default function LoginPage() {
     setLoading(true);
     const result =
       mode === "register"
-        ? await register({ email, password })
+        ? await register({ email, password, phone: phone.trim() || undefined })
         : await login(email, password);
     setLoading(false);
     if (result.error) {
@@ -221,21 +233,47 @@ export default function LoginPage() {
               className="text-sm font-medium flex items-center gap-1.5 text-foreground"
             >
               <Mail className="w-4 h-4 text-muted-foreground" />
-              {tr.email}
+              {isLogin ? tr.identifier : tr.email}
             </label>
             <Input
               id="auth-email"
-              type="email"
+              type={isLogin ? "text" : "email"}
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="rounded-xl h-11"
               dir="ltr"
-              placeholder="name@example.com"
-              autoComplete="email"
+              placeholder={isLogin ? "name@example.com  /  07xxxxxxxx" : "name@example.com"}
+              autoComplete={isLogin ? "username" : "email"}
               data-testid="auth-input-email"
             />
+            {isLogin && <p className="text-xs text-muted-foreground">{tr.identifierHint}</p>}
           </div>
+
+          {!isLogin && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="auth-phone"
+                className="text-sm font-medium flex items-center gap-1.5 text-foreground"
+              >
+                <Phone className="w-4 h-4 text-muted-foreground" />
+                {tr.phone}
+                <span className="text-xs font-normal text-muted-foreground">({tr.phoneOptional})</span>
+              </label>
+              <Input
+                id="auth-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="rounded-xl h-11"
+                dir="ltr"
+                placeholder="07xxxxxxxx"
+                autoComplete="tel"
+                data-testid="auth-input-phone"
+              />
+              <p className="text-xs text-muted-foreground">{tr.phoneHint}</p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label

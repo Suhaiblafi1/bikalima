@@ -8,8 +8,9 @@ interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
-  register: (data: { email: string; password: string; firstName?: string; lastName?: string }) => Promise<{ error?: string }>;
+  /** `identifier` is an email address or a phone number. */
+  login: (identifier: string, password: string) => Promise<{ error?: string }>;
+  register: (data: { email: string; password: string; firstName?: string; lastName?: string; phone?: string }) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => void;
 }
@@ -49,13 +50,15 @@ export function useAuth(): AuthState {
   });
 
   const login = useCallback(
-    async (email: string, password: string): Promise<{ error?: string }> => {
+    async (identifier: string, password: string): Promise<{ error?: string }> => {
       try {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ email, password }),
+          // `email` is sent alongside so a server that predates phone
+          // sign-in still reads the field it knows.
+          body: JSON.stringify({ identifier, email: identifier, password }),
         });
         const data = await res.json();
         if (!res.ok) return { error: data.error || "Login failed" };
@@ -71,7 +74,7 @@ export function useAuth(): AuthState {
   );
 
   const register = useCallback(
-    async (data: { email: string; password: string; firstName?: string; lastName?: string }): Promise<{ error?: string }> => {
+    async (data: { email: string; password: string; firstName?: string; lastName?: string; phone?: string }): Promise<{ error?: string }> => {
       try {
         const res = await fetch("/api/auth/register", {
           method: "POST",

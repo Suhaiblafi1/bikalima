@@ -18,6 +18,9 @@ export const usersTable = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  // Can identify an account on its own: uq_users_phone (migration 0016) makes
+  // it unique among the rows that have one, so it can be signed in with.
+  // Partial, because most existing users have no phone and need not gain one.
   phone: varchar("phone"),
   bio: varchar("bio"),
   role: varchar("role", { length: 16 }).notNull().default("student"),

@@ -25,11 +25,41 @@ const RegisterSchema = z.object({
   password: z.string().min(10).max(200),
   firstName: z.string().max(120).optional().nullable(),
   lastName: z.string().max(120).optional().nullable(),
+  // Optional at registration and unique among those who give one, so it can
+  // be signed in with afterwards.
+  phone: z.string().trim().max(40).optional().nullable(),
 });
-const LoginSchema = z.object({
-  email: z.string().trim().email().max(200),
-  password: z.string().min(1).max(200),
-});
+
+/**
+ * Sign in with either an email address or a phone number.
+ *
+ * `identifier` is the field the form sends now; `email` is still accepted so
+ * an older client, or a tab left open across a deploy, keeps working.
+ */
+const LoginSchema = z
+  .object({
+    identifier: z.string().trim().max(200).optional(),
+    email: z.string().trim().max(200).optional(),
+    password: z.string().min(1).max(200),
+  })
+  .refine((d) => (d.identifier ?? d.email ?? "").length > 0, {
+    path: ["identifier"],
+    message: "Email or phone is required",
+  });
+
+/**
+ * Phone numbers are compared by their digits alone.
+ *
+ * The same Jordanian mobile arrives as 0790000000, +962790000000 and
+ * 00962 79 000 0000, and someone who registered one way will type another.
+ * Comparing the last nine digits matches those without treating two genuinely
+ * different numbers as one.
+ */
+function phoneKey(raw: string): string | null {
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (digits.length < 7) return null;
+  return digits.slice(-9);
+}
 
 // Brief requires "6 failed login attempts per minute → 429 with clear
 // Arabic messaging". We track *failed* attempts only via
@@ -181,6 +211,7 @@ router.post("/auth/register", registerLimiter, async (req: Request, res: Respons
       return;
     }
     const { email, password, firstName, lastName } = parsed.data;
+    const phone = parsed.data.phone?.trim() || null;
 
     const existing = await db
       .select()
@@ -190,6 +221,25 @@ router.post("/auth/register", registerLimiter, async (req: Request, res: Respons
     if (existing.length > 0) {
       res.status(409).json({ error: "Email already registered" });
       return;
+    }
+
+    // Checked before the insert so the person is told which field is the
+    // problem, rather than meeting a unique-index violation as a 500.
+    if (phone) {
+      const key = phoneKey(phone);
+      if (!key) {
+        res.status(400).json({ error: "رقم الهاتف غير صالح." });
+        return;
+      }
+      const [phoneTaken] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(sql`regexp_replace(coalesce(${usersTable.phone}, ''), '[^0-9]', '', 'g') LIKE ${"%" + key}`)
+        .limit(1);
+      if (phoneTaken) {
+        res.status(409).json({ error: "رقم الهاتف مسجّل بحساب آخر." });
+        return;
+      }
     }
 
     const passwordHash = await hashPassword(password);
@@ -202,6 +252,7 @@ router.post("/auth/register", registerLimiter, async (req: Request, res: Respons
         passwordHash,
         firstName: firstName || null,
         lastName: lastName || null,
+        phone,
         emailVerified: false,
         emailVerificationToken: token,
         emailVerificationExpiresAt: expiresAt,
@@ -451,12 +502,28 @@ router.post("/auth/login", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Invalid request body", issues: parsed.error.issues });
       return;
     }
-    const { email, password } = parsed.data;
+    const { password } = parsed.data;
+    const identifier = (parsed.data.identifier ?? parsed.data.email ?? "").trim();
 
-    const [user] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, email.toLowerCase().trim()));
+    // An email or a phone number, told apart by whether it has an "@". A
+    // phone match compares digits, so the number typed now need not be
+    // punctuated the way it was when the account was made.
+    let user;
+    if (identifier.includes("@")) {
+      [user] = await db.select().from(usersTable).where(eq(usersTable.email, identifier.toLowerCase()));
+    } else {
+      const key = phoneKey(identifier);
+      if (key) {
+        const candidates = await db
+          .select()
+          .from(usersTable)
+          .where(sql`regexp_replace(coalesce(${usersTable.phone}, ''), '[^0-9]', '', 'g') LIKE ${"%" + key}`)
+          .limit(2);
+        // Two accounts answering to one number means the number identifies
+        // nobody. Refuse rather than guess which person is signing in.
+        if (candidates.length === 1) user = candidates[0];
+      }
+    }
 
     if (!user) {
       recordFailure(failKey, LOGIN_FAIL_WINDOW);
