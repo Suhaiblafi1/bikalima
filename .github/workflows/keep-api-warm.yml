@@ -1,0 +1,35 @@
+name: Keep API warm
+
+# The API server is a Vercel serverless function: it cold-starts after a
+# stretch of no traffic, and the first request to hit an idle instance pays
+# for it. Measured against production: 2.63s on a cold /api/in-person-courses,
+# ~1.4s cold / ~0.3s warm on /api/in-person-courses even a few seconds apart.
+# That first cost lands on whichever visitor happens to arrive after the idle
+# gap — most often someone opening the courses tab for the first time.
+#
+# This just pings a route that touches nothing (no DB write, no auth) often
+# enough that the function rarely goes idle long enough to cold-start. It
+# still imports the same bundled app as every other route, including the
+# module-level DB pool construction, so the ping warms that too.
+#
+# Deliberately a GitHub Action and not a Vercel Cron Job: Vercel's Hobby plan
+# caps cron jobs at once a day, and a schedule that violates the plan's limit
+# fails the deploy at build time — which would block every future push to
+# main until someone noticed. This has no such dependency on the Vercel plan.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/healthz
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+            https://bikalima-api-server.vercel.app/api/healthz)
+          echo "healthz responded $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::api-server healthz check returned $code"
+          fi
