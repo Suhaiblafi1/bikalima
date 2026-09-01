@@ -91,18 +91,88 @@ const AVATAR_BG = [
   "bg-foreground/10 text-foreground",
 ];
 
+/**
+ * The methodology cards, one set per set of numbers.
+ *
+ * The page shows either the live computed counts or the published figures, and
+ * each needs its own explanation. One shared set meant the page could explain
+ * how it counts certificates on a screen that displays a count of countries.
+ */
+type MethodCard = { key: string; ar: { t: string; b: string }; en: { t: string; b: string } };
+
+const COMPUTED_METHOD: MethodCard[] = [
+  {
+    key: "trainees_total",
+    ar: { t: "المتدرّبون", b: "نحسبهم من المستخدمين الذين سجّلوا فعلياً في برنامج واحد على الأقل، بدون تكرار." },
+    en: { t: "Trainees", b: "Counted as distinct users with at least one real enrollment — no duplicates." },
+  },
+  {
+    key: "speeches_evaluated",
+    ar: { t: "الخطابات المُقيَّمة", b: "كل تقييم خطاب وصلنا، سواء عبر النموذج المجاني أو في إطار البرامج." },
+    en: { t: "Speeches evaluated", b: "Every speech-evaluation request we received, free or in-program." },
+  },
+  {
+    key: "certificates_issued",
+    ar: { t: "الشهادات الصادرة", b: "الشهادات النشطة فقط (المُلغاة لا تُحتسب)، ويمكن التحقق من كل شهادة عبر صفحة التحقق." },
+    en: { t: "Certificates issued", b: "Active certificates only (revoked are excluded). Each is publicly verifiable." },
+  },
+  {
+    key: "completion_rate",
+    ar: { t: "نسبة الإكمال", b: "متوسّط نسبة الدروس المكتملة لكل تسجيل في كل الدورات المنشورة." },
+    en: { t: "Completion rate", b: "Average completed-lessons per enrollment across all published courses." },
+  },
+];
+
+const PUBLISHED_METHOD: MethodCard[] = [
+  {
+    key: "trainees",
+    ar: { t: "المتدرّبون", b: "مجموع من تدرّب مع بكلمة منذ انطلاقتها، في القاعات وعبر المنصّة، بلا تكرار للشخص الواحد." },
+    en: { t: "Trainees", b: "Everyone trained with Bikalima since it began, in person and online — each person counted once." },
+  },
+  {
+    key: "countries",
+    ar: { t: "الدول", b: "الدول التي احتضنت تدريباً حضورياً أو ضمّت متدرّبين معنا عن بُعد." },
+    en: { t: "Countries", b: "Countries that hosted in-person training, or where trainees joined us remotely." },
+  },
+  {
+    key: "programs",
+    ar: { t: "البرامج", b: "البرامج التدريبية المكتملة التي نقدّمها حالياً، لكلٍّ منها منهجه وكرّاسته." },
+    en: { t: "Programmes", b: "The complete training programmes we currently offer, each with its own curriculum and workbook." },
+  },
+  {
+    key: "trainers",
+    ar: { t: "المدرّبون", b: "المدرّبون الذين تأهّلوا على منهج بكلمة ودرّبوا به." },
+    en: { t: "Trainers", b: "Trainers certified in the Bikalima method who have gone on to teach it." },
+  },
+];
+
 export default function ImpactPage() {
   usePageMeta({ title: "أثرنا بالأرقام", description: "أرقام بكلمة: المتدربون والبرامج والساعات التدريبية والشهادات الممنوحة.", canonicalPath: "/impact" });
   const { lang, dir } = useLang();
   const [, navigate] = useLocation();
   const [stats, setStats] = useState<ImpactStat[]>([]);
+  const [stories, setStories] = useState<ImpactStory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
   // Live counts when any of them is real; the published figures otherwise.
   // Never both at once — a grid mixing "6 speeches evaluated" with "800+
   // trainees" reads as one set of measurements and is not.
   const shown = stats.length > 0 ? stats : publishedAsStats(lang);
-  const [stories, setStories] = useState<ImpactStory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // Which set the page is describing. It describes its own numbers in three
+  // places — the subheading, the stories blurb and the methodology cards — and
+  // all three were written for the computed set. Left as they were, the page
+  // explained how it counts certificates while displaying a count of countries.
+  //
+  // Deliberately keyed off `stats` alone and not off loading/error: those two
+  // change only what the grid renders, and folding them in here emptied the
+  // methodology on error, taking the consultation button down with it.
+  const showingPublished = stats.length === 0;
+  // Only explain the metrics actually on screen. A computed stat that came back
+  // zero is filtered out of the grid above, and its methodology card would then
+  // describe a number the visitor cannot see.
+  const method = (showingPublished ? PUBLISHED_METHOD : COMPUTED_METHOD)
+    .filter((m) => shown.some((stat) => stat.key === m.key));
 
   useEffect(() => {
     let cancelled = false;
@@ -122,9 +192,13 @@ export default function ImpactPage() {
 
   const heading = lang === "ar" ? "أثرنا بالأرقام" : "Our impact in numbers";
   const eyebrow = lang === "ar" ? "صفحة الشفافية" : "Transparency page";
-  const sub = lang === "ar"
-    ? "منذ انطلاقة بكلمة، نقيس تأثيرنا بالأرقام الحقيقية وبقصص الناس التي تغيّرت أصواتهم. هذه الصفحة تُحدَّث تلقائياً من قاعدة بياناتنا."
-    : "Since Bikalima started, we measure impact through real data and the stories of people whose voices have changed. This page is updated automatically from our database.";
+  const sub = showingPublished
+    ? lang === "ar"
+      ? "هذه أرقام بكلمة منذ انطلاقتها، داخل المنصّة وخارجها. وحالما تتراكم أرقام المنصّة الحيّة، تحلّ محلّها هنا تلقائياً."
+      : "These are Bikalima's figures since it began, on the platform and beyond it. Once the platform's own live counts accumulate, they take their place here automatically."
+    : lang === "ar"
+      ? "منذ انطلاقة بكلمة، نقيس تأثيرنا بالأرقام الحقيقية وبقصص الناس التي تغيّرت أصواتهم. هذه الصفحة تُحدَّث تلقائياً من قاعدة بياناتنا."
+      : "Since Bikalima started, we measure impact through real data and the stories of people whose voices have changed. This page is updated automatically from our database.";
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden" dir={dir} data-testid="page-impact">
@@ -196,9 +270,13 @@ export default function ImpactPage() {
               {lang === "ar" ? "أصواتٌ تغيّرت" : "Voices that changed"}
             </h2>
             <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-              {lang === "ar"
-                ? "كل رقم في الأعلى يمثّل إنساناً عاش رحلة. هذه بعض قصصهم بكلماتهم."
-                : "Every number above is a person who walked the journey. Here are a few of their stories, in their own words."}
+              {showingPublished
+                ? lang === "ar"
+                  ? "خلف كل رقم في الأعلى أناسٌ عاشوا الرحلة. هذه بعض قصصهم بكلماتهم."
+                  : "Behind every number above are people who walked the journey. Here are a few of their stories, in their own words."
+                : lang === "ar"
+                  ? "كل رقم في الأعلى يمثّل إنساناً عاش رحلة. هذه بعض قصصهم بكلماتهم."
+                  : "Every number above is a person who walked the journey. Here are a few of their stories, in their own words."}
             </p>
           </div>
 
@@ -263,31 +341,24 @@ export default function ImpactPage() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {[
-              {
-                ar: { t: "المتدرّبون", b: "نحسبهم من المستخدمين الذين سجّلوا فعلياً في برنامج واحد على الأقل، بدون تكرار." },
-                en: { t: "Trainees", b: "Counted as distinct users with at least one real enrollment — no duplicates." },
-              },
-              {
-                ar: { t: "الخطابات المُقيَّمة", b: "كل تقييم خطاب وصلنا، سواء عبر النموذج المجاني أو في إطار البرامج." },
-                en: { t: "Speeches evaluated", b: "Every speech-evaluation request we received, free or in-program." },
-              },
-              {
-                ar: { t: "الشهادات الصادرة", b: "الشهادات النشطة فقط (المُلغاة لا تُحتسب)، ويمكن التحقق من كل شهادة عبر صفحة التحقق." },
-                en: { t: "Certificates issued", b: "Active certificates only (revoked are excluded). Each is publicly verifiable." },
-              },
-              {
-                ar: { t: "نسبة الإكمال", b: "متوسّط نسبة الدروس المكتملة لكل تسجيل في كل الدورات المنشورة." },
-                en: { t: "Completion rate", b: "Average completed-lessons per enrollment across all published courses." },
-              },
-            ].map((m, i) => (
+          <div className="grid md:grid-cols-2 gap-4" data-testid={showingPublished ? "impact-method-published" : "impact-method-computed"}>
+            {method.map((m, i) => (
               <div key={i} className="bg-card border border-border rounded-2xl p-5">
                 <h3 className="font-bold mb-2">{lang === "ar" ? m.ar.t : m.en.t}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{lang === "ar" ? m.ar.b : m.en.b}</p>
               </div>
             ))}
           </div>
+
+          <p className="mt-6 text-center text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            {showingPublished
+              ? lang === "ar"
+                ? "هذه الأرقام محفوظة يدوياً ونُراجعها دورياً. وحين تصبح عدّادات المنصّة الحيّة ذات دلالة، تحلّ محلّها هنا وتتبدّل هذه الشروح معها."
+                : "These figures are maintained by hand and reviewed periodically. Once the platform's live counters become meaningful, they replace these — and these notes change with them."
+              : lang === "ar"
+                ? "كل رقم أعلاه محسوب مباشرةً من قاعدة بياناتنا لحظة فتحك للصفحة، بلا تدخّل يدوي."
+                : "Every number above is computed straight from our database the moment you open this page, with no manual edits."}
+          </p>
 
           <div className="mt-10 text-center">
             <Button
