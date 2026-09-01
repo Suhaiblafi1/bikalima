@@ -16,6 +16,13 @@ name: Keep API warm
 # caps cron jobs at once a day, and a schedule that violates the plan's limit
 # fails the deploy at build time — which would block every future push to
 # main until someone noticed. This has no such dependency on the Vercel plan.
+# Re-saved once already: the schedule trigger did not fire on its own for
+# over two hours after this file was first added, well past GitHub's own
+# documented range for how long a brand-new cron takes to activate (15 min
+# to about an hour). This edit forces a fresh push event on this exact file,
+# in case GitHub's cron scanner missed indexing it the first time. A Routine
+# in the operating session now also calls workflow_dispatch on this workflow
+# hourly as a backstop, independent of whether this fixes the native cron.
 on:
   schedule:
     - cron: "*/10 * * * *"
