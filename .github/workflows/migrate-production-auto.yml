@@ -23,6 +23,11 @@ on:
     paths:
       - "lib/db/drizzle/**"
       - ".github/workflows/migrate-production-auto.yml"
+      # Changing what counts as safe re-decides every pending migration, so it
+      # has to re-run. Without this, widening the rules left 0016 sitting
+      # unapplied because no watched path had changed.
+      - "lib/db/check-safe-to-autoapply.mjs"
+      - "lib/db/check-connection.mjs"
   workflow_dispatch:
 
 permissions:
