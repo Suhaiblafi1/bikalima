@@ -9,6 +9,11 @@ import {
 
 const REQUIRED_ENV = ["STRIPE_SECRET_KEY"];
 
+// A test-mode key (sk_test_...) here is deliberate on Preview deployments:
+// it lets checkout be exercised end-to-end with Stripe's test cards before
+// switching Production to a live key. Stripe rejects real cards under a
+// test-mode key, so it must never reach Production.
+
 type PaymentProviderName = "stripe" | "unknown";
 
 type CheckoutSessionInput = {
