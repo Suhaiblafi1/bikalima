@@ -2,7 +2,7 @@
 
 ## الموجود
 
-Users/Sessions، Courses/Sections/Lessons، Enrollments/Progress/Notes، Live Sessions/Attendance، Assignments/Submissions، Activities/Reviews/Skill Scores، Orders/Discounts/Webhooks، Certificates، Notifications/Messages، CRM، CMS، Policies/Accreditations، Feature Flags وAudit Log.
+Users/Sessions، Courses/Sections/Lessons، Enrollments/Progress/Notes، Live Sessions/Attendance، Assignments/Submissions، Activities/Reviews/Skill Scores، Orders/Discounts/Webhooks، Certificates، Notifications/Messages، CRM، CMS، Policies/Accreditations، Feature Flags، Video Generation Jobs وAudit Log.
 
 ## الإضافات ذات الأولوية
 

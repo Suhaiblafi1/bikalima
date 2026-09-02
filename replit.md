@@ -29,6 +29,7 @@ The project is a pnpm monorepo utilizing TypeScript (v5.9) and Node.js (v24). It
 **Backend (`artifacts/api-server`):**
 - **Purpose:** Express 5 API server for business logic and data persistence.
 - **Architecture:** Modular routes and integrations layer for external services.
+- **Video generation:** Admin-only MiniMax H3 short-video generation, gated by the `video_generation` feature flag and `MINIMAX_API_KEY`; jobs are tracked in `video_generation_jobs` and reconciled on read or by cron. See `docs/VIDEO_GENERATION_AR.md`.
 - **Authentication:** Handles user authentication and session management.
 - **Email:** Uses Nodemailer for transactional emails.
 

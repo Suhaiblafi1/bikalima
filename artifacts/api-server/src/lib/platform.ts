@@ -51,11 +51,20 @@ type FlagCacheEntry = { enabled: boolean; expiresAt: number };
 const flagCache = new Map<string, FlagCacheEntry>();
 
 /**
- * Returns whether a feature flag is enabled. Defaults to `true` when no
- * row exists for the key (so missing flags never silently disable
- * functionality). Cached for 30s.
+ * Returns whether a feature flag is enabled. Defaults to `true` when no row
+ * exists for the key, and when the lookup itself fails, so missing flags and
+ * a hiccuping database never silently disable working functionality. Cached
+ * for 30s.
+ *
+ * Pass `whenMissing: false` for a feature that must fail closed instead —
+ * one that spends money, or reaches a third party — where "we could not
+ * check" has to mean "not now" rather than "go ahead".
  */
-export async function isFeatureEnabled(key: string): Promise<boolean> {
+export async function isFeatureEnabled(
+  key: string,
+  opts: { whenMissing?: boolean } = {},
+): Promise<boolean> {
+  const fallback = opts.whenMissing ?? true;
   const now = Date.now();
   const hit = flagCache.get(key);
   if (hit && hit.expiresAt > now) return hit.enabled;
@@ -64,12 +73,12 @@ export async function isFeatureEnabled(key: string): Promise<boolean> {
       .select({ enabled: featureFlagsTable.enabled })
       .from(featureFlagsTable)
       .where(eq(featureFlagsTable.key, key));
-    const enabled = row?.enabled ?? true;
+    const enabled = row?.enabled ?? fallback;
     flagCache.set(key, { enabled, expiresAt: now + FLAG_TTL_MS });
     return enabled;
   } catch (err) {
-    logger.warn({ err, key }, "feature-flag lookup failed; defaulting to enabled");
-    return true;
+    logger.warn({ err, key, fallback }, "feature-flag lookup failed; using fallback");
+    return fallback;
   }
 }
 
@@ -273,6 +282,8 @@ const DEFAULT_FLAGS: Array<{
   key: string;
   descriptionAr: string;
   descriptionEn: string;
+  /** Seeded state. Omitted means on; a flag that costs money starts off. */
+  enabled?: boolean;
 }> = [
   { key: "live_chat",         descriptionAr: "الشات المباشر مع الزوار",            descriptionEn: "Live chat widget" },
   { key: "payments",          descriptionAr: "الدفع الإلكتروني",                    descriptionEn: "Online payments" },
@@ -280,6 +291,9 @@ const DEFAULT_FLAGS: Array<{
   { key: "video_upload",      descriptionAr: "رفع الفيديوهات في الخطابات",          descriptionEn: "Video upload" },
   { key: "certificate_pdf",   descriptionAr: "تحميل الشهادات بصيغة PDF",            descriptionEn: "Certificate PDF download" },
   { key: "consultation_booking", descriptionAr: "حجز جلسة استشارة",                  descriptionEn: "Consultation booking" },
+  // Off on arrival: every generated clip is billed per output second by the
+  // provider, so this one waits for somebody to switch it on deliberately.
+  { key: "video_generation",  descriptionAr: "توليد الفيديوهات القصيرة بالذكاء الاصطناعي", descriptionEn: "AI short-video generation", enabled: false },
 ];
 
 const DEFAULT_IMPACT_STATS: Array<{
@@ -318,7 +332,7 @@ export function seedPlatformDefaults(): Promise<void> {
       if (DEFAULT_FLAGS.length > 0) {
         await db
           .insert(featureFlagsTable)
-          .values(DEFAULT_FLAGS.map((f) => ({ key: f.key, enabled: true, descriptionAr: f.descriptionAr, descriptionEn: f.descriptionEn })))
+          .values(DEFAULT_FLAGS.map((f) => ({ key: f.key, enabled: f.enabled ?? true, descriptionAr: f.descriptionAr, descriptionEn: f.descriptionEn })))
           .onConflictDoNothing({ target: featureFlagsTable.key });
       }
       if (DEFAULT_IMPACT_STATS.length > 0) {

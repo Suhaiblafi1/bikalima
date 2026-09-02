@@ -2,7 +2,8 @@ export type IntegrationProvider =
   | "odoo"
   | "whatsapp"
   | "payment"
-  | "storage";
+  | "storage"
+  | "videoGen";
 
 export interface IntegrationStatus {
   provider: IntegrationProvider;
