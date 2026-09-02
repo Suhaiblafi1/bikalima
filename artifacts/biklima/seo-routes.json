@@ -1,0 +1,117 @@
+{
+  "_comment": [
+    "Routes that get their own static HTML at build time, so a link-preview bot",
+    "sees this page rather than the home page. Values are copied from each",
+    "page's usePageMeta call, in Arabic, because index.html is lang=ar and that",
+    "is what a bot with no stored language preference is served.",
+    "",
+    "The prerender and the runtime hook are two sources for the same strings.",
+    "seo-meta.spec.ts compares them per route, so a page whose meta changes",
+    "without this file changing fails the suite rather than quietly serving a",
+    "stale preview.",
+    "",
+    "Deliberately absent: /policies/<slug>, /certificates/<code> and the",
+    "signed-in pages. The first two take their titles from the database or the",
+    "URL, so baking a value here would invent a second truth that drifts; they",
+    "keep today's behaviour, which is the site default. The signed-in pages are",
+    "noindex and never shared."
+  ],
+  "titleSuffix": " | بكلمة",
+  "defaultTitle": "بكلمة - صناعة الأثر وفن الإلقاء والخطابة",
+  "defaultOgImage": "https://bikalima.com/opengraph.jpg",
+  "routes": [
+    {
+      "path": "/",
+      "description": "بكلمة — منهجية شاملة لصناعة الأثر وفن الإلقاء والخطابة. برامج للأفراد والمدربين والمعلمين والأطفال."
+    },
+    {
+      "path": "/programs/influential-speaker",
+      "title": "المتحدث المؤثر",
+      "description": "كلمتك قادرة على تغيير الغرفة",
+      "ogImageAsset": "program_youth_1600"
+    },
+    {
+      "path": "/programs/trainer-certification",
+      "title": "المدرب المعتمد",
+      "description": "ضاعف الأثر بالتعليم",
+      "ogImageAsset": "program_tot_1600"
+    },
+    {
+      "path": "/programs/teachers",
+      "title": "تأهيل المعلمين لتعليم الأطفال",
+      "description": "بيئة الطفل هي مستقبله",
+      "ogImageAsset": "program_parents_1600"
+    },
+    {
+      "path": "/programs/kids",
+      "title": "المتحدث الصغير",
+      "description": "صوتك يستحق أن يُسمع",
+      "ogImageAsset": "program_children_1600"
+    },
+    {
+      "path": "/workbooks",
+      "title": "الكرّاسات",
+      "description": "كرّاسات بكلمة التدريبية في فن الخطابة والإلقاء — اطلبها مطبوعة أو رقمية."
+    },
+    {
+      "path": "/gallery",
+      "title": "معرضنا",
+      "description": "صور من ورش وبرامج بكلمة التدريبية في الأردن والعالم العربي."
+    },
+    {
+      "path": "/impact",
+      "title": "أثرنا بالأرقام",
+      "description": "أرقام بكلمة: المتدربون والبرامج والساعات التدريبية والشهادات الممنوحة."
+    },
+    {
+      "path": "/consultation",
+      "title": "استشارة",
+      "description": "احجز استشارة مع فريق بكلمة لاختيار البرنامج الأنسب لمسارك."
+    },
+    {
+      "path": "/verify",
+      "title": "تحقق من شهادة",
+      "description": "تحقّق من صحة أي شهادة أو اعتماد صادر عن بكلمة برقم الشهادة أو الاسم."
+    },
+    {
+      "path": "/graduates",
+      "title": "سجل الخريجين",
+      "description": "خريجو بكلمة وشركاؤها المعتمدون — تحقّق من أي شهادة من بطاقتها."
+    },
+    {
+      "path": "/about",
+      "title": "من نحن",
+      "description": "بكلمة منصة عربية تصنع رحلة تعلم عملية تساعد الإنسان على امتلاك كلمته وحضوره."
+    },
+    {
+      "path": "/accreditations",
+      "title": "اعتماداتنا وشراكاتنا",
+      "description": "اعتمادات بكلمة الرسمية من جهات موثوقة محلياً ودولياً. كل شهادة قابلة للتحقق."
+    },
+    {
+      "path": "/careers",
+      "title": "انضم إلى فريق بكلمة",
+      "description": "تعرّف إلى فرص الانضمام إلى فريق بكلمة الإداري وشبكة المدربين."
+    },
+    {
+      "path": "/library",
+      "title": "المكتبة التعليمية",
+      "description": "مكتبة بكلمة العامة لتعلّم الخطابة بالمشاهدة والتحليل والتطبيق."
+    },
+    {
+      "path": "/terms",
+      "title": "الشروط والأحكام",
+      "description": "الشروط التي تحكم استخدامك لخدمات بكلمة، التسجيل، والدفع، والاسترداد."
+    },
+    {
+      "path": "/privacy",
+      "title": "سياسة الخصوصية",
+      "description": "كيف نجمع بياناتك ونحميها في منصة بكلمة، وما هي حقوقك."
+    },
+    {
+      "path": "/policies",
+      "title": "الشروط والسياسات",
+      "description": "كل ما يتعلق بحقوقك والتزاماتك على منصة بكلمة."
+    }
+  ]
+}

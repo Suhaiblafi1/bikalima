@@ -114,6 +114,31 @@ export function faqPage(items: ReadonlyArray<{ readonly q: string; readonly a: s
   };
 }
 
+/**
+ * The testimonials already on the page, as schema.org Review nodes.
+ *
+ * Deliberately without reviewRating, and with no AggregateRating anywhere: the
+ * testimonials carry a name, a role and a quote, and no one has ever given a
+ * star. Emitting a rating here would mean inventing the number — fake review
+ * markup, which is both against Google's guidelines and a lie told in a
+ * machine-readable format. The consequence is honest and worth stating: with
+ * no rating there is no star-snippet rich result. What this does buy is
+ * extractability — a crawler or a language model reading the page gets the
+ * quotes attributed to their authors and tied to the organisation, instead of
+ * anonymous paragraphs.
+ */
+export function reviews(
+  items: ReadonlyArray<{ readonly name: string; readonly role: string; readonly quote: string }>,
+) {
+  if (items.length === 0) return null;
+  return items.map((item) => ({
+    "@type": "Review",
+    itemReviewed: { "@id": ORG_ID },
+    author: { "@type": "Person", name: item.name, jobTitle: item.role },
+    reviewBody: item.quote,
+  }));
+}
+
 /** Wrap one or more nodes in the graph envelope. */
 export function graph(...nodes: Array<object | null | undefined>) {
   const kept = nodes.filter(Boolean);

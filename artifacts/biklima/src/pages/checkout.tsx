@@ -506,6 +506,16 @@ export default function CheckoutPage() {
                       </span>
                     ))}
                   </div>
+                  {/* The refund policy exists in full and was reachable only
+                      from the footer. This is the moment a buyer wants it. */}
+                  <a
+                    href="/policies/refund"
+                    target="_blank"
+                    rel="noopener"
+                    className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                  >
+                    {lang === "ar" ? "سياسة الاسترداد" : "Refund policy"}
+                  </a>
                 </div>
               </form>
             </CardContent>

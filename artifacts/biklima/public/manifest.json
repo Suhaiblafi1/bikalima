@@ -1,0 +1,33 @@
+{
+  "name": "بكلمة — صناعة الأثر وفن الإلقاء والخطابة",
+  "short_name": "بكلمة",
+  "description": "منهجية شاملة لصناعة الأثر وفن الإلقاء والخطابة. برامج للأفراد والمدربين والمعلمين والأطفال.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf8f5",
+  "theme_color": "#258f86",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
