@@ -17,10 +17,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { z } from "zod";
 import { and, desc, eq, inArray, isNotNull, lt } from "drizzle-orm";
-import { db, usersTable, videoGenerationJobsTable, type VideoGenerationJob } from "@workspace/db";
+import { db, fieldMediaTable, usersTable, videoGenerationJobsTable, type VideoGenerationJob } from "@workspace/db";
 import { requireAdmin } from "../lib/admin.js";
 import { isFeatureEnabled, recordAuditLog } from "../lib/platform.js";
 import { applyAdHocLimit } from "../middlewares/security.js";
+import { storageService } from "../integrations/storageService.js";
 import {
   MAX_DURATION_SECONDS,
   MAX_PROMPT_LENGTH,
@@ -44,6 +45,15 @@ const TERMINAL_STATUSES: VideoTaskStatus[] = ["succeeded", "failed", "cancelled"
  * than any 15-second render legitimately takes.
  */
 const STALE_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Ceiling on a clip we will pull into our own storage. A 15-second 2K
+ * render lands in the tens of megabytes; anything an order of magnitude
+ * past that is not the file we asked for, and buffering it would be a way
+ * to run the server out of memory from an admin button.
+ */
+const MAX_SAVE_BYTES = 200 * 1024 * 1024;
+const DOWNLOAD_TIMEOUT_MS = 120_000;
 
 function isTerminal(status: string): boolean {
   return (TERMINAL_STATUSES as string[]).includes(status);
@@ -201,12 +211,21 @@ async function reconcile(job: VideoGenerationJob): Promise<VideoGenerationJob> {
 router.get("/admin/video-generation/status", async (req: Request, res: Response) => {
   if (!requireAdmin(req, res)) return;
   const status = videoGenService.getStatus();
+  const storage = storageService.getStatus();
   res.json({
     flag: FLAG_KEY,
     flagEnabled: await isFeatureEnabled(FLAG_KEY, { whenMissing: false }),
     configured: status.enabled,
     missingEnvVars: status.missingEnvVars,
     model: videoGenService.modelName(),
+    // Saving a finished clip is a separate capability with its own
+    // credentials, so the page can offer generation while telling the admin
+    // that keeping the result is not wired up yet.
+    storage: {
+      configured: storage.enabled,
+      provider: storageService.providerName(),
+      missingEnvVars: storage.missingEnvVars,
+    },
     limits: {
       minDuration: MIN_DURATION_SECONDS,
       maxDuration: MAX_DURATION_SECONDS,
@@ -421,6 +440,206 @@ router.get("/admin/video-generation/jobs/:id", async (req: Request, res: Respons
   } catch (err) {
     req.log.error({ err, id }, "[video-gen] read failed");
     res.status(500).json({ error: "تعذّر قراءة المهمة." });
+  }
+});
+
+// ── Save a finished clip into the media library ─────────────────────────
+const SaveToLibrarySchema = z.object({
+  titleAr: z.string().transform((v) => v.trim()).pipe(z.string().min(2).max(200)),
+  titleEn: z.string().transform((v) => v.trim()).pipe(z.string().max(200)).optional(),
+  category: z.string().transform((v) => v.trim()).pipe(z.string().max(40)).optional(),
+  speakerName: z.string().transform((v) => v.trim()).pipe(z.string().max(120)).optional(),
+  descriptionAr: z.string().transform((v) => v.trim()).pipe(z.string().max(2000)).optional(),
+  placement: z.array(z.string().max(40)).max(8).optional(),
+});
+
+/**
+ * Copy the provider's clip into our own storage and register it in the
+ * media library.
+ *
+ * Deliberately not behind the feature flag. The flag governs new spending;
+ * this endpoint spends nothing and rescues something already paid for,
+ * whose provider link expires within hours. Turning generation off must not
+ * strand yesterday's clips.
+ *
+ * Idempotent: a job that already carries a `fieldMediaId` answers with what
+ * it became instead of uploading a second copy — the button is the kind
+ * people press twice.
+ */
+router.post("/admin/video-generation/jobs/:id/save-to-library", async (req: Request, res: Response) => {
+  if (!requireAdmin(req, res)) return;
+
+  const id = String(req.params.id ?? "").trim();
+  if (!id) {
+    res.status(400).json({ error: "معرّف المهمة مطلوب." });
+    return;
+  }
+
+  const parsed = SaveToLibrarySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "العنوان بالعربية مطلوب (حرفان على الأقل).", issues: parsed.error.issues });
+    return;
+  }
+
+  const [job] = await db
+    .select()
+    .from(videoGenerationJobsTable)
+    .where(eq(videoGenerationJobsTable.id, id));
+  if (!job) {
+    res.status(404).json({ error: "المهمة غير موجودة." });
+    return;
+  }
+
+  // Answer with the existing row rather than uploading again.
+  if (job.fieldMediaId) {
+    const [existing] = await db
+      .select()
+      .from(fieldMediaTable)
+      .where(eq(fieldMediaTable.id, job.fieldMediaId));
+    res.json({ job, media: existing ?? null, alreadySaved: true });
+    return;
+  }
+
+  if (job.status !== "succeeded" || !job.videoUrl) {
+    res.status(409).json({
+      error: "لا يمكن الحفظ إلا لمقطع جاهز.",
+      reason: "job_not_ready",
+      status: job.status,
+    });
+    return;
+  }
+
+  const storage = storageService.getStatus();
+  if (!storage.enabled) {
+    res.status(503).json({
+      error: "تخزين الملفات غير مُهيَّأ، فلا مكان نحفظ فيه المقطع.",
+      reason: "storage_not_configured",
+      missingEnvVars: storage.missingEnvVars,
+    });
+    return;
+  }
+  if (storageService.providerName() === "gdrive") {
+    res.status(503).json({
+      error: "مزوّد التخزين الحالي (Google Drive) غير مدعوم للحفظ. استخدم S3 أو R2.",
+      reason: "storage_provider_unsupported",
+    });
+    return;
+  }
+
+  // Each save moves a whole file through this process, so it is limited
+  // separately from generation: a loop of retries must not become the way
+  // the server runs out of memory or bandwidth.
+  if (!applyAdHocLimit(res, `video-gen-save:${req.user!.id}`, 30, 60 * 60 * 1000,
+    "تجاوزت حد الحفظ لهذه الساعة. أعد المحاولة لاحقاً.")) return;
+
+  let body: Buffer;
+  let contentType = "video/mp4";
+  try {
+    const download = await fetch(job.videoUrl, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+    if (!download.ok) {
+      // 403/404 here almost always means the provider's link has expired,
+      // which is exactly the failure this feature exists to prevent — so it
+      // is reported as its own outcome, not as a generic error.
+      const expired = download.status === 403 || download.status === 404 || download.status === 410;
+      req.log.error({ jobId: job.id, status: download.status }, "[video-gen] clip download failed");
+      res.status(expired ? 410 : 502).json({
+        error: expired
+          ? "انتهى رابط المزوّد لهذا المقطع، ولم يبقَ ما يُحفظ. أعد التوليد."
+          : "تعذّر تنزيل المقطع من المزوّد. أعد المحاولة.",
+        reason: expired ? "provider_link_expired" : "download_failed",
+      });
+      return;
+    }
+
+    const declaredLength = Number(download.headers.get("content-length") ?? "0");
+    if (declaredLength > MAX_SAVE_BYTES) {
+      res.status(413).json({ error: "حجم المقطع أكبر من الحد المسموح للحفظ.", reason: "too_large" });
+      return;
+    }
+    const header = download.headers.get("content-type");
+    if (header && header.startsWith("video/")) contentType = header.split(";")[0].trim();
+
+    const bytes = Buffer.from(await download.arrayBuffer());
+    // Checked again after reading: a provider that omits Content-Length
+    // would otherwise walk straight past the ceiling above.
+    if (bytes.byteLength > MAX_SAVE_BYTES) {
+      res.status(413).json({ error: "حجم المقطع أكبر من الحد المسموح للحفظ.", reason: "too_large" });
+      return;
+    }
+    body = bytes;
+  } catch (err) {
+    req.log.error({ err, jobId: job.id }, "[video-gen] clip download threw");
+    res.status(504).json({ error: "تعذّر الوصول إلى رابط المقطع. أعد المحاولة.", reason: "download_failed" });
+    return;
+  }
+
+  const extension = contentType === "video/quicktime" ? "mov" : "mp4";
+  const uploaded = await storageService.uploadObject({
+    fileName: `${job.id}.${extension}`,
+    contentType,
+    body,
+    folder: "video-generation",
+  });
+  if (!uploaded.ok) {
+    req.log.error({ jobId: job.id, result: uploaded }, "[video-gen] upload to storage failed");
+    res.status(502).json({
+      error: "تعذّر رفع المقطع إلى التخزين. راجع إعدادات التخزين ثم أعد المحاولة.",
+      reason: "upload_failed",
+    });
+    return;
+  }
+
+  const { titleAr, titleEn, category, speakerName, descriptionAr, placement } = parsed.data;
+  try {
+    // Draft on purpose: an admin decides what appears on the site, and a
+    // generated clip is a candidate until a person has watched it.
+    const [media] = await db
+      .insert(fieldMediaTable)
+      .values({
+        mediaType: "upload",
+        mediaUrl: uploaded.publicUrl,
+        titleAr,
+        titleEn: titleEn && titleEn !== "" ? titleEn : null,
+        category: category && category !== "" ? category : null,
+        speakerName: speakerName && speakerName !== "" ? speakerName : null,
+        descriptionAr: descriptionAr && descriptionAr !== "" ? descriptionAr : null,
+        placement: placement && placement.length > 0 ? placement : null,
+        status: "draft",
+      })
+      .returning();
+
+    const [updated] = await db
+      .update(videoGenerationJobsTable)
+      .set({
+        storedUrl: uploaded.publicUrl,
+        storedKey: uploaded.key,
+        fieldMediaId: media?.id ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(videoGenerationJobsTable.id, job.id))
+      .returning();
+
+    await recordAuditLog({
+      actor: { id: req.user!.id, email: req.user?.email ?? null },
+      action: "video_generation.save_to_library",
+      entityType: "video_generation_job",
+      entityId: job.id,
+      description: `${titleAr} → ${uploaded.key}`,
+      after: { storedUrl: uploaded.publicUrl, storedKey: uploaded.key, fieldMediaId: media?.id ?? null },
+    });
+
+    res.status(201).json({ job: updated ?? job, media: media ?? null, alreadySaved: false });
+  } catch (err) {
+    // The object is already in storage at this point. Recording where it
+    // went matters more than the library row, so the key is logged and the
+    // admin is told the upload succeeded — a retry re-uploads rather than
+    // leaving a file nobody can find.
+    req.log.error({ err, jobId: job.id, key: uploaded.key }, "[video-gen] library row insert failed");
+    res.status(500).json({
+      error: "رُفع المقطع إلى التخزين لكن تعذّر إنشاء صف المكتبة.",
+      reason: "library_insert_failed",
+      storedUrl: uploaded.publicUrl,
+    });
   }
 });
 

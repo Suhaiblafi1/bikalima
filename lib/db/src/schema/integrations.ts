@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { index, integer, jsonb, pgTable, timestamp, varchar, text } from "drizzle-orm/pg-core";
 import { usersTable } from "./auth";
+import { fieldMediaTable } from "./lms";
 
 export const integrationSyncEventsTable = pgTable("integration_sync_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -57,6 +58,15 @@ export const videoGenerationJobsTable = pgTable(
     ratio: varchar("ratio", { length: 16 }).notNull(),
     conditions: jsonb("conditions").$type<Array<Record<string, unknown>>>(),
     videoUrl: text("video_url"),
+    // Our own copy, once the clip has been saved: `stored_url` is what the
+    // site may link to indefinitely, `stored_key` is the object behind it
+    // (kept so the file can be found or removed later without parsing a
+    // URL), and `field_media_id` is the media-library row it became.
+    storedUrl: text("stored_url"),
+    storedKey: text("stored_key"),
+    fieldMediaId: varchar("field_media_id").references(() => fieldMediaTable.id, {
+      onDelete: "set null",
+    }),
     usage: jsonb("usage").$type<Record<string, unknown>>(),
     errorMessage: text("error_message"),
     requestedById: varchar("requested_by_id").references(() => usersTable.id, {
@@ -71,6 +81,7 @@ export const videoGenerationJobsTable = pgTable(
     index("idx_video_generation_jobs_status").on(t.status, t.createdAt),
     index("idx_video_generation_jobs_task").on(t.externalTaskId),
     index("idx_video_generation_jobs_requester").on(t.requestedById),
+    index("idx_video_generation_jobs_field_media").on(t.fieldMediaId),
   ],
 );
 

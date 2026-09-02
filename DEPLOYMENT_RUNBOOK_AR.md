@@ -14,6 +14,7 @@
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
 - مفاتيح Google وWhatsApp الموجودة سابقاً عند تفعيل خدمتيهما
+- `STORAGE_PROVIDER`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_BUCKET` (ومعها `STORAGE_ENDPOINT` و`STORAGE_PUBLIC_BASE_URL` مع R2) عند تفعيل حفظ الملفات في تخزين خارجي
 - `MINIMAX_API_KEY` وحده عند تفعيل توليد الفيديو، ومعه اختيارياً `MINIMAX_API_BASE` (الافتراضي `https://api.minimax.io`) و`MINIMAX_VIDEO_MODEL` (الافتراضي `MiniMax-H3`). راجع `docs/VIDEO_GENERATION_AR.md`
 
 يتحقق الخادم عند الإقلاع من المتغيرات الإلزامية في الإنتاج، ومن اكتمال كل تكامل اختياري: لا يمكن مثلاً ضبط مفتاح Stripe دون سر Webhook، أو معرّف Google دون سره. يجب أن تستخدم روابط الإنتاج بروتوكول HTTPS.

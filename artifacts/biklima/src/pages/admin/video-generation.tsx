@@ -4,11 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  AlertTriangle, Clapperboard, Copy, Download, Loader2, Plus,
-  RefreshCw, Sparkles, ToggleRight, Trash2, X,
+  AlertTriangle, Clapperboard, Copy, Download, HardDriveUpload, Library,
+  Loader2, Plus, RefreshCw, Sparkles, ToggleRight, Trash2, X,
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
-import { useApiFetch } from "./_shared";
+import { useApiFetch, FIELD_MEDIA_CATEGORIES } from "./_shared";
 import { toast } from "@/hooks/use-toast";
 import { refreshFeatureFlags } from "@/hooks/use-feature-flag";
 
@@ -38,6 +38,9 @@ type Job = {
   duration: number;
   ratio: string;
   videoUrl: string | null;
+  storedUrl: string | null;
+  storedKey: string | null;
+  fieldMediaId: string | null;
   usage: { total_seconds?: number; output_seconds?: number } | null;
   errorMessage: string | null;
   requestedById: string | null;
@@ -53,6 +56,11 @@ type GeneratorStatus = {
   configured: boolean;
   missingEnvVars: string[];
   model: string;
+  storage: {
+    configured: boolean;
+    provider: string;
+    missingEnvVars: string[];
+  };
   limits: {
     minDuration: number;
     maxDuration: number;
@@ -136,6 +144,12 @@ export default function AdminVideoGenerationPage() {
   const [jobsLoading, setJobsLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Which job's save form is open, and the metadata being typed into it.
+  const [saveFormJobId, setSaveFormJobId] = useState<string | null>(null);
+  const [saveTitleAr, setSaveTitleAr] = useState("");
+  const [saveCategory, setSaveCategory] = useState("");
+  const [savingJobId, setSavingJobId] = useState<string | null>(null);
 
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState(8);
@@ -305,6 +319,52 @@ export default function AdminVideoGenerationPage() {
       setFormError("خطأ في الاتصال.");
     } finally {
       setCreating(false);
+    }
+  };
+
+  /**
+   * Copy the clip out of the provider and into our own storage, as a draft
+   * row in the media library. The provider's link expires, so this is the
+   * step that decides whether a clip we paid for still exists tomorrow.
+   */
+  const saveToLibrary = async (job: Job) => {
+    setSavingJobId(job.id);
+    try {
+      const response = await apiFetch(`/admin/video-generation/jobs/${job.id}/save-to-library`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titleAr: saveTitleAr.trim(),
+          category: saveCategory || undefined,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        job?: Job;
+        error?: string;
+        reason?: string;
+      };
+      if (!response.ok) {
+        toast({ title: data.error ?? "تعذّر حفظ المقطع", variant: "destructive" });
+        // An expired provider link is terminal for this clip: refresh the row
+        // so the page stops offering a button that cannot work.
+        if (data.reason === "provider_link_expired") await loadJobs();
+        if (data.reason === "storage_not_configured") await loadStatus();
+        return;
+      }
+      if (data.job) {
+        setJobs((current) => current.map((row) => (row.id === job.id ? { ...row, ...data.job } : row)));
+      }
+      setSaveFormJobId(null);
+      setSaveTitleAr("");
+      setSaveCategory("");
+      toast({
+        title: "حُفظ في المكتبة كمسودة",
+        description: "راجعه من «من الميدان» وانشره ليظهر على الموقع.",
+      });
+    } catch {
+      toast({ title: "خطأ في الاتصال", variant: "destructive" });
+    } finally {
+      setSavingJobId(null);
     }
   };
 
@@ -658,13 +718,122 @@ export default function AdminVideoGenerationPage() {
                             <Copy className="w-3.5 h-3.5 me-1" />
                             نسخ الرابط
                           </Button>
-                          {/* Said on every finished clip on purpose: the link
-                              belongs to the provider and expires, so the copy
-                              that matters is the one downloaded now. */}
-                          <span className="text-[11px] text-amber-700">
-                            الرابط مؤقّت عند المزوّد — نزّل المقطع وارفعه إلى تخزيننا إن أردت الاحتفاظ به.
-                          </span>
+                          {/* The warning stands only while the clip lives
+                              nowhere but at the provider. Once it is in our
+                              storage the honest thing to say is the opposite. */}
+                          {job.fieldMediaId ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700">
+                              <Library className="w-3.5 h-3.5" />
+                              محفوظ في تخزيننا ومسجَّل في المكتبة كمسودة
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-amber-700">
+                              الرابط مؤقّت عند المزوّد — احفظه لتبقى نسخة عندنا.
+                            </span>
+                          )}
                         </div>
+
+                        {job.fieldMediaId ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate("/admin/field-media")}
+                              data-testid={`vg-open-library-${job.id}`}
+                            >
+                              <Library className="w-3.5 h-3.5 me-1" />
+                              افتح في «من الميدان»
+                            </Button>
+                            {job.storedUrl && (
+                              <Button size="sm" variant="ghost" onClick={() => copyLink(job.storedUrl!)}>
+                                <Copy className="w-3.5 h-3.5 me-1" />
+                                نسخ الرابط الدائم
+                              </Button>
+                            )}
+                          </div>
+                        ) : !status?.storage.configured ? (
+                          <p className="text-[11px] text-muted-foreground leading-relaxed" data-testid={`vg-storage-missing-${job.id}`}>
+                            الحفظ يحتاج تخزيناً مُهيَّأً. المتغيرات الناقصة:{" "}
+                            <span className="font-mono" dir="ltr">
+                              {status?.storage.missingEnvVars.join(", ") || "—"}
+                            </span>
+                            . حتى ذلك الحين نزّل المقطع يدوياً قبل انتهاء الرابط.
+                          </p>
+                        ) : saveFormJobId === job.id ? (
+                          <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[11px] text-muted-foreground mb-1 block">
+                                  عنوان المقطع (عربي) *
+                                </label>
+                                <Input
+                                  value={saveTitleAr}
+                                  onChange={(event) => setSaveTitleAr(event.target.value)}
+                                  placeholder="مثلاً: افتتاحية قوية أمام جمهور صغير"
+                                  data-testid={`vg-save-title-${job.id}`}
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] text-muted-foreground mb-1 block">التصنيف</label>
+                                <select
+                                  value={saveCategory}
+                                  onChange={(event) => setSaveCategory(event.target.value)}
+                                  className="w-full border rounded-lg p-2 text-sm bg-background"
+                                  data-testid={`vg-save-category-${job.id}`}
+                                >
+                                  <option value="">— بلا تصنيف —</option>
+                                  {FIELD_MEDIA_CATEGORIES.map((category) => (
+                                    <option key={category.value} value={category.value}>
+                                      {category.labelAr}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              يُنزَّل المقطع من المزوّد ويُرفع إلى تخزيننا، ثم يُسجَّل في «من الميدان»
+                              كمسودة — لا يظهر على الموقع قبل أن تنشره.
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => saveToLibrary(job)}
+                                disabled={savingJobId === job.id || saveTitleAr.trim().length < 2}
+                                data-testid={`vg-save-confirm-${job.id}`}
+                              >
+                                {savingJobId === job.id
+                                  ? <Loader2 className="w-3.5 h-3.5 me-1 animate-spin" />
+                                  : <HardDriveUpload className="w-3.5 h-3.5 me-1" />}
+                                احفظ
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setSaveFormJobId(null)}
+                                disabled={savingJobId === job.id}
+                              >
+                                إلغاء
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSaveFormJobId(job.id);
+                              // Seed the title from the purpose rather than the
+                              // prompt: a 500-character scene description makes
+                              // a terrible library title.
+                              setSaveTitleAr("");
+                              setSaveCategory("");
+                            }}
+                            data-testid={`vg-save-${job.id}`}
+                          >
+                            <HardDriveUpload className="w-3.5 h-3.5 me-1" />
+                            احفظ في مكتبة الفيديو
+                          </Button>
+                        )}
                       </div>
                     )}
                   </li>

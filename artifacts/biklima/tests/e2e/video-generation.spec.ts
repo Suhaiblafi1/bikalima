@@ -132,6 +132,44 @@ test.describe.serial("admin video generation", () => {
     await page.close();
   });
 
+  test("status reports storage separately from the generator", async ({ admin }) => {
+    const page = await admin.newPage();
+    const body = await (await page.request.get(STATUS_URL)).json();
+
+    // Saving a clip is a second capability with its own credentials: the page
+    // has to be able to offer generation while saying that keeping the result
+    // is not wired up yet.
+    expect(body.storage.configured).toBe(false);
+    expect(body.storage.missingEnvVars).toContain("STORAGE_PROVIDER");
+    await page.close();
+  });
+
+  test("saving to the library is admin-only and survives the flag being off", async ({ anon, learner, admin }) => {
+    const saveUrl = `${JOBS_URL}/does-not-exist/save-to-library`;
+    const data = { titleAr: "عنوان صالح" };
+
+    const anonPage = await anon.newPage();
+    expect((await anonPage.request.post(saveUrl, { data })).status()).toBe(403);
+    await anonPage.close();
+
+    const learnerPage = await learner.newPage();
+    expect((await learnerPage.request.post(saveUrl, { data })).status()).toBe(403);
+    await learnerPage.close();
+
+    // With the flag off on purpose: the flag governs new spending, and saving
+    // spends nothing — it rescues a clip already paid for whose provider link
+    // expires within hours. So this must answer about the job, not the flag.
+    await setFlag(admin, false);
+    const adminPage = await admin.newPage();
+    const response = await adminPage.request.post(saveUrl, { data });
+    expect(response.status()).toBe(404);
+
+    // And a request with no usable title never reaches the provider or storage.
+    const badTitle = await adminPage.request.post(saveUrl, { data: { titleAr: "ا" } });
+    expect(badTitle.status()).toBe(400);
+    await adminPage.close();
+  });
+
   test("the cron reconciler refuses an unauthenticated call", async ({ anon }) => {
     const page = await anon.newPage();
     const response = await page.request.post("/api/cron/video-generation-reconcile");
