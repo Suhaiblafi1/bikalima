@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   db,
@@ -25,14 +26,28 @@ import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { isSupervisorOrAdmin, requireRole } from "../lib/admin.js";
 import { createNotification } from "../lib/notifications.js";
+import { applyAdHocLimit } from "../middlewares/security.js";
 
 const router: IRouter = Router();
 
 // ── helpers ─────────────────────────────────────────────────────────────
+/**
+ * An invite code that cannot be guessed from other invite codes.
+ *
+ * This grants a stranger a parent's view of a child's account — their
+ * evaluations, live sessions and messages — so it is a credential, not a
+ * convenience id. Math.random() is not a CSPRNG: its internal state can be
+ * recovered from a handful of observed outputs, so anyone who requested a few
+ * invites of their own could predict the codes issued to other families.
+ * randomInt() draws from the OS entropy source and rejects modulo bias.
+ *
+ * The alphabet still excludes I, O, 0 and 1 so a code stays readable when a
+ * parent copies it off a screen by hand.
+ */
 function genCode(len = 8): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let s = "";
-  for (let i = 0; i < len; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < len; i++) s += alphabet[randomInt(alphabet.length)];
   return s;
 }
 
@@ -273,6 +288,14 @@ router.post("/parent/redeem", async (req: Request, res: Response) => {
   const me = req.user;
   const code = String((req.body ?? {}).inviteCode ?? "").trim().toUpperCase();
   if (!code) { res.status(400).json({ error: "inviteCode required" }); return; }
+  // A wrong code here is a miss against a child's account, so guessing gets a
+  // budget. Counted per account and per IP: the account limit stops one signed
+  // -in attacker, the IP limit stops them cycling through throwaway accounts.
+  // Charged only after the code parses, so a fat-fingered empty submit costs a
+  // parent nothing. Ten an hour is far above any real parent's need and far
+  // below what brute force requires against a 32^8 space.
+  if (!applyAdHocLimit(res, `parent-redeem:user:${me.id}`, 10, 60 * 60 * 1000)) return;
+  if (!applyAdHocLimit(res, `parent-redeem:ip:${req.ip ?? "unknown"}`, 20, 60 * 60 * 1000)) return;
   try {
     const [link] = await db.select().from(parentLinksTable)
       .where(eq(parentLinksTable.inviteCode, code)).limit(1);
