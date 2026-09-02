@@ -130,9 +130,11 @@ export function VideoLibrarySection({
   const published = useFieldMedia("library");
 
   const items = useMemo<LibraryItem[]>(() => {
-    // Published rows lead: `orderIndex` is the only ordering lever an admin
-    // has, and it would mean nothing behind a curated list nobody can
-    // reorder from the panel.
+    // The curated list is the section's spine and leads it; published rows
+    // follow, ordered among themselves by the `orderIndex` an admin sets in
+    // «من الميدان». A newly published clip therefore lands after the
+    // curated ones — reachable through its category tab or «عرض المزيد»,
+    // not at the top of «الكل».
     const fromCms = published
       .slice()
       .sort((a, b) => a.orderIndex - b.orderIndex)
@@ -152,7 +154,7 @@ export function VideoLibrarySection({
       highlighted: video.type === "suhaib",
     }));
 
-    return [...fromCms, ...fromStatic];
+    return [...fromStatic, ...fromCms];
   }, [published, lang]);
 
   useEffect(() => {

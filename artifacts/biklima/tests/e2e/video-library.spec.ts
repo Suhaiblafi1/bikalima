@@ -1,11 +1,17 @@
 import { expect, test } from "../fixtures/auth";
 
 /**
- * The public library section reads published «من الميدان» rows on top of its
- * static curated list. Three properties matter and none of them is obvious
- * from the code alone: a published row reaches visitors, a draft never does,
- * and an uploaded MP4 plays in a real player rather than a YouTube iframe
- * (the section was YouTube-only until it had to show our own clips).
+ * The public library section reads published «من الميدان» rows underneath its
+ * static curated list. Four properties matter and none of them is obvious
+ * from the code alone: the curated list still leads the section, a published
+ * row reaches visitors, a draft never does, and an uploaded MP4 plays in a
+ * real player rather than a YouTube iframe (the section was YouTube-only
+ * until it had to show our own clips).
+ *
+ * Because the curated list leads and the grid pages at six, a published row
+ * is not on the first page of «الكل» — it is reached through its category
+ * tab, which is what these tests navigate. That is the cost of the ordering,
+ * and asserting it here is what keeps it deliberate.
  */
 const ADMIN_MEDIA_URL = "/api/admin/field-media";
 const RUN = Date.now();
@@ -50,13 +56,24 @@ test.describe.serial("public video library", () => {
     const page = await anon.newPage();
     await page.goto("/library");
 
-    await expect(page.getByText(PUBLISHED_TITLE)).toBeVisible();
-    // Its skill chip and description come from the CMS row, not the static list.
-    await expect(page.getByText("مهارة اختبارية")).toBeVisible();
-    // A draft is admin-only work in progress.
-    await expect(page.getByText(DRAFT_TITLE)).toHaveCount(0);
-    // The curated list is still the spine of the section.
+    // The curated list leads: the first card in the grid is a static one.
+    await expect(page.locator('[data-testid^="library-item-"]').first())
+      .toHaveAttribute("data-testid", /^library-item-static-/);
     await expect(page.getByText("خطاب من الميدان").first()).toBeVisible();
+
+    // The published row is reached through its own category tab. Assertions
+    // are scoped to that card by id, so a leftover row from an earlier run
+    // cannot make this pass or fail for the wrong reason.
+    await page.getByRole("tab", { name: /البداية/ }).click();
+    const card = page.getByTestId(`library-item-cms-${created[0]}`);
+    await expect(card).toBeVisible();
+    // Title, skill chip and takeaway all come from the CMS row.
+    await expect(card).toContainText(PUBLISHED_TITLE);
+    await expect(card).toContainText("مهارة اختبارية");
+    await expect(card).toContainText("وصف اختباري لما ستتعلمه.");
+
+    // A draft is admin-only work in progress, in any tab.
+    await expect(page.getByText(DRAFT_TITLE)).toHaveCount(0);
     await page.close();
   });
 
@@ -67,6 +84,7 @@ test.describe.serial("public video library", () => {
         titleAr: UPLOAD_TITLE,
         mediaType: "upload",
         mediaUrl: UPLOAD_URL,
+        category: "voice",
         placement: ["library"],
         status: "published",
       },
@@ -77,6 +95,7 @@ test.describe.serial("public video library", () => {
 
     const page = await anon.newPage();
     await page.goto("/library");
+    await page.getByRole("tab", { name: /الصوت والإيقاع/ }).click();
     await page.getByRole("button", { name: new RegExp(UPLOAD_TITLE) }).click();
 
     const player = page.getByTestId("library-file-player");
