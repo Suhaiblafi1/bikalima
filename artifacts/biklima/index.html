@@ -84,10 +84,19 @@
          unicode-ranges; the ranges are what stop an Arabic reader fetching the
          latin, math and symbol subsets. -->
     <link rel="stylesheet" href="%BASE_URL%fonts/fonts.css">
-    <!-- The two faces the first screen actually needs: Tajawal 400 is the body
-         font and Noto Naskh Arabic 700 sets every heading. Preloading only the
-         arabic subsets — the page is lang=ar, and preloading a face nobody
-         renders is wasted bandwidth, not a head start. -->
+    <!-- Avenir Arabic, the face the whole site is set in. This stylesheet is
+         generated at build time by fonts-avenir.mjs from the licensed font
+         files in public/fonts; with none present it is a comment, and the
+         families named after Avenir Arabic in index.css carry the page. It is
+         linked either way so that adding the files needs no edit here. -->
+    <link rel="stylesheet" href="%BASE_URL%fonts/avenir-arabic.css">
+    <!-- The two faces the first screen needs today: Tajawal 400 for body text
+         and Noto Naskh Arabic 700 for headings, which is what renders while
+         Avenir Arabic is not installed. Preloading only the arabic subsets —
+         the page is lang=ar, and preloading a face nobody renders is wasted
+         bandwidth, not a head start. Once the Avenir files are in place these
+         two stop rendering and their preloads should move to the Avenir
+         weights the first screen uses; the build prints that reminder. -->
     <link rel="preload" href="%BASE_URL%fonts/tajawal-400-arabic.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="%BASE_URL%fonts/noto-naskh-arabic-700-arabic.woff2" as="font" type="font/woff2" crossorigin>
   </head>

@@ -14,6 +14,12 @@ export function ContentProtection({ children }: Props) {
     (user?.id ? ` • ${user.id.slice(0, 8)}` : "") || "محتوى محمي • بكلمة";
 
   // Build a tiled watermark via inline SVG → data URL (rotated, low opacity).
+  //
+  // font-family stays generic here, and deliberately: an SVG referenced from a
+  // CSS url() is rendered in a restricted mode that cannot fetch external
+  // resources, so a webfont named here would never load and the text would
+  // fall back anyway. This is the one piece of Arabic on the site not set in
+  // Avenir Arabic, because it cannot be.
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='420' height='220'>
     <text x='50%' y='50%' fill='rgba(0,0,0,0.10)' font-size='16' font-family='sans-serif'
       text-anchor='middle' transform='rotate(-25 210 110)'>${escapeXml(watermarkText)}</text>

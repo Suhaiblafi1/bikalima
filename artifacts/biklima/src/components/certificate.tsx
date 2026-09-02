@@ -54,8 +54,12 @@ export const Certificate = forwardRef<HTMLDivElement, CertificateProps>(
           height: "780px",
           background: "linear-gradient(135deg, #fffaf3 0%, #f4ecdf 100%)",
           padding: "60px",
+          // Named inline rather than inherited: html2canvas rasterises this
+          // node into the PDF, and it resolves the computed family on the
+          // element itself. Avenir Arabic first, same order as --app-font-sans,
+          // so a printed certificate matches the site it came from.
           fontFamily: isRtl
-            ? "'Tajawal', 'Cairo', 'Amiri', 'Segoe UI', sans-serif"
+            ? "'Avenir Arabic', 'avenir-arabic', 'Tajawal', 'Cairo', 'Amiri', 'Segoe UI', sans-serif"
             : "'Georgia', 'Times New Roman', serif",
           color: "#2b2b2b",
           position: "relative",

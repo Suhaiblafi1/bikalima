@@ -156,8 +156,24 @@
   --chart-4: 38 45% 70%;
   --chart-5: 174 40% 60%;
 
-  --app-font-sans: 'Tajawal', sans-serif;
-  --app-font-serif: 'Noto Naskh Arabic', serif;
+  /*
+   * Every glyph on the site comes from these two, and both are Avenir Arabic.
+   *
+   * "Avenir Arabic" is the family public/fonts/avenir-arabic.css declares when
+   * the licensed files are present; "avenir-arabic" is the name Adobe Fonts
+   * uses, so a hosted web project works through the same declaration without
+   * touching this file. Everything after them is a fallback that renders until
+   * the files land, and then never renders again.
+   *
+   * The two variables now hold the same face on purpose: Avenir has no serif
+   * companion, so asking for it everywhere collapses the old pairing (Naskh
+   * headings over Tajawal body) into one voice. `font-serif` stays as a
+   * variable rather than being deleted because ~90 components ask for it by
+   * name, and a heading should keep its own hook for whenever the pairing is
+   * revisited.
+   */
+  --app-font-sans: 'Avenir Arabic', 'avenir-arabic', 'Tajawal', sans-serif;
+  --app-font-serif: 'Avenir Arabic', 'avenir-arabic', 'Noto Naskh Arabic', serif;
   --app-font-mono: Menlo, monospace;
   --radius: .875rem;
   --shadow-2xs: 0 1px 2px hsl(220 20% 15% / .04);
@@ -302,7 +318,9 @@
 
 /* ── Logo font ────────────────────────────────────────── */
 .logo-biklima {
-  font-family: 'Almarai', sans-serif;
+  /* The wordmark reads in the site's own face too — "كاملاً" includes the
+     logo. It was the one place still asking for Almarai by name. */
+  font-family: var(--app-font-sans);
   font-weight: 800;
 }
 
