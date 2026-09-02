@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation } from "wouter";
 import { CheckCircle2, Users, Target, BookOpen, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatMoney } from "@/lib/site-config";
 import {
   Accordion,
   AccordionItem,
@@ -441,7 +442,7 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
               <>
                 <span className="text-white/40">·</span>
                 <span className="font-bold text-white text-base">
-                  {priceJod} {lang === "ar" ? "د.أ" : "JOD"}
+                  {formatMoney(priceJod)} {lang === "ar" ? "د.أ" : "JOD"}
                 </span>
               </>
             )}
@@ -456,7 +457,7 @@ export function CourseHero({ title, tagline, role, sessions, hours, priceJod, fo
             >
               {lang === "ar" ? "احجز مقعدك" : "Reserve Your Spot"}
               {typeof priceJod === "number" && (
-                <span className="font-normal opacity-80 ms-2">— {priceJod} {lang === "ar" ? "د.أ" : "JOD"}</span>
+                <span className="font-normal opacity-80 ms-2">— {formatMoney(priceJod)} {lang === "ar" ? "د.أ" : "JOD"}</span>
               )}
             </Button>
           </div>
@@ -840,8 +841,8 @@ export function FinalCTA({ title, priceJod, slug, lang }: FinalCTAProps) {
         </h2>
         <p className="text-white/80">
           {lang === "ar"
-            ? `انضم للبرنامج مقابل ${typeof priceJod === "number" ? priceJod : "—"} د.أ فقط`
-            : `Join the program for just ${typeof priceJod === "number" ? priceJod : "—"} JOD`}
+            ? `انضم للبرنامج مقابل ${typeof priceJod === "number" ? formatMoney(priceJod) : "—"} د.أ فقط`
+            : `Join the program for just ${typeof priceJod === "number" ? formatMoney(priceJod) : "—"} JOD`}
         </p>
         <Button
           size="lg"

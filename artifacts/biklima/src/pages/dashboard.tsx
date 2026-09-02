@@ -13,6 +13,7 @@ import { StudentTodayOverview } from "@/components/dashboard/student-today-overv
 import { StudentOnboarding } from "@/components/dashboard/student-onboarding";
 import { SkillsAndBadgesSection } from "@/components/skills-section";
 import { useLang } from "@/hooks/useLang";
+import { formatMoney } from "@/lib/site-config";
 import {
   useMyCourses,
   useMyNextLesson,
@@ -1532,7 +1533,7 @@ export default function Dashboard() {
                               {o.paymentNotes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{o.paymentNotes}</p>}
                             </div>
                             <div className="flex items-center gap-3 ms-4 shrink-0">
-                              {o.amount && <span className="font-bold text-primary text-sm">{o.amount} JOD</span>}
+                              {o.amount && <span className="font-bold text-primary text-sm">{formatMoney(o.amount)} JOD</span>}
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor(o.status)}`}>{statusLabel(o.status)}</span>
                             </div>
                           </div>
@@ -1576,7 +1577,7 @@ export default function Dashboard() {
                                 <td className="py-3 px-3 font-medium">#{idx + 1}</td>
                                 <td className="py-3 px-3">{o.workbookId}</td>
                                 <td className="py-3 px-3">{o.format === "pdf" ? (isRtl ? "رقمية" : "PDF") : (isRtl ? "مطبوعة" : "Print")}</td>
-                                <td className="py-3 px-3 font-bold">{o.totalPrice} JOD</td>
+                                <td className="py-3 px-3 font-bold">{formatMoney(o.totalPrice)} JOD</td>
                                 <td className="py-3 px-3"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor(o.status)}`}>{statusLabel(o.status)}</span></td>
                                 <td className="py-3 px-3 text-muted-foreground text-xs">{new Date(o.createdAt).toLocaleDateString(isRtl ? "ar-SA" : undefined)}</td>
                               </tr>

@@ -9,7 +9,7 @@ import { User, Mail, Phone, AlertCircle, ArrowRight, Home, BadgePercent, CheckCi
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
-import { programPageSlugFromCourseSlug } from "@/lib/site-config";
+import { programPageSlugFromCourseSlug, formatMoney } from "@/lib/site-config";
 import { apiFetch } from "@/lib/api-fetch";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { track } from "@/lib/analytics";
@@ -235,9 +235,9 @@ export default function CheckoutPage() {
           <p className="text-xs text-muted-foreground mb-1">
             {lang === "ar" ? "الرسوم" : "Fee"}
           </p>
-          {appliedDiscount && <p className="text-sm text-muted-foreground line-through">{appliedDiscount.originalAmount} {lang === "ar" ? "د.أ" : "JOD"}</p>}
+          {appliedDiscount && <p className="text-sm text-muted-foreground line-through">{formatMoney(appliedDiscount.originalAmount)} {lang === "ar" ? "د.أ" : "JOD"}</p>}
           <p className="font-black text-primary text-xl" data-testid="checkout-course-price">
-            {appliedDiscount?.finalAmount ?? coursePrice} <span className="text-sm font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span>
+            {formatMoney(appliedDiscount?.finalAmount ?? coursePrice)} <span className="text-sm font-semibold text-muted-foreground">{lang === "ar" ? "د.أ" : "JOD"}</span>
           </p>
         </div>
       )}
@@ -431,7 +431,7 @@ export default function CheckoutPage() {
                     <div className="flex items-center justify-between gap-3 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-emerald-800">
                       <div className="flex items-center gap-2 text-sm">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span><strong dir="ltr">{appliedDiscount.code}</strong> — {lang === "ar" ? `وفّرت ${appliedDiscount.discountAmount} د.أ` : `You saved ${appliedDiscount.discountAmount} JOD`}</span>
+                        <span><strong dir="ltr">{appliedDiscount.code}</strong> — {lang === "ar" ? `وفّرت ${formatMoney(appliedDiscount.discountAmount)} د.أ` : `You saved ${formatMoney(appliedDiscount.discountAmount)} JOD`}</span>
                       </div>
                       <button type="button" aria-label={lang === "ar" ? "إزالة الكود" : "Remove code"} onClick={() => { setAppliedDiscount(null); setDiscountCode(""); setDiscountError(""); }}>
                         <X className="w-4 h-4" />
@@ -476,7 +476,7 @@ export default function CheckoutPage() {
                     <>
                       <Lock className="w-4 h-4" aria-hidden />
                       {payableAmount !== null && payableAmount > 0
-                        ? (lang === "ar" ? `ادفع ${payableAmount} د.أ` : `Pay ${payableAmount} JOD`)
+                        ? (lang === "ar" ? `ادفع ${formatMoney(payableAmount)} د.أ` : `Pay ${formatMoney(payableAmount)} JOD`)
                         : payableAmount === 0
                           ? (lang === "ar" ? "أكمل التسجيل مجاناً" : "Complete free enrolment")
                           : (lang === "ar" ? "متابعة الدفع" : "Continue to payment")}
