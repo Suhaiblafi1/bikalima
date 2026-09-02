@@ -49,13 +49,26 @@ function getPublicOrigin(req: Request): string {
   if (domains.length > 0) return `https://${domains[0]}`;
   const dev = process.env.REPLIT_DEV_DOMAIN;
   if (dev) return `https://${dev}`;
+  // This origin becomes Stripe's success_url and cancel_url, so in production
+  // it must come from a trusted deployment setting and never from a
+  // caller-controlled Host header — the same rule appOrigin() enforces for
+  // password links. validateEnvironment() also requires PUBLIC_APP_URL in
+  // production, but that is a separate check that could be relaxed
+  // independently of this one; a redirect target after payment is not
+  // something to leave resting on it.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("PUBLIC_APP_URL must be configured in production");
+  }
   const proto = (req.headers["x-forwarded-proto"] as string | undefined)?.split(",")[0] ?? req.protocol;
   const host = (req.headers["x-forwarded-host"] as string | undefined) ?? req.get("host") ?? "localhost";
   return `${proto}://${host}`;
 }
 
-async function ensureEnrollment(userId: string, courseId: string): Promise<void> {
-  await db
+/** The pool, or a transaction inside it — same convention as creditSkillPoints. */
+type Executor = Pick<typeof db, "insert">;
+
+async function ensureEnrollment(userId: string, courseId: string, executor: Executor = db): Promise<void> {
+  await executor
     .insert(enrollmentsTable)
     .values({ userId, courseId, status: "active" })
     .onConflictDoNothing({ target: [enrollmentsTable.userId, enrollmentsTable.courseId] });
@@ -195,9 +208,16 @@ export async function markOrderPaid(args: {
       actorUserId: args.actorUserId ?? null,
       data: { source: args.source, paymentSessionId: args.paymentSessionId ?? null, paymentIntentId: args.paymentIntentId ?? null },
     }).onConflictDoNothing();
+
+    // The access the buyer paid for lands in the same transaction as the
+    // payment itself. Enrolling after the commit left a window where an
+    // order was durably "paid" with no enrollment row and no course access,
+    // and nothing re-drove it afterwards — reachable from all three callers
+    // (webhook, verify-session, admin approve). The insert is idempotent, so
+    // pulling it inside costs nothing.
+    if (order.userId && order.courseId) await ensureEnrollment(order.userId, order.courseId, tx);
     return order;
   });
-  if (result?.userId && result.courseId) await ensureEnrollment(result.userId, result.courseId);
   return result;
 }
 

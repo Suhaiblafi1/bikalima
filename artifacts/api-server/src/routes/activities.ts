@@ -284,8 +284,16 @@ async function recomputeLessonProgress(userId: string, lessonId: string): Promis
   return allDone;
 }
 
-async function awardSkillPoints(userId: string, skillKeys: string[], points: number): Promise<void> {
-  for (const key of skillKeys) await creditSkillPoints(userId, key, points);
+/** The pool, or a transaction inside it — same convention as creditSkillPoints. */
+type Executor = Pick<typeof db, "execute">;
+
+async function awardSkillPoints(
+  userId: string,
+  skillKeys: string[],
+  points: number,
+  executor: Executor = db,
+): Promise<void> {
+  for (const key of skillKeys) await creditSkillPoints(userId, key, points, executor);
 }
 
 async function checkAndAwardBadges(userId: string): Promise<void> {
@@ -433,33 +441,40 @@ router.post("/activities/:activityId/submit", async (req: Request, res: Response
 
     const autoScore = grade?.score ?? null;
 
-    const [sub] = await db.insert(activitySubmissionsTable).values({
-      userId, activityId, lessonId: act.lessonId,
-      attemptNumber, status: initialStatus, autoScore, mediaUrl, payload,
-    }).returning();
+    // The submission row and the points it earns land together or not at all.
+    // Recording the completion first and crediting after left a window where
+    // the row claimed a completion the learner was never paid for — and
+    // because the first-completion check keys off that very row, every later
+    // attempt skipped the award too. Nothing reconciles that afterwards, so
+    // the points were simply gone. workbook-reader.ts already settles its own
+    // verdict this way; this is the same fix.
+    const sub = await db.transaction(async (tx) => {
+      const [inserted] = await tx.insert(activitySubmissionsTable).values({
+        userId, activityId, lessonId: act.lessonId,
+        attemptNumber, status: initialStatus, autoScore, mediaUrl, payload,
+      }).returning();
+      if (initialStatus !== "completed") return inserted;
 
-    // If completed automatically, award skills + check progress + badges.
-    // Only award skill points the FIRST time this activity is completed for the user,
-    // to prevent farming via repeated attempts.
-    if (initialStatus === "completed") {
-      const [prior] = await db.select({ id: activitySubmissionsTable.id })
+      // Pay only for the FIRST completion, so repeated attempts cannot farm
+      // points. The row above is already inserted, so a total of exactly one
+      // completed row means this is the first ever.
+      const [completed] = await tx.select({ c: sql<number>`count(*)::int` })
         .from(activitySubmissionsTable)
         .where(and(
           eq(activitySubmissionsTable.userId, userId),
           eq(activitySubmissionsTable.activityId, activityId),
           eq(activitySubmissionsTable.status, "completed"),
-        ))
-        .limit(2); // we just inserted one, so 1 means first-ever completion
-      const isFirstCompletion = !prior || (await db.select({ c: sql<number>`count(*)::int` })
-        .from(activitySubmissionsTable)
-        .where(and(
-          eq(activitySubmissionsTable.userId, userId),
-          eq(activitySubmissionsTable.activityId, activityId),
-          eq(activitySubmissionsTable.status, "completed"),
-        )))[0]?.c === 1;
-      if (isFirstCompletion) {
-        await awardSkillPoints(userId, act.skillKeys ?? [], act.pointsReward);
+        ));
+      if ((completed?.c ?? 0) === 1) {
+        await awardSkillPoints(userId, act.skillKeys ?? [], act.pointsReward, tx);
       }
+      return inserted;
+    });
+
+    // Progress, badges and prompts are all recomputed from the rows above on
+    // every submission, so they stay outside the transaction: a failure here
+    // is picked up by the next submission rather than lost for good.
+    if (initialStatus === "completed") {
       const lessonCompleted = await recomputeLessonProgress(userId, act.lessonId);
       await checkAndAwardBadges(userId);
 
@@ -765,24 +780,32 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
   const feedbackAr = typeof body.feedbackAr === "string" ? body.feedbackAr.slice(0, 4000) : null;
   const feedbackEn = typeof body.feedbackEn === "string" ? body.feedbackEn.slice(0, 4000) : null;
 
-  const [thisReview] = await db.insert(activityReviewsTable).values({
-    submissionId: id, reviewerId, rubricScores, totalScore: total,
-    feedbackAr, feedbackEn, decision,
-  }).returning();
-
   const newStatus = decision === "pass" ? "completed" : "needs_revision";
-  await db.update(activitySubmissionsTable)
-    .set({ status: newStatus, autoScore: total })
-    .where(eq(activitySubmissionsTable.id, id));
 
-  if (decision === "pass") {
-    const [act] = await db.select().from(lessonActivitiesTable).where(eq(lessonActivitiesTable.id, sub.activityId)).limit(1);
+  // The verdict and the points it moves land together or not at all — the
+  // same rule workbook-reader.ts applies to its own reviews. Crediting after
+  // the review row committed left a pass recorded with no points behind it,
+  // and the prior-pass check keys off that row, so no later review would ever
+  // correct it.
+  const act = await db.transaction(async (tx) => {
+    const [thisReview] = await tx.insert(activityReviewsTable).values({
+      submissionId: id, reviewerId, rubricScores, totalScore: total,
+      feedbackAr, feedbackEn, decision,
+    }).returning();
+
+    await tx.update(activitySubmissionsTable)
+      .set({ status: newStatus, autoScore: total })
+      .where(eq(activitySubmissionsTable.id, id));
+
+    if (decision !== "pass") return null;
+
+    const [activity] = await tx.select().from(lessonActivitiesTable).where(eq(lessonActivitiesTable.id, sub.activityId)).limit(1);
     // Dedupe: only award skill points the first time the student gets a passing
     // review for this activity. Look for any earlier activity_reviews row with
     // decision=pass on a submission belonging to (userId, activityId).
     // Compare against the just-inserted review's own id (NOT the submission id)
     // so we exclude this very review when checking for any prior passing review.
-    const [priorPass] = await db.select({ id: activityReviewsTable.id })
+    const [priorPass] = await tx.select({ id: activityReviewsTable.id })
       .from(activityReviewsTable)
       .innerJoin(activitySubmissionsTable, eq(activitySubmissionsTable.id, activityReviewsTable.submissionId))
       .where(and(
@@ -793,8 +816,14 @@ router.post("/instructor/submissions/:id/review", async (req: Request, res: Resp
       ))
       .limit(1);
     if (!priorPass) {
-      await awardSkillPoints(sub.userId, act?.skillKeys ?? [], act?.pointsReward ?? 10);
+      await awardSkillPoints(sub.userId, activity?.skillKeys ?? [], activity?.pointsReward ?? 10, tx);
     }
+    return activity ?? null;
+  });
+
+  // Progress and badges recompute from the rows above, so they stay outside
+  // the transaction; the next review picks up anything that fails here.
+  if (decision === "pass") {
     const lessonNowComplete = await recomputeLessonProgress(sub.userId, sub.lessonId);
     await checkAndAwardBadges(sub.userId);
     // Little Speaker: "صوت واضح" after 3 passed voice_recording reviews.
