@@ -22,8 +22,11 @@ import {
   workbookSubmissionsTable,
   studentSkillScoresTable,
   inPersonCourseRegistrationsTable,
+  activitySubmissionsTable,
+  activityReviewsTable,
+  ordersTable,
 } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { TEST_FIXTURES } from "./fixtures/data";
 
 // Mirror of the api-server's password hash format (salt:hex). Inlined here so
@@ -210,6 +213,134 @@ async function upsertQuizIntegrityFixture(courseId: string): Promise<{ lessonId:
   return { lessonId: lesson.id, activityId: created.id };
 }
 
+/**
+ * An activity that actually pays skill points, separate from the integrity
+ * quiz above (which pays nothing on purpose). Kept apart so a spec asserting
+ * "this paid exactly 7" cannot be thrown off by a spec asserting "the answer
+ * key never leaks" having run first against the same row.
+ */
+async function upsertPayingActivity(courseId: string): Promise<string> {
+  const [lesson] = await db.select({ id: lessonsTable.id })
+    .from(lessonsTable)
+    .where(eq(lessonsTable.courseId, courseId))
+    .limit(1);
+  if (!lesson) throw new Error("E2E course has no lesson for the paying-activity fixture");
+
+  const fx = TEST_FIXTURES.pointsActivity;
+  const config = {
+    questions: [{ q: "ما الافتتاحية الأقوى؟", choices: ["مقدمة طويلة", "سؤال يفتح فجوة"], answer: 1 }],
+    passScore: 60,
+  };
+  const shape = {
+    type: "quiz" as const,
+    config,
+    isPublished: true,
+    isRequired: false,
+    pointsReward: fx.points,
+    skillKeys: [...fx.skillKeys],
+  };
+  const [existing] = await db.select({ id: lessonActivitiesTable.id })
+    .from(lessonActivitiesTable)
+    .where(and(eq(lessonActivitiesTable.lessonId, lesson.id), eq(lessonActivitiesTable.titleAr, fx.titleAr)))
+    .limit(1);
+  if (existing) {
+    await db.update(lessonActivitiesTable).set(shape).where(eq(lessonActivitiesTable.id, existing.id));
+    return existing.id;
+  }
+  const [created] = await db.insert(lessonActivitiesTable).values({
+    lessonId: lesson.id,
+    titleAr: fx.titleAr,
+    titleEn: "E2E paying activity",
+    sortOrder: 97,
+    ...shape,
+  }).returning();
+  return created.id;
+}
+
+/** An activity that only pays once a trainer passes it. */
+async function upsertReviewedActivity(courseId: string): Promise<string> {
+  const [lesson] = await db.select({ id: lessonsTable.id })
+    .from(lessonsTable)
+    .where(eq(lessonsTable.courseId, courseId))
+    .limit(1);
+  if (!lesson) throw new Error("E2E course has no lesson for the reviewed-activity fixture");
+
+  const fx = TEST_FIXTURES.reviewedActivity;
+  const shape = {
+    type: "voice_recording" as const,
+    config: {},
+    isPublished: true,
+    isRequired: false,
+    pointsReward: fx.points,
+    skillKeys: [...fx.skillKeys],
+  };
+  const [existing] = await db.select({ id: lessonActivitiesTable.id })
+    .from(lessonActivitiesTable)
+    .where(and(eq(lessonActivitiesTable.lessonId, lesson.id), eq(lessonActivitiesTable.titleAr, fx.titleAr)))
+    .limit(1);
+  if (existing) {
+    await db.update(lessonActivitiesTable).set(shape).where(eq(lessonActivitiesTable.id, existing.id));
+    return existing.id;
+  }
+  const [created] = await db.insert(lessonActivitiesTable).values({
+    lessonId: lesson.id,
+    titleAr: fx.titleAr,
+    titleEn: "E2E trainer-reviewed activity",
+    sortOrder: 98,
+    ...shape,
+  }).returning();
+  return created.id;
+}
+
+/**
+ * A priced course with a pending order and no enrollment for the learner.
+ *
+ * Approving that order has to be what grants access. On the main fixture
+ * course the learner is enrolled from the start, so the same assertion there
+ * would pass whether or not the enrollment landed with the payment.
+ */
+async function upsertPaidCourse(): Promise<string> {
+  const fx = TEST_FIXTURES.paidCourse;
+  const [existing] = await db.select().from(coursesTable).where(eq(coursesTable.slug, fx.slug));
+  let courseId: string;
+  if (existing) {
+    await db.update(coursesTable)
+      .set({ isPublished: true, price: fx.price, discountPrice: fx.price })
+      .where(eq(coursesTable.id, existing.id));
+    courseId = existing.id;
+  } else {
+    const [created] = await db.insert(coursesTable).values({
+      slug: fx.slug,
+      programId: "core",
+      titleAr: fx.titleAr,
+      titleEn: fx.titleEn,
+      titleFr: fx.titleEn,
+      descriptionAr: "دورة مدفوعة لاختبار مسار الدفع",
+      descriptionEn: "Priced course for the payment path",
+      price: fx.price,
+      discountPrice: fx.price,
+      isPublished: true,
+    }).returning();
+    courseId = created.id;
+  }
+  return courseId;
+}
+
+/** One pending order for that course, created fresh after the per-run reset. */
+async function createPendingOrder(learnerId: string, courseId: string): Promise<string> {
+  const [order] = await db.insert(ordersTable).values({
+    userId: learnerId,
+    courseId,
+    amount: TEST_FIXTURES.paidCourse.price,
+    currency: "JOD",
+    status: "pending",
+    buyerName: `${TEST_FIXTURES.learner.firstName} ${TEST_FIXTURES.learner.lastName}`,
+    buyerEmail: TEST_FIXTURES.learner.email,
+    buyerPhone: "+962790000000",
+  }).returning();
+  return order.id;
+}
+
 async function upsertCertificate(opts: { userId: string; fullName: string; email: string }) {
   const code = TEST_FIXTURES.certificate.code;
   const fileUrl = TEST_FIXTURES.certificate.fileUrl;
@@ -346,9 +477,26 @@ async function upsertWorkbook(opts: {
  * Clear what a run leaves behind, so the suite is re-runnable against the same
  * database. Scoped to the seeded learner — it must never touch other rows.
  */
-async function resetPerRunState(learnerId: string, inPersonCourseId: string) {
+async function resetPerRunState(learnerId: string, inPersonCourseId: string, paidCourseId: string) {
   await db.delete(workbookSubmissionsTable).where(eq(workbookSubmissionsTable.userId, learnerId));
   await db.delete(studentSkillScoresTable).where(eq(studentSkillScoresTable.userId, learnerId));
+  // Activity submissions decide both the attempt number and whether a
+  // completion is the learner's first, which is what gates the skill award.
+  // A row left behind by an earlier run turns "this paid exactly 7" into
+  // "this paid nothing, because it had already been paid".
+  const mine = await db.select({ id: activitySubmissionsTable.id })
+    .from(activitySubmissionsTable)
+    .where(eq(activitySubmissionsTable.userId, learnerId));
+  if (mine.length > 0) {
+    await db.delete(activityReviewsTable)
+      .where(inArray(activityReviewsTable.submissionId, mine.map((r) => r.id)));
+  }
+  await db.delete(activitySubmissionsTable).where(eq(activitySubmissionsTable.userId, learnerId));
+  // The pending order is re-created below, and approving it must be what
+  // enrols the learner — so the enrollment it grants has to be gone first.
+  await db.delete(ordersTable).where(and(eq(ordersTable.userId, learnerId), eq(ordersTable.courseId, paidCourseId)));
+  await db.delete(enrollmentsTable)
+    .where(and(eq(enrollmentsTable.userId, learnerId), eq(enrollmentsTable.courseId, paidCourseId)));
   // A suggestion sent on an earlier run makes the next "first" one an update
   // and return 200 where the spec names 201.
   await db.delete(speechSuggestionsTable).where(eq(speechSuggestionsTable.userId, learnerId));
@@ -617,10 +765,25 @@ export default async function globalSetup() {
   // registration makes the next one a duplicate. Both showed up as failures
   // on a re-used database while passing on a fresh one — which is the worst
   // shape of flake, since CI never sees it.
-  await resetPerRunState(learnerId, inPersonCourseId);
+  // The paying activities and the priced course must exist before the reset,
+  // because the reset clears the learner's state against them and then the
+  // pending order is created fresh.
+  const payingActivityId = await upsertPayingActivity(courseId);
+  const reviewedActivityId = await upsertReviewedActivity(courseId);
+  const paidCourseId = await upsertPaidCourse();
+
+  await resetPerRunState(learnerId, inPersonCourseId, paidCourseId);
+
+  // Created after the reset, which cleared the previous run's order and the
+  // enrollment that approving it had granted.
+  const pendingOrderId = await createPendingOrder(learnerId, paidCourseId);
 
   process.env.E2E_WORKBOOK_ID = workbookId;
   process.env.E2E_LOCKED_WORKBOOK_ID = lockedWorkbookId;
+  process.env.E2E_POINTS_ACTIVITY_ID = payingActivityId;
+  process.env.E2E_REVIEWED_ACTIVITY_ID = reviewedActivityId;
+  process.env.E2E_PAID_COURSE_ID = paidCourseId;
+  process.env.E2E_PENDING_ORDER_ID = pendingOrderId;
 
   // eslint-disable-next-line no-console
   console.log(

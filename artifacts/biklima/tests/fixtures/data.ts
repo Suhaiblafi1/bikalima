@@ -75,4 +75,31 @@ export const TEST_FIXTURES = {
     slug: "e2e-workbook-locked",
     titleAr: "كرّاسة غير مملوكة",
   },
+  // Two lesson activities that actually pay skill points, kept separate from
+  // the integrity quiz (which pays nothing and exists to prove the answer key
+  // never leaks). Sharing one fixture between "does it leak" and "does it pay"
+  // would make each spec's numbers depend on whether the other ran first.
+  //
+  // The auto-graded one credits on submission; the reviewed one credits only
+  // when a trainer passes it. Both are the paths where a crash used to record
+  // the completion and lose the points.
+  pointsActivity: {
+    titleAr: "نشاط يمنح نقاطاً E2E",
+    points: 7,
+    skillKeys: ["voice", "impact"],
+  },
+  reviewedActivity: {
+    titleAr: "تسجيل صوتي يُراجعه مدرّب E2E",
+    points: 9,
+    skillKeys: ["body"],
+  },
+  // A priced course the learner is deliberately NOT enrolled in, with one
+  // pending order against it. Approving that order must grant access; if the
+  // learner were already enrolled, the assertion would pass without the fix.
+  paidCourse: {
+    slug: "e2e-paid-course",
+    titleAr: "دورة مدفوعة للاختبار",
+    titleEn: "E2E paid course",
+    price: 70,
+  },
 } as const;
