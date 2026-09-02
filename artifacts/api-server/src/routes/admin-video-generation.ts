@@ -448,6 +448,7 @@ const SaveToLibrarySchema = z.object({
   titleAr: z.string().transform((v) => v.trim()).pipe(z.string().min(2).max(200)),
   titleEn: z.string().transform((v) => v.trim()).pipe(z.string().max(200)).optional(),
   category: z.string().transform((v) => v.trim()).pipe(z.string().max(40)).optional(),
+  targetSkill: z.string().transform((v) => v.trim()).pipe(z.string().max(120)).optional(),
   speakerName: z.string().transform((v) => v.trim()).pipe(z.string().max(120)).optional(),
   descriptionAr: z.string().transform((v) => v.trim()).pipe(z.string().max(2000)).optional(),
   placement: z.array(z.string().max(40)).max(8).optional(),
@@ -589,7 +590,7 @@ router.post("/admin/video-generation/jobs/:id/save-to-library", async (req: Requ
     return;
   }
 
-  const { titleAr, titleEn, category, speakerName, descriptionAr, placement } = parsed.data;
+  const { titleAr, titleEn, category, targetSkill, speakerName, descriptionAr, placement } = parsed.data;
   try {
     // Draft on purpose: an admin decides what appears on the site, and a
     // generated clip is a candidate until a person has watched it.
@@ -601,9 +602,13 @@ router.post("/admin/video-generation/jobs/:id/save-to-library", async (req: Requ
         titleAr,
         titleEn: titleEn && titleEn !== "" ? titleEn : null,
         category: category && category !== "" ? category : null,
+        targetSkill: targetSkill && targetSkill !== "" ? targetSkill : null,
         speakerName: speakerName && speakerName !== "" ? speakerName : null,
         descriptionAr: descriptionAr && descriptionAr !== "" ? descriptionAr : null,
-        placement: placement && placement.length > 0 ? placement : null,
+        // The button says "save to the video library", so that is where the
+        // row points unless the caller asked for somewhere else. It still
+        // shows nowhere until a person publishes it.
+        placement: placement && placement.length > 0 ? placement : ["library"],
         status: "draft",
       })
       .returning();

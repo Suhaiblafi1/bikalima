@@ -246,6 +246,7 @@ export const FIELD_MEDIA_CATEGORIES = [
 ] as const;
 
 export const FIELD_MEDIA_PLACEMENTS = [
+  { value: "library",  labelAr: "مكتبة الفيديو" },
   { value: "home",     labelAr: "الصفحة الرئيسية" },
   { value: "gallery",  labelAr: "المعرض" },
   { value: "program",  labelAr: "صفحة برنامج" },

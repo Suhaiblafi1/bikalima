@@ -20,7 +20,7 @@ The project is a pnpm monorepo utilizing TypeScript (v5.9) and Node.js (v24). It
 **Frontend (`artifacts/biklima`):**
 - **Purpose:** Arabic RTL landing page and LMS for the "Biklima" public speaking program.
 - **UI/UX:** Teal primary color, warm ivory background, specific Arabic fonts.
-- **Key Features:** Dynamic landing page (hero, trainer bio, program quiz, testimonials, gallery, video library, FAQ), a 4-step enrollment wizard, mobile-first design with sticky CTA bar, conversion-focused elements (trust strip, program comparison table), SEO optimization, detailed form inputs with accessibility attributes, and analytics scaffolding.
+- **Key Features:** Dynamic landing page (hero, trainer bio, program quiz, testimonials, gallery, video library — a curated static list plus published `field_media` rows from `GET /api/field-media?placement=library`, FAQ), a 4-step enrollment wizard, mobile-first design with sticky CTA bar, conversion-focused elements (trust strip, program comparison table), SEO optimization, detailed form inputs with accessibility attributes, and analytics scaffolding.
 - **LMS:** Course catalog, Udemy-style course detail pages, student dashboard.
 - **Multi-language Support:** Arabic/English with RTL auto-switching.
 - **Authentication:** Email/password with scrypt hashing and session cookies.
@@ -29,7 +29,7 @@ The project is a pnpm monorepo utilizing TypeScript (v5.9) and Node.js (v24). It
 **Backend (`artifacts/api-server`):**
 - **Purpose:** Express 5 API server for business logic and data persistence.
 - **Architecture:** Modular routes and integrations layer for external services.
-- **Video generation:** Admin-only MiniMax H3 short-video generation, gated by the `video_generation` feature flag and `MINIMAX_API_KEY`; jobs are tracked in `video_generation_jobs` and reconciled on read or by cron. Driven from `/admin/video-generation` (admin-only), where a finished clip can be copied out of the provider's expiring link into our own storage and registered in `field_media` as a draft. See `docs/VIDEO_GENERATION_AR.md`.
+- **Video generation:** Admin-only MiniMax H3 short-video generation, gated by the `video_generation` feature flag and `MINIMAX_API_KEY`; jobs are tracked in `video_generation_jobs` and reconciled on read or by cron. Driven from `/admin/video-generation` (admin-only), where a finished clip can be copied out of the provider's expiring link into our own storage and registered in `field_media` as a draft; publishing that row puts the clip in the public video-library section. See `docs/VIDEO_GENERATION_AR.md`.
 - **Authentication:** Handles user authentication and session management.
 - **Email:** Uses Nodemailer for transactional emails.
 

@@ -149,6 +149,8 @@ export default function AdminVideoGenerationPage() {
   const [saveFormJobId, setSaveFormJobId] = useState<string | null>(null);
   const [saveTitleAr, setSaveTitleAr] = useState("");
   const [saveCategory, setSaveCategory] = useState("");
+  const [saveSkill, setSaveSkill] = useState("");
+  const [saveLearn, setSaveLearn] = useState("");
   const [savingJobId, setSavingJobId] = useState<string | null>(null);
 
   const [prompt, setPrompt] = useState("");
@@ -336,6 +338,8 @@ export default function AdminVideoGenerationPage() {
         body: JSON.stringify({
           titleAr: saveTitleAr.trim(),
           category: saveCategory || undefined,
+          targetSkill: saveSkill.trim() || undefined,
+          descriptionAr: saveLearn.trim() || undefined,
         }),
       });
       const data = (await response.json().catch(() => ({}))) as {
@@ -357,6 +361,8 @@ export default function AdminVideoGenerationPage() {
       setSaveFormJobId(null);
       setSaveTitleAr("");
       setSaveCategory("");
+      setSaveSkill("");
+      setSaveLearn("");
       toast({
         title: "حُفظ في المكتبة كمسودة",
         description: "راجعه من «من الميدان» وانشره ليظهر على الموقع.",
@@ -790,9 +796,30 @@ export default function AdminVideoGenerationPage() {
                                 </select>
                               </div>
                             </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[11px] text-muted-foreground mb-1 block">المهارة التي يوضحها</label>
+                                <Input
+                                  value={saveSkill}
+                                  onChange={(event) => setSaveSkill(event.target.value)}
+                                  placeholder="مثلاً: البداية بالانغماس الفوري"
+                                  data-testid={`vg-save-skill-${job.id}`}
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] text-muted-foreground mb-1 block">ما ستتعلمه</label>
+                                <Input
+                                  value={saveLearn}
+                                  onChange={(event) => setSaveLearn(event.target.value)}
+                                  placeholder="سطر واحد يشرح الفائدة"
+                                  data-testid={`vg-save-learn-${job.id}`}
+                                />
+                              </div>
+                            </div>
                             <p className="text-[11px] text-muted-foreground leading-relaxed">
                               يُنزَّل المقطع من المزوّد ويُرفع إلى تخزيننا، ثم يُسجَّل في «من الميدان»
-                              كمسودة — لا يظهر على الموقع قبل أن تنشره.
+                              كمسودة موجّهة إلى «مكتبة الفيديو» — لا يظهر على الموقع قبل أن تنشره.
+                              المهارة والفائدة اختياريتان، لكن البطاقة العامة تعرضهما.
                             </p>
                             <div className="flex items-center gap-2">
                               <Button
@@ -827,6 +854,8 @@ export default function AdminVideoGenerationPage() {
                               // a terrible library title.
                               setSaveTitleAr("");
                               setSaveCategory("");
+                              setSaveSkill("");
+                              setSaveLearn("");
                             }}
                             data-testid={`vg-save-${job.id}`}
                           >
