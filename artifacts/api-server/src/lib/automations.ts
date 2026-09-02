@@ -31,6 +31,18 @@ export type AutomationDef = {
 // Default automations seeded from the brief. Keyed for idempotent seeding.
 export const DEFAULT_AUTOMATIONS: AutomationDef[] = [
   {
+    key: "abandoned_checkout_followup",
+    name: "متابعة من بدأ الدفع ولم يُكمله",
+    descriptionAr:
+      "عند انتهاء صلاحية جلسة دفع أو فشلها، يُنشئ مهمة متابعة ويرفع درجة الاهتمام. " +
+      "لا يرسل شيئاً للمشتري: نصّ الرسالة وقناتها قرار عمل، والإجراء جاهز للإضافة هنا متى تقرّر.",
+    trigger: "order.payment_abandoned",
+    actions: [
+      { type: "create_task", title: "التواصل مع مشترٍ لم يُكمل الدفع", offsetDays: 1, priority: "high" },
+      { type: "set_score", score: "hot" },
+    ],
+  },
+  {
     key: "speech_eval_followup",
     name: "متابعة تقييم الخطاب خلال يومين",
     descriptionAr: "ينشئ مهمة متابعة تلقائية عند تسجيل تقييم خطاب جديد.",

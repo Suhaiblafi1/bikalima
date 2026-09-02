@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import { eq, desc, and, inArray, lte, ne, sql } from "drizzle-orm";
 import { paymentService, chargeCurrency } from "../integrations/paymentService.js";
+import { registerLeadFromForm } from "../lib/leads.js";
 import { convertFromJod, toMinorUnits as toStripeMinorUnits, formatMoney } from "@workspace/pricing";
 import { isFeatureEnabled } from "../lib/platform.js";
 import { authRateLimit } from "../middlewares/security.js";
@@ -166,6 +167,51 @@ function expectedCharge(order: {
     currency,
     minor: order.amount == null ? null : toStripeMinorUnits(order.amount, currency),
   };
+}
+
+/**
+ * Put an abandoned checkout where someone can act on it.
+ *
+ * The data to do this was all present — order status, the leads table, the
+ * automations engine, message templates — with nothing joining them up, which
+ * is what the audit meant by no clear path capturing "started paying and did
+ * not finish" as a followable event.
+ *
+ * The buyer becomes a lead from the details they already gave to buy, under
+ * the existing `enrollment` source, and `order.payment_abandoned` fires so an
+ * automation can pick it up. Deliberately no outbound message from here: what
+ * to say to someone who did not complete a purchase, and on which channel, is
+ * a decision for the business, not a default invented in a webhook handler.
+ * The seeded automation raises an internal task instead.
+ */
+async function recordAbandonedCheckout(
+  order: { id: string; buyerName: string; buyerEmail: string; buyerPhone: string; courseId: string | null; amount: number | null },
+  eventType: string,
+): Promise<void> {
+  if (!order.buyerEmail && !order.buyerPhone) return;
+  const course = order.courseId
+    ? (await db.select({ titleAr: coursesTable.titleAr }).from(coursesTable).where(eq(coursesTable.id, order.courseId)).limit(1))[0]
+    : undefined;
+  const title = course?.titleAr ?? "دورة";
+  await registerLeadFromForm({
+    contact: {
+      fullName: order.buyerName,
+      email: order.buyerEmail,
+      phone: order.buyerPhone,
+      source: "enrollment",
+      interestProgramId: order.courseId ?? null,
+      interestProgramTitle: title,
+    },
+    activity: {
+      type: "linked_enrollment",
+      summaryAr: `بدأ الدفع في "${title}" ولم يُكمله (${eventType})`,
+      relatedEntityType: "order",
+      relatedEntityId: order.id,
+      payload: { orderId: order.id, eventType, amountJod: order.amount },
+    },
+    trigger: "order.payment_abandoned",
+    triggerPayload: { orderId: order.id, courseId: order.courseId, eventType },
+  });
 }
 
 export async function markOrderPaid(args: {
@@ -587,6 +633,27 @@ router.post("/webhooks/stripe", async (req: Request, res: Response) => {
         updatedAt: new Date(),
       }).where(and(eq(ordersTable.id, order.id), ne(ordersTable.status, "paid")));
       await releaseDiscountReservation(order.id, event.eventType);
+      // Someone chose a programme, filled in their details, reached Stripe and
+      // did not finish. That is the warmest signal this site produces, and it
+      // used to end here: a course order never touched the CRM at all, unlike
+      // every other form on the site, so nothing could follow it up.
+      //
+      // Failures are swallowed deliberately. The order's own state is already
+      // recorded above, and a CRM write that throws must not fail the webhook —
+      // Stripe would retry an event whose real work is done.
+      // Once per order, not once per event. Stripe can deliver more than one
+      // terminal event for the same session — an expiry and then a failed
+      // asynchronous payment — each with its own id, so the duplicate-event
+      // guard above does not catch them. Left ungated this raised a fresh
+      // high-priority task every time, and three deliveries produced three
+      // identical tasks for one abandoned purchase. `order` was read before
+      // the update, so its status here is the one from before this event.
+      const wasAlreadyTerminal = order.status === "expired" || order.status === "failed";
+      if (!wasAlreadyTerminal) {
+        await recordAbandonedCheckout(order, event.eventType).catch((err) =>
+          req.log.warn({ err, orderId: order.id }, "abandoned-checkout follow-up not recorded"),
+        );
+      }
     }
     res.json({ received: true });
   } catch (err) {
