@@ -62,8 +62,9 @@ export const leadsTable = pgTable(
     index("IDX_leads_status").on(t.status),
     index("IDX_leads_owner").on(t.ownerUserId),
     index("IDX_leads_source").on(t.source),
-    index("IDX_leads_phone_norm").on(t.phoneNormalized),
-    index("IDX_leads_email_lower").on(t.emailLower),
+    // Unique, partial: one lead per person. See 0017_lead_identity_uniqueness.
+    uniqueIndex("uq_leads_phone_normalized").on(t.phoneNormalized).where(sql`${t.phoneNormalized} IS NOT NULL`),
+    uniqueIndex("uq_leads_email_lower").on(t.emailLower).where(sql`${t.emailLower} IS NOT NULL`),
     index("IDX_leads_next_followup").on(t.nextFollowUpAt),
   ],
 );

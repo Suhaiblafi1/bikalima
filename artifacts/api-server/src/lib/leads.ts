@@ -35,10 +35,34 @@ function normalizeEmail(e?: string | null): string | null {
   return t.length > 0 ? t : null;
 }
 
+/** Whichever lead currently owns this phone or email, if either is taken. */
+async function findByIdentity(
+  phoneNorm: string | null,
+  emailLower: string | null,
+): Promise<Lead | undefined> {
+  if (!phoneNorm && !emailLower) return undefined;
+  const matches = await db
+    .select()
+    .from(leadsTable)
+    .where(
+      or(
+        phoneNorm ? eq(leadsTable.phoneNormalized, phoneNorm) : sql`false`,
+        emailLower ? eq(leadsTable.emailLower, emailLower) : sql`false`,
+      ),
+    )
+    .limit(1);
+  return matches[0];
+}
+
 /**
  * Find an existing lead matching the given phone or email, or create a new
- * one. Returns { lead, created }. Never throws on dup-key — falls back to
- * select after a race.
+ * one. Returns { lead, created }.
+ *
+ * Two callers can reach the insert at once — a double-clicked form, or two
+ * different forms submitted by the same person moments apart — and both would
+ * miss the select above. 0017_lead_identity_uniqueness makes the database
+ * reject the second one; this handles that rejection by reading back the row
+ * the winner created, so the loser patches it instead of dying or duplicating.
  */
 export async function upsertLeadFromContact(
   input: UpsertLeadInput,
@@ -46,19 +70,8 @@ export async function upsertLeadFromContact(
   const phoneNorm = normalizePhone(input.phone);
   const emailLower = normalizeEmail(input.email);
 
-  if (phoneNorm || emailLower) {
-    const matches = await db
-      .select()
-      .from(leadsTable)
-      .where(
-        or(
-          phoneNorm ? eq(leadsTable.phoneNormalized, phoneNorm) : sql`false`,
-          emailLower ? eq(leadsTable.emailLower, emailLower) : sql`false`,
-        ),
-      )
-      .limit(1);
-
-    const existing = matches[0];
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const existing = await findByIdentity(phoneNorm, emailLower);
     if (existing) {
       // Patch any missing fields on the existing lead.
       const patch: Partial<typeof leadsTable.$inferInsert> = {};
@@ -88,34 +101,46 @@ export async function upsertLeadFromContact(
       }
       return { lead: existing, created: false };
     }
+
+    // Nothing owns this phone or email yet — try to claim it. A concurrent
+    // request may have claimed it since the select a moment ago, in which case
+    // the unique index rejects this insert and `created` comes back empty; the
+    // next pass through the loop finds the winner's row and patches that.
+    const [created] = await db
+      .insert(leadsTable)
+      .values({
+        fullName: input.fullName || (input.email ?? input.phone ?? "بدون اسم"),
+        phone: input.phone ?? null,
+        phoneNormalized: phoneNorm,
+        email: input.email ?? null,
+        emailLower,
+        country: input.country ?? null,
+        source: input.source,
+        interestProgramId: input.interestProgramId ?? null,
+        interestProgramTitle: input.interestProgramTitle ?? null,
+        ownerUserId: input.ownerUserId ?? null,
+        status: "new",
+        interestScore: "warm",
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (!created) continue;
+
+    await db.insert(leadActivitiesTable).values({
+      leadId: created.id,
+      type: "created",
+      summaryAr: `تم إنشاء العميل المحتمل من المصدر: ${input.source}`,
+      payload: { source: input.source },
+    });
+
+    return { lead: created, created: true };
   }
 
-  const [created] = await db
-    .insert(leadsTable)
-    .values({
-      fullName: input.fullName || (input.email ?? input.phone ?? "بدون اسم"),
-      phone: input.phone ?? null,
-      phoneNormalized: phoneNorm,
-      email: input.email ?? null,
-      emailLower,
-      country: input.country ?? null,
-      source: input.source,
-      interestProgramId: input.interestProgramId ?? null,
-      interestProgramTitle: input.interestProgramTitle ?? null,
-      ownerUserId: input.ownerUserId ?? null,
-      status: "new",
-      interestScore: "warm",
-    })
-    .returning();
-
-  await db.insert(leadActivitiesTable).values({
-    leadId: created.id,
-    type: "created",
-    summaryAr: `تم إنشاء العميل المحتمل من المصدر: ${input.source}`,
-    payload: { source: input.source },
-  });
-
-  return { lead: created, created: true };
+  // Losing the race twice needs a competing writer in the same instant on both
+  // passes. Read once more rather than failing the visitor's form submission.
+  const winner = await findByIdentity(phoneNorm, emailLower);
+  if (winner) return { lead: winner, created: false };
+  throw new Error("lead_upsert_failed");
 }
 
 export type ActivityInput = {

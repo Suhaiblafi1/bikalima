@@ -120,6 +120,13 @@
       "when": 1787919200000,
       "tag": "0016_user_phone_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788005600000,
+      "tag": "0017_lead_identity_uniqueness",
+      "breakpoints": true
     }
   ]
 }
