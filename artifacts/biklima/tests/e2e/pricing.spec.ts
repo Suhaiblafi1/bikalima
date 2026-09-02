@@ -24,15 +24,16 @@ import {
 test("a JOD price converts to the number the page shows", () => {
   const usd = CURRENCIES.DEFAULT;
   expect(usd.code).toBe("USD");
-  // 70 × 1.41 = 98.7 — the figure the checkout disclosure and the Stripe
-  // session were both verified against.
-  expect(convertFromJod(70, usd)).toBe(98.7);
-  expect(formatMoney(convertFromJod(70, usd), usd.decimals)).toBe("98.7");
+  // 70 × 1.42 = 99.4 — and this is the case the rounding in convertFromJod
+  // exists for: the raw product is 99.39999999999999, which must never reach a
+  // buyer or a card as anything but 99.4.
+  expect(convertFromJod(70, usd)).toBe(99.4);
+  expect(formatMoney(convertFromJod(70, usd), usd.decimals)).toBe("99.4");
 });
 
 test("minor units follow the currency, not a fixed factor", () => {
   // Two decimals: dollars and most of the world.
-  expect(toMinorUnits(98.7, "USD")).toBe(9870);
+  expect(toMinorUnits(99.4, "USD")).toBe(9940);
   // Three: the dinar is 1000 fils, and treating it as 100 would charge a buyer
   // a tenth of the price.
   expect(toMinorUnits(70, "JOD")).toBe(70000);
@@ -41,7 +42,7 @@ test("minor units follow the currency, not a fixed factor", () => {
   // hundred times over.
   expect(toMinorUnits(1500, "JPY")).toBe(1500);
   // Case does not matter — Stripe reports currencies lowercased.
-  expect(toMinorUnits(98.7, "usd")).toBe(9870);
+  expect(toMinorUnits(99.4, "usd")).toBe(9940);
 });
 
 test("conversion rounds to the currency's real precision, both ways", () => {
@@ -61,8 +62,8 @@ test("a discounted price survives the float, quoted and charged alike", () => {
   // reach a buyer as 59.49999999999999.
   expect(formatMoney(59.5)).toBe("59.5");
   const charged = convertFromJod(59.5, usd);
-  expect(charged).toBe(83.9);
-  expect(toMinorUnits(charged, usd.code)).toBe(8390);
+  expect(charged).toBe(84.49);
+  expect(toMinorUnits(charged, usd.code)).toBe(8449);
 });
 
 test("every currency in the table can be charged and quoted coherently", () => {

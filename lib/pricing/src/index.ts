@@ -35,7 +35,7 @@ export type CurrencyConfig = {
 };
 
 export const CURRENCIES: Record<string, CurrencyConfig> = {
-  DEFAULT: { code: "USD", symbol: "$",   name: "دولار أمريكي", nameEn: "USD $", rate: 1.41, decimals: 2 },
+  DEFAULT: { code: "USD", symbol: "$",   name: "دولار أمريكي", nameEn: "USD $", rate: 1.42, decimals: 2 },
   JO:      { code: "JOD", symbol: "د.أ", name: "دينار أردني",  nameEn: "JOD د.أ", rate: 1, decimals: 3 },
   SA:      { code: "SAR", symbol: "ر.س", name: "ريال سعودي",  nameEn: "SAR ر.س", rate: 7.92, decimals: 2 },
   AE:      { code: "AED", symbol: "د.إ", name: "درهم إماراتي", nameEn: "AED د.إ", rate: 7.77, decimals: 2 },
