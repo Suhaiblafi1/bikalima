@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
@@ -9,7 +9,6 @@ import {
   Users,
   GraduationCap,
   CheckCircle2,
-  Quote,
   Star,
   MessageCircle,
   X,
@@ -61,6 +60,8 @@ import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategor
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
 import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
+import { HeroQuote, HeroQuoteTicker } from "@/components/hero-quote";
+import { ResponsiveImage } from "@/components/responsive-image";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
@@ -182,7 +183,6 @@ export default function Home() {
   const [faqPage, setFaqPage] = useState(0);
   const [trainingMode, setTrainingMode] = useState<"combined" | "group-inperson" | "private">("combined");
   const [applicantType, setApplicantType] = useState<"individual" | "institution">("individual");
-  const [heroQuoteIdx, setHeroQuoteIdx] = useState(0);
   const [bioPageIdx, setBioPageIdx] = useState(0);
   const [showBioMobile, setShowBioMobile] = useState(false);
   const [showZoomModal, setShowZoomModal] = useState(false);
@@ -240,16 +240,6 @@ export default function Home() {
       .finally(() => { if (active) setUpcomingCoursesLoading(false); });
     return () => { active = false; window.clearTimeout(timer); };
   }, []);
-
-  useEffect(() => {
-    const total = t.hero.imageQuotes.length;
-    if (!total) return;
-    setHeroQuoteIdx(0);
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-    const timer = setInterval(() => setHeroQuoteIdx((i) => (i + 1) % total), 5000);
-    return () => clearInterval(timer);
-  }, [t.hero.imageQuotes.length, lang]);
 
   useEffect(() => {
     if (showZoomModal) {
@@ -396,6 +386,10 @@ export default function Home() {
     return labels[id] ?? "";
   };
 
+  // Watched by HeroQuoteTicker so the quote timer sleeps once the reader has
+  // scrolled the hero away.
+  const heroRef = useRef<HTMLElement>(null);
+
   const getEnrollPrice = (programId: string, mode: string): string | null => {
     const base = RECORDED_PRICES[programId as keyof typeof RECORDED_PRICES];
     if (!base) return null;
@@ -411,7 +405,12 @@ export default function Home() {
 
       <main>
         {/* ── HERO ── */}
-        <section className="relative pt-20 pb-10 md:pt-28 md:pb-16 lg:pt-48 lg:pb-32 overflow-hidden flex items-center lg:min-h-[90vh]">
+        <HeroQuoteTicker
+          total={t.hero.imageQuotes.length}
+          resetKey={lang}
+          observedRef={heroRef}
+        >
+        <section ref={heroRef} className="relative pt-20 pb-10 md:pt-28 md:pb-16 lg:pt-48 lg:pb-32 overflow-hidden flex items-center lg:min-h-[90vh]">
           <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-secondary/60 blur-[100px] opacity-70 -z-10" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[100px] opacity-70 -z-10" />
           <div className="w-full px-3 md:px-6 flex">
@@ -430,15 +429,6 @@ export default function Home() {
                   <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                     <Button size="lg" onClick={() => scrollTo("structure")} className="bg-primary hover:bg-primary/90 text-white rounded-full text-base md:text-lg h-12 md:h-14 px-6 md:px-8">{getSectionContent(cms, "hero", lang, "ctaSecondary", t.hero.ctaSecondary)}</Button>
                   </div>
-                  <div className="hidden">
-                    <Quote className="text-primary w-4 h-4 mb-2 opacity-50" />
-                    <AnimatePresence mode="wait">
-                      <motion.div key={`m-${heroQuoteIdx}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
-                        <p className="font-serif text-sm leading-relaxed text-foreground/80">"{t.hero.imageQuotes[heroQuoteIdx]?.text}"</p>
-                        <p className="text-primary font-bold mt-2 text-xs">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
                 </motion.div>
               </div>
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8, delay: 0.2 }} className="relative mt-2 lg:mt-0">
@@ -446,26 +436,11 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-accent/60 mix-blend-multiply z-10" />
                   <img src={imgTedx} alt={t.hero.h1a} className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="async" />
                   <div className="absolute inset-x-3 bottom-3 z-20 rounded-xl bg-white/90 px-3 py-2.5 shadow-lg backdrop-blur-md lg:hidden">
-                    <AnimatePresence mode="wait">
-                      <motion.div key={`hero-mobile-${heroQuoteIdx}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                        <p className="line-clamp-2 font-serif text-xs leading-relaxed text-foreground/80">“{t.hero.imageQuotes[heroQuoteIdx]?.text}”</p>
-                        <p className="mt-1 text-[11px] font-bold text-primary">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
-                      </motion.div>
-                    </AnimatePresence>
+                    <HeroQuote quotes={t.hero.imageQuotes} variant="mobile" />
                   </div>
                   <div className="absolute bottom-6 left-6 right-6 z-20 hidden lg:block">
                     <div className="bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/40">
-                      <AnimatePresence mode="wait">
-                        <motion.div key={heroQuoteIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.5 }}>
-                          <div className="flex gap-3">
-                            <div className="text-primary/20 text-4xl font-serif self-start">✦</div>
-                            <div className="flex-1">
-                              <p className="text-foreground/90 text-sm font-medium leading-relaxed italic">"{t.hero.imageQuotes[heroQuoteIdx]?.text}"</p>
-                              <p className="text-primary font-bold mt-3 text-xs tracking-wide">— {t.hero.imageQuotes[heroQuoteIdx]?.author}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      </AnimatePresence>
+                      <HeroQuote quotes={t.hero.imageQuotes} variant="desktop" />
                     </div>
                   </div>
                 </div>
@@ -473,6 +448,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        </HeroQuoteTicker>
 
         {/* ── TRUST STRIP — early social proof immediately under hero ── */}
         <section
@@ -632,7 +608,12 @@ export default function Home() {
                 <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-primary group cursor-pointer" onClick={() => { trackProgramDetailsClick("core", "structure_core_card"); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }}>
                   <div className="relative">
                     <div className="aspect-[21/8] relative">
-                      <img src={coreProgram.image} alt={coreProgram.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+                      <ResponsiveImage
+                        sources={coreProgram.imageSources}
+                        alt={coreProgram.shortTitle}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(min-width: 1024px) 640px, 100vw"
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent" />
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
@@ -681,7 +662,12 @@ export default function Home() {
                       </div>
                       <Card className={`w-full flex flex-col overflow-hidden border-2 ${program.borderColor} shadow-md hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 cursor-pointer`} onClick={() => { trackProgramDetailsClick(program.id, "structure_branch_card"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }}>
                         <div className="aspect-video md:aspect-[4/3.2] relative overflow-hidden">
-                          <img src={program.image} alt={program.shortTitle} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" />
+                          <ResponsiveImage
+                            sources={program.imageSources}
+                            alt={program.shortTitle}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(min-width: 1024px) 360px, (min-width: 768px) 45vw, 100vw"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-foreground/75 via-transparent to-transparent" />
                           <div className="absolute bottom-4 right-4 left-4">
                             <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold mb-2 ${program.tagColor}`}>{program.role}</div>

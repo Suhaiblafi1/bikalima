@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { imagetools } from "vite-imagetools";
 
 // Replit always sets PORT; outside Replit (plain local runs / preview
 // tooling) the port comes from the CLI (`--port`) or vite's default.
@@ -26,6 +27,12 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    // Programme photography is stored once at 1600px and resized here. The
+    // cards it fills are ~330px wide on a phone, so shipping the original
+    // meant sending four or five times the pixels a reader could ever see —
+    // about 1.1MB for four images. Widths and format come from the import
+    // query; see components/responsive-image.tsx for the shape used.
+    imagetools(),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined

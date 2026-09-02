@@ -150,6 +150,10 @@ router.get("/home-sections", async (req: Request, res: Response) => {
       .select()
       .from(homePageSectionsTable)
       .where(and(eq(homePageSectionsTable.status, "published"), eq(homePageSectionsTable.visible, true)));
+    // Published, visible sections carry no per-caller content — both the real
+    // rows and the synthesized defaults below are the same for everyone. Set
+    // once here so neither branch can be given the header and not the other.
+    res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     if (rows.length === 0) {
       const synthetic = HOME_SECTION_KEYS.map((key, idx) => {
         const defaults = SECTION_DEFAULTS[key];

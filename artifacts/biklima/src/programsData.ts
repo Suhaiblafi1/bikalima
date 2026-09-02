@@ -2,6 +2,19 @@ import imgCore from "@assets/program_youth_1600.jpg";
 import imgToT from "@assets/program_tot_1600.jpg";
 import imgTeachers from "@assets/program_parents_1600.jpg";
 import imgChildren from "@assets/program_children_1600.jpg";
+// Resized at build time by vite-imagetools. The plain imports above stay the
+// `src` fallback and the URL the structured data reports; the srcsets below
+// are what a browser actually downloads. 400 covers a phone card, 800 a
+// tablet or a retina phone, 1200 the widest the photograph is ever drawn.
+import setCoreWebp from "@assets/program_youth_1600.jpg?w=400;800;1200&format=webp&as=srcset";
+import setCoreJpeg from "@assets/program_youth_1600.jpg?w=400;800;1200&format=jpeg&as=srcset";
+import setToTWebp from "@assets/program_tot_1600.jpg?w=400;800;1200&format=webp&as=srcset";
+import setToTJpeg from "@assets/program_tot_1600.jpg?w=400;800;1200&format=jpeg&as=srcset";
+import setTeachersWebp from "@assets/program_parents_1600.jpg?w=400;800;1200&format=webp&as=srcset";
+import setTeachersJpeg from "@assets/program_parents_1600.jpg?w=400;800;1200&format=jpeg&as=srcset";
+import setChildrenWebp from "@assets/program_children_1600.jpg?w=400;800;1200&format=webp&as=srcset";
+import setChildrenJpeg from "@assets/program_children_1600.jpg?w=400;800;1200&format=jpeg&as=srcset";
+import type { ImageSources } from "@/components/responsive-image";
 import type { Lang } from "./translations";
 
 export const RECORDED_PRICES = { core: 70, tot: 110, teachers: 90, children: 50 };
@@ -144,7 +157,10 @@ export type Program = ProgramLocale & {
   id: string;
   hours: number;
   sessions: number;
+  /** Single URL — the `src` fallback, and what the structured data reports. */
   image: string;
+  /** The same photograph in the sizes and formats a browser should choose from. */
+  imageSources: ImageSources;
   accentColor: string;
   borderColor: string;
   tagColor: string;
@@ -159,6 +175,7 @@ const programsBase: Program[] = [
     hours: 27,
     sessions: 14,
     image: imgCore,
+    imageSources: { webp: setCoreWebp, jpeg: setCoreJpeg, fallback: imgCore },
     samplePdf: `${import.meta.env.BASE_URL}samples/sample-core.pdf`,
     accentColor: "from-primary to-primary/80",
     borderColor: "border-primary/30",
@@ -199,6 +216,7 @@ const programsBase: Program[] = [
     hours: 40,
     sessions: 20,
     image: imgToT,
+    imageSources: { webp: setToTWebp, jpeg: setToTJpeg, fallback: imgToT },
     samplePdf: `${import.meta.env.BASE_URL}samples/sample-tot.pdf`,
     accentColor: "from-amber-700 to-amber-600",
     borderColor: "border-amber-600/30",
@@ -239,6 +257,7 @@ const programsBase: Program[] = [
     hours: 21,
     sessions: 11,
     image: imgTeachers,
+    imageSources: { webp: setTeachersWebp, jpeg: setTeachersJpeg, fallback: imgTeachers },
     samplePdf: `${import.meta.env.BASE_URL}samples/sample-teachers.pdf`,
     accentColor: "from-teal-700 to-teal-600",
     borderColor: "border-teal-600/30",
@@ -277,6 +296,7 @@ const programsBase: Program[] = [
     hours: 18,
     sessions: 9,
     image: imgChildren,
+    imageSources: { webp: setChildrenWebp, jpeg: setChildrenJpeg, fallback: imgChildren },
     samplePdf: `${import.meta.env.BASE_URL}samples/sample-children.pdf`,
     accentColor: "from-sky-700 to-sky-600",
     borderColor: "border-white shadow-lg ring-1 ring-sky-200",
@@ -312,7 +332,7 @@ const programsBase: Program[] = [
   },
 ];
 
-export function getLocalizedProgram(p: Program, lang: Lang): ProgramLocale & Pick<Program, "id" | "hours" | "sessions" | "image" | "accentColor" | "borderColor" | "tagColor" | "samplePdf" | "introVideo"> {
+export function getLocalizedProgram(p: Program, lang: Lang): ProgramLocale & Pick<Program, "id" | "hours" | "sessions" | "image" | "imageSources" | "accentColor" | "borderColor" | "tagColor" | "samplePdf" | "introVideo"> {
   if (lang === "ar") {
     const { i18n, ...rest } = p;
     return rest;

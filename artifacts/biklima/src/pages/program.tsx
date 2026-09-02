@@ -324,15 +324,22 @@ export default function ProgramPage() {
           be the other way round — a solid gradient with the image at 15%,
           which read as a flat slab of colour with a ghost behind it. */}
       <section className="relative bg-foreground text-white overflow-hidden">
-        <img
-          src={program.image}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="eager"
-          fetchPriority="high"
-          decoding="async"
-        />
+        {/* Decorative: the heading carries the meaning, so it stays out of the
+            accessibility tree. Full-bleed, hence sizes="100vw". */}
+        <picture className="contents">
+          <source type="image/webp" srcSet={program.imageSources.webp} sizes="100vw" />
+          <img
+            src={program.image}
+            srcSet={program.imageSources.jpeg}
+            sizes="100vw"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
         <div className={`absolute inset-0 bg-gradient-to-br ${heroGradient} opacity-[0.72]`} aria-hidden />
         {/* Keeps white text legible over whatever the photo happens to be. */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" aria-hidden />

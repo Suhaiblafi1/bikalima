@@ -44,6 +44,9 @@ router.get("/courses", async (req: Request, res: Response) => {
       .from(coursesTable)
       .where(eq(coursesTable.isPublished, true))
       .orderBy(coursesTable.createdAt);
+    // Published courses only, identical for every caller — the same terms
+    // in-person-courses.ts already serves its public list on.
+    res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     res.json({ courses });
   } catch (err) {
     req.log.error({ err }, "GET /courses failed");
