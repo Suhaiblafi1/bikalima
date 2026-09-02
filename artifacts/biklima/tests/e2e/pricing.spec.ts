@@ -48,11 +48,11 @@ test("minor units follow the currency, not a fixed factor", () => {
 test("conversion rounds to the currency's real precision, both ways", () => {
   const sar = currencyByCode("SAR")!;
   const kwd = currencyByCode("KWD")!;
-  // 70 × 7.92 = 554.4 — and not 554, which is what rounding to whole units
+  // 70 × 5.33 = 373.1 — and not 373, which is what rounding to whole units
   // used to do to every non-dinar price.
-  expect(convertFromJod(70, sar)).toBe(554.4);
-  // A 3-decimal currency keeps its third digit: 70 × 0.69 = 48.3
-  expect(convertFromJod(70, kwd)).toBe(48.3);
+  expect(convertFromJod(70, sar)).toBe(373.1);
+  // A 3-decimal currency keeps its third digit: 70 × 0.439 = 30.73
+  expect(convertFromJod(70, kwd)).toBe(30.73);
   expect(kwd.decimals).toBe(3);
 });
 

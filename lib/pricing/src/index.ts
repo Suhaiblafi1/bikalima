@@ -12,9 +12,23 @@
  * source of truth is unacceptable. One table, imported by both.
  *
  * The rates are hand-maintained, not live FX. That is a deliberate limitation
- * of the existing design and unchanged here: they are the numbers the site has
- * always shown, so quoting and charging stay consistent with each other even
- * when both are a little behind the market.
+ * of the design, but "hand-maintained" turned out to mean "never checked": the
+ * table arrived wholesale inside an unrelated commit and the six Gulf rows were
+ * about 50% too high, while the Egyptian pound was 35% too low. A Saudi visitor
+ * was reading 554 ر.س for a course whose real price is about 373. Checked
+ * against the market on 2026-09-02 and corrected.
+ *
+ * How to re-derive a row, so the next update is arithmetic and not a guess:
+ * take the market JOD→currency rate and multiply by the same spread the dollar
+ * row carries (1.42 ÷ the market JOD→USD rate), then round *up* at the row's
+ * precision. `pnpm --filter @workspace/scripts run check:fx` does exactly this
+ * against a live feed and prints any row that has drifted.
+ *
+ * The spread is uniform on purpose. Every charge leaves in USD, so a price
+ * shown in another currency is only ever a translation of that dollar amount;
+ * applying one spread to all rows keeps the translation honest, and rounding up
+ * keeps it on the safe side — a buyer is never charged more than the figure
+ * they were quoted.
  */
 
 export type CurrencyConfig = {
@@ -37,16 +51,16 @@ export type CurrencyConfig = {
 export const CURRENCIES: Record<string, CurrencyConfig> = {
   DEFAULT: { code: "USD", symbol: "$",   name: "دولار أمريكي", nameEn: "USD $", rate: 1.42, decimals: 2 },
   JO:      { code: "JOD", symbol: "د.أ", name: "دينار أردني",  nameEn: "JOD د.أ", rate: 1, decimals: 3 },
-  SA:      { code: "SAR", symbol: "ر.س", name: "ريال سعودي",  nameEn: "SAR ر.س", rate: 7.92, decimals: 2 },
-  AE:      { code: "AED", symbol: "د.إ", name: "درهم إماراتي", nameEn: "AED د.إ", rate: 7.77, decimals: 2 },
-  KW:      { code: "KWD", symbol: "د.ك", name: "دينار كويتي", nameEn: "KWD د.ك", rate: 0.69, decimals: 3 },
-  QA:      { code: "QAR", symbol: "ر.ق", name: "ريال قطري",  nameEn: "QAR ر.ق", rate: 7.73, decimals: 2 },
-  BH:      { code: "BHD", symbol: "د.ب", name: "دينار بحريني", nameEn: "BHD د.ب", rate: 0.80, decimals: 3 },
-  OM:      { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", nameEn: "OMR ر.ع", rate: 0.81, decimals: 3 },
-  EG:      { code: "EGP", symbol: "ج.م", name: "جنيه مصري",  nameEn: "EGP ج.م", rate: 47.0, decimals: 2 },
-  MA:      { code: "MAD", symbol: "د.م", name: "درهم مغربي",  nameEn: "MAD د.م", rate: 10.2, decimals: 2 },
-  TN:      { code: "TND", symbol: "د.ت", name: "دينار تونسي", nameEn: "TND د.ت", rate: 4.5, decimals: 3 },
-  DZ:      { code: "DZD", symbol: "د.ج", name: "دينار جزائري", nameEn: "DZD د.ج", rate: 190, decimals: 2 },
+  SA:      { code: "SAR", symbol: "ر.س", name: "ريال سعودي",  nameEn: "SAR ر.س", rate: 5.33, decimals: 2 },
+  AE:      { code: "AED", symbol: "د.إ", name: "درهم إماراتي", nameEn: "AED د.إ", rate: 5.22, decimals: 2 },
+  KW:      { code: "KWD", symbol: "د.ك", name: "دينار كويتي", nameEn: "KWD د.ك", rate: 0.439, decimals: 3 },
+  QA:      { code: "QAR", symbol: "ر.ق", name: "ريال قطري",  nameEn: "QAR ر.ق", rate: 5.17, decimals: 2 },
+  BH:      { code: "BHD", symbol: "د.ب", name: "دينار بحريني", nameEn: "BHD د.ب", rate: 0.534, decimals: 3 },
+  OM:      { code: "OMR", symbol: "ر.ع", name: "ريال عُماني", nameEn: "OMR ر.ع", rate: 0.546, decimals: 3 },
+  EG:      { code: "EGP", symbol: "ج.م", name: "جنيه مصري",  nameEn: "EGP ج.م", rate: 72.32, decimals: 2 },
+  MA:      { code: "MAD", symbol: "د.م", name: "درهم مغربي",  nameEn: "MAD د.م", rate: 13.24, decimals: 2 },
+  TN:      { code: "TND", symbol: "د.ت", name: "دينار تونسي", nameEn: "TND د.ت", rate: 4.14, decimals: 3 },
+  DZ:      { code: "DZD", symbol: "د.ج", name: "دينار جزائري", nameEn: "DZD د.ج", rate: 189.4, decimals: 2 },
 };
 
 /** Jordanian dinar — the currency every price in the database is stored in. */

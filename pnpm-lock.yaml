@@ -711,6 +711,10 @@ importers:
         version: 19.2.14
 
   scripts:
+    dependencies:
+      '@workspace/pricing':
+        specifier: workspace:*
+        version: link:../lib/pricing
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
