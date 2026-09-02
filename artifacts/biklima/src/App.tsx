@@ -38,6 +38,10 @@ const ParentPage = lazy(() => import("@/pages/parent"));
 const LearnPage = lazy(() => import("@/pages/learn"));
 const GalleryPage = lazy(() => import("@/pages/gallery"));
 const LibraryPage = lazy(() => import("@/pages/library"));
+const InsightsIndexPage = lazy(() =>
+  import("@/pages/insights").then((m) => ({ default: m.InsightsIndex })),
+);
+const InsightArticlePage = lazy(() => import("@/pages/insights"));
 const AboutPage = lazy(() => import("@/pages/about"));
 const CareersPage = lazy(() => import("@/pages/careers"));
 const WorkbooksPage = lazy(() => import("@/pages/workbooks"));
@@ -243,6 +247,10 @@ function AppRouter() {
         </Route>
         <Route path="/gallery" component={GalleryPage} />
         <Route path="/library" component={LibraryPage} />
+        {/* The article route is declared before the index so wouter does not
+            match "/insights" against the parameterised path. */}
+        <Route path="/insights/:slug" component={InsightArticlePage} />
+        <Route path="/insights" component={InsightsIndexPage} />
         <Route path="/about" component={AboutPage} />
         <Route path="/careers" component={CareersPage} />
         <Route path="/workbooks/:slug/read">

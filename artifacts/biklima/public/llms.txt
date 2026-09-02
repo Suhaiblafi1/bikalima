@@ -48,3 +48,16 @@
 - بيانات منظَّمة (schema.org) متاحة على الصفحة الرئيسية وصفحات البرامج:
   EducationalOrganization و WebSite و Course و Offer و FAQPage.
 - للتواصل: info@bikalima.com
+
+## مقتطفات (Insights)
+فقرات من كرّاسات بكلمة وبرامجها، لكل واحدة صفحتها ومصدرها المُعلَن — صالحة للاقتباس بنسبة.
+
+- [كل المقتطفات](https://bikalima.com/insights)
+- [الثقة لا تُعطى، تُبنى.](https://bikalima.com/insights/confidence-is-built): النطاق الذهني — من كراسة المتدرب.
+- [رَبِّ اشْرَحْ لِي صَدْرِي، وَيَسِّرْ لِي أَمْرِي، وَاحْلُلْ عُقْدَةً مِن لِّسَانِي يَفْقَهُوا قَوْلِي.](https://bikalima.com/insights/ease-of-articulation): النطاق اللفظي — من كراسة المتدرب.
+- [٧٠٪ من الناس يعانون من رهاب التحدث.](https://bikalima.com/insights/fear-of-speaking-is-learned): الفجوة بين الأجيال — من برنامج المعلمين وأولياء الأمور.
+- [الكلمة التي تقولها لطفل في لحظة الحاجة قد تُشكّل صوته طوال حياته — أو تُصمته.](https://bikalima.com/insights/a-word-shapes-a-childs-voice): دور المربّي — من برنامج المعلمين وأولياء الأمور.
+- [الطفل الذي يتعلم الكلام بثقة اليوم هو القائد الذي يُغيّر غرفته غداً.](https://bikalima.com/insights/children-who-speak-with-confidence): فلسفة التعليم — من كراسة الخطيب الصغير.
+- [المدرب الحقيقي لا يُعلّم الناس كيف يتكلمون — بل يُعيد إليهم الإيمان بأن ما يقولونه يستحق أن يُسمع.](https://bikalima.com/insights/what-a-real-trainer-restores): رسالة المدرب — من برنامج المدرب المعتمد.
+- [الخوف من الكلام ليس عدوك — إنه إشارة إلى أن ما تقوله مهم.](https://bikalima.com/insights/fear-is-a-signal): الخوف وقوة الكلام — من كراسة المتدرب.
+- [صوتك هو أكثر من أداة — إنه توقيعك في كل غرفة تدخلها.](https://bikalima.com/insights/your-voice-is-your-signature): الصوت والهوية — من برنامج المدرب المعتمد.

@@ -91,6 +91,11 @@ export function SiteFooter() {
                 </button>
               </li>
               <li>
+                <button onClick={() => navigate("/insights")} className="hover:text-accent transition text-start" data-testid="footer-link-insights">
+                  {lang === "ar" ? "مقتطفات" : "Insights"}
+                </button>
+              </li>
+              <li>
                 <button onClick={() => navigate("/verify")} className="hover:text-accent transition text-start" data-testid="footer-link-verify">
                   {lang === "ar" ? "تحقق من شهادة" : "Verify certificate"}
                 </button>
