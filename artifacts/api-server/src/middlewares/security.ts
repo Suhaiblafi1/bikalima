@@ -109,6 +109,33 @@ export function strictCors(req: Request, res: Response, next: NextFunction) {
 // ──────────────────────────────────────────────────────────────────────
 // Rate limiting (in-memory, bounded, lazy GC)
 // ──────────────────────────────────────────────────────────────────────
+//
+// Confirmed working in production, not just locally: with the source address
+// held constant, /verify allowed exactly its 30 and then returned 429 with a
+// Retry-After, and /graduates allowed its 10. The deployment answers from a
+// warm, reused process, so the Map below does accumulate across requests.
+//
+// HOW TO TEST THIS, because the obvious way is wrong. Keys come from `req.ip`,
+// which under `trust proxy = 1` is the caller's address. Any client whose
+// outbound address rotates — a proxy pool, a CI runner, a VPN — arrives as a
+// different caller each time and is never limited, which looks exactly like a
+// broken limiter. A loop of separate curl invocations from such a network
+// reports 200 forever and proves nothing. Send the burst down ONE connection
+// instead, e.g. a single `curl url url url ...` with the URL repeated, so the
+// address is pinned for the whole burst. Setting X-Forwarded-For by hand does
+// not help: the platform appends the real address and `trust proxy = 1` reads
+// from the right, so the header is ignored.
+//
+// Two honest limits of this design, both accepted:
+//   - The counters are per-process. If the platform ever runs several
+//     instances concurrently, each keeps its own tally and the effective
+//     budget multiplies by the number of instances. It bounds abuse; it is
+//     not an exact quota.
+//   - RATE_MAX_KEYS caps memory, and once reached, live buckets can be
+//     evicted to make room. Under a spray of many distinct keys a real
+//     offender's bucket may be dropped early.
+// Neither is worth a shared store at this traffic; both would need one if
+// these limits ever have to be exact.
 const RATE_MAX_KEYS = 10_000;
 type Bucket = { count: number; resetAt: number };
 
