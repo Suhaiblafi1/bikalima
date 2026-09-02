@@ -5,10 +5,10 @@ import { db, enrollmentRequestsTable } from "@workspace/db";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { toWaPhone } from "../lib/phone.js";
 import { authRateLimit } from "../middlewares/security.js";
+import { getSiteContacts } from "../lib/site-contacts.js";
 
 const enrollRouter = Router();
 
-const RECIPIENT = "info@bikalima.com";
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
 const enrollLimiter = authRateLimit(15, 5 * 60_000);
 
@@ -528,16 +528,17 @@ enrollRouter.post("/enroll", enrollLimiter, async (req: Request, res: Response) 
     const html = isInstitution
       ? buildInstitutionHtml(mailPayload)
       : buildIndividualHtml(mailPayload);
-    log.info({ from: FROM_ADDRESS, admin: RECIPIENT, applicant: payload.email }, "[SMTP] Sending enrollment emails");
+    const { email: recipient } = await getSiteContacts();
+    log.info({ from: FROM_ADDRESS, admin: recipient, applicant: payload.email }, "[SMTP] Sending enrollment emails");
     try {
       await transporter.sendMail({
         from: FROM_ADDRESS,
-        to: RECIPIENT,
+        to: recipient,
         replyTo: payload.email,
         subject,
         html,
       });
-      log.info({ to: RECIPIENT }, "Enrollment email sent to admin");
+      log.info({ to: recipient }, "Enrollment email sent to admin");
     } catch (err) {
       log.error({ err }, "[SMTP] Failed to send enrollment email to admin");
     }
@@ -555,7 +556,7 @@ enrollRouter.post("/enroll", enrollLimiter, async (req: Request, res: Response) 
         await transporter.sendMail({
           from: FROM_ADDRESS,
           to: payload.email,
-          replyTo: RECIPIENT,
+          replyTo: recipient,
           subject: confirmSubject,
           html: buildApplicantConfirmationHtml(mailPayload, isInstitution),
         });

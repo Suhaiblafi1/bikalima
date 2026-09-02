@@ -25,6 +25,7 @@ import {
 import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import { isSupervisorOrAdmin, requireRole } from "../lib/admin.js";
+import { isCourseTrainer, enrolledCourseIds, trainerCourseIds } from "../lib/course-access.js";
 import { createNotification } from "../lib/notifications.js";
 import { applyAdHocLimit } from "../middlewares/security.js";
 
@@ -49,14 +50,6 @@ function genCode(len = 8): string {
   let s = "";
   for (let i = 0; i < len; i++) s += alphabet[randomInt(alphabet.length)];
   return s;
-}
-
-async function isCourseTrainer(userId: string, courseId: string): Promise<boolean> {
-  const [row] = await db.select({ id: courseTrainersTable.id })
-    .from(courseTrainersTable)
-    .where(and(eq(courseTrainersTable.userId, userId), eq(courseTrainersTable.courseId, courseId)))
-    .limit(1);
-  return !!row;
 }
 
 // --- LIVE SESSIONS (Zoom links per lesson) ---
@@ -150,9 +143,7 @@ router.get("/my/live-sessions", async (req: Request, res: Response) => {
   if (!req.isAuthenticated() || !req.user?.id) { res.status(401).json({ error: "Not authenticated" }); return; }
   const userId = req.user.id;
   try {
-    const enrolls = await db.select({ courseId: enrollmentsTable.courseId })
-      .from(enrollmentsTable).where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.status, "active")));
-    const courseIds = enrolls.map(e => e.courseId);
+    const courseIds = await enrolledCourseIds(userId);
     if (courseIds.length === 0) { res.json({ sessions: [] }); return; }
     const lessons = await db.select({ id: lessonsTable.id, courseId: lessonsTable.courseId, lessonTitleAr: lessonsTable.titleAr })
       .from(lessonsTable).where(inArray(lessonsTable.courseId, courseIds));
@@ -523,8 +514,7 @@ router.get("/messages/contacts", async (req: Request, res: Response) => {
   try {
     const ids = new Set<string>();
     if (myRole === "trainer" || isSupervisorOrAdmin(req)) {
-      const myCourses = (await db.select({ courseId: courseTrainersTable.courseId })
-        .from(courseTrainersTable).where(eq(courseTrainersTable.userId, me))).map(r => r.courseId);
+      const myCourses = await trainerCourseIds(me);
       if (myCourses.length > 0) {
         const students = await db.select({ userId: enrollmentsTable.userId })
           .from(enrollmentsTable).where(and(inArray(enrollmentsTable.courseId, myCourses), eq(enrollmentsTable.status, "active")));
@@ -606,8 +596,7 @@ router.post("/messages/threads", async (req: Request, res: Response) => {
       allowed = true;
     } else if (myRole === "trainer") {
       // Find courses this trainer teaches.
-      const myCourses = (await db.select({ courseId: courseTrainersTable.courseId })
-        .from(courseTrainersTable).where(eq(courseTrainersTable.userId, me))).map(r => r.courseId);
+      const myCourses = await trainerCourseIds(me);
       if (myCourses.length > 0) {
         // Recipient is an enrolled student?
         const [enrolled] = await db.select({ id: enrollmentsTable.id }).from(enrollmentsTable)
@@ -631,8 +620,7 @@ router.post("/messages/threads", async (req: Request, res: Response) => {
       }
     } else if (recipient.role === "trainer") {
       // Student or parent → trainer: trainer must teach a relevant course.
-      const trainerCourses = (await db.select({ courseId: courseTrainersTable.courseId })
-        .from(courseTrainersTable).where(eq(courseTrainersTable.userId, recipientId))).map(r => r.courseId);
+      const trainerCourses = await trainerCourseIds(recipientId);
       if (trainerCourses.length > 0) {
         if (myRole === "parent") {
           const myChildren = (await db.select({ studentUserId: parentLinksTable.studentUserId })

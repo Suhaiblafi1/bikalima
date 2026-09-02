@@ -9,17 +9,12 @@ import {
 } from "@workspace/db";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { requireRole, isAdmin } from "../lib/admin.js";
-import { courseTrainersTable } from "@workspace/db";
+import { isCourseTrainer } from "../lib/course-access.js";
 
 async function trainerOwnsCourse(req: Request, courseId: string): Promise<boolean> {
   if (isAdmin(req)) return true;
   if (!req.user) return false;
-  const [row] = await db
-    .select({ id: courseTrainersTable.id })
-    .from(courseTrainersTable)
-    .where(and(eq(courseTrainersTable.userId, req.user.id), eq(courseTrainersTable.courseId, courseId)))
-    .limit(1);
-  return !!row;
+  return isCourseTrainer(req.user.id, courseId);
 }
 import { recordAuditLog } from "../lib/platform.js";
 import { createNotification } from "../lib/notifications.js";

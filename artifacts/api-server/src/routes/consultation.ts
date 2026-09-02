@@ -5,10 +5,10 @@ import { eq } from "drizzle-orm";
 import { db, consultationBookingsTable } from "@workspace/db";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { applyAdHocLimit } from "../middlewares/security.js";
+import { getSiteContacts } from "../lib/site-contacts.js";
 
 const consultationRouter = Router();
 
-const ADMIN_EMAIL = "info@bikalima.com";
 
 // Rate-limit + zod validation is shared via the security middleware so
 // every 429 response carries Retry-After consistently.
@@ -42,8 +42,10 @@ function buildICS(opts: {
   dateStr: string;
   timeStr: string;
   lang: string;
+  /** Organiser address — from site settings, not a literal. */
+  adminEmail: string;
 }): string {
-  const { uid, name, email, dateStr, timeStr, lang } = opts;
+  const { uid, name, email, dateStr, timeStr, lang, adminEmail } = opts;
 
   const [day, month, year] = dateStr.split("/").map(Number);
   const [hour, minute] = timeStr.split(":").map(Number);
@@ -76,7 +78,7 @@ function buildICS(opts: {
     `SUMMARY:${summary}`,
     `DESCRIPTION:${description}`,
     "LOCATION:Zoom / Online",
-    `ORGANIZER;CN=صهيب الخوالدة:mailto:${ADMIN_EMAIL}`,
+    `ORGANIZER;CN=صهيب الخوالدة:mailto:${adminEmail}`,
     `ATTENDEE;PARTSTAT=NEEDS-ACTION;CN=${name}:mailto:${email}`,
     "BEGIN:VALARM",
     "TRIGGER:-PT15M",
@@ -299,7 +301,8 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
   const notesText = notes ?? "";
   const phoneText = phone ?? "";
 
-  const icsContent = buildICS({ uid, name, email, dateStr: date, timeStr: time, lang: usedLang });
+  const { email: adminEmail } = await getSiteContacts();
+  const icsContent = buildICS({ uid, name, email, dateStr: date, timeStr: time, lang: usedLang, adminEmail });
   const userHtml = buildUserHtml({ name, dateStr: date, timeStr: time, notes: notesText, lang: usedLang });
   const adminHtml = buildAdminHtml({ name, email, phone: phoneText, dateStr: date, timeStr: time, notes: notesText });
 
@@ -376,7 +379,7 @@ consultationRouter.post("/book-consultation", async (req: Request, res: Response
         }),
         transporter.sendMail({
           from: FROM_ADDRESS,
-          to: ADMIN_EMAIL,
+          to: adminEmail,
           subject: subjectAdmin,
           html: adminHtml,
           attachments: [icsAttachment],

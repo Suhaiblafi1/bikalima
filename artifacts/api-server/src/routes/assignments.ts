@@ -3,13 +3,12 @@ import {
   db,
   assignmentsTable,
   assignmentSubmissionsTable,
-  enrollmentsTable,
   coursesTable,
-  courseTrainersTable,
   usersTable,
 } from "@workspace/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { requireRole, isSupervisorOrAdmin } from "../lib/admin.js";
+import { enrolledCourseIds, trainerCourseIds } from "../lib/course-access.js";
 import { createNotification } from "../lib/notifications.js";
 import { recordAuditLog } from "../lib/platform.js";
 
@@ -20,11 +19,7 @@ async function getAdminScopeCourseIds(req: Request): Promise<string[] | null> {
   if (isSupervisorOrAdmin(req)) return null;
   if (!req.user) return [];
   if (req.user.role !== "trainer") return [];
-  const rows = await db
-    .select({ courseId: courseTrainersTable.courseId })
-    .from(courseTrainersTable)
-    .where(eq(courseTrainersTable.userId, req.user.id));
-  return rows.map((r) => r.courseId);
+  return trainerCourseIds(req.user.id);
 }
 
 function trainerCanTouchCourse(scope: string[] | null, courseId: string | null): boolean {
@@ -62,14 +57,6 @@ function computeTotalOutOf100(scores: Record<ScoreField, number | null>): number
   return Math.round((sum / (values.length * 10)) * 100);
 }
 
-async function getEnrolledCourseIds(userId: string): Promise<string[]> {
-  const rows = await db
-    .select({ courseId: enrollmentsTable.courseId })
-    .from(enrollmentsTable)
-    .where(and(eq(enrollmentsTable.userId, userId), eq(enrollmentsTable.status, "active")));
-  return rows.map((r) => r.courseId);
-}
-
 // ────────────────────────────────────────────────────────────────────────────
 // Student endpoints
 // ────────────────────────────────────────────────────────────────────────────
@@ -80,7 +67,7 @@ router.get("/my/assignments", async (req: Request, res: Response) => {
     return;
   }
   try {
-    const courseIds = await getEnrolledCourseIds(req.user.id);
+    const courseIds = await enrolledCourseIds(req.user.id);
     if (courseIds.length === 0) {
       res.json({ assignments: [] });
       return;
@@ -175,7 +162,7 @@ router.post("/my/assignments/:id/submit", async (req: Request, res: Response) =>
     }
 
     if (assignment.courseId) {
-      const courseIds = await getEnrolledCourseIds(req.user.id);
+      const courseIds = await enrolledCourseIds(req.user.id);
       if (!courseIds.includes(assignment.courseId)) {
         res.status(403).json({ error: "Not enrolled in the course for this assignment" });
         return;

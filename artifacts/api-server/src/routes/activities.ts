@@ -19,6 +19,7 @@ import {
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { isSupervisorOrAdmin, requireAdmin, requireRole } from "../lib/admin.js";
+import { isCourseTrainer, isEnrolled, trainerCourseIds } from "../lib/course-access.js";
 import { createNotification } from "../lib/notifications.js";
 import { awardBadgeIfEligible } from "../lib/platform.js";
 
@@ -118,33 +119,6 @@ export async function bootstrapActivities(): Promise<void> {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
-async function isCourseTrainer(userId: string, courseId: string): Promise<boolean> {
-  const [row] = await db.select({ id: courseTrainersTable.id })
-    .from(courseTrainersTable)
-    .where(and(eq(courseTrainersTable.userId, userId), eq(courseTrainersTable.courseId, courseId)))
-    .limit(1);
-  return !!row;
-}
-
-async function getUserCoursesAsTrainer(userId: string): Promise<string[]> {
-  const rows = await db.select({ courseId: courseTrainersTable.courseId })
-    .from(courseTrainersTable)
-    .where(eq(courseTrainersTable.userId, userId));
-  return rows.map(r => r.courseId);
-}
-
-async function isEnrolled(userId: string, courseId: string): Promise<boolean> {
-  const [row] = await db.select({ id: enrollmentsTable.id })
-    .from(enrollmentsTable)
-    .where(and(
-      eq(enrollmentsTable.userId, userId),
-      eq(enrollmentsTable.courseId, courseId),
-      eq(enrollmentsTable.status, "active"),
-    ))
-    .limit(1);
-  return !!row;
-}
-
 type QuizQuestion = { q?: unknown; choices?: unknown; answer?: unknown };
 
 function learnerSafeConfig(type: ActivityType, config: Record<string, unknown>): Record<string, unknown> {
@@ -706,7 +680,7 @@ router.get("/instructor/submissions", async (req: Request, res: Response) => {
 
   let courseIds: string[] | null = null;
   if (!isSupervisorOrAdmin(req)) {
-    courseIds = await getUserCoursesAsTrainer(userId);
+    courseIds = await trainerCourseIds(userId);
     if (courseIds.length === 0) { res.json({ submissions: [] }); return; }
   }
 

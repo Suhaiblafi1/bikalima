@@ -5,12 +5,11 @@ import { db, workbookOrdersTable } from "@workspace/db";
 import { registerLeadFromForm } from "../lib/leads.js";
 import { toWaPhone } from "../lib/phone.js";
 import { authRateLimit } from "../middlewares/security.js";
+import { getSiteContacts } from "../lib/site-contacts.js";
 
 const workbookOrderRouter = Router();
 
-const ADMIN_EMAIL = "info@bikalima.com";
 const FROM_ADDRESS = process.env.SMTP_FROM ?? `"بكلمة – Bikalima" <${process.env.SMTP_USER ?? "info@bikalima.com"}>`;
-const WA_NUMBER = "97455377065";
 const workbookOrderLimiter = authRateLimit(12, 5 * 60_000);
 const WORKBOOK_PRICES_JOD = { core: 23, tot: 37, teachers: 30, children: 17 } as const;
 
@@ -177,6 +176,9 @@ function buildWorkbookApplicantConfirmationHtml(p: {
   displayUnitPrice: string;
   displayTotal: string;
   lang: string;
+  /** Both come from site settings rather than literals in this file. */
+  adminEmail: string;
+  waNumber: string;
 }) {
   const lang = (["ar", "en", "fr"].includes(p.lang) ? p.lang : "ar") as "ar" | "en" | "fr";
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -336,13 +338,13 @@ function buildWorkbookApplicantConfirmationHtml(p: {
     <p style="margin:4px 0 0;font-size:36px;color:#7ec8bc;line-height:1;font-family:Georgia,serif;">&#8221;</p>
   </div>
   <div style="background:#fff;padding:32px 32px;text-align:center;">
-    <a href="https://wa.me/${WA_NUMBER}?text=${waText}" target="_blank"
+    <a href="https://wa.me/${p.waNumber}?text=${waText}" target="_blank"
        style="display:inline-block;background:linear-gradient(135deg,#25D366,#1aa34a);color:#fff;padding:15px 36px;border-radius:50px;text-decoration:none;font-size:15px;letter-spacing:0.3px;">
       💬 ${t.waBtn}
     </a>
   </div>
   <div style="background:#1a5c52;padding:14px 32px;text-align:center;">
-    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.88);">${t.footer} | ${ADMIN_EMAIL}</p>
+    <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.88);">${t.footer} | ${p.adminEmail}</p>
   </div>
 </div>`;
 }
@@ -417,7 +419,8 @@ workbookOrderRouter.post("/workbook-order", workbookOrderLimiter, async (req: Re
 
     const transporter = buildTransporter();
     if (transporter) {
-      console.info(`[SMTP] Sending workbook order emails — from: ${FROM_ADDRESS}, admin: ${ADMIN_EMAIL}, buyer: ${buyerEmail}`);
+      const { email: adminEmail, whatsapp: waNumber } = await getSiteContacts();
+      console.info(`[SMTP] Sending workbook order emails — from: ${FROM_ADDRESS}, admin: ${adminEmail}, buyer: ${buyerEmail}`);
       const adminHtml = buildWorkbookAdminHtml({
         workbookTitle: workbookTitle ?? workbookId,
         workbookId: workbookId || "unknown",
@@ -446,13 +449,15 @@ workbookOrderRouter.post("/workbook-order", workbookOrderLimiter, async (req: Re
         displayUnitPrice: displayUnitPrice || `${unitPrice} JOD`,
         displayTotal: displayTotal || `${total} JOD`,
         lang: lang || "ar",
+        adminEmail,
+        waNumber,
       });
 
       try {
         await Promise.all([
           transporter.sendMail({
             from: FROM_ADDRESS,
-            to: ADMIN_EMAIL,
+            to: adminEmail,
             replyTo: buyerEmail,
             subject: `بكلمة ✦ طلب كراسة — ${workbookTitle ?? workbookId} / ${buyerName}`,
             html: adminHtml,
@@ -461,7 +466,7 @@ workbookOrderRouter.post("/workbook-order", workbookOrderLimiter, async (req: Re
             ? transporter.sendMail({
                 from: FROM_ADDRESS,
                 to: buyerEmail,
-                replyTo: ADMIN_EMAIL,
+                replyTo: adminEmail,
                 subject:
                   lang === "fr"
                     ? `Bikalima ✦ Votre commande est confirmée — ${workbookTitle ?? workbookId}`

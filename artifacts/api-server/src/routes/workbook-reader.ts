@@ -7,11 +7,11 @@ import {
   workbookNotesTable,
   workbookOrdersTable,
   workbookSubmissionsTable,
-  courseTrainersTable,
 } from "@workspace/db";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { isAdmin, isSupervisorOrAdmin, requireAdmin, requireRole } from "../lib/admin.js";
+import { trainerCourseIds } from "../lib/course-access.js";
 import { SKILL_KEYS, creditSkillPoints } from "../lib/skills.js";
 import {
   distributeSkillPoints,
@@ -596,11 +596,7 @@ router.get("/instructor/workbook-submissions", async (req: Request, res: Respons
   try {
     let scope = null as null | string[];
     if (!isSupervisorOrAdmin(req)) {
-      const taught = await db
-        .select({ courseId: courseTrainersTable.courseId })
-        .from(courseTrainersTable)
-        .where(eq(courseTrainersTable.userId, req.user!.id));
-      scope = taught.map((r) => r.courseId);
+      scope = await trainerCourseIds(req.user!.id);
       if (scope.length === 0) {
         res.json({ submissions: [] });
         return;
@@ -683,11 +679,7 @@ router.post("/instructor/workbook-submissions/:id/review", async (req: Request, 
     // around it — the scope goes in the WHERE clause, not a later check.
     let scope = null as null | string[];
     if (!isSupervisorOrAdmin(req)) {
-      const taught = await db
-        .select({ courseId: courseTrainersTable.courseId })
-        .from(courseTrainersTable)
-        .where(eq(courseTrainersTable.userId, req.user!.id));
-      scope = taught.map((r) => r.courseId);
+      scope = await trainerCourseIds(req.user!.id);
       if (scope.length === 0) {
         res.status(404).json({ error: "Submission not found" });
         return;

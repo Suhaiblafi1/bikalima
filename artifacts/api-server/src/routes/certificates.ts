@@ -14,6 +14,9 @@ import { isUniqueViolation } from "../lib/db-errors.js";
 
 const router: IRouter = Router();
 const publicCertificateLookupLimiter = authRateLimit(30, 60_000);
+// The registry hands back up to 200 graduates per call, so a handful of
+// requests is the whole roll. /verify's budget is far too generous for that.
+const graduatesRegistryLimiter = authRateLimit(10, 60_000);
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 async function logActivity(
@@ -123,7 +126,7 @@ router.get("/verify", publicCertificateLookupLimiter, async (req: Request, res: 
 });
 
 // ── PUBLIC: single certificate by code (shareable) ───────────────────────
-router.get("/certificates/:code", async (req: Request, res: Response) => {
+router.get("/certificates/:code", publicCertificateLookupLimiter, async (req: Request, res: Response) => {
   const code = String(req.params.code ?? "").trim();
   if (!code || code.length > 80) return res.status(400).json({ error: "invalid-code" });
   try {
@@ -140,7 +143,7 @@ router.get("/certificates/:code", async (req: Request, res: Response) => {
 });
 
 // ── PUBLIC: graduates registry (filtered, only showInRegistry=true) ──────
-router.get("/graduates", async (req: Request, res: Response) => {
+router.get("/graduates", graduatesRegistryLimiter, async (req: Request, res: Response) => {
   const type = String(req.query.type ?? "").trim();
   const program = String(req.query.program ?? "").trim();
   const country = String(req.query.country ?? "").trim();

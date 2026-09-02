@@ -30,6 +30,7 @@ import {
   countAdmins,
   type Role,
 } from "../lib/admin.js";
+import { isCourseTrainer, trainerCourseIds } from "../lib/course-access.js";
 import { createNotification } from "../lib/notifications.js";
 import { recordAuditLog, awardBadgeIfEligible } from "../lib/platform.js";
 import { paymentService } from "../integrations/paymentService.js";
@@ -47,11 +48,7 @@ async function getScopedCourseIds(req: Request): Promise<string[] | null> {
   // Sales/support can see all data (read-only via UI) — treated as unscoped for reads.
   if (req.user.role === "sales") return null;
   if (req.user.role !== "trainer") return [];
-  const rows = await db
-    .select({ courseId: courseTrainersTable.courseId })
-    .from(courseTrainersTable)
-    .where(eq(courseTrainersTable.userId, req.user.id));
-  return rows.map((r) => r.courseId);
+  return trainerCourseIds(req.user.id);
 }
 
 type CourseInsert = typeof coursesTable.$inferInsert;
@@ -234,13 +231,9 @@ router.get("/admin/courses/:id/trainers", async (req: Request, res: Response) =>
     if (!isSupervisorOrAdmin(req) && req.user?.role !== "sales") {
       const userId = req.user?.id;
       if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
-      const [own] = await db.select({ id: courseTrainersTable.id })
-        .from(courseTrainersTable)
-        .where(and(
-          eq(courseTrainersTable.courseId, req.params.id),
-          eq(courseTrainersTable.userId, userId),
-        ));
-      if (!own) { res.status(404).json({ error: "Not found" }); return; }
+      if (!(await isCourseTrainer(userId, req.params.id))) {
+        res.status(404).json({ error: "Not found" }); return;
+      }
     }
     const rows = await db.select({
       id: courseTrainersTable.id,
