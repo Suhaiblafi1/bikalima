@@ -85,6 +85,7 @@ const AdminFeatureFlagsPage = lazy(() => import("@/pages/admin/feature-flags"));
 const AdminAccreditationsPage = lazy(() => import("@/pages/admin/accreditations"));
 const AdminPoliciesPage = lazy(() => import("@/pages/admin/policies"));
 const AdminImpactStatsPage = lazy(() => import("@/pages/admin/impact-stats"));
+const AdminVideoGenerationPage = lazy(() => import("@/pages/admin/video-generation"));
 
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
 import { SLUG_TO_PROGRAM_ID, PROGRAM_PAGE_SLUGS } from "@/lib/site-config";
@@ -214,6 +215,9 @@ function AppRouter() {
         </Route>
         <Route path="/admin/impact-stats">
           {() => (<AdminRoute><AdminImpactStatsPage /></AdminRoute>)}
+        </Route>
+        <Route path="/admin/video-generation">
+          {() => (<AdminRoute><AdminVideoGenerationPage /></AdminRoute>)}
         </Route>
         <Route path="/impact" component={ImpactPage} />
         <Route path="/consultation" component={ConsultationPage} />

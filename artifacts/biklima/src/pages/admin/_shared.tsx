@@ -145,6 +145,7 @@ export type AdminPageKey =
   | "leads" | "pipeline" | "tasks" | "automations"
   | "message-templates" | "funnels"
   | "audit-log" | "feature-flags" | "impact-stats"
+  | "video-generation"
   | "accreditations" | "policies";
 
 // Per-role page visibility. Admin always sees everything.
@@ -187,6 +188,9 @@ export const PAGE_VISIBILITY: Record<AdminPageKey, Role[]> = {
   "audit-log": ["admin"],
   "feature-flags": ["admin"],
   "impact-stats": ["admin", "supervisor"],
+  // Generation is billed per output second, so it stays with the role
+  // that owns the platform's spending.
+  "video-generation": ["admin"],
   // Institutional accreditations — supervisors can view/manage; admin owns CRUD.
   accreditations: ["admin", "supervisor"],
   // Versioned legal policies — admin only.

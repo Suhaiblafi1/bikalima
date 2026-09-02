@@ -10,6 +10,7 @@ import {
   Layout as LayoutIcon, FileText, Film, ShieldCheck, MessageCircle,
   UserPlus, KanbanSquare, ListTodo, Zap, MessageSquareText, Filter,
   ScrollText, ToggleRight, Sparkles, BadgePercent, CalendarDays, ChevronDown,
+  Clapperboard,
 } from "lucide-react";
 
 type NavItem = {
@@ -65,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
       { key: "workbooks",   label: "الكراسات",        href: "/admin/workbooks",   icon: <FileText className="w-4 h-4" /> },
       { key: "field-media", label: "من الميدان",       href: "/admin/field-media", icon: <Film className="w-4 h-4" /> },
       { key: "impact-stats", label: "الأثر والقصص",    href: "/admin/impact-stats", icon: <Sparkles className="w-4 h-4" /> },
+      { key: "video-generation", label: "توليد الفيديو", href: "/admin/video-generation", icon: <Clapperboard className="w-4 h-4" /> },
     ],
   },
   {

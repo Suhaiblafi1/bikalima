@@ -44,12 +44,15 @@ test.describe.serial("admin video generation", () => {
   });
 
   test("status names which switch is still closed, even while disabled", async ({ admin }) => {
+    // Every flag-dependent test sets the flag it needs rather than inheriting
+    // it: these run in order, and a failure mid-file must not leave the next
+    // run asserting against the wrong gate state.
+    await setFlag(admin, false);
     const page = await admin.newPage();
     const response = await page.request.get(STATUS_URL);
     expect(response.ok()).toBeTruthy();
     const body = await response.json();
 
-    // Seeded off: a billed feature does not arrive switched on.
     expect(body.flagEnabled).toBe(false);
     expect(body.configured).toBe(false);
     expect(body.missingEnvVars).toContain("MINIMAX_API_KEY");
@@ -59,6 +62,7 @@ test.describe.serial("admin video generation", () => {
   });
 
   test("with the flag off, no request reaches the provider", async ({ admin }) => {
+    await setFlag(admin, false);
     const page = await admin.newPage();
 
     const created = await page.request.post(JOBS_URL, { data: validBody() });
@@ -111,6 +115,7 @@ test.describe.serial("admin video generation", () => {
   });
 
   test("a valid request with no credentials is refused, and writes no job", async ({ admin }) => {
+    await setFlag(admin, true);
     const page = await admin.newPage();
 
     const response = await page.request.post(JOBS_URL, { data: validBody() });
@@ -131,6 +136,39 @@ test.describe.serial("admin video generation", () => {
     const page = await anon.newPage();
     const response = await page.request.post("/api/cron/video-generation-reconcile");
     expect(response.status()).toBe(401);
+    await page.close();
+  });
+
+  test("the admin page shows which gate is closed instead of a broken form", async ({ admin }) => {
+    // Explicit rather than inherited from the previous test: this page's whole
+    // job is reporting gate state, so the state has to be the one asserted.
+    await setFlag(admin, false);
+    const page = await admin.newPage();
+    await page.goto("/admin/video-generation");
+
+    // Both gates are shut in CI: the flag is off and there is no key.
+    await expect(page.getByTestId("vg-flag-disabled")).toBeVisible();
+    await expect(page.getByTestId("vg-not-configured")).toBeVisible();
+    // No form while a gate is shut — a submit button that cannot work is worse
+    // than no button.
+    await expect(page.getByTestId("vg-submit")).toHaveCount(0);
+
+    // Switching the flag on from the banner is the one gate an admin owns.
+    await page.getByTestId("vg-enable-flag").click();
+    await expect(page.getByTestId("vg-flag-disabled")).toHaveCount(0);
+    // Still no credentials, so still no form — but the job list opens.
+    await expect(page.getByTestId("vg-not-configured")).toBeVisible();
+    await expect(page.getByTestId("vg-submit")).toHaveCount(0);
+    await expect(page.getByTestId("vg-jobs-empty")).toBeVisible();
+    await page.close();
+
+    await setFlag(admin, false);
+  });
+
+  test("a learner cannot reach the generator page", async ({ learner }) => {
+    const page = await learner.newPage();
+    await page.goto("/admin/video-generation");
+    await expect(page).toHaveURL(/\/dashboard$/);
     await page.close();
   });
 
