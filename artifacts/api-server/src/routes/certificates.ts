@@ -74,7 +74,20 @@ async function isSuperAdmin(req: Request): Promise<boolean> {
   return !!row?.flag;
 }
 
-// Public-safe shape that strips internal/PII fields.
+/**
+ * Public-safe shape that strips internal/PII fields.
+ *
+ * The full name and country are exposed on purpose, and that is a confirmed
+ * decision rather than an oversight — an audit raised it and the answer was to
+ * keep them. A verification registry that will not say who a certificate
+ * belongs to cannot verify anything, and nobody appears here unless
+ * showInRegistry is true on their row, so it is opt-in rather than automatic.
+ *
+ * Email and phone are not here and must not be added: they are what turns a
+ * verification lookup into a contact list. /graduates is also rate limited
+ * (10/min) because it returns up to 200 rows a call, which makes a handful of
+ * requests the whole roll.
+ */
 function toPublic(c: typeof certificatesTable.$inferSelect) {
   return {
     code: c.code,
