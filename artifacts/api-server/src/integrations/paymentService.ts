@@ -1,5 +1,11 @@
 import Stripe from "stripe";
 import {
+  JOD,
+  currencyByCode,
+  toMinorUnits,
+  type CurrencyConfig,
+} from "@workspace/pricing";
+import {
   type IntegrationService,
   type IntegrationStatus,
   type NotConfiguredResult,
@@ -75,21 +81,24 @@ function detectProvider(): PaymentProviderName {
   return "unknown";
 }
 
-// Stripe expects amounts in the smallest currency unit. JOD is a 3-decimal
-// currency (smallest unit = 1 fils = 0.001 JOD), USD/EUR are 2-decimal,
-// JPY/KWD/etc. are zero-decimal. We default to 2 decimals and override the
-// known 3-decimal currencies used in the region.
-const THREE_DECIMAL_CURRENCIES = new Set(["bhd", "iqd", "jod", "kwd", "omr", "tnd"]);
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  "bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga", "pyg",
-  "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf",
-]);
-
-export function toMinorUnits(amount: number, currency: string): number {
-  const c = currency.toLowerCase();
-  if (ZERO_DECIMAL_CURRENCIES.has(c)) return Math.round(amount);
-  if (THREE_DECIMAL_CURRENCIES.has(c)) return Math.round(amount * 1000);
-  return Math.round(amount * 100);
+/**
+ * Which currency this account will actually be charged in.
+ *
+ * Every price is stored in JOD, but Stripe refuses JOD from a US-registered
+ * account and does not support Jordan as a country at all, so an account that
+ * could take JOD is not obtainable. STRIPE_CHARGE_CURRENCY names the currency
+ * to charge instead; the amount is converted from the JOD price using the same
+ * table the browser quoted the buyer from.
+ *
+ * Defaults to JOD, so an account that does support it keeps today's behaviour
+ * and nothing changes without the variable being set. An unrecognised code
+ * falls back to JOD rather than guessing — better a checkout that fails loudly
+ * with Stripe's own message than one that charges in a currency nobody chose.
+ */
+export function chargeCurrency(): CurrencyConfig {
+  const configured = process.env.STRIPE_CHARGE_CURRENCY;
+  if (!configured) return JOD;
+  return currencyByCode(configured) ?? JOD;
 }
 
 export const paymentService: IntegrationService & {

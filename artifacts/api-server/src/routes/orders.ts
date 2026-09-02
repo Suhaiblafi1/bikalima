@@ -12,7 +12,8 @@ import {
   paymentWebhookEventsTable,
 } from "@workspace/db";
 import { eq, desc, and, inArray, lte, ne, sql } from "drizzle-orm";
-import { paymentService, toMinorUnits as toStripeMinorUnits } from "../integrations/paymentService.js";
+import { paymentService, chargeCurrency } from "../integrations/paymentService.js";
+import { convertFromJod, toMinorUnits as toStripeMinorUnits, formatMoney } from "@workspace/pricing";
 import { isFeatureEnabled } from "../lib/platform.js";
 import { authRateLimit } from "../middlewares/security.js";
 
@@ -139,6 +140,31 @@ async function resolveDiscount(codeInput: string, courseId: string, originalAmou
     code: discount.code,
     discountAmount,
     finalAmount: Math.max(0, originalAmount - discountAmount),
+  };
+}
+
+/**
+ * What the processor should have been asked for, for one order.
+ *
+ * Two call sites verify Stripe's reported total before granting access — the
+ * webhook and the success page — and both have to agree with each other and
+ * with whatever was actually sent. An order carries the charged currency and
+ * exact minor-unit figure when the charge was converted; otherwise the price
+ * is its own charge and the comparison is the JOD one it always was.
+ */
+function expectedCharge(order: {
+  amount: number | null;
+  currency: string | null;
+  chargeAmountMinor: number | null;
+  chargeCurrency: string | null;
+}): { currency: string | null; minor: number | null } {
+  if (order.chargeCurrency && order.chargeAmountMinor != null) {
+    return { currency: order.chargeCurrency, minor: order.chargeAmountMinor };
+  }
+  const currency = order.currency ?? "JOD";
+  return {
+    currency,
+    minor: order.amount == null ? null : toStripeMinorUnits(order.amount, currency),
   };
 }
 
@@ -309,6 +335,20 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
     }
     const chargeAmount = discount?.finalAmount ?? originalAmount;
 
+    // Prices are JOD; the account may not accept JOD. Convert with the same
+    // function and the same table the browser quoted from, so the buyer is
+    // charged the number they were shown, and keep the exact minor-unit figure
+    // for the amount checks that guard the webhook and the success page.
+    const target = chargeCurrency();
+    const chargeInfo =
+      target.code === "JOD"
+        ? null
+        : {
+            currency: target,
+            major: convertFromJod(chargeAmount, target),
+            minor: toStripeMinorUnits(convertFromJod(chargeAmount, target), target.code),
+          };
+
     if (chargeAmount > 0 && !paymentsEnabled) {
       res.status(503).json({ error: "الدفع الإلكتروني معطّل مؤقتاً" });
       return;
@@ -329,6 +369,10 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
         discountCodeId: discount?.id ?? null,
         discountCode: discount?.code ?? null,
         currency: "JOD",
+        // What the processor will be asked for, when that is not the JOD price.
+        // Null when they match, so the checks below fall back to comparing JOD.
+        chargeAmountMinor: chargeInfo ? chargeInfo.minor : null,
+        chargeCurrency: chargeInfo ? chargeInfo.currency.code : null,
         status: orderStatus,
         paymentProvider: chargeAmount > 0 && paymentService.isEnabled() ? "stripe" : "manual",
         paidAt: chargeAmount <= 0 ? new Date() : null,
@@ -386,8 +430,8 @@ router.post("/orders", orderCreateLimiter, async (req: Request, res: Response) =
       const cancelUrl = `${origin}/checkout?slug=${encodeURIComponent(slug)}&payment=cancelled`;
 
       const result = await paymentService.createCheckoutSession({
-        amount: chargeAmount,
-        currency: "JOD",
+        amount: chargeInfo ? chargeInfo.major : chargeAmount,
+        currency: chargeInfo ? chargeInfo.currency.code : "JOD",
         description: course.titleAr,
         customerEmail: buyerEmail.toLowerCase().trim(),
         successUrl,
@@ -516,10 +560,17 @@ router.post("/webhooks/stripe", async (req: Request, res: Response) => {
     }
 
     if (["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.eventType) && event.paid) {
-      if (event.currency && order.currency && event.currency.toLowerCase() !== order.currency.toLowerCase()) {
+      // Compare against what the order actually asked the processor for. An
+      // order charged in a converted currency records that on the row; one
+      // charged in the price's own currency (and every order older than those
+      // columns) leaves them null and is compared in JOD as before. Getting
+      // this wrong in either direction is severe: too strict rejects a real
+      // payment, too loose accepts a tampered one.
+      const expected = expectedCharge(order);
+      if (event.currency && expected.currency && event.currency.toLowerCase() !== expected.currency.toLowerCase()) {
         throw new Error("webhook_currency_mismatch");
       }
-      if (event.amountTotal != null && order.amount != null && event.amountTotal !== toStripeMinorUnits(order.amount, order.currency ?? "JOD")) {
+      if (event.amountTotal != null && expected.minor != null && event.amountTotal !== expected.minor) {
         throw new Error("webhook_amount_mismatch");
       }
       await markOrderPaid({
@@ -634,13 +685,14 @@ router.post("/orders/verify-session", async (req: Request, res: Response) => {
 
     // Verify the amount Stripe actually charged matches what we recorded
     // for this order (in the same minor-unit convention Stripe uses).
-    if (status.currency && order.currency && status.currency.toLowerCase() !== order.currency.toLowerCase()) {
+    const expected = expectedCharge(order);
+    if (status.currency && expected.currency && status.currency.toLowerCase() !== expected.currency.toLowerCase()) {
       req.log.warn({ orderId, sessionId }, "verify-session: currency mismatch");
       res.status(409).json({ error: "Payment currency does not match order" });
       return;
     }
-    if (status.amountTotal != null && order.amount != null) {
-      const expectedMinor = toStripeMinorUnits(order.amount, order.currency ?? "JOD");
+    if (status.amountTotal != null && expected.minor != null) {
+      const expectedMinor = expected.minor;
       if (status.amountTotal !== expectedMinor) {
         req.log.warn(
           { orderId, sessionId, expectedMinor, actual: status.amountTotal },

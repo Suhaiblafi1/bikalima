@@ -9,13 +9,20 @@ import { User, Mail, Phone, AlertCircle, ArrowRight, Home, BadgePercent, CheckCi
 import { AppShell } from "@/components/app-shell";
 import { useLang } from "@/hooks/useLang";
 import { useFeatureFlag } from "@/hooks/use-feature-flag";
-import { programPageSlugFromCourseSlug, formatMoney } from "@/lib/site-config";
+import { programPageSlugFromCourseSlug, formatMoney, currencyByCode, convertFromJod } from "@/lib/site-config";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 import { apiFetch } from "@/lib/api-fetch";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { track } from "@/lib/analytics";
 
 export default function CheckoutPage() {
   const paymentsEnabled = useFeatureFlag("payments");
+  // Prices are quoted in JOD, but the processor may be billed in another
+  // currency — the account in use cannot accept JOD at all. A buyer must be
+  // told which currency and how much before they hand over a card, not
+  // discover it on their statement.
+  const { data: siteData } = useSiteSettings();
+  const chargeCode = siteData?.paymentCurrency?.code ?? "JOD";
   const [, navigate] = useLocation();
   const { user, isLoading, isAuthenticated } = useAuth();
   const { lang } = useLang();
@@ -506,6 +513,22 @@ export default function CheckoutPage() {
                       </span>
                     ))}
                   </div>
+                  {chargeCode !== "JOD" && coursePrice !== null && (() => {
+                    const target = currencyByCode(chargeCode);
+                    if (!target) return null;
+                    const jod = appliedDiscount?.finalAmount ?? coursePrice;
+                    const charged = convertFromJod(jod, target);
+                    return (
+                      <p
+                        className="text-center text-[11px] font-medium text-foreground"
+                        data-testid="checkout-charge-currency-note"
+                      >
+                        {lang === "ar"
+                          ? `سيُخصم من بطاقتك ${formatMoney(charged, target.decimals)} ${target.code} (ما يعادل ${formatMoney(jod)} د.أ).`
+                          : `Your card will be charged ${formatMoney(charged, target.decimals)} ${target.code} (equivalent to ${formatMoney(jod)} JOD).`}
+                      </p>
+                    );
+                  })()}
                   {/* The refund policy exists in full and was reachable only
                       from the footer. This is the moment a buyer wants it. */}
                   <a

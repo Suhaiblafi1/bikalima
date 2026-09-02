@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { db, siteSettingsTable } from "@workspace/db";
+import { chargeCurrency } from "../integrations/paymentService.js";
 
 const router: IRouter = Router();
 
@@ -28,7 +29,14 @@ router.get("/site-settings", async (req: Request, res: Response) => {
       .limit(1);
 
     res.set("Cache-Control", "public, max-age=60");
-    res.json({ settings: rows[0] ?? null });
+    // The currency a card will actually be billed in. Prices are quoted in the
+    // reader's chosen currency, but the processor may be charged in another —
+    // so checkout has to be able to say which, before anyone pays.
+    const charge = chargeCurrency();
+    res.json({
+      settings: rows[0] ?? null,
+      paymentCurrency: { code: charge.code, symbol: charge.symbol, decimals: charge.decimals },
+    });
   } catch (err) {
     req.log.error({ err }, "Failed to load public site settings");
     res.status(500).json({ error: "Failed to load site settings" });

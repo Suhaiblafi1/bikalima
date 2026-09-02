@@ -22,8 +22,11 @@ function getApiBase(): string {
   return base.replace(/\/$/, "").replace(/\/[^/]+$/, "") + "/api";
 }
 
+/** The currency a card is actually billed in — see the checkout disclosure. */
+export type PaymentCurrency = { code: string; symbol: string; decimals: number };
+
 export function useSiteSettings() {
-  return useQuery<{ settings: PublicSiteSettings | null }>({
+  return useQuery<{ settings: PublicSiteSettings | null; paymentCurrency?: PaymentCurrency }>({
     queryKey: ["public-site-settings"],
     queryFn: async () => {
       const res = await fetch(`${getApiBase()}/site-settings`, { credentials: "same-origin" });

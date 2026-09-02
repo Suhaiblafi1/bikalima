@@ -182,6 +182,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/pricing':
+        specifier: workspace:*
+        version: link:../../lib/pricing
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -239,6 +242,10 @@ importers:
         version: 3.1.0
 
   artifacts/biklima:
+    dependencies:
+      '@workspace/pricing':
+        specifier: workspace:*
+        version: link:../../lib/pricing
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -687,6 +694,8 @@ importers:
       drizzle-kit:
         specifier: ^0.31.9
         version: 0.31.9
+
+  lib/pricing: {}
 
   lib/replit-auth-web:
     dependencies:

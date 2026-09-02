@@ -288,6 +288,15 @@ export const ordersTable = pgTable("orders", {
   discountCodeId: varchar("discount_code_id").references(() => discountCodesTable.id, { onDelete: "set null" }),
   discountCode: varchar("discount_code", { length: 64 }),
   currency: varchar("currency").default("JOD"),
+  // What the processor was actually asked for, when that differs from the
+  // price above. Stripe will not take JOD from a US-registered account, so a
+  // JOD price is converted before it is charged — and the amount check that
+  // guards against a tampered session needs the exact figure, which is why
+  // this is minor units in an integer rather than a rounded major amount.
+  // Null on orders that were charged in the price's own currency, and on every
+  // order that predates this column.
+  chargeAmountMinor: integer("charge_amount_minor"),
+  chargeCurrency: varchar("charge_currency", { length: 3 }),
   status: varchar("status").notNull().default("pending"),
   paymentProvider: varchar("payment_provider", { length: 24 }),
   paymentSessionId: varchar("payment_session_id"),

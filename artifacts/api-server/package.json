@@ -23,7 +23,8 @@
     "pino": "^9",
     "zod": "catalog:",
     "pino-http": "^10",
-    "stripe": "^22.1.0"
+    "stripe": "^22.1.0",
+    "@workspace/pricing": "workspace:*"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
