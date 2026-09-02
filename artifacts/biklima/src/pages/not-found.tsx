@@ -14,7 +14,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col" dir={dir}>
       <SiteHeader />
-      <main className="flex-1 flex items-center justify-center px-4 py-24">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex items-center justify-center px-4 py-24">
         <div className="w-full max-w-xl text-center">
           <p className="font-serif text-8xl md:text-9xl font-bold text-primary/15" aria-hidden="true">404</p>
           <div className="-mt-6 md:-mt-8 relative">

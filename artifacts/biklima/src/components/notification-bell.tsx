@@ -171,7 +171,7 @@ export function NotificationBell() {
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm leading-tight ${isUnread ? "font-bold text-foreground" : "font-medium text-foreground/85"}`}>{title}</p>
                           {body && <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{body}</p>}
-                          <p className="text-[10px] text-muted-foreground/70 mt-1.5">{timeAgo(n.createdAt, isAr)}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1.5">{timeAgo(n.createdAt, isAr)}</p>
                         </div>
                       </div>
                     </button>

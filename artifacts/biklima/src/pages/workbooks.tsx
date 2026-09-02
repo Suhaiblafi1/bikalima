@@ -72,6 +72,8 @@ export default function WorkbooksPage() {
       <SiteHeader />
       <div aria-hidden className="h-16 md:h-20 shrink-0" />
       <Breadcrumb items={[{ label: lang === "ar" ? "الكراسات" : "Workbooks" }]} />
+      {/* The skip link targets this; the page had no main landmark at all. */}
+      <main id="main-content" tabIndex={-1}>
 
       {/* ── WORKBOOKS STORE (products first on mobile) ── */}
       <section className="py-10 md:py-16 bg-background">
@@ -236,6 +238,7 @@ export default function WorkbooksPage() {
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
 

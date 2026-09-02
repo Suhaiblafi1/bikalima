@@ -308,7 +308,13 @@ function App() {
             <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[200] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white">تجاوز إلى المحتوى</a>
             <OfflineBanner />
             <ScrollToTop />
-            <div id="main-content" tabIndex={-1}><AppRouter /></div>
+            {/* The skip link's target is the page's own <main>, not this
+                wrapper: this element contains the header too, so focusing it
+                left the next Tab landing on the site logo and walking through
+                every header control — exactly what the link exists to avoid.
+                Each page carries id="main-content" on its <main> instead, and
+                only one <main> is mounted at a time. */}
+            <AppRouter />
             <LiveChatGate />
             <MobileStickyCta />
             <AnalyticsConsentBanner />

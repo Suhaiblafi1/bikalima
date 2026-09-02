@@ -56,7 +56,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { T, type Lang } from "../translations";
 import { programs, testimonials as testimonialsData, getLocalizedProgram, RECORDED_PRICES, EVENT_COUNTRIES } from "../programsData";
-import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, type VideoCategory } from "../galleryData";
+import { galleryPhotos, speechPhotos, allPhotos, videoLibrary, photoName, photoOpenLabel, type VideoCategory } from "../galleryData";
 import { useAuth } from "@workspace/replit-auth-web";
 import { useLang } from "@/hooks/useLang";
 import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
@@ -403,7 +403,7 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground font-sans overflow-x-hidden relative" dir={dir}>
       <SiteHeader />
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         {/* ── HERO ── */}
         <HeroQuoteTicker
           total={t.hero.imageQuotes.length}
@@ -637,10 +637,10 @@ export default function Home() {
                   <div className="bg-card px-6 py-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1 flex-1 min-w-[200px]">{coreProgram.hook}</p>
                     <div className="flex flex-wrap gap-2 shrink-0">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
+                      <Button variant="outline" size="sm" className="rounded-full" aria-label={`${t.structure.viewDetails}: ${coreProgram.shortTitle}`} onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick("core", "structure_core_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS.core}`); }} data-testid="link-program-page-core">
                         {t.structure.viewDetails}
                       </Button>
-                      <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`); }}>
+                      <Button size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90" aria-label={`${t.structure.enrollNow}: ${coreProgram.shortTitle}`} onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS.core}`); }}>
                         {t.structure.enrollNow}
                       </Button>
                     </div>
@@ -696,11 +696,11 @@ export default function Home() {
                         <CardContent className="p-4 md:p-5 flex flex-col flex-1">
                           <p className="hidden text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2 flex-1 md:block">{program.hook}</p>
                           <div className="flex gap-2 mb-2">
-                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
+                            <Button variant="outline" size="sm" className="flex-1 rounded-full text-primary border-primary/30 hover:bg-primary hover:text-white" aria-label={`${t.structure.viewDetails}: ${program.shortTitle}`} onClick={(e) => { e.stopPropagation(); trackProgramDetailsClick(program.id, "structure_branch_button"); navigate(`/programs/${PROGRAM_PAGE_SLUGS[program.id]}`); }} data-testid={`link-program-page-${program.id}`}>
                               {t.structure.viewDetails}
                             </Button>
                             {program.id !== "children" && (
-                              <Button size="sm" className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS[program.id]}`); }}>
+                              <Button size="sm" className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90" aria-label={`${t.structure.enrollNow}: ${program.shortTitle}`} onClick={(e) => { e.stopPropagation(); navigate(`/checkout?slug=${PROGRAM_SLUGS[program.id]}`); }}>
                                 {t.structure.enrollNow}
                               </Button>
                             )}
@@ -876,20 +876,28 @@ export default function Home() {
             </div>
             <div className="-mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3 md:gap-4">
               {(galleryTab === "cohorts" ? galleryPhotos : speechPhotos).slice(0, 6).map((photo, i) => (
-                <motion.div
+                <motion.button
                   key={i}
+                  type="button"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: (i % 3) * 0.05, duration: 0.4 }}
-                  className="relative min-w-[72vw] snap-center group cursor-pointer overflow-hidden rounded-xl sm:min-w-0"
+                  className="relative block w-full min-w-[72vw] snap-center group cursor-pointer overflow-hidden rounded-xl text-start sm:min-w-0"
+                  aria-label={photoOpenLabel(
+                    photo,
+                    (galleryTab === "speeches" ? galleryPhotos.length : 0) + i,
+                    allPhotos.length,
+                    lang,
+                  )}
                   onClick={() => {
                     const offset = galleryTab === "speeches" ? galleryPhotos.length : 0;
                     setLightboxIndex(offset + i);
                     setLightboxOpen(true);
                   }}
                 >
-                  <img src={photo.src} alt={photo.country[lang as keyof typeof photo.country] || photo.country.en} className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:aspect-auto" loading="lazy" />
+                  {/* The button carries the name, so the image must not repeat it. */}
+                  <img src={photo.src} alt="" className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105 sm:aspect-auto" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   <div className="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
@@ -904,7 +912,7 @@ export default function Home() {
                       </span>
                     </div>
                   )}
-                </motion.div>
+                </motion.button>
               ))}
             </div>
             <div className="mt-7 flex justify-center">
@@ -973,10 +981,21 @@ export default function Home() {
                     >
                       <div className="relative aspect-video overflow-hidden">
                         <img src={thumbUrl} alt={title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        {/* The play affordance is the real control, not the card.
+                            The card keeps its onClick for pointers, but wrapping
+                            the whole card in a button would pull the <h3> below
+                            out of the heading outline — a loss for anyone who
+                            navigates by headings. This way the heading stays a
+                            heading and there is still a labelled tab stop. */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent flex items-center justify-center">
-                          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <button
+                            type="button"
+                            aria-label={`${lang === "ar" ? "شاهد" : "Watch"}: ${title}`}
+                            onClick={(e) => { e.stopPropagation(); setVideoModalId(video.youtubeId); }}
+                            className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300"
+                          >
                             <PlayCircle className="w-8 h-8 text-primary fill-primary" />
-                          </div>
+                          </button>
                         </div>
                         {isSuhaib && (
                           <div className="absolute top-3 start-3">
@@ -1285,7 +1304,11 @@ export default function Home() {
                       exit={{ opacity: 0, scale: 0.96 }}
                       transition={{ duration: 0.2 }}
                       src={allPhotos[lightboxIndex]?.src}
-                      alt=""
+                      alt={
+                        allPhotos[lightboxIndex]
+                          ? photoName(allPhotos[lightboxIndex], lightboxIndex, allPhotos.length, lang)
+                          : ""
+                      }
                       className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl"
                       onClick={(e) => e.stopPropagation()}
                     />

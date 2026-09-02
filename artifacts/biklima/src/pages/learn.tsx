@@ -779,7 +779,7 @@ export default function LearnPage() {
                   <p className="text-sm font-semibold text-foreground truncate">{sectionTitle(group)}</p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs text-muted-foreground">{sectionDone}/{group.lessons.length} {lang === "ar" ? "درس" : "lessons"}</span>
-                    {(() => { const dur = group.lessons.reduce((s, l) => s + (l.durationMinutes ?? 0), 0); return dur > 0 ? <span className="text-xs text-muted-foreground/70 flex items-center gap-0.5"><Clock className="w-3 h-3" />{dur} {t.min}</span> : null; })()}
+                    {(() => { const dur = group.lessons.reduce((s, l) => s + (l.durationMinutes ?? 0), 0); return dur > 0 ? <span className="text-xs text-muted-foreground flex items-center gap-0.5"><Clock className="w-3 h-3" />{dur} {t.min}</span> : null; })()}
                   </div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ms-2 ${isOpen ? "rotate-180" : ""}`} />
@@ -803,21 +803,21 @@ export default function LearnPage() {
                         >
                           <span className="shrink-0 mt-0.5">
                             {isLessonLocked
-                              ? <Lock className="w-4 h-4 text-muted-foreground/50" />
+                              ? <Lock className="w-4 h-4 text-muted-foreground" />
                               : isDone
                                 ? <CheckCircle className="w-4 h-4 text-green-500" />
                                 : isCurrent
                                   ? <Play className="w-4 h-4 text-primary" />
-                                  : <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/40" />
+                                  : <div className="w-4 h-4 rounded-full border-2 border-muted-foreground" />
                             }
                           </span>
                           <div className="min-w-0 flex-1">
-                            <p className={`text-xs leading-snug ${isCurrent ? "text-primary font-semibold" : isDone ? "text-muted-foreground" : isLessonLocked ? "text-muted-foreground/60" : "text-foreground"}`}>
+                            <p className={`text-xs leading-snug ${isCurrent ? "text-primary font-semibold" : isDone ? "text-muted-foreground" : isLessonLocked ? "text-muted-foreground" : "text-foreground"}`}>
                               {lessonTitle(lesson)}
                             </p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               {lesson.durationMinutes && (
-                                <span className="text-xs text-muted-foreground/70 flex items-center gap-0.5">
+                                <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                                   <Clock className="w-3 h-3" />{lesson.durationMinutes} {t.min}
                                 </span>
                               )}

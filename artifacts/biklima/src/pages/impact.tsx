@@ -205,6 +205,8 @@ export default function ImpactPage() {
       <SiteHeader />
       <div aria-hidden className="h-16 md:h-20 shrink-0" />
       <Breadcrumb items={[{ label: lang === "ar" ? "الأثر" : "Impact" }]} />
+      {/* The skip link targets this; the page had no main landmark at all. */}
+      <main id="main-content" tabIndex={-1}>
 
       {/* HERO */}
       <div className="py-16 bg-gradient-to-b from-primary/5 to-background text-center border-b border-border">
@@ -373,6 +375,7 @@ export default function ImpactPage() {
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
     </div>

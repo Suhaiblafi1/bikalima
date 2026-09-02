@@ -57,7 +57,7 @@ export function AppShell({
       {isPlatformRoute ? <PlatformHeader /> : <SiteHeader />}
       {!isPlatformRoute && <div aria-hidden className="h-16 md:h-20 shrink-0" />}
       {breadcrumb && breadcrumb.length > 0 && <Breadcrumb items={breadcrumb} />}
-      <main className={`flex-1 ${containerClassName}`}>{children}</main>
+      <main id="main-content" tabIndex={-1} className={`flex-1 ${containerClassName}`}>{children}</main>
       {!hideFooter && !isPlatformRoute && <SiteFooter />}
     </div>
   );

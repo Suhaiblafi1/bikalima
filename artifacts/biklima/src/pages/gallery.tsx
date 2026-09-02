@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { T } from "../translations";
 import { useLang } from "../hooks/useLang";
-import { galleryPhotos, speechPhotos } from "../galleryData";
+import { galleryPhotos, speechPhotos, photoName, photoOpenLabel } from "../galleryData";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Breadcrumb } from "@/components/breadcrumb";
@@ -43,6 +43,8 @@ export default function GalleryPage() {
       <SiteHeader />
       <div aria-hidden className="h-16 md:h-20 shrink-0" />
       <Breadcrumb items={[{ label: lang === "ar" ? "المعرض" : "Gallery" }]} />
+      {/* The skip link targets this; the page had no main landmark at all. */}
+      <main id="main-content" tabIndex={-1}>
 
       {/* ── PAGE HERO ── */}
       <div className="py-16 bg-gradient-to-b from-primary/5 to-background text-center border-b border-border">
@@ -81,16 +83,19 @@ export default function GalleryPage() {
           {galleryTab === "cohorts" && (
             <div className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
               {galleryPhotos.slice(0, photoLimit).map((photo, i) => (
-                <motion.div
+                <motion.button
                   key={i}
+                  type="button"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: (i % 4) * 0.06, duration: 0.4 }}
-                  className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                  className="break-inside-avoid mb-3 md:mb-4 relative group block w-full cursor-pointer overflow-hidden rounded-xl text-start"
+                  aria-label={photoOpenLabel(photo, i, galleryPhotos.length, lang)}
                   onClick={() => { setLightboxSource("cohorts"); setLightboxIndex(i); setLightboxOpen(true); }}
                 >
-                  <img src={photo.src} alt={photo.country.en} className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  {/* The button carries the name, so the image must not repeat it. */}
+                  <img src={photo.src} alt="" className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
@@ -105,7 +110,7 @@ export default function GalleryPage() {
                       </span>
                     </div>
                   )}
-                </motion.div>
+                </motion.button>
               ))}
             </div>
           )}
@@ -113,16 +118,19 @@ export default function GalleryPage() {
           {galleryTab === "speeches" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4">
               {speechPhotos.slice(0, photoLimit).map((photo, i) => (
-                <motion.div
+                <motion.button
                   key={i}
+                  type="button"
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: (i % 4) * 0.06, duration: 0.4 }}
-                  className="break-inside-avoid mb-3 md:mb-4 relative group cursor-pointer overflow-hidden rounded-xl"
+                  className="break-inside-avoid mb-3 md:mb-4 relative group block w-full cursor-pointer overflow-hidden rounded-xl text-start"
+                  aria-label={photoOpenLabel(photo, i, speechPhotos.length, lang)}
                   onClick={() => { setLightboxSource("speeches"); setLightboxIndex(i); setLightboxOpen(true); }}
                 >
-                  <img src={photo.src} alt={photo.country.en} className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  {/* The button carries the name, so the image must not repeat it. */}
+                  <img src={photo.src} alt="" className="w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="absolute top-3 end-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
@@ -137,7 +145,7 @@ export default function GalleryPage() {
                       </span>
                     </div>
                   )}
-                </motion.div>
+                </motion.button>
               ))}
             </motion.div>
           )}
@@ -157,6 +165,7 @@ export default function GalleryPage() {
 
       {/* The same curated data powers the dedicated /library page. */}
       <VideoLibrarySection initialLimit={3} className="py-12 md:py-16 bg-background" />
+      </main>
 
       <SiteFooter />
 
@@ -187,7 +196,11 @@ export default function GalleryPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.25 }}
               src={activePhotos[lightboxIndex]?.src}
-              alt=""
+              alt={
+                activePhotos[lightboxIndex]
+                  ? photoName(activePhotos[lightboxIndex], lightboxIndex, activePhotos.length, lang)
+                  : ""
+              }
               className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl"
               onClick={(e) => e.stopPropagation()}
             />

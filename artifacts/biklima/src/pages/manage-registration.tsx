@@ -65,7 +65,7 @@ export default function ManageRegistrationPage() {
     } finally { setSaving(false); }
   };
 
-  return <div className="min-h-screen flex flex-col bg-background" dir={dir}><SiteHeader /><main className="flex-1 container mx-auto max-w-2xl px-4 py-24">
+  return <div className="min-h-screen flex flex-col bg-background" dir={dir}><SiteHeader /><main id="main-content" tabIndex={-1} className="flex-1 container mx-auto max-w-2xl px-4 py-24">
     {loading ? <div className="py-20 flex justify-center" aria-label={isAr ? "جارٍ التحميل" : "Loading"}><Loader2 className="w-8 h-8 animate-spin text-primary" /></div> : error && !registration ? <Card><CardContent className="p-10 text-center"><XCircle className="w-12 h-12 text-destructive mx-auto mb-4" /><p className="font-semibold">{error}</p><Button className="mt-6" onClick={() => navigate("/")}>{isAr ? "الصفحة الرئيسية" : "Home"}</Button></CardContent></Card> : registration && <Card><CardContent className="p-6 space-y-5">
       <div><h1 className="text-2xl font-bold">{isAr ? "إدارة تسجيلك" : "Manage your registration"}</h1><p className="text-muted-foreground mt-1">{isAr ? registration.eventTitleAr : registration.eventTitleEn}</p></div>
       <div className="rounded-xl bg-muted/50 p-4 text-sm"><p>{new Date(registration.startsAt).toLocaleString(isAr ? "ar-JO" : "en-GB", { dateStyle: "full", timeStyle: "short" })}</p><p>{isAr ? registration.locationAr : registration.locationEn}</p><p className="mt-2 font-semibold">{isAr ? "الحالة:" : "Status:"} {registration.status}</p></div>

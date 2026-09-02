@@ -334,3 +334,42 @@ export const videoLibrary: VideoEntry[] = [
     },
   },
 ];
+
+/**
+ * What to call a photograph, for people who cannot see it.
+ *
+ * Only 13 of the 39 gallery photographs carry a country; the rest have an
+ * empty one. So there is no caption to reuse — a name has to be built. With a
+ * country we use it, and without one we fall back to the photograph's position,
+ * which at least distinguishes it from its neighbours and tells a screen-reader
+ * user how far through the grid they are.
+ *
+ * Used for both the thumbnail button's accessible name and the enlarged
+ * image's alt, so the two always agree about what the reader is looking at.
+ */
+export function photoName(
+  photo: GalleryPhoto,
+  index: number,
+  total: number,
+  lang: string,
+): string {
+  const country =
+    photo.country[lang as keyof typeof photo.country] || photo.country.en;
+  if (country) return country;
+  if (lang === "en") return `Photo ${index + 1} of ${total}`;
+  if (lang === "fr") return `Photo ${index + 1} sur ${total}`;
+  return `صورة ${index + 1} من ${total}`;
+}
+
+/** The thumbnail button's label — says what activating it does, not just what it shows. */
+export function photoOpenLabel(
+  photo: GalleryPhoto,
+  index: number,
+  total: number,
+  lang: string,
+): string {
+  const name = photoName(photo, index, total, lang);
+  if (lang === "en") return `Enlarge: ${name}`;
+  if (lang === "fr") return `Agrandir : ${name}`;
+  return `تكبير: ${name}`;
+}
