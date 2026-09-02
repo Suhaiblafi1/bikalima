@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { ShieldCheck, Search, AlertCircle, CheckCircle2, MessageCircle, ExternalLink } from "lucide-react";
+import { AR_LOCALE } from "@/lib/locale";
 
 type PublicCert = {
   code: string;
@@ -53,7 +54,7 @@ function getApiBase(): string {
 
 function formatDate(s: string | null): string {
   if (!s) return "—";
-  try { return new Date(s).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" }); }
+  try { return new Date(s).toLocaleDateString(AR_LOCALE, { year: "numeric", month: "long", day: "numeric" }); }
   catch { return s; }
 }
 

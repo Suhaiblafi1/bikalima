@@ -4,6 +4,7 @@ import { ToggleRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch } from "./_shared";
 import { refreshFeatureFlags } from "@/hooks/use-feature-flag";
+import { AR_LOCALE } from "@/lib/locale";
 
 type FeatureFlag = {
   key: string;
@@ -17,7 +18,7 @@ type FeatureFlag = {
 
 function formatUpdated(iso: string): string {
   try {
-    return new Date(iso).toLocaleString("ar-EG", {
+    return new Date(iso).toLocaleString(AR_LOCALE, {
       year: "numeric", month: "2-digit", day: "2-digit",
       hour: "2-digit", minute: "2-digit",
     });

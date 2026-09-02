@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useApiFetch } from "@/pages/admin/_shared";
 import { StickyNote, Trash2, Loader2 } from "lucide-react";
+import { AR_LOCALE } from "@/lib/locale";
 
 type NoteRow = {
   id: string;
@@ -104,7 +105,7 @@ export function TrainerNotesPanel({
               <div className="flex-1 whitespace-pre-wrap leading-relaxed">{n.note}</div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span className="text-[10px] text-muted-foreground">
-                  {new Date(n.updatedAt).toLocaleDateString("ar-EG")}
+                  {new Date(n.updatedAt).toLocaleDateString(AR_LOCALE)}
                 </span>
                 {(!currentTrainerId || n.trainerId === currentTrainerId) && (
                   <button

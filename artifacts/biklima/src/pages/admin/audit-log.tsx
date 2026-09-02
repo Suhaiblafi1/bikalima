@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronDown, ChevronRight, ScrollText, RotateCw } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 type AuditEntry = {
   id: string;
@@ -30,7 +31,7 @@ const PAGE_SIZE = 50;
 
 function formatDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleString("ar-EG", {
+    return new Date(iso).toLocaleString(AR_LOCALE, {
       year: "numeric", month: "2-digit", day: "2-digit",
       hour: "2-digit", minute: "2-digit",
     });
@@ -108,7 +109,7 @@ export default function AdminAuditLogPage() {
             <ScrollText className="w-5 h-5 text-primary" />
             <h1 className="font-bold text-lg">سجل العمليات</h1>
             <span className="text-xs text-muted-foreground ms-2">
-              {total.toLocaleString("ar-EG")} سجل
+              {total.toLocaleString(AR_LOCALE)} سجل
             </span>
             <Button
               size="sm"
@@ -243,7 +244,7 @@ export default function AdminAuditLogPage() {
 
           <div className="flex items-center justify-between gap-2 pt-2">
             <p className="text-xs text-muted-foreground">
-              صفحة {currentPage.toLocaleString("ar-EG")} من {totalPages.toLocaleString("ar-EG")}
+              صفحة {currentPage.toLocaleString(AR_LOCALE)} من {totalPages.toLocaleString(AR_LOCALE)}
             </p>
             <div className="flex items-center gap-2">
               <Button

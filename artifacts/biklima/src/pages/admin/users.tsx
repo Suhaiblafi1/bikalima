@@ -7,6 +7,7 @@ import { AdminLayout } from "./_layout";
 import { useApiFetch, ROLE_LABELS_AR, type UserRecord } from "./_shared";
 import { useMe, type Role } from "@/hooks/use-me";
 import { toast } from "@/hooks/use-toast";
+import { AR_LOCALE } from "@/lib/locale";
 
 export default function AdminUsersPage() {
   const apiFetch = useApiFetch();
@@ -121,7 +122,7 @@ export default function AdminUsersPage() {
                       <h2 className="font-bold">{u.firstName || u.lastName ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "بلا اسم"}</h2>
                       <p className="mt-1 truncate text-sm text-muted-foreground" dir="ltr">{u.email}</p>
                     </div>
-                    <span className="shrink-0 text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString("ar-SA")}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString(AR_LOCALE)}</span>
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
                     {u.isSuperAdmin ? (
@@ -179,7 +180,7 @@ export default function AdminUsersPage() {
                       </select>
                     )}
                   </td>
-                  <td className="py-2 px-3 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString("ar-SA")}</td>
+                  <td className="py-2 px-3 text-muted-foreground text-xs">{new Date(u.createdAt).toLocaleDateString(AR_LOCALE)}</td>
                   <td className="py-2 px-3 text-end">
                     {editingId === u.id ? (
                       <>

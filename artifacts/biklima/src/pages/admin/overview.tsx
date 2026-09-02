@@ -11,6 +11,7 @@ import {
   useApiFetch, RevenueTab, leadStatusLabel, leadStatusColor, LEAD_SOURCE_LABELS,
   type RevenueData, type AdminActivityRecord, type TopProgramRecord,
 } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 type Growth = {
   totals: { leads: number; consultations: number; speechEvaluations: number; workbookOrders: number; enrollments: number; openChats: number };
@@ -168,7 +169,7 @@ export default function AdminOverviewPage() {
                       <li key={a.id} className="text-[11px] border-b last:border-0 pb-1 cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded"
                         onClick={() => navigate(`/admin/leads/${a.leadId}`)}>
                         <p className="truncate">{a.summaryAr ?? a.type}</p>
-                        <p className="text-[9px] text-muted-foreground">{new Date(a.createdAt).toLocaleString("ar", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</p>
+                        <p className="text-[9px] text-muted-foreground">{new Date(a.createdAt).toLocaleString(AR_LOCALE, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</p>
                       </li>
                     ))}
                   </ul>

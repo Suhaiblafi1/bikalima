@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Download, Search, ShoppingCart } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, StatusBadge, ORDER_STATUS_OPTIONS, type OrderRecord } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 export default function AdminWorkbookOrdersPage() {
   const apiFetch = useApiFetch();
@@ -48,7 +49,7 @@ export default function AdminWorkbookOrdersPage() {
         order.quantity,
         order.totalPrice,
         order.status,
-        new Date(order.createdAt).toLocaleDateString("ar-JO"),
+        new Date(order.createdAt).toLocaleDateString(AR_LOCALE),
       ]),
     ];
     const blob = new Blob([`\uFEFF${rows.map((row) => row.map(escape).join(",")).join("\n")}`], { type: "text/csv;charset=utf-8" });
@@ -115,7 +116,7 @@ export default function AdminWorkbookOrdersPage() {
                 <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">الكراسة</dt><dd className="mt-1 truncate font-bold">{order.workbookId}</dd></div>
                 <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">الطلب</dt><dd className="mt-1 font-bold">{order.format === "pdf" ? "رقمية" : "مطبوعة"} × {order.quantity}</dd></div>
                 <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">المجموع</dt><dd className="mt-1 font-bold text-primary">{order.totalPrice} JOD</dd></div>
-                <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">التاريخ</dt><dd className="mt-1 font-bold">{new Date(order.createdAt).toLocaleDateString("ar-SA")}</dd></div>
+                <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">التاريخ</dt><dd className="mt-1 font-bold">{new Date(order.createdAt).toLocaleDateString(AR_LOCALE)}</dd></div>
               </dl>
               <label className="mt-4 block text-xs font-bold" htmlFor={`workbook-order-status-${order.id}`}>تحديث حالة الطلب</label>
               <select
@@ -152,7 +153,7 @@ export default function AdminWorkbookOrdersPage() {
                   <td className="py-2 px-3">{o.quantity}</td>
                   <td className="py-2 px-3 font-bold">{o.totalPrice} JOD</td>
                   <td className="py-2 px-3"><StatusBadge status={o.status} /></td>
-                  <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString("ar-SA")}</td>
+                  <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString(AR_LOCALE)}</td>
                   <td className="py-2 px-3 text-end">
                     <select
                       value={o.status}

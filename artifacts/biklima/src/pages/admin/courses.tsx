@@ -15,6 +15,7 @@ import {
 } from "./_shared";
 import { useMe } from "@/hooks/use-me";
 import { toast } from "@/hooks/use-toast";
+import { AR_LOCALE } from "@/lib/locale";
 
 type SubTab = "courses" | "instructors" | "trainers";
 
@@ -750,7 +751,7 @@ export default function AdminCoursesPage() {
                       <tr key={t.id} className="border-b border-border/30">
                         <td className="py-2 px-3 font-medium">{`${t.firstName || ""} ${t.lastName || ""}`.trim() || "—"}</td>
                         <td className="py-2 px-3 text-muted-foreground" dir="ltr">{t.email}</td>
-                        <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(t.assignedAt).toLocaleDateString("ar-SA")}</td>
+                        <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(t.assignedAt).toLocaleDateString(AR_LOCALE)}</td>
                         <td className="py-2 px-3 text-end">
                           <Button variant="ghost" size="sm" onClick={() => removeTrainer(trainerAssignCourseId, t.userId)} className="h-7 w-7 p-0 text-destructive">
                             <Trash2 className="w-3.5 h-3.5" />

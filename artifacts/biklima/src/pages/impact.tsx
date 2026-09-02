@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { getApiBase } from "@/pages/admin/_shared";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { T } from "@/translations";
-import { PUBLISHED_FIGURES, formatFigure } from "@/publishedFigures";
+import { PUBLISHED_FIGURES, formatFigure, formatFigureText } from "@/publishedFigures";
 
 type ImpactStat = {
   key: string;
@@ -249,7 +249,7 @@ export default function ImpactPage() {
                     {KEY_ICON[s.key] ?? <Sparkles className="w-7 h-7" />}
                   </div>
                   <div className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-none mb-2 tabular-nums" data-testid={`impact-stat-value-${s.key}`}>
-                    {s.value || "—"}
+                    {s.value ? formatFigureText(s.value, lang) : "—"}
                   </div>
                   <p className="text-xs sm:text-sm text-white/85 leading-snug font-medium">
                     {lang === "ar" ? s.labelAr : (s.labelEn || s.labelAr)}

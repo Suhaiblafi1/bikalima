@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Star, Trash2, Search, MessageSquare } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, type ReviewRecord } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 function StarRow({ count }: { count: number }) {
   return (
@@ -162,7 +163,7 @@ export default function AdminReviewsPage() {
                       <p className="text-xs text-muted-foreground mt-1">
                         {r.courseTitleAr || r.courseTitleEn || "—"}
                         <span className="mx-2">·</span>
-                        {new Date(r.createdAt).toLocaleDateString("ar-SA")}
+                        {new Date(r.createdAt).toLocaleDateString(AR_LOCALE)}
                       </p>
                     </div>
                     <Button

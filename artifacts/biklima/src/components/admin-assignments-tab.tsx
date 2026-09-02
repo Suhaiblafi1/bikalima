@@ -19,6 +19,7 @@ import {
   Video,
   FileText,
 } from "lucide-react";
+import { AR_LOCALE } from "@/lib/locale";
 
 type ApiFetch = (path: string, opts?: RequestInit) => Promise<Response>;
 
@@ -90,7 +91,7 @@ function blankForm() {
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("ar-SA");
+    return new Date(iso).toLocaleDateString(AR_LOCALE);
   } catch {
     return iso;
   }

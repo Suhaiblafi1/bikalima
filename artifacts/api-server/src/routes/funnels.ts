@@ -109,39 +109,98 @@ async function seedDefaults() {
   seeded = true;
 }
 
-async function countStep(step: FunnelStep, sourceFilter: string | null): Promise<number> {
-  if (step.kind === "lead_source") {
-    const [row] = await db
-      .select({ c: sql<number>`count(*)::int` })
+
+/**
+ * Every count a funnel list needs, in four queries instead of one per step.
+ *
+ * The old shape asked the database once per step of every funnel — parallel,
+ * but still funnels × steps round trips to a database with no persistent
+ * server in front of it. There are only four kinds of step, so four grouped
+ * queries answer all of them however many funnels exist.
+ *
+ * lead_status is the one that needs care: its count is scoped by each funnel's
+ * own sourceFilter, so the grouping keeps source and status together and the
+ * per-funnel total is summed from that, rather than grouping by status alone
+ * and losing the ability to filter.
+ */
+type FunnelCounts = {
+  leadSource: Map<string, number>;
+  /** `${source}\u0000${status}` → count, so a funnel can sum its own source. */
+  sourceStatus: Map<string, number>;
+  statusTotal: Map<string, number>;
+  activityType: Map<string, number>;
+  conversions: number;
+};
+
+async function loadFunnelCounts(): Promise<FunnelCounts> {
+  const [sources, sourceStatuses, activities, conversion] = await Promise.all([
+    db
+      .select({ source: leadsTable.source, c: sql<number>`count(*)::int` })
       .from(leadsTable)
-      .where(eq(leadsTable.source, step.value));
-    return row?.c ?? 0;
-  }
-  if (step.kind === "lead_status") {
-    const where = sourceFilter
-      ? and(eq(leadsTable.status, step.value), eq(leadsTable.source, sourceFilter))
-      : eq(leadsTable.status, step.value);
-    const [row] = await db
-      .select({ c: sql<number>`count(distinct ${leadsTable.id})::int` })
+      .groupBy(leadsTable.source),
+    db
+      .select({
+        source: leadsTable.source,
+        status: leadsTable.status,
+        c: sql<number>`count(distinct ${leadsTable.id})::int`,
+      })
       .from(leadsTable)
-      .where(where);
-    return row?.c ?? 0;
-  }
-  if (step.kind === "activity_type") {
-    const [row] = await db
-      .select({ c: sql<number>`count(distinct ${leadActivitiesTable.leadId})::int` })
+      .groupBy(leadsTable.source, leadsTable.status),
+    db
+      .select({
+        type: leadActivitiesTable.type,
+        c: sql<number>`count(distinct ${leadActivitiesTable.leadId})::int`,
+      })
       .from(leadActivitiesTable)
-      .where(eq(leadActivitiesTable.type, step.value));
-    return row?.c ?? 0;
-  }
-  if (step.kind === "conversion") {
-    const [row] = await db
+      .groupBy(leadActivitiesTable.type),
+    db
       .select({ c: sql<number>`count(*)::int` })
       .from(leadsTable)
-      .where(sql`${leadsTable.convertedAt} is not null`);
-    return row?.c ?? 0;
+      .where(sql`${leadsTable.convertedAt} is not null`),
+  ]);
+
+  const leadSource = new Map<string, number>();
+  for (const r of sources) leadSource.set(String(r.source), r.c);
+
+  const sourceStatus = new Map<string, number>();
+  const statusTotal = new Map<string, number>();
+  for (const r of sourceStatuses) {
+    const status = String(r.status);
+    sourceStatus.set(`${String(r.source)}\u0000${status}`, r.c);
+    statusTotal.set(status, (statusTotal.get(status) ?? 0) + r.c);
   }
-  return 0;
+
+  const activityType = new Map<string, number>();
+  for (const r of activities) activityType.set(String(r.type), r.c);
+
+  return {
+    leadSource,
+    sourceStatus,
+    statusTotal,
+    activityType,
+    conversions: conversion[0]?.c ?? 0,
+  };
+}
+
+function countStepFrom(
+  step: FunnelStep,
+  sourceFilter: string | null,
+  counts: FunnelCounts,
+): number {
+  switch (step.kind) {
+    case "lead_source":
+      return counts.leadSource.get(step.value) ?? 0;
+    case "lead_status":
+      return sourceFilter
+        ? counts.sourceStatus.get(`${sourceFilter}\u0000${step.value}`) ?? 0
+        : counts.statusTotal.get(step.value) ?? 0;
+    case "activity_type":
+      return counts.activityType.get(step.value) ?? 0;
+    case "conversion":
+      return counts.conversions;
+    default:
+      return 0;
+  }
 }
 
 router.get("/admin/funnels", async (req: Request, res: Response) => {
@@ -153,17 +212,20 @@ router.get("/admin/funnels", async (req: Request, res: Response) => {
       .from(funnelsTable)
       .orderBy(desc(funnelsTable.isActive), desc(funnelsTable.createdAt));
 
-    const enriched = await Promise.all(
-      rows.map(async (f) => {
+    const counts = await loadFunnelCounts();
+    const enriched = rows.map((f) => {
+      {
         const steps = (f.steps ?? []) as unknown as FunnelStep[];
-        const counts = await Promise.all(steps.map((s) => countStep(s, f.sourceFilter)));
-        const stepsWithCounts = steps.map((s, i) => ({ ...s, count: counts[i] ?? 0 }));
+        const stepsWithCounts = steps.map((s) => ({
+          ...s,
+          count: countStepFrom(s, f.sourceFilter, counts),
+        }));
         const top = stepsWithCounts[0]?.count ?? 0;
         const bottom = stepsWithCounts[stepsWithCounts.length - 1]?.count ?? 0;
         const conversionRate = top > 0 ? Math.round((bottom / top) * 1000) / 10 : 0;
         return { ...f, steps: stepsWithCounts, conversionRate };
-      }),
-    );
+      }
+    });
 
     res.set("Cache-Control", "no-store");
     res.json({ funnels: enriched });

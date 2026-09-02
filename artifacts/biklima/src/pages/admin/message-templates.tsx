@@ -149,7 +149,7 @@ function TemplateModal({ initial, onClose, onSaved }: { initial: Template | null
       <div className="bg-card rounded-2xl p-5 w-full max-w-2xl space-y-3 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold">{initial ? "تعديل القالب" : "قالب جديد"}</h2>
-          <button onClick={onClose}><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="إغلاق"><X className="w-4 h-4" aria-hidden /></button>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Input value={titleAr} onChange={(e) => setTitleAr(e.target.value)} placeholder="عنوان القالب *" className="h-9" />
@@ -197,7 +197,7 @@ function PreviewModal({ template, onClose }: { template: Template; onClose: () =
       <div className="bg-card rounded-2xl p-5 w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold">معاينة: {template.titleAr}</h2>
-          <button onClick={onClose}><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="إغلاق"><X className="w-4 h-4" aria-hidden /></button>
         </div>
         {placeholders.length > 0 && (
           <div className="space-y-1.5">

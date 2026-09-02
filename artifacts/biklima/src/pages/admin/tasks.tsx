@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ListTodo, Plus, X, ExternalLink, Trash2 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch, leadStatusLabel, leadStatusColor } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 type TaskRow = {
   id: string; title: string; description: string | null;
@@ -36,7 +37,7 @@ const PRIORITY_LABELS: Record<string, string> = {
 function fmt(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString("ar", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(AR_LOCALE, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 function isOverdue(iso: string | null, status: string) {
   return iso && status !== "done" && new Date(iso).getTime() < Date.now();
@@ -258,7 +259,7 @@ function NewTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       <div className="bg-card rounded-2xl p-5 w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold">مهمة جديدة</h2>
-          <button onClick={onClose}><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="إغلاق"><X className="w-4 h-4" aria-hidden /></button>
         </div>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان المهمة *" className="h-9" />
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="تفاصيل (اختياري)"

@@ -1,3 +1,24 @@
+/*
+ * One stylesheet for the whole site, on purpose — reviewed, not overlooked.
+ *
+ * Tailwind 4's scan covers the src tree, so the sheet an anonymous visitor
+ * downloads also carries the utilities used only by admin screens they will
+ * never open. Measured on the production build: 237KB raw, 33KB gzipped, and
+ * it blocks the first paint.
+ *
+ * Splitting it per route was considered and rejected at this size. A SPA with
+ * one entry stylesheet has no natural seam for that — it would mean separate
+ * CSS entry points wired per route bundle — and 33KB of compressed CSS, cached
+ * after the first visit, does not pay for that machinery. Worth revisiting if
+ * the sheet grows materially or CSS ever shows up in a real page-speed
+ * measurement; the number above is the baseline to compare against.
+ *
+ * On animation: framer-motion is imported eagerly by the home page for what
+ * are, in almost every case, opacity and translate fades. New decorative
+ * motion should use a CSS transition with IntersectionObserver instead, which
+ * costs no JavaScript. The existing usages are not worth churning; this is the
+ * default for what comes next.
+ */
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";

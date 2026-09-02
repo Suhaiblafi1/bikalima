@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Award, Heart, Loader2, Trophy, Sparkles, Shield, Mic, GraduationCap } from "lucide-react";
 
 import { SKILL_KEYS, SKILL_LABELS_AR } from "@/lib/skills";
+import { AR_LOCALE } from "@/lib/locale";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Sparkles, Award, Shield, Mic, GraduationCap, Trophy,
@@ -117,7 +118,7 @@ export function SkillsAndBadgesSection() {
           </Button>
           {latestFear && (
             <div className="text-xs text-muted-foreground border-t border-border pt-3">
-              آخر قراءة: <strong>{latestFear.level}</strong> — {new Date(latestFear.createdAt).toLocaleDateString("ar")}
+              آخر قراءة: <strong>{latestFear.level}</strong> — {new Date(latestFear.createdAt).toLocaleDateString(AR_LOCALE)}
               {fearEntries.length >= 2 && (() => {
                 const trend = latestFear.level - fearEntries[fearEntries.length - 1].level;
                 return (
@@ -149,7 +150,7 @@ export function SkillsAndBadgesSection() {
                     <p className="font-bold text-sm">{b.titleAr}</p>
                     {b.descriptionAr && <p className="text-xs text-muted-foreground mt-1 leading-snug">{b.descriptionAr}</p>}
                     {b.owned && b.awardedAt && (
-                      <p className="text-[10px] text-amber-700 mt-2">{new Date(b.awardedAt).toLocaleDateString("ar")}</p>
+                      <p className="text-[10px] text-amber-700 mt-2">{new Date(b.awardedAt).toLocaleDateString(AR_LOCALE)}</p>
                     )}
                   </div>
                 );

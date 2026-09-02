@@ -12,6 +12,7 @@ import {
   useApiFetch, LEAD_STATUS_OPTIONS, INTEREST_SCORE_OPTIONS, LEAD_SOURCE_LABELS,
   leadStatusLabel, leadStatusColor,
 } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 type Lead = {
   id: string; fullName: string; phone: string | null; email: string | null;
@@ -55,7 +56,7 @@ const ACTIVITY_ICONS: Record<string, ReactElement> = {
 function fmt(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString("ar", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString(AR_LOCALE, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 export default function AdminLeadDetailPage({ id }: { id: string }) {

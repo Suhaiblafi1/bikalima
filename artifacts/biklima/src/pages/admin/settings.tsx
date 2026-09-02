@@ -6,6 +6,7 @@ import { Settings as SettingsIcon, Save, Globe, Phone, Share2, FileText, Databas
 import { AdminLayout } from "./_layout";
 import { useApiFetch, type SiteSettingsRecord } from "./_shared";
 import { toast } from "@/hooks/use-toast";
+import { AR_LOCALE } from "@/lib/locale";
 
 type Field = keyof Omit<SiteSettingsRecord, "id" | "updatedAt">;
 
@@ -110,7 +111,7 @@ export default function AdminSettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setSettings(data.settings);
-        setSavedAt(new Date().toLocaleTimeString("ar-SA"));
+        setSavedAt(new Date().toLocaleTimeString(AR_LOCALE));
       } else {
         const data = await res.json().catch(() => ({}));
         toast({ title: data.error || "تعذّر الحفظ", variant: "destructive" });
@@ -139,7 +140,7 @@ export default function AdminSettingsPage() {
           )}
           {settings?.updatedAt && (
             <span className="text-xs text-muted-foreground">
-              آخر تعديل: {new Date(settings.updatedAt).toLocaleDateString("ar-SA")}
+              آخر تعديل: {new Date(settings.updatedAt).toLocaleDateString(AR_LOCALE)}
             </span>
           )}
           <Button

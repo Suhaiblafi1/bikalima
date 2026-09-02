@@ -17,6 +17,7 @@ import {
   type SpeechEvaluationRecord,
   type TrainerOption,
 } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 /**
  * The four described bands for one criterion, with the current score's band
@@ -561,7 +562,7 @@ export default function AdminSpeechEvaluationsPage({
                         <td className="py-2 px-3 text-xs text-muted-foreground align-top whitespace-nowrap">
                           <span className="inline-flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {new Date(i.createdAt).toLocaleDateString("ar-SA")}
+                            {new Date(i.createdAt).toLocaleDateString(AR_LOCALE)}
                           </span>
                         </td>
                         <td className="py-2 px-3 text-end align-top">

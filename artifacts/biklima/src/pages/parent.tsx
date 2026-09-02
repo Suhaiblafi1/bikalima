@@ -9,6 +9,7 @@ import { Users, BookOpen, Trophy, GraduationCap, Loader2, KeyRound, AlertTriangl
 import { lazy, Suspense } from "react";
 import { Video, Clock, ExternalLink, Star, Award } from "lucide-react";
 import { PlatformIntro } from "@/components/platform-intro";
+import { AR_LOCALE } from "@/lib/locale";
 const StudentMessagesTab = lazy(() => import("@/components/dashboard/student-messages-tab"));
 
 interface ChildDashboard {
@@ -341,7 +342,7 @@ export default function ParentPage() {
                   {selectedChild.nextAssignment ? (
                     <div className="mt-1 flex items-center justify-between gap-3"><p className="truncate text-sm font-bold">{selectedChild.nextAssignment.titleAr}</p><span className="shrink-0 text-xs text-primary">{selectedChild.nextAssignment.status === "pending" ? "بانتظار التسليم" : selectedChild.nextAssignment.status === "submitted" ? "تم التسليم" : "تمت المراجعة"}</span></div>
                   ) : <p className="mt-1 text-sm text-muted-foreground">لا يوجد واجب قادم.</p>}
-                  {selectedChild.nextAssignment?.dueAt && <p className="mt-1 text-xs text-muted-foreground">الموعد: {new Date(selectedChild.nextAssignment.dueAt).toLocaleString("ar-SA")}</p>}
+                  {selectedChild.nextAssignment?.dueAt && <p className="mt-1 text-xs text-muted-foreground">الموعد: {new Date(selectedChild.nextAssignment.dueAt).toLocaleString(AR_LOCALE)}</p>}
                 </div>
               </div>
             </CardContent>
@@ -372,7 +373,7 @@ export default function ParentPage() {
                         <p className="font-bold text-sm">{s.titleAr || s.lessonTitleAr || "حصة مباشرة"}</p>
                         <p className="text-xs text-muted-foreground">{s.courseTitleAr ?? "—"}</p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" />{when.toLocaleString("ar-SA")} • {s.durationMinutes} د
+                          <Clock className="w-3 h-3" />{when.toLocaleString(AR_LOCALE)} • {s.durationMinutes} د
                         </p>
                       </div>
                       {isLive && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white">مباشر الآن</span>}

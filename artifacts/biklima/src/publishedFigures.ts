@@ -26,3 +26,21 @@ export type PublishedFigureKey = (typeof PUBLISHED_FIGURES)[number]["key"];
 export function formatFigure(n: number, lang: "ar" | "en"): string {
   return new Intl.NumberFormat(lang === "ar" ? "ar-EG" : "en-US").format(n);
 }
+
+/**
+ * A figure that arrived as text, rendered in the reader's digits.
+ *
+ * The impact grid draws from two sources: the published claims above, which go
+ * through formatFigure, and the live counts from /api/impact, which used to be
+ * printed exactly as the server sent them. So the same tile could read "٨٠٠+"
+ * one day and "142" the next — Arabic-Indic or Western digits decided by
+ * nothing but which source happened to answer.
+ *
+ * Digits are localised and anything around them is left alone, so a suffix
+ * ("+", "%") or a hand-written override from the admin screen survives intact.
+ * An admin who types their own text is making an editorial choice and it is
+ * not this function's place to renumber it.
+ */
+export function formatFigureText(raw: string, lang: "ar" | "en"): string {
+  return raw.replace(/\d+/g, (digits) => formatFigure(Number(digits), lang));
+}

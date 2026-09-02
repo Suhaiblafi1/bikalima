@@ -66,7 +66,13 @@ test("once a computed count is real, both the numbers and their explanations swi
   // Two counts came back real and two came back zero. The zeros are filtered
   // out of the grid, so their methodology cards must go with them — otherwise
   // the page explains how it counts certificates and shows no certificates.
-  await expect(page.locator('[data-testid^="impact-stat-value-"]')).toHaveText(["12", "5"]);
+  // Arabic-Indic, not "12" and "5". This assertion used to expect the Western
+  // digits, which is what the page really rendered — the live path printed the
+  // server's string as-is while the published fallback ran through
+  // formatFigure, so the same tile changed digit systems depending only on
+  // which source answered. The test was locking that in. Both paths localise
+  // now, and the mock still sends "12" and "5" over the wire.
+  await expect(page.locator('[data-testid^="impact-stat-value-"]')).toHaveText(["١٢", "٥"]);
   await expect(method.locator("h3")).toHaveText(["المتدرّبون", "الخطابات المُقيَّمة"]);
 
   await expect(page.locator("body")).toContainText(LIVE_PROMISE);

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { AdminLayout } from "./_layout";
 import { useApiFetch } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 type ThreadListItem = {
   id: string;
@@ -53,7 +54,7 @@ const POLL_THREAD_MS = 5000;
 
 function formatTime(iso: string): string {
   try {
-    return new Date(iso).toLocaleString("ar-EG", {
+    return new Date(iso).toLocaleString(AR_LOCALE, {
       hour: "2-digit",
       minute: "2-digit",
       day: "2-digit",

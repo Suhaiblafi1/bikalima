@@ -14,6 +14,7 @@ import {
 import {
   HOME_SECTION_KEYS, SECTION_FIELDS, type SectionKey, type FieldDef,
 } from "@/cms/sections-schema";
+import { AR_LOCALE } from "@/lib/locale";
 
 type Lang = "ar" | "en";
 
@@ -329,7 +330,7 @@ export default function AdminHomePage() {
                       : <><CheckCircle className="w-3 h-3 text-green-600" /> منشور</>}
                     {s.publishedAt && (
                       <span className="ms-auto">
-                        آخر نشر: {new Date(s.publishedAt).toLocaleString("ar-SA")}
+                        آخر نشر: {new Date(s.publishedAt).toLocaleString(AR_LOCALE)}
                       </span>
                     )}
                   </div>

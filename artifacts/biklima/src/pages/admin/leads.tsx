@@ -248,7 +248,7 @@ function NewLeadModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       <div className="bg-card rounded-2xl p-5 w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-bold">إضافة عميل محتمل</h2>
-          <button onClick={onClose}><X className="w-4 h-4" /></button>
+          <button type="button" onClick={onClose} aria-label="إغلاق"><X className="w-4 h-4" aria-hidden /></button>
         </div>
         <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="الاسم الكامل *" className="h-9" />
         <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الواتساب" dir="ltr" className="h-9" />

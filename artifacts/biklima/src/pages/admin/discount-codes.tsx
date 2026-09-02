@@ -5,6 +5,7 @@ import { useApiFetch, type CourseRecord } from "./_shared";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AR_LOCALE } from "@/lib/locale";
 
 type DiscountCodeRecord = {
   id: string;
@@ -33,7 +34,7 @@ const EMPTY_FORM = {
 
 function displayDate(value: string | null): string {
   if (!value) return "غير محدد";
-  return new Date(value).toLocaleString("ar-JO", { dateStyle: "medium", timeStyle: "short" });
+  return new Date(value).toLocaleString(AR_LOCALE, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function AdminDiscountCodesPage() {

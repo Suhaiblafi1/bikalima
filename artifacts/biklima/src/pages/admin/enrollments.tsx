@@ -13,6 +13,7 @@ import {
   useApiFetch, StatusBadge,
   type RequestRecord, type LmsOrderRecord, type StudentProgressRecord, type UserRecord, type CourseRecord,
 } from "./_shared";
+import { AR_LOCALE } from "@/lib/locale";
 
 type SubTab = "requests" | "lms-orders" | "progress";
 
@@ -107,7 +108,7 @@ export default function AdminEnrollmentsPage() {
       return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     };
     const header = ["الاسم", "البريد", "الهاتف", "الدورة", "المبلغ", "الحالة", "التاريخ"];
-    const lines = rows.map((o) => [o.buyerName, o.buyerEmail, o.buyerPhone, o.courseTitle || "", o.amount || "", o.status, new Date(o.createdAt).toLocaleDateString("ar-SA")].map(csvCell).join(","));
+    const lines = rows.map((o) => [o.buyerName, o.buyerEmail, o.buyerPhone, o.courseTitle || "", o.amount || "", o.status, new Date(o.createdAt).toLocaleDateString(AR_LOCALE)].map(csvCell).join(","));
     const blob = new Blob([header.join(",") + "\n" + lines.join("\n")], { type: "text/csv" });
     const a = document.createElement("a");
     const objectUrl = URL.createObjectURL(blob);
@@ -238,7 +239,7 @@ export default function AdminEnrollmentsPage() {
                         {recommended && <span className="ms-1 inline-block bg-accent/20 text-accent-foreground text-[10px] px-1.5 py-0.5 rounded-full">مُقترح</span>}
                       </td>
                       <td className="py-2 px-3"><StatusBadge status={r.status} /></td>
-                      <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString("ar-SA")}</td>
+                      <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString(AR_LOCALE)}</td>
                       <td className="py-2 px-3 text-end">
                         {(r.status === "pending" || r.status === "new") && (
                           <div className="flex items-center justify-end gap-1">
@@ -313,7 +314,7 @@ export default function AdminEnrollmentsPage() {
                 <div className="mt-3 space-y-1 text-xs text-muted-foreground" dir="ltr"><p className="truncate">{order.buyerEmail}</p>{order.buyerPhone && <p>{order.buyerPhone}</p>}</div>
                 <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">المبلغ</dt><dd className="mt-1 font-bold text-primary">{order.amount !== null ? `${order.amount} JOD` : "—"}</dd></div>
-                  <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">التاريخ</dt><dd className="mt-1 font-bold">{new Date(order.createdAt).toLocaleDateString("ar-SA")}</dd></div>
+                  <div className="rounded-xl bg-muted/50 p-2.5"><dt className="text-muted-foreground">التاريخ</dt><dd className="mt-1 font-bold">{new Date(order.createdAt).toLocaleDateString(AR_LOCALE)}</dd></div>
                 </dl>
                 <div className="mt-4">
                   {order.status === "pending" ? (
@@ -349,7 +350,7 @@ export default function AdminEnrollmentsPage() {
               <tbody>
                 {filteredLmsOrders.map((o) => (
                   <tr key={o.id} className="border-b border-border/30 hover:bg-muted/20">
-                    <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString("ar-SA")}</td>
+                    <td className="py-2 px-3 text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString(AR_LOCALE)}</td>
                     <td className="py-2 px-3 font-medium">{o.buyerName}</td>
                     <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerEmail}</td>
                     <td className="py-2 px-3 text-muted-foreground text-xs" dir="ltr">{o.buyerPhone}</td>
@@ -431,7 +432,7 @@ export default function AdminEnrollmentsPage() {
                       <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-sm font-bold">{fullName}</h3><p className="mt-1 truncate text-xs text-muted-foreground" dir="ltr">{student.userEmail || "—"}</p></div><span className="shrink-0 text-sm font-bold text-primary">{student.progressPct}%</span></div>
                       <p className="mt-3 truncate text-xs font-bold">{student.courseTitleAr || student.courseTitleEn || "—"}</p>
                       <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${student.progressPct === 100 ? "bg-green-600" : "bg-primary"}`} style={{ width: `${student.progressPct}%` }} /></div>
-                      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>{student.completedLessons} من {student.totalLessons} درس</span><span>{student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString("ar-EG") : "لا يوجد نشاط"}</span></div>
+                      <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground"><span>{student.completedLessons} من {student.totalLessons} درس</span><span>{student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString(AR_LOCALE) : "لا يوجد نشاط"}</span></div>
                       {(role === "trainer" || role === "admin") && <Button variant="outline" className="mt-4 min-h-11 w-full" onClick={() => setOpenProgressNotes(notesOpen ? null : student.userId)} aria-expanded={notesOpen}><StickyNote className="me-1.5 h-4 w-4" />{notesOpen ? "إغلاق الملاحظات" : "ملاحظاتي على الطالب"}</Button>}
                       {notesOpen && <div className="mt-4 border-t border-border pt-4"><TrainerNotesPanel learnerId={student.userId} courseId={student.courseId} currentTrainerId={me?.id ?? null} /></div>}
                     </article>
@@ -454,7 +455,7 @@ export default function AdminEnrollmentsPage() {
                   <tbody>
                     {filteredProgress.map((p) => {
                       const fullName = [p.userFirstName, p.userLastName].filter(Boolean).join(" ") || "—";
-                      const last = p.lastActivityAt ? new Date(p.lastActivityAt).toLocaleDateString("ar-EG") : "—";
+                      const last = p.lastActivityAt ? new Date(p.lastActivityAt).toLocaleDateString(AR_LOCALE) : "—";
                       return (
                         <Fragment key={p.enrollmentId}>
                         <tr key={p.enrollmentId} className="border-t border-border hover:bg-muted/20 transition-colors">

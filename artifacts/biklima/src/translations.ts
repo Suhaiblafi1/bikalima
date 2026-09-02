@@ -22,8 +22,11 @@ export const T = {
       ctaPrimary: "ابدأ التعلم الآن",
       ctaSecondary: "اكتشف البرامج التدريبية",
       trustStrip: {
-        trainees: "أكثر من ٨٠٠ متدرب",
-        countries: "٧ دول",
+        // {n} is filled from PUBLISHED_FIGURES so the strip cannot contradict
+        // the impact page. rating and years are separate claims with no entry
+        // there, so they stay written out.
+        trainees: "أكثر من {n} متدرب",
+        countries: "{n} دول",
         rating: "تقييم ٤٫٩ / ٥",
         years: "خبرة +٦ سنوات",
       },
@@ -484,8 +487,8 @@ export const T = {
       ctaPrimary: "Start learning now",
       ctaSecondary: "Explore the Programs",
       trustStrip: {
-        trainees: "800+ trainees",
-        countries: "7 countries",
+        trainees: "{n}+ trainees",
+        countries: "{n} countries",
         rating: "4.9 / 5 rating",
         years: "6+ years of practice",
       },

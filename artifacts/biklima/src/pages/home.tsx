@@ -62,6 +62,7 @@ import { useLang } from "@/hooks/useLang";
 import { useCurrency, PROGRAM_SLUGS, PROGRAM_PAGE_SLUGS, getBaseUrl } from "@/lib/site-config";
 import { HeroQuote, HeroQuoteTicker } from "@/components/hero-quote";
 import { ResponsiveImage } from "@/components/responsive-image";
+import { PUBLISHED_FIGURES, formatFigure } from "@/publishedFigures";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SpeechEvaluationForm } from "@/components/speech-evaluation-form";
@@ -390,6 +391,19 @@ export default function Home() {
     return labels[id] ?? "";
   };
 
+  // The trust strip used to spell its numbers out — "أكثر من ٨٠٠ متدرب" —
+  // beside an impact page that derives the same claims from PUBLISHED_FIGURES.
+  // They matched by luck, and the first edit in one place would have left the
+  // other contradicting it on the same visit, which is the bug that constant
+  // was created to end. The wording stays translatable; the number does not
+  // live here any more.
+  const withFigure = (template: string | undefined, key: string): string => {
+    if (!template) return "";
+    const figure = PUBLISHED_FIGURES.find((f) => f.key === key);
+    if (!figure) return template;
+    return template.replace("{n}", formatFigure(figure.value, lang));
+  };
+
   // Watched by HeroQuoteTicker so the quote timer sleeps once the reader has
   // scrolled the hero away.
   const heroRef = useRef<HTMLElement>(null);
@@ -464,12 +478,12 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-base md:text-lg text-muted-foreground">
               <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
                 <Users className="w-5 h-5 md:w-6 md:h-6 text-primary" aria-hidden />
-                {(t.hero as any).trustStrip?.trainees}
+                {withFigure((t.hero as any).trustStrip?.trainees, "trainees")}
               </span>
               <span className="hidden sm:inline opacity-30">·</span>
               <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
                 <Globe className="w-5 h-5 md:w-6 md:h-6 text-primary" aria-hidden />
-                {(t.hero as any).trustStrip?.countries}
+                {withFigure((t.hero as any).trustStrip?.countries, "countries")}
               </span>
               <span className="hidden sm:inline opacity-30">·</span>
               <span className="inline-flex items-center gap-2 font-bold text-foreground/90">
