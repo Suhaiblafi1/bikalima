@@ -30,7 +30,7 @@ async function getEnrollmentStatus(userId: string, courseId: string) {
   return enrollment ?? null;
 }
 
-router.get("/courses", async (_req: Request, res: Response) => {
+router.get("/courses", async (req: Request, res: Response) => {
   try {
     const courses = await db
       .select({
@@ -45,7 +45,8 @@ router.get("/courses", async (_req: Request, res: Response) => {
       .where(eq(coursesTable.isPublished, true))
       .orderBy(coursesTable.createdAt);
     res.json({ courses });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /courses failed");
     res.status(500).json({ error: "Failed to fetch courses" });
   }
 });
@@ -78,7 +79,8 @@ router.get("/courses/:slug", async (req: Request, res: Response) => {
     }));
 
     res.json({ course: { ...course, lessons } });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /courses/:slug failed");
     res.status(500).json({ error: "Failed to fetch course" });
   }
 });
@@ -144,7 +146,8 @@ router.get("/courses/:slug/learn", async (req: Request, res: Response) => {
     });
 
     res.json({ course, sections, lessons, progressMap, enrolled, pendingOrder });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /courses/:slug/learn failed");
     res.status(500).json({ error: "Failed to load course" });
   }
 });
@@ -166,7 +169,8 @@ router.get("/courses/:slug/access", async (req: Request, res: Response) => {
 
     const enrollment = await getEnrollmentStatus(req.user.id, course.id);
     res.json({ hasAccess: !!enrollment && enrollment.status === "active", enrolled: !!enrollment });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /courses/:slug/access failed");
     res.status(500).json({ error: "Failed to check access" });
   }
 });
@@ -193,7 +197,8 @@ router.get("/my/lessons/:lessonId/note", async (req: Request, res: Response) => 
       .from(lessonNotesTable)
       .where(and(eq(lessonNotesTable.userId, req.user.id), eq(lessonNotesTable.lessonId, lessonId)));
     res.json({ note: note ?? null });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /my/lessons/:lessonId/note failed");
     res.status(500).json({ error: "Failed to load note" });
   }
 });
@@ -240,7 +245,8 @@ router.put("/my/lessons/:lessonId/note", async (req: Request, res: Response) => 
       })
       .returning();
     res.json({ note });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "PUT /my/lessons/:lessonId/note failed");
     res.status(500).json({ error: "Failed to save note" });
   }
 });
@@ -322,7 +328,8 @@ router.get("/my/courses/:slug/certificate", async (req: Request, res: Response) 
         titleEn: course.titleEn,
       },
     });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /my/courses/:slug/certificate failed");
     res.status(500).json({ error: "Failed to load certificate" });
   }
 });
@@ -348,7 +355,8 @@ router.delete("/my/lessons/:lessonId/note", async (req: Request, res: Response) 
       .delete(lessonNotesTable)
       .where(and(eq(lessonNotesTable.userId, req.user.id), eq(lessonNotesTable.lessonId, lessonId)));
     res.json({ success: true });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "DELETE /my/lessons/:lessonId/note failed");
     res.status(500).json({ error: "Failed to delete note" });
   }
 });

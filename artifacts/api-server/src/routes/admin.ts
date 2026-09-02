@@ -118,6 +118,7 @@ router.get("/admin/users", async (req: Request, res: Response) => {
     }).from(usersTable).orderBy(desc(usersTable.createdAt));
     res.json({ users });
   } catch (err) {
+    req.log.error({ err }, "GET /admin/users failed");
     res.status(500).json({ error: "Failed to fetch users" });
   }
 });
@@ -304,6 +305,7 @@ router.delete("/admin/courses/:id/trainers/:userId", async (req: Request, res: R
       ));
     res.json({ success: true });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/courses/:id/trainers/:userId failed");
     res.status(500).json({ error: "Failed to remove trainer" });
   }
 });
@@ -353,6 +355,7 @@ router.patch("/admin/users/:id", async (req: Request, res: Response) => {
     }
     res.json({ user: updated });
   } catch (err) {
+    req.log.error({ err }, "PATCH /admin/users/:id failed");
     res.status(500).json({ error: "Failed to update user" });
   }
 });
@@ -367,6 +370,7 @@ router.delete("/admin/users/:id", async (req: Request, res: Response) => {
     await db.delete(usersTable).where(eq(usersTable.id, id));
     res.json({ success: true });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/users/:id failed");
     res.status(500).json({ error: "Failed to delete user" });
   }
 });
@@ -392,6 +396,7 @@ router.get("/admin/courses", async (req: Request, res: Response) => {
     }));
     res.json({ courses: result });
   } catch (err) {
+    req.log.error({ err }, "GET /admin/courses failed");
     res.status(500).json({ error: "Failed to fetch courses" });
   }
 });
@@ -422,6 +427,7 @@ router.post("/admin/courses", async (req: Request, res: Response) => {
     const [course] = await db.insert(coursesTable).values(vals).returning();
     res.json({ course });
   } catch (err) {
+    req.log.error({ err }, "POST /admin/courses failed");
     res.status(500).json({ error: "Failed to create course" });
   }
 });
@@ -442,6 +448,7 @@ router.patch("/admin/courses/:id", async (req: Request, res: Response) => {
     if (!course) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ course });
   } catch (err) {
+    req.log.error({ err }, "PATCH /admin/courses/:id failed");
     res.status(500).json({ error: "Failed to update course" });
   }
 });
@@ -467,6 +474,7 @@ router.delete("/admin/courses/:id", async (req: Request, res: Response) => {
     }
     res.json({ success: true });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/courses/:id failed");
     res.status(500).json({ error: "Failed to delete course" });
   }
 });
@@ -491,6 +499,7 @@ router.post("/admin/courses/:courseId/lessons", async (req: Request, res: Respon
     }).returning();
     res.json({ lesson });
   } catch (err) {
+    req.log.error({ err }, "POST /admin/courses/:courseId/lessons failed");
     res.status(500).json({ error: "Failed to create lesson" });
   }
 });
@@ -507,6 +516,7 @@ router.patch("/admin/lessons/:id", async (req: Request, res: Response) => {
     if (!lesson) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ lesson });
   } catch (err) {
+    req.log.error({ err }, "PATCH /admin/lessons/:id failed");
     res.status(500).json({ error: "Failed to update lesson" });
   }
 });
@@ -524,6 +534,7 @@ router.post("/admin/lessons/:id/resources", async (req: Request, res: Response) 
     const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, id)).returning();
     res.json({ lesson: updatedLesson });
   } catch (err) {
+    req.log.error({ err }, "POST /admin/lessons/:id/resources failed");
     res.status(500).json({ error: "Failed to add resource" });
   }
 });
@@ -539,6 +550,7 @@ router.delete("/admin/lessons/:id/resources/:idx", async (req: Request, res: Res
     const [updatedLesson] = await db.update(lessonsTable).set({ resources: updated }).where(eq(lessonsTable.id, id)).returning();
     res.json({ lesson: updatedLesson });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/lessons/:id/resources/:idx failed");
     res.status(500).json({ error: "Failed to remove resource" });
   }
 });
@@ -554,6 +566,7 @@ router.post("/admin/courses/:courseId/sections", async (req: Request, res: Respo
     }).returning();
     res.json({ section });
   } catch (err) {
+    req.log.error({ err }, "POST /admin/courses/:courseId/sections failed");
     res.status(500).json({ error: "Failed to create section" });
   }
 });
@@ -570,6 +583,7 @@ router.patch("/admin/sections/:id", async (req: Request, res: Response) => {
     if (!section) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ section });
   } catch (err) {
+    req.log.error({ err }, "PATCH /admin/sections/:id failed");
     res.status(500).json({ error: "Failed to update section" });
   }
 });
@@ -580,6 +594,7 @@ router.delete("/admin/sections/:id", async (req: Request, res: Response) => {
     await db.delete(courseSectionsTable).where(eq(courseSectionsTable.id, req.params.id));
     res.json({ success: true });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/sections/:id failed");
     res.status(500).json({ error: "Failed to delete section" });
   }
 });
@@ -620,6 +635,7 @@ router.post("/admin/courses/:id/duplicate", async (req: Request, res: Response) 
     });
     res.json({ course });
   } catch (err) {
+    req.log.error({ err }, "POST /admin/courses/:id/duplicate failed");
     res.status(500).json({ error: "Failed to duplicate course" });
   }
 });
@@ -645,6 +661,7 @@ router.delete("/admin/lessons/:id", async (req: Request, res: Response) => {
     }
     res.json({ success: true });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/lessons/:id failed");
     res.status(500).json({ error: "Failed to delete lesson" });
   }
 });
@@ -660,6 +677,7 @@ router.post("/admin/enrollments", async (req: Request, res: Response) => {
     if (!enrollment) { res.status(409).json({ error: "Already enrolled" }); return; }
     res.json({ enrollment });
   } catch (err) {
+    req.log.error({ err }, "POST /admin/enrollments failed");
     res.status(500).json({ error: "Failed to enroll user" });
   }
 });
@@ -670,6 +688,7 @@ router.delete("/admin/enrollments/:id", async (req: Request, res: Response) => {
     await db.delete(enrollmentsTable).where(eq(enrollmentsTable.id, req.params.id));
     res.json({ success: true });
   } catch (err) {
+    req.log.error({ err }, "DELETE /admin/enrollments/:id failed");
     res.status(500).json({ error: "Failed to remove enrollment" });
   }
 });
@@ -700,6 +719,7 @@ router.get("/admin/enrollments", async (req: Request, res: Response) => {
       : await baseSelect.where(inArray(enrollmentsTable.courseId, scope)).orderBy(desc(enrollmentsTable.enrolledAt));
     res.json({ enrollments });
   } catch (err) {
+    req.log.error({ err }, "GET /admin/enrollments failed");
     res.status(500).json({ error: "Failed to fetch enrollments" });
   }
 });
@@ -710,6 +730,7 @@ router.get("/admin/enrollment-requests", async (req: Request, res: Response) => 
     const requests = await db.select().from(enrollmentRequestsTable).orderBy(desc(enrollmentRequestsTable.createdAt));
     res.json({ requests });
   } catch (err) {
+    req.log.error({ err }, "GET /admin/enrollment-requests failed");
     res.status(500).json({ error: "Failed to fetch requests" });
   }
 });
@@ -750,6 +771,7 @@ router.patch("/admin/enrollment-requests/:id", async (req: Request, res: Respons
     }
     res.json({ request: updated });
   } catch (err) {
+    req.log.error({ err }, "PATCH /admin/enrollment-requests/:id failed");
     res.status(500).json({ error: "Failed to update request" });
   }
 });
@@ -763,6 +785,7 @@ router.get("/admin/workbook-orders", async (req: Request, res: Response) => {
     const orders = await db.select().from(workbookOrdersTable).orderBy(desc(workbookOrdersTable.createdAt));
     res.json({ orders });
   } catch (err) {
+    req.log.error({ err }, "GET /admin/workbook-orders failed");
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 });
@@ -803,6 +826,7 @@ router.patch("/admin/workbook-orders/:id", async (req: Request, res: Response) =
     }
     res.json({ order: updated });
   } catch (err) {
+    req.log.error({ err }, "PATCH /admin/workbook-orders/:id failed");
     res.status(500).json({ error: "Failed to update order" });
   }
 });
@@ -848,6 +872,7 @@ router.get("/my/courses", async (req: Request, res: Response) => {
 
     res.json({ courses: result });
   } catch (err) {
+    req.log.error({ err }, "GET /my/courses failed");
     res.status(500).json({ error: "Failed to fetch courses" });
   }
 });
@@ -930,6 +955,7 @@ router.post("/my/lessons/:lessonId/complete", async (req: Request, res: Response
     }
     res.json({ success: true, awardedBadges: newlyAwarded });
   } catch (err) {
+    req.log.error({ err }, "POST /my/lessons/:lessonId/complete failed");
     res.status(500).json({ error: "Failed to update progress" });
   }
 });
@@ -939,7 +965,10 @@ router.get("/admin/instructors", async (req: Request, res: Response) => {
   try {
     const instructors = await db.select().from(instructorsTable).orderBy(asc(instructorsTable.nameAr));
     res.json({ instructors });
-  } catch { res.status(500).json({ error: "Failed to fetch instructors" }); }
+  } catch (err) {
+    req.log.error({ err }, "GET /admin/instructors failed");
+    res.status(500).json({ error: "Failed to fetch instructors" });
+  }
 });
 
 router.post("/admin/instructors", async (req: Request, res: Response) => {
@@ -949,7 +978,10 @@ router.post("/admin/instructors", async (req: Request, res: Response) => {
     if (!nameAr || !nameEn) { res.status(400).json({ error: "nameAr and nameEn required" }); return; }
     const [instructor] = await db.insert(instructorsTable).values({ nameAr, nameEn, bioAr, bioEn, photoUrl, email }).returning();
     res.json({ instructor });
-  } catch { res.status(500).json({ error: "Failed to create instructor" }); }
+  } catch (err) {
+    req.log.error({ err }, "POST /admin/instructors failed");
+    res.status(500).json({ error: "Failed to create instructor" });
+  }
 });
 
 router.patch("/admin/instructors/:id", async (req: Request, res: Response) => {
@@ -963,7 +995,10 @@ router.patch("/admin/instructors/:id", async (req: Request, res: Response) => {
     const [instructor] = await db.update(instructorsTable).set(updates).where(eq(instructorsTable.id, req.params.id)).returning();
     if (!instructor) { res.status(404).json({ error: "Not found" }); return; }
     res.json({ instructor });
-  } catch { res.status(500).json({ error: "Failed to update instructor" }); }
+  } catch (err) {
+    req.log.error({ err }, "PATCH /admin/instructors/:id failed");
+    res.status(500).json({ error: "Failed to update instructor" });
+  }
 });
 
 router.delete("/admin/instructors/:id", async (req: Request, res: Response) => {
@@ -971,7 +1006,10 @@ router.delete("/admin/instructors/:id", async (req: Request, res: Response) => {
   try {
     await db.delete(instructorsTable).where(eq(instructorsTable.id, req.params.id));
     res.json({ success: true });
-  } catch { res.status(500).json({ error: "Failed to delete instructor" }); }
+  } catch (err) {
+    req.log.error({ err }, "DELETE /admin/instructors/:id failed");
+    res.status(500).json({ error: "Failed to delete instructor" });
+  }
 });
 
 router.get("/admin/revenue", async (req: Request, res: Response) => {
@@ -1038,6 +1076,7 @@ router.get("/admin/revenue", async (req: Request, res: Response) => {
       topEnrolled,
     });
   } catch (err) {
+    req.log.error({ err }, "GET /admin/revenue failed");
     res.status(500).json({ error: "Failed to fetch revenue" });
   }
 });
@@ -1083,7 +1122,8 @@ async function adminGetLmsOrders(req: Request, res: Response) {
       .leftJoin(coursesTable, eq(ordersTable.courseId, coursesTable.id))
       .orderBy(desc(ordersTable.createdAt));
     res.json({ orders: orders.map(o => ({ ...o, courseTitle: o.courseTitleAr ?? o.courseTitleEn ?? null })) });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "adminGetLmsOrders failed");
     res.status(500).json({ error: "Failed to fetch LMS orders" });
   }
 }
@@ -1153,7 +1193,8 @@ async function adminPatchLmsOrder(req: Request, res: Response) {
     if (status === "cancelled" || status === "failed" || status === "expired") await releaseDiscountReservation(id, `admin_${status}`);
     if (!order) { res.status(404).json({ error: "Order not found" }); return; }
     res.json({ order });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "adminPatchLmsOrder failed");
     res.status(500).json({ error: "Failed to update LMS order" });
   }
 }
@@ -1228,7 +1269,8 @@ router.get("/admin/student-progress", async (req: Request, res: Response) => {
     });
 
     res.json({ progress });
-  } catch {
+  } catch (err) {
+    req.log.error({ err }, "GET /admin/student-progress failed");
     res.status(500).json({ error: "Failed to fetch student progress" });
   }
 });

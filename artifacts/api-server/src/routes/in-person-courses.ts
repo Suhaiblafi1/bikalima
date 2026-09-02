@@ -228,7 +228,7 @@ async function cancelRegistrationAndPromote(id: string) {
   });
 }
 
-router.get("/in-person-courses", async (_req: Request, res: Response) => {
+router.get("/in-person-courses", async (req: Request, res: Response) => {
   try {
     const rows = await db
       .select({
@@ -272,6 +272,7 @@ router.get("/in-person-courses", async (_req: Request, res: Response) => {
       })),
     });
   } catch (err) {
+    req.log.error({ err }, "GET /in-person-courses failed");
     res.status(500).json({ error: "Failed to load in-person courses" });
   }
 });

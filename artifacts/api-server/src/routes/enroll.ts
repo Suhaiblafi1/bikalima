@@ -590,6 +590,7 @@ enrollRouter.get("/my/enrollment-requests", async (req: Request, res: Response) 
       .orderBy(desc(enrollmentRequestsTable.createdAt));
     res.json({ requests });
   } catch (err) {
+    req.log.error({ err }, "enroll handler failed");
     res.status(500).json({ error: "Failed to fetch requests" });
   }
 });

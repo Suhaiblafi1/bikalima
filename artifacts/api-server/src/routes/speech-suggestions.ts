@@ -113,6 +113,7 @@ router.post("/speech-suggestions", async (req: Request, res: Response) => {
       .returning();
     res.status(201).json({ suggestion: created, updated: false });
   } catch (err) {
+    req.log.error({ err }, "POST /speech-suggestions failed");
     req.log?.error({ err }, "speech suggestion failed");
     res.status(500).json({ error: "تعذّر حفظ اقتراحك. حاول مرة أخرى." });
   }

@@ -144,7 +144,7 @@ router.put("/admin/home-sections/:key", async (req: Request, res: Response) => {
 // Public read (only published + visible). If the table has not been seeded
 // yet, synthesize default rows inline so the public site never sees an empty
 // CMS payload. The defaults match what the admin seed inserts on first hit.
-router.get("/home-sections", async (_req: Request, res: Response) => {
+router.get("/home-sections", async (req: Request, res: Response) => {
   try {
     const rows = await db
       .select()
@@ -169,6 +169,7 @@ router.get("/home-sections", async (_req: Request, res: Response) => {
     }
     res.json({ sections: rows });
   } catch (err) {
+    req.log.error({ err }, "GET /home-sections failed");
     res.status(500).json({ error: "Failed to load home sections" });
   }
 });
@@ -290,7 +291,7 @@ router.delete("/admin/workbooks/:id", async (req: Request, res: Response) => {
 });
 
 // Public read
-router.get("/workbooks-cms", async (_req: Request, res: Response) => {
+router.get("/workbooks-cms", async (req: Request, res: Response) => {
   try {
     const rows = await db
       .select()
@@ -299,6 +300,7 @@ router.get("/workbooks-cms", async (_req: Request, res: Response) => {
       .orderBy(workbooksTable.orderIndex);
     res.json({ workbooks: rows });
   } catch (err) {
+    req.log.error({ err }, "GET /workbooks-cms failed");
     res.status(500).json({ error: "Failed to load workbooks" });
   }
 });
@@ -489,6 +491,7 @@ router.get("/field-media", async (req: Request, res: Response) => {
       : rows;
     res.json({ items: filtered });
   } catch (err) {
+    req.log.error({ err }, "GET /field-media failed");
     res.status(500).json({ error: "Failed to load field media" });
   }
 });

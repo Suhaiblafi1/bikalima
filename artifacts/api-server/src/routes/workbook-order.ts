@@ -502,6 +502,7 @@ workbookOrderRouter.get("/my/workbook-orders", async (req: Request, res: Respons
       .orderBy(desc(workbookOrdersTable.createdAt));
     res.json({ orders });
   } catch (err) {
+    req.log.error({ err }, "workbook-order handler failed");
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 });
