@@ -66,6 +66,13 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm --filter @workspace/db migrate
       - run: pnpm --filter @workspace/api-server build
+      # The web build too, not just the API. The suite runs against the dev
+      # server, but seo-meta.spec.ts reads the *built* HTML from disk — that is
+      # the copy a link-preview bot is served, and the dev server never
+      # produces it. Without this step that test fails on every commit, which
+      # it did from the day it was added, turning this whole job permanently
+      # red and hiding anything real behind it.
+      - run: pnpm --filter @workspace/biklima build
       - name: Start API and web app
         run: |
           PORT=3000 pnpm --filter @workspace/api-server start > /tmp/bikalima-api.log 2>&1 &

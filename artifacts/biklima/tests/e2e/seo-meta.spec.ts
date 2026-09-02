@@ -66,7 +66,7 @@ test("every prerendered route carries its own meta in the raw HTML", async () =>
   const shell = await readText(shellPath);
   expect(
     shell,
-    `no build output at ${shellPath} — run \`pnpm --filter biklima build\` first; ` +
+    `no build output at ${shellPath} — run \`pnpm --filter @workspace/biklima build\` first; ` +
       `without it this test cannot check what preview bots would be served`,
   ).not.toBeNull();
 
