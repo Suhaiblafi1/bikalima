@@ -68,12 +68,17 @@ if (!Object.hasOwn(OWNED, TARGET)) {
 const current = process.env.VERCEL_GIT_COMMIT_SHA;
 const previous = process.env.VERCEL_GIT_PREVIOUS_SHA;
 
+// No previous SHA means this is not an ordinary push: a project's first
+// deploy, or — the one that matters — somebody pressing Redeploy. A redeploy
+// is a person saying "put this live", and inferring from the commit's own
+// diff would answer them by silently doing nothing. Build.
+if (!previous || !current) {
+  build("no previous commit to compare against (first deploy, or a manual redeploy)");
+}
+
 let changed;
 try {
-  // VERCEL_GIT_PREVIOUS_SHA is absent on a project's first deploy and on a
-  // redeploy of an older commit; fall back to this commit's own diff.
-  const range = previous && current ? `${previous}..${current}` : "HEAD^..HEAD";
-  changed = execFileSync("git", ["diff", "--name-only", range], { encoding: "utf8" })
+  changed = execFileSync("git", ["diff", "--name-only", `${previous}..${current}`], { encoding: "utf8" })
     .split("\n")
     .filter(Boolean);
 } catch (err) {
