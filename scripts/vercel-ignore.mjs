@@ -22,6 +22,19 @@
  * changed — a first deploy, a shallow clone, a missing previous SHA — it
  * builds.
  *
+ * DISABLED as of this commit, and not to be re-enabled without reading this.
+ *
+ * Wiring this up as the Ignored Build Step on both projects coincided exactly
+ * with bikalima-web creating no deployments at all — not skipped ones, none —
+ * for two consecutive pushes, while the API server kept building. The script's
+ * own logic does not explain that (every uncertain path here exits 1, and the
+ * changed files in both pushes match the web project's own paths), so the
+ * cause is still unknown. What is known is that the site stopped deploying
+ * while this was set, and a build race is not worth a deploy freeze.
+ *
+ * The field is now empty on both projects. Before setting it again, reproduce
+ * the freeze deliberately on one project and watch what Vercel records.
+ *
  * Usage, set per project as the Ignored Build Step:
  *   node scripts/vercel-ignore.mjs api
  *   node scripts/vercel-ignore.mjs web
