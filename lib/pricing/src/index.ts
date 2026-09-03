@@ -94,14 +94,34 @@ export function formatMoney(
 }
 
 /**
- * A JOD price converted into `target`, rounded to that currency's real
- * precision — the same arithmetic the price on the page went through, so the
- * quote and the charge agree to the last minor unit.
+ * A JOD price converted into `target`, as a whole unit of that currency.
+ *
+ * A converted price is an approximation already — the rates are
+ * hand-maintained, not live — so the fractions it produced were false
+ * precision, and $99.40 read worse than $99 for no gain. Everything but the
+ * dinar is therefore rounded to the nearest whole unit.
+ *
+ * The dinar is the exception because it is not a conversion at all: it is the
+ * price as stored, and 15% off 70 is 59.5, a real amount a Jordanian buyer
+ * pays. Rounding it would change a price the institution set and quietly make
+ * the advertised discount something other than 15%.
+ *
+ * Note what this does NOT touch: `decimals`. That field says how many minor
+ * units the currency has — 100 to the dollar, 1000 to the dinar — and
+ * toMinorUnits reads it to tell Stripe what to charge. Rounding the displayed
+ * amount by lowering `decimals` would have made 99 dollars into 99 cents.
+ * The rounding belongs here, on the amount, and nowhere near the minor units.
+ *
+ * The quote and the charge both come from this function, so they still agree
+ * exactly — a buyer shown $99 is charged $99.
  */
 export function convertFromJod(amountJod: number, target: CurrencyConfig): number {
-  const raw = amountJod * target.rate;
-  const factor = 10 ** target.decimals;
-  return Math.round(raw * factor) / factor;
+  if (target.rate === 1) {
+    // The base currency: no conversion happened, so keep its real precision.
+    const factor = 10 ** target.decimals;
+    return Math.round(amountJod * factor) / factor;
+  }
+  return Math.round(amountJod * target.rate);
 }
 
 /**

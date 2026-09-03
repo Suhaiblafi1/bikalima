@@ -24,16 +24,16 @@ import {
 test("a JOD price converts to the number the page shows", () => {
   const usd = CURRENCIES.DEFAULT;
   expect(usd.code).toBe("USD");
-  // 70 × 1.42 = 99.4 — and this is the case the rounding in convertFromJod
-  // exists for: the raw product is 99.39999999999999, which must never reach a
-  // buyer or a card as anything but 99.4.
-  expect(convertFromJod(70, usd)).toBe(99.4);
-  expect(formatMoney(convertFromJod(70, usd), usd.decimals)).toBe("99.4");
+  // 70 × 1.42 = 99.4, shown and charged as a whole 99. A converted price is
+  // an approximation — the rates are hand-maintained — so the fraction was
+  // false precision.
+  expect(convertFromJod(70, usd)).toBe(99);
+  expect(formatMoney(convertFromJod(70, usd), usd.decimals)).toBe("99");
 });
 
 test("minor units follow the currency, not a fixed factor", () => {
   // Two decimals: dollars and most of the world.
-  expect(toMinorUnits(99.4, "USD")).toBe(9940);
+  expect(toMinorUnits(99, "USD")).toBe(9900);
   // Three: the dinar is 1000 fils, and treating it as 100 would charge a buyer
   // a tenth of the price.
   expect(toMinorUnits(70, "JOD")).toBe(70000);
@@ -42,18 +42,36 @@ test("minor units follow the currency, not a fixed factor", () => {
   // hundred times over.
   expect(toMinorUnits(1500, "JPY")).toBe(1500);
   // Case does not matter — Stripe reports currencies lowercased.
-  expect(toMinorUnits(99.4, "usd")).toBe(9940);
+  expect(toMinorUnits(99, "usd")).toBe(9900);
 });
 
-test("conversion rounds to the currency's real precision, both ways", () => {
+test("a converted price is whole, but the dinar keeps its own precision", () => {
   const sar = currencyByCode("SAR")!;
   const kwd = currencyByCode("KWD")!;
-  // 70 × 5.33 = 373.1 — and not 373, which is what rounding to whole units
-  // used to do to every non-dinar price.
-  expect(convertFromJod(70, sar)).toBe(373.1);
-  // A 3-decimal currency keeps its third digit: 70 × 0.439 = 30.73
-  expect(convertFromJod(70, kwd)).toBe(30.73);
-  expect(kwd.decimals).toBe(3);
+  const jod = currencyByCode("JOD")!;
+
+  // 70 × 5.33 = 373.1, shown as 373. Every converted currency is whole.
+  expect(convertFromJod(70, sar)).toBe(373);
+  // Whole applies to the 3-decimal currencies too: 70 × 0.439 = 30.73 -> 31.
+  expect(convertFromJod(70, kwd)).toBe(31);
+
+  // The dinar is not a conversion, it is the price as stored. 15% off 70 is
+  // 59.5 and a Jordanian buyer pays exactly that — rounding it would change a
+  // price the institution set and make the advertised 15% a lie.
+  expect(convertFromJod(59.5, jod)).toBe(59.5);
+  expect(convertFromJod(70, jod)).toBe(70);
+});
+
+test("rounding the amount did not touch how many minor units a currency has", () => {
+  // The trap this guards: `decimals` drives toMinorUnits, so rounding prices
+  // by lowering it would have turned 99 dollars into 99 cents, and 70 dinars
+  // into 70 fils. Whole amounts, unchanged minor units.
+  expect(currencyByCode("USD")!.decimals).toBe(2);
+  expect(currencyByCode("KWD")!.decimals).toBe(3);
+  expect(currencyByCode("JOD")!.decimals).toBe(3);
+
+  expect(toMinorUnits(convertFromJod(70, currencyByCode("USD")!), "USD")).toBe(9900);
+  expect(toMinorUnits(convertFromJod(70, currencyByCode("KWD")!), "KWD")).toBe(31000);
 });
 
 test("a discounted price survives the float, quoted and charged alike", () => {
@@ -62,8 +80,8 @@ test("a discounted price survives the float, quoted and charged alike", () => {
   // reach a buyer as 59.49999999999999.
   expect(formatMoney(59.5)).toBe("59.5");
   const charged = convertFromJod(59.5, usd);
-  expect(charged).toBe(84.49);
-  expect(toMinorUnits(charged, usd.code)).toBe(8449);
+  expect(charged).toBe(84);
+  expect(toMinorUnits(charged, usd.code)).toBe(8400);
 });
 
 test("every currency in the table can be charged and quoted coherently", () => {
