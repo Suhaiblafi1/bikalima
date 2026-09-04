@@ -54,7 +54,6 @@ const SHARED = [
   "pnpm-workspace.yaml",
   "tsconfig.base.json",
   "tsconfig.json",
-  "vercel.json",
   // This file is deliberately absent from the list. It decides whether a build
   // runs; it is not built into either app, and Vercel reads it fresh from the
   // repository on the next build regardless. Listing it meant that editing
@@ -64,7 +63,10 @@ const SHARED = [
 
 const OWNED = {
   api: ["artifacts/api-server/"],
-  web: ["artifacts/biklima/"],
+  // The root vercel.json belongs to the web project alone: it carries that
+  // project's rewrites, and the API server builds from artifacts/api-server,
+  // so it reads the vercel.json in there instead and never sees this one.
+  web: ["artifacts/biklima/", "vercel.json"],
 };
 
 function build(reason) {
