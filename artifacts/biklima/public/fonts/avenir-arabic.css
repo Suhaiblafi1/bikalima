@@ -7,7 +7,47 @@
 @font-face {
   font-family: 'Avenir Arabic';
   font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/fonts/avenir-arabic-300-regular.woff2") format('woff2');
+}
+
+@font-face {
+  font-family: 'Avenir Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/avenir-arabic-400-book.woff2") format('woff2');
+}
+
+@font-face {
+  font-family: 'Avenir Arabic';
+  font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/fonts/AvenirArabic-Medium.woff2") format('woff2');
+  src: url("/fonts/avenir-arabic-500-light.woff2") format('woff2');
+}
+
+@font-face {
+  font-family: 'Avenir Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/avenir-arabic-600-medium.woff2") format('woff2');
+}
+
+@font-face {
+  font-family: 'Avenir Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/avenir-arabic-700-heavy.woff2") format('woff2');
+}
+
+@font-face {
+  font-family: 'Avenir Arabic';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/fonts/avenir-arabic-900-black.woff2") format('woff2');
 }

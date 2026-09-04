@@ -94,10 +94,13 @@
          browser synthesises bold from it rather than falling through to
          Tajawal, which means the old Tajawal and Noto preloads were fetching
          faces nothing draws. Preload the face that actually renders instead.
-         This tag is coupled to the file in public/fonts: keep them in step,
-         because a preload for a missing font would be answered by the SPA
-         rewrite with an HTML document. The build prints the weights it found. -->
-    <link rel="preload" href="%BASE_URL%fonts/AvenirArabic-Medium.woff2" as="font" type="font/woff2" crossorigin>
+         These tags are coupled to the files in public/fonts: keep them in
+         step, because a preload for a missing font would be answered by the
+         SPA rewrite with an HTML document. The build prints the weights it
+         found. Only two of the six are preloaded — body and bold, which is
+         what the first screen draws; the rest load when a page needs them. -->
+    <link rel="preload" href="%BASE_URL%fonts/avenir-arabic-400-book.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="%BASE_URL%fonts/avenir-arabic-700-heavy.woff2" as="font" type="font/woff2" crossorigin>
   </head>
   <body>
     <div id="root"></div>
